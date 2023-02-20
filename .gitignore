@@ -1,0 +1,4 @@
+# Ignore Output Files
+*.o
+*.img
+*.elf
