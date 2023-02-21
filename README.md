@@ -5,4 +5,4 @@
 | Name                 | 陳筱霓    |
 | :------------------- | :------- |
 | Student ID           | 0816122  |
-| Github account name  | sheauni  |
+| GitHub account name  | sheauni  |
