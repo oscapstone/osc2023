@@ -79,6 +79,7 @@ int strcmp(char* str1, char* str2) {
 /* shell */
 void main(void) {
     uart_init();
+    uart_puts("! Welcome Lab1 !\n");
 
     char command[32];
     int idx = 0;
