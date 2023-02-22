@@ -1,6 +1,7 @@
-.section ".text"
+.section ".text.boot"
 
-.globl _start
+.global _start
+
 _start:
     // read cpu id, stop slave cores
     mrs     x1, mpidr_el1
@@ -8,9 +9,9 @@ _start:
     cbz     x1, master
     // cpu id > 0, stop
 
-haltloop:  
+halt:  
     wfe
-    b       haltloop
+    b       halt
 
 master:
     ldr     x1, =_start
@@ -30,4 +31,4 @@ kernel:
     // jump to C code
     bl      main
     // if fail
-    b       haltloop
+    b       halt

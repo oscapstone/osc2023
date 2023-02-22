@@ -15,7 +15,7 @@ void get_board_revision(){
 
     mbox_call(MBOX_CH_PROP); // message passing procedure call, you should implement it following the 6 steps provided above.
 
-    uart_puts("board version: ");
+    uart_puts("board version:    0x");
     uart_hex(mbox[5]);
     uart_puts("\n");
 }
@@ -34,10 +34,10 @@ void get_arm_memory(){
 
     mbox_call(MBOX_CH_PROP); // message passing procedure call, you should implement it following the 6 steps provided above.
 
-    uart_puts("Arm base address: ");
+    uart_puts("Arm base address: 0x");
     uart_hex(mbox[5]);
     uart_puts("\n");
-    uart_puts("Arm memory size: ");
+    uart_puts("Arm memory size:  0x");
     uart_hex(mbox[6]);
     uart_puts("\n");
 }
@@ -65,7 +65,7 @@ void cancel_reset() {
 /* strcmp */
 int strcmp(char* str1, char* str2) {
     while(1) {
-        if (*str1 == '\0' && *str2 == '\0') {
+        if ((*str1 == '\0' || *str1 == '\n') && (*str2 == '\0' || *str2 == '\n')) {
             return 0;
         }
         if (*str1 != *str2) {
@@ -80,43 +80,46 @@ int strcmp(char* str1, char* str2) {
 void main(void) {
     uart_init();
 
-    uart_puts("hello message");
-
     char command[32];
     int idx = 0;
 
-    char tmp = uart_getc();
-    uart_send(tmp);
-
     while (1) {
+        idx = 0;
         uart_puts("$ ");
         while (1) {
             command[idx] = uart_getc();
             uart_send(command[idx]);
             if (command[idx] == '\n') {
                 command[idx] = '\0';
-                idx++;
                 break;
             }
             idx++;
         }
 
         if (strcmp("hello", command) == 0) {
+            uart_puts("\n");
             uart_puts("Hello World!\n");
         }
         else if (strcmp("help", command) == 0) {
-            uart_puts("help\r: print this help menu\n");
-            uart_puts("hello\r: print Hello World!\n");
-            uart_puts("reboot\r: reboot this device\n");
-            uart_puts("lshw\r: print hardware info from mailbox\n");
+            uart_puts("\n");
+            uart_puts("help\t: print this help menu\n");
+            uart_puts("hello\t: print Hello World!\n");
+            uart_puts("reboot\t: reboot this device\n");
+            uart_puts("lshw\t: print hardware info from mailbox\n");
         }
         else if (strcmp("reboot", command) == 0) {
+            uart_puts("\n");
             uart_puts("rebooting...\r\n");
             reset(1000);
         }
         else if (strcmp("lshw", command) == 0) {
+            uart_puts("\n");
             get_board_revision();
             get_arm_memory();
+        }
+        else {
+            uart_puts("\n");
+            uart_puts("unknown\n");
         }
         
     }
