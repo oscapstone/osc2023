@@ -1,0 +1,43 @@
+#include "gpio.h"
+#include "uart.h"
+
+void uart_setup(){
+
+	*AUX_ENABLE |= 1;	// 1 -> AUX mini Uart
+	*AUX_MU_CNTL = 0;	// Disable Tx/Rx
+	*AUX_MU_LCR = 3;	// Set data to 8-bit mode
+	*AUX_MU_MCR = 0;	// Ignore
+	*AUX_MU_IER = 0;	// Init
+	*AUX_MU_IIR = 0x6;	// No timeout + clear FIFO
+	*AUX_MU_BAUD = 270; 	// 
+	*AUX_MU_CNTL = 3;	// Enable tr and re. 
+}
+
+void uart_send(unsigned int c){
+	do{
+		asm volatile("nop");
+	}while(!(*AUX_MU_LSR & 0x20));	// Check If buffer is empty
+	*AUX_MU_IO = c; 	// Write to buffer
+}
+
+char uart_getc(){
+	char c;
+	do{
+		asm volatile("nop");
+	}while(!(*AUX_MU_LSR & 0x01)); 	// Check If data to read
+	c = (char)(*AUX_MU_IO);
+	return c == '\r' ? '\n' : c;
+}
+
+void uart_puts(char* s){
+	while(*s){
+		if(*s == '\n'){
+			uart_send('\r');
+		}
+		uart_send(*s++);
+	}
+	return;
+}
+void uart_putc(char c){
+	uart_send(c);
+}
