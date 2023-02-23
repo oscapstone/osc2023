@@ -41,3 +41,27 @@ void uart_puts(char* s){
 void uart_putc(char c){
 	uart_send(c);
 }
+
+void uart_puti(unsigned int i){
+	if(i == 0){
+		uart_send('\0');
+		return;
+	}
+
+	while(i > 0){
+		uart_send(i % 10 + '0');
+		i = i / 10;
+	}
+	return;
+}
+
+void uart_puth(unsigned int h){
+	unsigned int n;
+	int c;
+	for(c = 28; c >= 0; c -= 4){
+		n = (h >> c) & 0xf;
+		n += n > 9 ? 0x37 : '0';
+		uart_send(n);
+	}
+	return;
+}

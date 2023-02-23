@@ -1,9 +1,8 @@
-#include <stddef.h>
 #include "str.h"
 
 int strcmp(const char* a, const char* b){
 	do{
-		if(a == NULL || b == NULL)
+		if(a == 0 || b == 0)
 			return 3;
 		if(*a == '\0' || *b == '\0')
 			break;
@@ -33,7 +32,7 @@ int strlen(const char* s){
 }
 
 void* memset(void* s, int c, unsigned int n){
-	if(n < 0 || s == NULL)
+	if(n < 0 || s == 0)
 		return s;
 	int* r = (int*)s;
 	

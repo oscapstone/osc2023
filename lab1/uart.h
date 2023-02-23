@@ -35,6 +35,8 @@ void uart_send(unsigned int);
 char uart_getc(void);
 void uart_putc(char);
 void uart_puts(char *s);
+void uart_puti(unsigned int);
+void uart_puth(unsigned int);
 void uart_gets(char *s);
 
 #endif //UART_H
