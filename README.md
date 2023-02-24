@@ -2,7 +2,6 @@
 
 ## Personal Information
 
-| Name                 | 陳筱霓    |
-| :------------------- | :------- |
-| Student ID           | 0816122  |
-| GitHub account name  | sheauni  |
+| Name   | Student Id  | GitHub Username  |
+| :----- | :---------- | :--------------- |
+| 陳筱霓  | 0816122     | sheauni          |
