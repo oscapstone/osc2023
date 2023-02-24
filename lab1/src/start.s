@@ -5,7 +5,7 @@
 _start:
     mrs    x0, mpidr_el1   // move the contents of a special register to a general-purpose register
     and    x0, x0, #3      // read [0:2] and get CPU ID
-    cbz    x0, core        // go to _core if CPU ID equals to 0
+    cbz    x0, _core       // go to _core if CPU ID equals to 0
 
 _halt: 
     wfe                    // wait for event
@@ -18,7 +18,7 @@ _core:
     adr    x1, __bss_size
 
 _zero:
-    cbz    x1, _main       // go to _main if bss section is 0
+    cbz    x1, _kernel     // go to _kernel if bss section is 0
     str    xzr, [x0], #8
     sub    x1, x1, #8
     cbnz   x1, _zero
