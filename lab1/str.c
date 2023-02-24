@@ -31,10 +31,10 @@ int strlen(const char* s){
 	return len;
 }
 
-void* memset(void* s, int c, unsigned int n){
+void* memset(void* s, char c, unsigned int n){
 	if(n < 0 || s == 0)
 		return s;
-	int* r = (int*)s;
+	char* r = (char*)s;
 	
 	for(int i = 0; i < n; i++){
 		*r = c;

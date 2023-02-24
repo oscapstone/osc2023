@@ -8,9 +8,11 @@
 void terminal_run(){
 	char input_buf[BUF_LEN + 1];
 	char* tmp;
+	uart_puts("=======Terminal start!!======\n");
 
 	while(1){
 		tmp = input_buf;
+		tmp[0] = 0;
 		for(int i = 0; i < BUF_LEN; i++){
 			*tmp = uart_getc();
 			uart_putc(*tmp);
@@ -37,8 +39,8 @@ void terminal_run(){
 			hello();
 		else if(!strcmp(input_buf, "lshw"))
 			lshw();
-		//else if(!strcmp(input_buf, "reboot"))
-			//reboot();
+		else if(!strcmp(input_buf, "reboot"))
+			reboot();
 		else
 			invalid_command(input_buf);
 	}
@@ -60,8 +62,10 @@ int hello(){
 }
 
 int invalid_command(const char* s){
+	uart_putc('`');
 	uart_puts(s);
-	uart_puts("Invalid command! Please use `help` to list commands\n");
+	uart_putc('`');
+	uart_puts(" is invalid command! Please use `help` to list commands\n");
 	return 0;
 }
 
@@ -93,6 +97,12 @@ int lshw(void){
 		uart_puth(mbox[6]);
 	}
 	uart_putc('\n');
+	return 0;
+}
+
+int reboot(){
+	*PM_RSTC = PM_PASSWORD | 0x20;		// Reset
+	*PM_WDOG = PM_PASSWORD | 180;
 	return 0;
 }
 	

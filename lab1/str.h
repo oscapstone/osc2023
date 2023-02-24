@@ -8,6 +8,6 @@
 
 int strcmp(const char*, const char*);
 int strlen(const char*);
-void* memset(void*, int, unsigned int);
+void* memset(void*, char, unsigned int);
 
 #endif // STR_H
