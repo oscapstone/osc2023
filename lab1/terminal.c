@@ -13,7 +13,7 @@ void terminal_run(){
 		tmp = input_buf;
 		for(int i = 0; i < BUF_LEN; i++){
 			*tmp = uart_getc();
-			uart_send(*tmp);
+			uart_putc(*tmp);
 
 			if(*tmp == 127){
 				*tmp = 0;

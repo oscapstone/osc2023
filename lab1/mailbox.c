@@ -32,7 +32,7 @@ int mailbox_config(unsigned char ch){
 	*/
 	
 	// FIXME: Usually we don't need this dup write. But...
-	*MAILBOX_WRITE = r;
+	//*MAILBOX_WRITE = r;
 	/*
 	uart_puth((unsigned int) *MAILBOX_WRITE);
 	uart_putc('\n');

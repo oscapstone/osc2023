@@ -3,6 +3,15 @@
 
 void uart_setup(){
 
+	unsigned int r = *GPFSEL1;
+	r &= ~(7<<12);		// Clear gpio14
+	r |= (2 << 12);		// gpio14 to alt5
+
+	r &= ~(7<<15);		// Clear gpio15
+	r |= (2 << 15);		// gpio15 to alt5
+
+	*GPFSEL1 = r;		// Write register
+
 	*AUX_ENABLE |= 1;	// 1 -> AUX mini Uart
 	*AUX_MU_CNTL = 0;	// Disable Tx/Rx
 	*AUX_MU_LCR = 3;	// Set data to 8-bit mode
@@ -39,6 +48,11 @@ void uart_puts(char* s){
 	return;
 }
 void uart_putc(char c){
+	if(c == '\n'){
+		uart_send('\n');
+		uart_send('\r');
+		return;
+	}
 	uart_send(c);
 }
 
