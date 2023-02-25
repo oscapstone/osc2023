@@ -13,31 +13,8 @@ int mailbox_config(unsigned char ch){
 	while(*MAILBOX_STATUS & MAILBOX_FULL){
 	}
 
+	// Write the register
 	*MAILBOX_WRITE = r;
-	/*
-	uart_puth(mbox[0]);
-	uart_putc('\n');
-	uart_puth(mbox[1]);
-	uart_putc('\n');
-	uart_puth(mbox[2]);
-	uart_putc('\n');
-	uart_puth(mbox[3]);
-	uart_putc('\n');
-	uart_puth(mbox[4]);
-	uart_putc('\n');
-	uart_puth(r);
-	uart_putc('\n');
-	uart_puth((unsigned int) &mbox);
-	uart_putc('\n');
-	*/
-	
-	// FIXME: Usually we don't need this dup write. But...
-	//*MAILBOX_WRITE = r;
-	/*
-	uart_puth((unsigned int) *MAILBOX_WRITE);
-	uart_putc('\n');
-	uart_puth((unsigned int) *MAILBOX_READ);
-	*/
 
 	while(1){
 		while(*MAILBOX_STATUS & MAILBOX_EMPTY){
