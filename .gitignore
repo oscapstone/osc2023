@@ -15,8 +15,10 @@ Thumbs.db
 __pycache__/
 
 # Compiled C++ files
+build/
 *.out
 *.o
+*.img
 
 # Application specific files
 venv
