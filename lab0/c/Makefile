@@ -31,9 +31,9 @@ $(OUT_DIR)/kernel8.img: $(OUT_DIR)/kernel8.elf
 	@mkdir -p $(@D)
 	$(OBJCOPY) -O binary $^ $@
 
-$(OUT_DIR)/kernel8.elf: $(OBJ_PATHS)
+$(OUT_DIR)/kernel8.elf: $(OBJ_PATHS) $(LD_SCRIPT)
 	@mkdir -p $(@D)
-	$(LD) -T $(LD_SCRIPT) $^ -o $@
+	$(LD) -T $(LD_SCRIPT) $(filter-out $(LD_SCRIPT),$^) -o $@
 
 $(OUT_DIR)/%.o: $(OUT_DIR)/%.s
 	@mkdir -p $(@D)
