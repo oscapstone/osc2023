@@ -1,7 +1,7 @@
 #include "shell.h"
 #include "mini_uart.h"
 #include "utils.h"
-// #include "mailbox.h"
+#include "mailbox.h"
 // #include "reboot.h"
 
 // Saves received string
@@ -50,15 +50,15 @@ void parse_cmd() {
         uart_send_string("help:\t\tprint this help menu.\r\n");
         uart_send_string("hello:\t\tprint Hello World!\r\n");
         uart_send_string("reboot:\t\treboot device\r\n");
-        // uart_send_string("hwinfo:\t\tprint hardware information\r\n");
+        uart_send_string("hw-info:\tprint hardware information\r\n");
+    }
+    else if (!strcmp(buffer, "hw-info")) {
+        get_board_revision();
+        get_arm_memory();
     }
     // else if (strcmp(buffer, "reboot") == 0) {
     //     uart_send_string("rebooting...\r\n");
     //     reset(100);
-    // }
-    // else if (strcmp(buffer, "hwinfo") == 0) {
-    //     get_board_revision();
-    //     get_arm_memory();
     // }
     else 
         uart_send_string("Command not found, type 'help' for commands.\r\n");

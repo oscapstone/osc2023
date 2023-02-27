@@ -28,6 +28,40 @@ void uart_send_string(char* str) {
 	}
 }
 
+void uart_send_hex(unsigned int n) {
+    char out[9];
+    out[8] = '\0';
+    for (int i = 7; i >= 0; i--) {
+        unsigned int o = n % 16;
+        n >>= 4;
+        switch (o) {
+        case 10:
+            out[i] = 'A';
+            break;
+        case 11:
+            out[i] = 'B';
+            break;
+        case 12:
+            out[i] = 'C';
+            break;
+        case 13:
+            out[i] = 'D';
+            break;
+        case 14:
+            out[i] = 'E';
+            break;
+        case 15:
+            out[i] = 'F';
+            break;
+        default:
+            out[i] = '0' + o;
+            break;
+        }
+    }
+    uart_send_string("0x");
+    uart_send_string(out);
+}
+
 void uart_init(void) {
 	unsigned int selector;
 
