@@ -2,7 +2,7 @@
 #include "mini_uart.h"
 #include "utils.h"
 #include "mailbox.h"
-// #include "reboot.h"
+#include "reboot.h"
 
 // Saves received string
 #define MAX_BUFFER_SIZE 256u
@@ -56,10 +56,10 @@ void parse_cmd() {
         get_board_revision();
         get_arm_memory();
     }
-    // else if (strcmp(buffer, "reboot") == 0) {
-    //     uart_send_string("rebooting...\r\n");
-    //     reset(100);
-    // }
+    else if (strcmp(buffer, "reboot") == 0) {
+        uart_send_string("rebooting ...\r\n");
+        reset(100);
+    }
     else 
         uart_send_string("Command not found, type 'help' for commands.\r\n");
 
