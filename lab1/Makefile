@@ -1,22 +1,27 @@
-ARMGNU ?= aarch64-linux-gnu
+AARCH64_PREFIX = aarch64-linux-gnu-
+CC = $(AARCH64_PREFIX)gcc
+LD = $(AARCH64_PREFIX)ld
+OBJCPY = $(AARCH64_PREFIX)objcopy
 
-COPS = -Wall -nostdlib -nostartfiles -ffreestanding -Iinclude -mgeneral-regs-only
-ASMOPS = -Iinclude 
+CFLAGS = -Wall -nostdlib -nostartfiles -ffreestanding -Iinclude -mgeneral-regs-only
+ASMFLAGS = -Iinclude
 
 BUILD_DIR = build
 SRC_DIR = src
 
-all : kernel8.img
+.PHONY: all clean
 
-clean :
-	rm -rf $(BUILD_DIR) *.img 
+all: kernel8.img
+
+clean:
+	rm -rf $(BUILD_DIR) *.img
 
 $(BUILD_DIR)/%_c.o: $(SRC_DIR)/%.c
 	mkdir -p $(@D)
-	$(ARMGNU)-gcc $(COPS) -MMD -c $< -o $@
+	$(CC) $(CFLAGS) -MMD -c $< -o $@
 
 $(BUILD_DIR)/%_s.o: $(SRC_DIR)/%.S
-	$(ARMGNU)-gcc $(ASMOPS) -MMD -c $< -o $@
+	$(CC) $(ASMFLAGS) -MMD -c $< -o $@
 
 C_FILES = $(wildcard $(SRC_DIR)/*.c)
 ASM_FILES = $(wildcard $(SRC_DIR)/*.S)
@@ -27,5 +32,5 @@ DEP_FILES = $(OBJ_FILES:%.o=%.d)
 -include $(DEP_FILES)
 
 kernel8.img: $(SRC_DIR)/linker.ld $(OBJ_FILES)
-	$(ARMGNU)-ld -T $(SRC_DIR)/linker.ld -o $(BUILD_DIR)/kernel8.elf  $(OBJ_FILES)
-	$(ARMGNU)-objcopy $(BUILD_DIR)/kernel8.elf -O binary kernel8.img
+	$(LD) -T $(SRC_DIR)/linker.ld -o $(BUILD_DIR)/kernel8.elf  $(OBJ_FILES)
+	$(OBJCPY) $(BUILD_DIR)/kernel8.elf -O binary $@
