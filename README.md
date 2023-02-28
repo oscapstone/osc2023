@@ -1,0 +1,39 @@
+# OSC_Lab
+
+NYCU 2023 Operating System Capstone
+
+## Environment
+
+- Ubuntu 22.04.2 LTS
+- QEMU 6.2.0
+- Raspbery Pi 3B+
+
+## How to use
+
+### Install Dependencies
+
+```shell
+sudo apt update
+sudo apt install qemu-system-aarch64 gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu -y
+```
+
+### Run on QEMU
+
+```shell
+make
+make run
+```
+
+## Version History
+
+### 2023-02-28
+
+Finish Lab 1
+
+- Basic
+    - [V] Basic Initialization
+    - [V] Mini UART
+    - [V] Simple Shell
+    - [V] Mailbox
+- Advanced
+    - [V] Reboot
