@@ -44,7 +44,4 @@
 #define GPPUDCLK0          BUS_TO_PERIPHERALS(0x7E200098)
 #define GPPUDCLK1          BUS_TO_PERIPHERALS(0x7E20009C)
 
-void reset(int tick);
-void cancel_reset();
-
 #endif

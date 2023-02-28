@@ -13,7 +13,6 @@ LDFLAGS = -I$(INC_DIR)
 
 KERNEL_IMG := $(IMG_DIR)/kernel8.img
 KERNEL_ELF := $(OBJ_DIR)/kernel8.elf
-IMG_NAME   := $(IMG_DIR)/yanos.img
 
 C_FILES     = $(wildcard $(SRC_DIR)/*.c)
 ASM_FILES   = $(wildcard $(SRC_DIR)/*.S)
@@ -37,14 +36,6 @@ $(OBJ_DIR)/%_c.o: $(SRC_DIR)/%.c
 qemu: $(KERNEL_IMG)
 		qemu-system-aarch64 -M raspi3 -kernel $(KERNEL_IMG) -display none\
 											-serial null -serial stdio
-
-image: $(KERNEL_IMG) $(IMG_NAME)
-		./tools/buildimg.sh $^
-
-		@sudo touch image
-
-$(IMG_NAME):
-		./tools/createimg.sh $(IMG_NAME)
 
 .PHONY: clean
 clean:

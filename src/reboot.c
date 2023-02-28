@@ -1,6 +1,4 @@
-#define PM_PASSWORD 0x5A000000
-#define PM_RSTC 0x3F10001C
-#define PM_WDOG 0x3F100024
+#include <reboot.h>
 
 void set(long addr, unsigned int value) {
     volatile unsigned int* point = (unsigned int*)addr;

@@ -2,8 +2,7 @@
 #include <mini_uart.h>
 #include <BCM.h>
 
-void uart_send ( char c )
-{
+void uart_send (char c){
 	while(1) {
 		if(get32(AUX_MU_LSR_REG)&0x20) 
 			break;
@@ -11,8 +10,25 @@ void uart_send ( char c )
 	put32(AUX_MU_IO_REG,c);
 }
 
-char uart_recv ( void )
-{
+void uart_send_string(char* str){
+	for (int i = 0; str[i] != '\0'; i ++)
+		uart_send((char)str[i]);
+}
+
+void uart_send_hex(unsigned int d) {
+    unsigned int n;
+    int c;
+	uart_send_string("0x");
+    for(c=28;c>=0;c-=4) {
+        // get highest tetrad
+        n=(d>>c)&0xF;
+        // 0-9 => '0'-'9', 10-15 => 'A'-'F'
+        n+=n>9?0x37:0x30;
+        uart_send(n);
+    }
+}
+
+char uart_recv (void){
 	while(1) {
 		if(get32(AUX_MU_LSR_REG)&0x01) 
 			break;
@@ -20,16 +36,8 @@ char uart_recv ( void )
 	return(get32(AUX_MU_IO_REG)&0xFF);
 }
 
-void uart_send_string(char* str)
-{
-	for (int i = 0; str[i] != '\0'; i ++) {
-		uart_send((char)str[i]);
-	}
-}
-
 int uart_recv_line(char* buf, int maxline){
-	int cnt = 0 ;
-
+	int cnt = 0;
 	maxline--;
 
 	while(maxline){
@@ -42,12 +50,12 @@ int uart_recv_line(char* buf, int maxline){
 		cnt++;
 		maxline--;
 	}
-	*buf = 0;
 
+	*buf = 0;
 	return cnt;
 }
 
-void uart_init ( void )
+void uart_init (void)
 {
 	unsigned int selector;
 
@@ -70,6 +78,6 @@ void uart_init ( void )
 	put32(AUX_MU_LCR_REG,3);                //Enable 8 bit mode
 	put32(AUX_MU_MCR_REG,0);                //Set RTS line to be always high
 	put32(AUX_MU_BAUD_REG,270);             //Set baud rate to 115200
-
+	put32(AUX_MU_IIR_REG, 6);               //Clear the Rx/Tx FIFO
 	put32(AUX_MU_CNTL_REG,3);               //Finally, enable transmitter and receiver
 }
