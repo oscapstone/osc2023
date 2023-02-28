@@ -2,6 +2,12 @@
 
 NYCU 2023 Operating System Capstone
 
+## Whoami
+
+Github Account Name: @ShangHungWan
+Student ID: 311551182
+Name: 萬尚宏
+
 ## Environment
 
 - Ubuntu 22.04.2 LTS
