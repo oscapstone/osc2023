@@ -2,6 +2,12 @@
 
 NYCU 2023 Operating System Capstone
 
+## Whoami
+
+- Github Account Name: @ShangHungWan
+- Student ID: 311551182
+- Name: 萬尚宏
+
 ## Environment
 
 - Ubuntu 22.04.2 LTS
@@ -31,9 +37,9 @@ make run
 Finish Lab 1
 
 - Basic
-    - [V] Basic Initialization
-    - [V] Mini UART
-    - [V] Simple Shell
-    - [V] Mailbox
+    - [x] Basic Initialization
+    - [x] Mini UART
+    - [x] Simple Shell
+    - [x] Mailbox
 - Advanced
-    - [V] Reboot
+    - [x] Reboot
