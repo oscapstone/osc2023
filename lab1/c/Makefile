@@ -17,7 +17,7 @@ CFLAGS_BASE    = -std=c17 -pedantic-errors -Wall -Wextra -ffreestanding \
 CFLAGS_DEBUG   = -g
 CFLAGS_RELEASE = -O3 -mcpu=cortex-a53
 
-OBJS      = start main delay serial
+OBJS      = start main delay serial shell libc/string
 LD_SCRIPT = $(SRC_DIR)/linker.ld
 
 # ------------------------------------------------------------------------------
