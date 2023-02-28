@@ -14,7 +14,6 @@ void uart_init()
 {
     // change alternate function of GPIO 14,15
     register unsigned int r = *GPFSEL1;
-    // r &= ~((7 << 12) | (7 << 15)); // gpio14, gpio15
     r |= (2 << 12) | (2 << 15); // 010 => alt5
     *GPFSEL1 = r;
 
