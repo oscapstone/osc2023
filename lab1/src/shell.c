@@ -35,6 +35,7 @@ void cmd_read(char *buffer, int *size){
 
         if(c == '\n' || c == '\r'){
             uart_send_string("\r\n");
+            buffer[*size] = '\0';
             cmd_handle(buffer, size);
             break;
         }
@@ -45,6 +46,9 @@ void cmd_read(char *buffer, int *size){
                 uart_send('\b');
                 buffer[--(*size)] = '\0';
             }
+        }
+        else if(( c > 16 && c < 32) || c > 127){
+            continue;
         }
         else{
             buffer[(*size)++] = c;
@@ -57,7 +61,7 @@ void cmd_handle(char *buffer, int *size){
     if(!strcmp(buffer, "help"))          cmd_help();
     else if(!strcmp(buffer, "hello"))    cmd_hello();
     else if(!strcmp(buffer, "reboot"))   cmd_reboot();
-    else if(!strcmp(buffer, "hwinfo")){  mbox_get_HW_Revision();mbox_get_ARM_MEM();}     
+    else if(!strcmp(buffer, "hwinfo")){  mbox_get_HW_Revision();mbox_get_ARM_MEM();}
 }
 
 void cmd_help(){
@@ -69,20 +73,15 @@ void cmd_hello(){
     uart_send_string("Hello World!\r\n");
 }
 void cmd_reboot(){
+    uart_send_string("Rebooting...\r\n");
     *(volatile unsigned int*)PM_WDOG = PM_PASSWORD | 0x20;
     *(volatile unsigned int*)PM_RSTC = PM_PASSWORD | 100;
 }
 
-int strcmp(char *s1, char *s2)
-{
-    int i;
-    for (i = 0; s1[i] != '\0'; i ++)
-    {
-        if ( s1[i] != s2[i])
-        {
-            return s1[i] - s2[i];
-        }
+int strcmp(char *s1, char *s2) {
+    int i = 0;
+    while(s1[i] != '\0' && s2[i] != '\0' && s1[i] == s2[i]) {
+        i++;
     }
-
-    return  s1[i] - s2[i];
+    return s1[i] - s2[i];
 }
