@@ -1,6 +1,12 @@
 .section ".text._start"
 
 _start:
+    // Park the non-boot cores.
+
+    mrs x0, MPIDR_EL1
+    tst x0, 0x3
+    bne .Lpark_loop
+
     // Clear the .bss section.
 
     ldr x0, =_sbss
