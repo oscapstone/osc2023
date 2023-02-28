@@ -1,6 +1,8 @@
 #include "uart1.h"
 #include "shell.h"
 
+//add comment
+
 void main(){
     char input_buffer[CMD_MAX_LEN];
 
