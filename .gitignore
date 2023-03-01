@@ -1,4 +1,2 @@
 */*.img
-*/build/*.o
-*/build/*.elf
-
+*/build

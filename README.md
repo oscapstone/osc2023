@@ -11,7 +11,7 @@
 sudo apt-get install gcc-aarch64-linux-gnu
 ```
 
-* debug in  qemu-system-aarch64
+* debug in  qemu-system-aarch64 (optional)
 ```shell=
 wget https://download.qemu.org/qemu-7.2.0.tar.xz
 tar xvJf qemu-7.2.0.tar.xz
@@ -34,9 +34,13 @@ export PATH=/home/chely/qemu-7.2.0/build/:$PATH
 sudo apt-get install gdb-multiarch
 ```
 
-## Burn to raspi3b
+## Build
 ```shell=
-dd if=nctuos.img of=/dev/sdb
+make kernel8.img
 ```
 
+## Test with Qemu
+```shell= 
+qemu-system-aarch64 -M raspi3b -kernel kernel8.img -serial null -serial stdio
+```
 
