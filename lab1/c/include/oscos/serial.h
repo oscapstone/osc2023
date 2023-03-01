@@ -25,6 +25,7 @@
 #define OSCOS_SERIAL_H
 
 #include <stddef.h>
+#include <stdint.h>
 
 /// \brief The mode of the serial console.
 typedef enum {
@@ -82,5 +83,11 @@ void serial_fputs(const char *s);
 /// When calling this function, the serial console must be initialized. Also,
 /// the current thread must have acquired the lock of the serial console.
 void serial_puts(const char *s);
+
+/// \brief Writes a `uint32_t` to the serial console in hexadecimal.
+///
+/// When calling this function, the serial console must be initialized. Also,
+/// the current thread must have acquired the lock of the serial console.
+void serial_print_hex(uint32_t x);
 
 #endif
