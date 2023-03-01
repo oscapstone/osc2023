@@ -1,6 +1,10 @@
 #include "bcm2835/uart.h"
 #include "kernel/shell.h"
 
+#define PM_MGIC 0x5A000000U
+#define PM_RSTC PRPHRL(0x10001C)
+#define PM_WDOG PRPHRL(0x100024)
+
 #define SBUF_SIZE 0x100
 
 #define sbuf_empty(x) ((x)->i == (x)->o)
@@ -53,8 +57,14 @@ static void shell_exec(char * cmd) {
     } else if (!strcmp(cmd, "help")) {
         uart_puts("help:    print this help menu\n");
         uart_puts("hello:   print Hello World!\n");
+        uart_puts("reboot:  reboot the device\n");
     } else if (!strcmp(cmd, "hello")) {
         uart_puts("Hello World!\n");
+    } else if (!strcmp(cmd, "reboot")) {
+        uart_puts("rebooting...\n");
+        *PM_RSTC = PM_MGIC | 0x20;
+        *PM_WDOG = PM_MGIC | 100;
+        do {/* wait for rebooting */} while (1);
     } else {
         uart_puts("command not found: ");
         uart_puts(cmd);
