@@ -26,6 +26,7 @@ typedef struct {
 #define AUX_MU_IO_REG_TRANSMIT_DATA_WRITE ((uint32_t)0xff)
 #define AUX_MU_IO_REG_RECEIVE_DATA_READ ((uint32_t)0xff)
 #define AUX_MU_LSR_REG_DATA_READY ((uint32_t)0x1)
+#define AUX_MU_LSR_REG_TRANSMITTER_IDLE ((uint32_t)0x40)
 #define AUX_MU_LSR_REG_TRANSMITTER_EMPTY ((uint32_t)0x20)
 
 #endif

@@ -60,6 +60,12 @@ void serial_unlock(void);
 /// \param mode The mode. Must be `SM_TEXT` or `SM_BINARY`.
 void serial_set_mode(SerialMode mode);
 
+/// \brief Waits until all characters in the transmit FIFO have been sent.
+///
+/// When calling this function, the serial console must be initialized. Also,
+/// the current thread must have acquired the lock of the serial console.
+void serial_flush(void);
+
 /// \brief Reads a character from the serial console.
 ///
 /// When calling this function, the serial console must be initialized. Also,

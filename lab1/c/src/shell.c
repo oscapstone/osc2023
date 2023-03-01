@@ -44,9 +44,8 @@ static void _shell_do_cmd_hello(void) {
 }
 
 noreturn static void _shell_do_cmd_reboot(void) {
-  reset(1);
-  for (;;)
-    ;
+  serial_lock();
+  reboot();
 }
 
 static void _shell_cmd_not_found(const char *const cmd) {
