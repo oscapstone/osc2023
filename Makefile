@@ -1,6 +1,6 @@
 export PATH := /usr/local/opt/llvm/bin:$(PATH)
 
-SRC := $(wildcard kernel/*.c)
+SRC := $(wildcard */*.c)
 OBJ := $(SRC:.c=.o) a.o
 
 IMG := kernel8.img
@@ -12,6 +12,7 @@ LDF := -m aarch64elf -nostdlib -T linker.ld
 CPU := cortex-a53
 
 CFLAGS := --target=$(ARC) -mcpu=$(CPU)
+CINCLD := -I ./include
 
 all: clean $(IMG)
 
@@ -31,4 +32,4 @@ clean:
 	rm -rf $(ELF) $(IMG) $(OBJ)
 
 run:
-	@qemu-system-aarch64 -M raspi3b -kernel kernel8.img -display none -d in_asm
+	@qemu-system-aarch64 -M raspi3b -kernel kernel8.img -serial null -serial stdio
