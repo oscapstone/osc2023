@@ -5,6 +5,7 @@ SECTIONS
     *(.text.boot)
     *(.text)
   }
+  .rodata : { *(.rodata.*) }
   .bss : {
     __sbss = .;
     *(.bss)
