@@ -1,4 +1,4 @@
-.section ".text"
+.section ".text.boot"
 
 .global _start
 
@@ -14,6 +14,9 @@ _start:
     // set stack pointer
     LDR     x1, =_start
     MOV     sp, x1
+
+    // start kernel, this call should not return
+    BL      start_kernel
 
     wfe
     b _start

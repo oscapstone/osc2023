@@ -1,7 +1,10 @@
 SECTIONS
 {
   . = 0x80000;
-  .text : { *(.text) }
+  .text : {
+    *(.text.boot)
+    *(.text)
+  }
   .bss : {
     __sbss = .;
     *(.bss)

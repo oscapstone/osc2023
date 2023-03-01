@@ -1,6 +1,7 @@
 export PATH := /usr/local/opt/llvm/bin:$(PATH)
 
-OBJ := a.o
+SRC := $(wildcard kernel/*.c)
+OBJ := $(SRC:.c=.o) a.o
 
 IMG := kernel8.img
 ELF := $(IMG:.img=.elf)
@@ -22,6 +23,9 @@ $(ELF): $(OBJ)
 
 a.o: a.S
 	clang $(CFLAGS) -c a.S
+
+%.o: %.c
+	clang $(CFLAGS) $(CINCLD) -c $< -o $@
 
 clean:
 	rm -rf $(ELF) $(IMG) $(OBJ)
