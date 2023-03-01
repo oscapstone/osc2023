@@ -81,11 +81,7 @@ uint64_t mbox_get_arm_memory_info(uint32_t *base_address, uint32_t *size)
     mail_box[6] = 0;                    // value buffer
     mail_box[7] = TAGS_END;
     // tags end
-    mailbox_call( MAILBOX_CH_PROP, mail_box );
-
-    *base_address = mail_box[5];
-    *size = mail_box[6];
-
+    
     if ( mailbox_call( MAILBOX_CH_PROP, mail_box ) )
     {
         *base_address = mail_box[5];
