@@ -1,7 +1,7 @@
-#ifndef _REBOOT_H
-#define _REBOOT_H
+#ifndef REBOOT_H
+#define REBOOT_H
 
-void reset(int tick);
-void cancel_reset();
+void reset(int n_tick);
+void cancel_reset(void);
 
-#endif
+#endif /* REBOOT_H */

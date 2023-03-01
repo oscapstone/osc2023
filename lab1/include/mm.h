@@ -1,5 +1,5 @@
-#ifndef	_MM_H
-#define	_MM_H
+#ifndef	MM_H
+#define	MM_H
 
 #define PAGE_SHIFT	 		    12
 #define TABLE_SHIFT 			9
@@ -14,6 +14,6 @@
 
 void memzero(unsigned long src, unsigned long n);
 
-#endif
+#endif /* __ASSEMBLER__ */
 
-#endif  /*_MM_H */
+#endif /* MM_H */

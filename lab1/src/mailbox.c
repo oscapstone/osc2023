@@ -2,49 +2,64 @@
 #include "mailbox.h"
 #include "mini_uart.h"
 
-int mailbox_call (volatile unsigned int *mailbox) {
-    unsigned int msg = ((unsigned long)mailbox & ~0xF) | (0x8 & 0xF);
-    while (*MAILBOX_STATUS & MAILBOX_FULL) ;
+/*
+ * Make a mailbox call. Returns 0 on success.
+ */
+int mailbox_call(volatile unsigned int *mailbox)
+{
+    unsigned int msg =
+                    ((unsigned long)mailbox & ~0xF) | (MAILBOX_CH_PROP & 0xF);
+
+    /*
+     * Waits until write is available then writes the address of our message
+     * to the mailbox with channel identifier.
+     */
+    while (*MAILBOX_STATUS & MAILBOX_FULL) {}
     *MAILBOX_WRITE = msg;
+
     while (1) {
+        /*
+         * Waits for a response and checks if it is a response of our message.
+         */
         while (*MAILBOX_STATUS & MAILBOX_EMPTY) {}
         if (msg == *MAILBOX_READ) {
-            return mailbox[1];
+            return (mailbox[1] != MAILBOX_REQUEST_SUCCEED);
         }
     }
+    return 1;
 }
 
-void get_board_revision ()
+void get_board_revision(void)
 {
     volatile unsigned int __attribute__((aligned(16))) mailbox[7];
-    mailbox[0] = 7 * 4;
-    mailbox[1] = REQUEST_CODE;
-    mailbox[2] = GET_BOARD_REVISION;
-    mailbox[3] = 4;  // response length
-    mailbox[4] = TAG_REQUEST_CODE;
-    mailbox[5] = 0;  // receive buffer
-    mailbox[6] = END_TAG;
+    mailbox[0] = 7 * 4;                       // Length of the message
+    mailbox[1] = MAILBOX_REQUEST_CODE;
+    mailbox[2] = MAILBOX_GET_BOARD_REVISION;
+    mailbox[3] = 4;                           // Buffer size
+    mailbox[4] = MAILBOX_TAG_REQUEST_CODE;
+    mailbox[5] = 0;                           // Clears output buffer
+    mailbox[6] = MAILBOX_END_TAG;
 
-    if (mailbox_call(mailbox) == REQUEST_SUCCEED) {
+    if (mailbox_call(mailbox) == 0) {
         uart_send_string("Board Revision:\t\t");
         uart_send_hex(mailbox[5]);
         uart_send_string("\r\n");
     }
 }
 
-void get_arm_memory ()
+void get_arm_memory(void)
 {
     volatile unsigned int __attribute__((aligned(16))) mailbox[8];
-    mailbox[0] = 8 * 4;
-    mailbox[1] = REQUEST_CODE;
-    mailbox[2] = GET_ARM_MEMORY;
-    mailbox[3] = 8;  // response length
-    mailbox[4] = TAG_REQUEST_CODE;
-    mailbox[5] = 0;  // receive buffer
-    mailbox[6] = 0;  // receive buffer
-    mailbox[7] = END_TAG;
+    mailbox[0] = 8 * 4;                       // Length of the message
+    mailbox[1] = MAILBOX_REQUEST_CODE;
+    mailbox[2] = MAILBOX_GET_ARM_MEMORY;
+    mailbox[3] = 8;                           // Buffer size
+    mailbox[4] = MAILBOX_TAG_REQUEST_CODE;
+    mailbox[5] = 0;                           // Clears output buffer
+    mailbox[6] = 0;                           // Clears output buffer
+    mailbox[7] = MAILBOX_END_TAG;
 
-    if (mailbox_call(mailbox) == REQUEST_SUCCEED) {
+    if (mailbox_call(mailbox) == 0) {
         uart_send_string("Memory Base Address:\t");
         uart_send_hex(mailbox[5]);
         uart_send_string("\r\n");

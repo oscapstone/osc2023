@@ -1,6 +1,6 @@
-#ifndef _SHELL_H
-#define _SHELL_H
+#ifndef SHELL_H
+#define SHELL_H
 
-void shell_loop();
+void shell_loop(void);
 
-#endif
+#endif /* SHELL_H */

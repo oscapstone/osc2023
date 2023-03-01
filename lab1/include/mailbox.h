@@ -1,7 +1,7 @@
-#ifndef _MAILBOX_H
-#define _MAILBOX_H
+#ifndef MAILBOX_H
+#define MAILBOX_H
 
-void get_board_revision();
-void get_arm_memory();
+void get_board_revision(void);
+void get_arm_memory(void);
 
-#endif
+#endif /* MAILBOX_H */
