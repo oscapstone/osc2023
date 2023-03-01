@@ -97,7 +97,9 @@ void shellStart()
         if (!strcmp(command, "reboot"))
         {
             uart_puts("Start reboot...\n");
-            reset(1);
+            reset(100);
+            while (1)
+                ;
         }
         if (!strcmp(command, "mailbox"))
         {
