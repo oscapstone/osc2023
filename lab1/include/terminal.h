@@ -5,6 +5,6 @@
 void terminal_run(void);
 
 /// Call commands
-int command_exec(const char*);
+int command_exec(const char *);
 
-#endif //TERNINAL_H
+#endif // TERNINAL_H

@@ -6,8 +6,8 @@
 #ifndef STR_H
 #define STR_H
 
-int strcmp(const char*, const char*);
-int strlen(const char*);
-void* memset(void*, char, unsigned int);
+int strcmp(const char *, const char *);
+int strlen(const char *);
+void *memset(void *, char, unsigned int);
 
 #endif // STR_H
