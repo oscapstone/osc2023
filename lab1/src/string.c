@@ -1,14 +1,14 @@
 
-int strcmp(char* a,char* b)
+int strcmp(char *a, char *b)
 {
-	while(*a)
-	{
-		if(*a != *b)
-		{
-			break;
-		}
-		a++;
-		b++;
-	}
-	return *a-*b;
+    while (*a)
+    {
+        if (*a != *b)
+        {
+            break;
+        }
+        a++;
+        b++;
+    }
+    return *a - *b;
 }
