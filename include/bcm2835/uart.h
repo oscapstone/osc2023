@@ -17,5 +17,6 @@ void uart_init();
 char uart_recv();
 void uart_send(char c);
 void uart_puts(char * s);
+void uart_pu32h(unsigned int n);
 
 #endif

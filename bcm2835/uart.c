@@ -58,3 +58,12 @@ void uart_puts(char * s) {
         uart_send(*s++);
     }
 }
+
+void uart_pu32h(unsigned int n) {
+    uart_puts("0x");
+    unsigned int i = 32;
+    while (i) {
+        i -= 4;
+        uart_send("0123456789ABCDEF"[(n >> i) & 0xFU]);
+    }
+}
