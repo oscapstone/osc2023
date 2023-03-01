@@ -1,6 +1,9 @@
 #include "oscos/shell.h"
 
+#include <stdnoreturn.h>
+
 #include "oscos/libc/string.h"
+#include "oscos/reset.h"
 #include "oscos/serial.h"
 
 #define MAX_CMD_LEN 78
@@ -28,8 +31,9 @@ static size_t _shell_read_cmd(char *const buf, const size_t n) {
 
 static void _shell_do_cmd_help(void) {
   serial_lock();
-  serial_puts("help  : print this help menu\n"
-              "hello : print Hello World!");
+  serial_puts("help   : print this help menu\n"
+              "hello  : print Hello World!\n"
+              "reboot : reboot the device");
   serial_unlock();
 }
 
@@ -37,6 +41,12 @@ static void _shell_do_cmd_hello(void) {
   serial_lock();
   serial_puts("Hello World!");
   serial_unlock();
+}
+
+noreturn static void _shell_do_cmd_reboot(void) {
+  reset(1);
+  for (;;)
+    ;
 }
 
 static void _shell_cmd_not_found(const char *const cmd) {
@@ -64,6 +74,8 @@ void run_shell(void) {
       _shell_do_cmd_help();
     } else if (strcmp(cmd_buf, "hello") == 0) {
       _shell_do_cmd_hello();
+    } else if (strcmp(cmd_buf, "reboot") == 0) {
+      _shell_do_cmd_reboot();
     } else {
       _shell_cmd_not_found(cmd_buf);
     }
