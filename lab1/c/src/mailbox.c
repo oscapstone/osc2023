@@ -1,6 +1,10 @@
 #include "oscos/bcm2837/mailbox.h"
 
+#include "oscos/bcm2837/peripheral_memory_barrier.h"
+
 void mailbox_call(uint32_t message[]) {
+  PERIPHERAL_WRITE_BARRIER();
+
   const uint32_t mailbox_write_data =
       (uint32_t)(uintptr_t)message |
       MAILBOX_READ_WRITE_CHAN_PROPERTY_TAGS_ARM_TO_VC;
@@ -17,4 +21,6 @@ void mailbox_call(uint32_t message[]) {
     if (mailbox_write_data == mailbox_read_data)
       break;
   }
+
+  PERIPHERAL_READ_BARRIER();
 }
