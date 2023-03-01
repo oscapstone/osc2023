@@ -20,8 +20,8 @@ typedef struct {
 
 #define MAILBOX_READ_WRITE_CHAN_PROPERTY_TAGS_ARM_TO_VC ((uint32_t)8)
 
-#define MAILBOX_STATUS_EMPTY_MASK 0x40000000
-#define MAILBOX_STATUS_FULL_MASK 0x80000000
+#define MAILBOX_STATUS_EMPTY_MASK ((uint32_t)0x40000000)
+#define MAILBOX_STATUS_FULL_MASK ((uint32_t)0x80000000)
 
 void mailbox_call(uint32_t message[]);
 

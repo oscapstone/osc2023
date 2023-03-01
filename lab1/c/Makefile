@@ -13,7 +13,7 @@ CPPFLAGS_BASE = -Iinclude
 ASFLAGS_DEBUG = -g
 
 CFLAGS_BASE    = -std=c17 -pedantic-errors -Wall -Wextra -ffreestanding \
-                 -mno-outline-atomics
+                 -mno-outline-atomics -mstrict-align
 CFLAGS_DEBUG   = -g
 CFLAGS_RELEASE = -O3 -mcpu=cortex-a53
 
