@@ -35,6 +35,7 @@ void cmd_read(char *buffer, int *size){
 
         if(c == '\n' || c == '\r'){
             uart_send_string("\r\n");
+            buffer[(*size)] = '\0';
             cmd_handle(buffer, size);
             break;
         }
@@ -45,6 +46,9 @@ void cmd_read(char *buffer, int *size){
                 uart_send('\b');
                 buffer[--(*size)] = '\0';
             }
+        }
+        else if((c > 16 && c < 32) || c > 127){
+            continue;
         }
         else{
             buffer[(*size)++] = c;
@@ -65,12 +69,16 @@ void cmd_help(){
     uart_send_string("hello\t: print Hello World!\r\n");
     uart_send_string("reboot\t: reboot the device\r\n");
 }
+
 void cmd_hello(){
     uart_send_string("Hello World!\r\n");
 }
+
 void cmd_reboot(){
-    *(volatile unsigned int*)PM_WDOG = PM_PASSWORD | 0x20;
-    *(volatile unsigned int*)PM_RSTC = PM_PASSWORD | 100;
+    uart_send_string("Rebooting..\r\n");
+    *(volatile unsigned int*)PM_WDOG = PM_PASSWORD | 5000;
+    *(volatile unsigned int*)PM_RSTC = PM_PASSWORD | 0x20;
+    while(1){}
 }
 
 int strcmp(char *s1, char *s2)

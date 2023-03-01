@@ -5,8 +5,8 @@
 .globl _start
 _start:
 	mrs	x0, mpidr_el1		
-	and	x0, x0,#0xFF		// Check processor id
-	cbz	x0, master		// Hang for all non-primary CPU
+	and	x0, x0, #0xFF		// Check processor id
+	cbz	x0, master			// Hang for all non-primary CPU
 	b	proc_hang
 
 proc_hang: 
@@ -16,8 +16,19 @@ master:
 	adr	x0, bss_begin
 	adr	x1, bss_end
 	sub	x1, x1, x0
-	bl 	memzero
+	bl 	memzero				// Accept two arguments: start address(bss_begin), section size(bss_end - bss_begin)
 
-	mov	sp, #LOW_MEMORY 
-	bl	main
-	b 	proc_hang		// should never come here
+	mov	sp, #LOW_MEMORY 	// Set stack pointer(4MB), LOW_MEMORY is defined in mm.h
+	bl	main				// "main" is defined in main.c
+	b 	proc_hang			// !!! Should never come here !!!
+
+/*
+mrs: load value from system register to general register
+and: "And" logical operator
+cbz: branch if equal to zero
+b:   branch
+adr: load relative address from label to register
+sub: subtract two registers' value
+bl:  branch and link, store return address
+mov: move value from constant or register to register
+*/
