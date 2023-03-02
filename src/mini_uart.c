@@ -4,7 +4,7 @@
 
 void uart_send (char c){
 	while(1) {
-		if(get32(AUX_MU_LSR_REG)&0x20) 
+		if(get32(AUX_MU_LSR_REG)&0x20) // hang until can read
 			break;
 	}
 	put32(AUX_MU_IO_REG,c);

@@ -69,7 +69,7 @@ void get_arm_memory(arm_info* arm_mem){
     mbox[0] = 8*4;
     mbox[1] = REQUEST_CODE;
     mbox[2] = GET_ARM_MEMORY;
-    mbox[3] = 4;
+    mbox[3] = 4*2;
     mbox[4] = TAG_REQUEST_CODE;
     mbox[5] = 0;
     mbox[6] = 0;
