@@ -7,7 +7,7 @@
 void kernel_main(void)
 {
 	char c;
-	int i;
+	int i = 0;
 	char command[COMMAND_BUFFER];
 
 	uart_init();

@@ -18,9 +18,10 @@ void shell_main(char *command)
     }
     else if (!strcmp(command, "reboot"))
     {
-        // TODO: Reboot
         uart_send_string("\n");
-        uart_send_string("Rebooting in 3 seconds");
+        uart_send_string("Rebooting in 3 seconds\n");
         reset(3 << 16);
+        while (1)
+            ;
     }
 }
