@@ -2,7 +2,7 @@
 
 | Github Account | Student ID | Name          |
 |----------------|------------|---------------|
-| pin-chem | 109550206    | Pin-Shao Chen |
+| pin-chen | 109550206    | Pin-Shao Chen |
 
 ## Requirements
 
