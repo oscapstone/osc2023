@@ -24,9 +24,9 @@ int mbox_call(unsigned int* mbox, unsigned char channel) {
 
 
 void mbox_get_board_revision() {
-    unsigned int __attribute__((aligned(16))) mbox[7];
+    unsigned int __attribute__((aligned(16))) mbox[7]; 
 
-    mbox[0] = 7 * 4;  // buffer size in bytes
+    mbox[0] = 7 * 4;  // buffer size in bytes (7*32/8)
     mbox[1] = MBOX_CODE_BUF_REQ;
     // tags begin
     mbox[2] = MBOX_TAG_GET_BOARD_REVISION;  // tag identifier
@@ -35,7 +35,7 @@ void mbox_get_board_revision() {
     mbox[5] = 0;                            // value buffer
     mbox[6] = 0x0;                          // end tag
     // tags end
-    mbox_call(mbox, 8);
+    mbox_call(mbox, 8); //use channel 8
     uart_send_string("Board Revision: ");
     uart_hex(mbox[5]);
     uart_send_string("\n");

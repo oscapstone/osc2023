@@ -5,13 +5,14 @@
 void shell_init(){
 	uart_init();
 	uart_send_string("Hello! Welcome to Chely's system.\n That's demo Lab1.\n");
+	uart_flush();
 }
 
 
 void shell_input(char *cmd){
 	uart_send_string("\r> ");
 	cmd[0] = '\0';
-	int end =0, idx = 0;
+	int end =0; 
 	char c;
 	char s[2];
 
@@ -43,7 +44,7 @@ void shell_command(char *cmd){
 	}
 	else if (str_compare(cmd, "reboot")){
 		uart_send_string("rebooting ............zzzzzzzzzz\n");
-		reset();
+		reset(3000);
 		while(1); //prevent sth error.
 	}
 	else if (str_compare(cmd, "mailbox")){
@@ -53,9 +54,8 @@ void shell_command(char *cmd){
 }
 
 	else{
-		uart_send_string("Command ");
 		uart_send_string(cmd);
-		uart_send_string(" Not found!\n");
+		uart_send_string(": Command Not found!\n");
 	}
 
 }

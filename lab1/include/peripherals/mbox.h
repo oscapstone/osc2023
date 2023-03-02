@@ -20,7 +20,7 @@
 
 // tag
 #define MBOX_TAG_GET_BOARD_REVISION     0x00010002
-#define MBOX_TAG_GET_ARM_MEMORY		0x00010005
+#define MBOX_TAG_GET_ARM_MEMORY			0x00010005
 #define MBOX_TAG_GET_VC_MEMORY          0x00010006
 #define MBOX_TAG_SET_CLOCK_RATE         0x00038002
 #define MBOX_TAG_SET_PHY_WIDTH_HEIGHT   0x00048003
@@ -31,17 +31,6 @@
 #define MBOX_TAG_ALLOCATE_BUFFER        0x00040001
 #define MBOX_TAG_GET_PITCH              0x00040008
 
-
-//
-#define MBOX_CH_POWER   0
-#define MBOX_CH_FB      1
-#define MBOX_CH_VUART   2
-#define MBOX_CH_VCHIQ   3
-#define MBOX_CH_LEDS    4
-#define MBOX_CH_BTNS    5
-#define MBOX_CH_TOUCH   6
-#define MBOX_CH_COUNT   7
-#define MBOX_CH_PROP    8
 
 
 #endif

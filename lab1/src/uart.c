@@ -12,7 +12,7 @@ void uart_init()
     *AUX_MU_LCR = 3;       // 8 bits
     *AUX_MU_MCR = 0;
     *AUX_MU_IER = 0;
-    *AUX_MU_IIR = 0xc6;    // disable interrupts
+    *AUX_MU_IIR = 6;    // disable interrupts
     *AUX_MU_BAUD = 270;    // 115200 baud
     /* map UART1 to GPIO pins */
     r=*GPFSEL1;
@@ -70,10 +70,17 @@ void uart_hex(unsigned int d) {
     int c;
     for(c=28;c>=0;c-=4) {
         // get highest tetrad
-        n=(d>>c)&0xF;
+        n=(d>>c)&0xF; // 1111 
         // 0-9 => '0'-'9', 10-15 => 'A'-'F'
-        n+=n>9?0x37:0x30;
+        n+=n>9?0x37:0x30; //>9 +55  <9 +48 to ascii 0-9
         uart_send(n);
     }
 }
 
+
+//flush
+void uart_flush(){
+    while ( *AUX_MU_LSR & 0x01 ){ //if data exist 
+        char r = *AUX_MU_IO; //clean
+    }
+}
