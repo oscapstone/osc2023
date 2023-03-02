@@ -2,7 +2,7 @@ all: kernel8.img
 
 ARMGNU ?= aarch64-linux-gnu
 
-COPS = -Wall -nostdlib -nostartfiles -ffreestanding -Iinclude -mgeneral-regs-only
+COPS = -g -Wall -nostdlib -nostartfiles -ffreestanding -Iinclude -mgeneral-regs-only
 ASMOPS = -Iinclude
 
 BUILD_DIR = build
@@ -35,4 +35,4 @@ kernel8.img: $(SRC_DIR)/linker.ld $(OBJ_FILES)
 
 test:
 	#qemu-system-aarch64 -M raspi3b -kernel kernel8.img -display none -d in_asm
-	qemu-system-aarch64 -M raspi3b -kernel kernel8.img -display none -S -s
+	qemu-system-aarch64 -M raspi3b -kernel kernel8.img -display none -S -s -serial null -serial stdio
