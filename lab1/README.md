@@ -1,6 +1,6 @@
 # [2023 OSC] Lab1
 
-[Sepc](https://oscapstone.github.io/labs/lab1.html)
+[Spec](https://oscapstone.github.io/labs/lab1.html)
 
 ## Basic Initialization
 
