@@ -37,6 +37,8 @@ void mini_uart_gets(char *buffer, int size) {
         char c = mini_uart_getc();
         if (c == '\r' || c == '\n') {
             mini_uart_puts("\r\n"); break;
+        } else if (c < 31 || c > 128) {
+            continue;
         }
         mini_uart_putc(c); *p++ = c;
     }

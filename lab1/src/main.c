@@ -1,5 +1,6 @@
 #include "muart.h"
 #include "utils.h"
+#include "reboot.h"
 #include "mailbox.h"
 
 #define SIZE 64
@@ -21,22 +22,27 @@ void hello(void) {
 }
 
 void reboot(void) {
-    
+    mini_uart_puts("rebooting...\r\n");
+    reset(100);
 }
 
-void message(void) {
-    mini_uart_puts("command not found\r\n");
+void message(char *s) {
+    mini_uart_puts(s);
+    mini_uart_puts(" command not found\r\n");
 }
 
 int main(void) {
     mini_uart_init();
+    mini_uart_puts("\r\nBasic Shell\r\n");
 
     while (1) {
         char buffer[SIZE];
         mini_uart_puts("# ");
         mini_uart_gets(buffer, SIZE);
         
-        if (strcmp(buffer, "help") == 0) {
+        if (strcmp(buffer, "\0") == 0) {
+            mini_uart_puts("\r\n");
+        } else if (strcmp(buffer, "help") == 0) {
             usage();
         } else if (strcmp(buffer, "info") == 0) {
             info();
@@ -45,7 +51,7 @@ int main(void) {
         } else if (strcmp(buffer, "reboot") == 0) {
             reboot();
         } else {
-            message();
+            message(buffer);
         }
     }
 
