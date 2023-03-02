@@ -1,25 +1,39 @@
 #ifndef _MINI_UART_H
 #define _MINI_UART_H
 
-#define AUX_BASE        0x3F000000
-#define AUX_ENABLES     (AUX_BASE+0x00215004)
-#define AUX_MU_IO_REG   (AUX_BASE+0x00215040)
-#define AUX_MU_IER_REG  (AUX_BASE+0x00215044)
-#define AUX_MU_IIR_REG  (AUX_BASE+0x00215048)
-#define AUX_MU_LCR_REG  (AUX_BASE+0x0021504C)
-#define AUX_MU_MCR_REG  (AUX_BASE+0x00215050)
-#define AUX_MU_LSR_REG  (AUX_BASE+0x00215054)
-#define AUX_MU_MSR_REG  (AUX_BASE+0x00215058)
-#define AUX_MU_SCRATCH  (AUX_BASE+0x0021505C)
-#define AUX_MU_CNTL_REG (AUX_BASE+0x00215060)
-#define AUX_MU_STAT_REG (AUX_BASE+0x00215064)
-#define AUX_MU_BAUD_REG (AUX_BASE+0x00215068)
+#include "mmio.h"
 
-#define GPFSEL1         (AUX_BASE+0x00200004)
-#define GPSET0          (AUX_BASE+0x0020001C)
-#define GPCLR0          (AUX_BASE+0x00200028)
-#define GPPUD           (AUX_BASE+0x00200094)
-#define GPPUDCLK0       (AUX_BASE+0x00200098)
+#define AUX_ENABLE      ((volatile unsigned int*)(MMIO_BASE+0x00215004))
+#define AUX_MU_IO       ((volatile unsigned int*)(MMIO_BASE+0x00215040))
+#define AUX_MU_IER      ((volatile unsigned int*)(MMIO_BASE+0x00215044))
+#define AUX_MU_IIR      ((volatile unsigned int*)(MMIO_BASE+0x00215048))
+#define AUX_MU_LCR      ((volatile unsigned int*)(MMIO_BASE+0x0021504C))
+#define AUX_MU_MCR      ((volatile unsigned int*)(MMIO_BASE+0x00215050))
+#define AUX_MU_LSR      ((volatile unsigned int*)(MMIO_BASE+0x00215054))
+#define AUX_MU_MSR      ((volatile unsigned int*)(MMIO_BASE+0x00215058))
+#define AUX_MU_SCRATCH  ((volatile unsigned int*)(MMIO_BASE+0x0021505C))
+#define AUX_MU_CNTL     ((volatile unsigned int*)(MMIO_BASE+0x00215060))
+#define AUX_MU_STAT     ((volatile unsigned int*)(MMIO_BASE+0x00215064))
+#define AUX_MU_BAUD     ((volatile unsigned int*)(MMIO_BASE+0x00215068))
+
+#define GPFSEL0         ((volatile unsigned int*)(MMIO_BASE+0x00200000))
+#define GPFSEL1         ((volatile unsigned int*)(MMIO_BASE+0x00200004))
+#define GPFSEL2         ((volatile unsigned int*)(MMIO_BASE+0x00200008))
+#define GPFSEL3         ((volatile unsigned int*)(MMIO_BASE+0x0020000C))
+#define GPFSEL4         ((volatile unsigned int*)(MMIO_BASE+0x00200010))
+#define GPFSEL5         ((volatile unsigned int*)(MMIO_BASE+0x00200014))
+#define GPSET0          ((volatile unsigned int*)(MMIO_BASE+0x0020001C))
+#define GPSET1          ((volatile unsigned int*)(MMIO_BASE+0x00200020))
+#define GPCLR0          ((volatile unsigned int*)(MMIO_BASE+0x00200028))
+#define GPLEV0          ((volatile unsigned int*)(MMIO_BASE+0x00200034))
+#define GPLEV1          ((volatile unsigned int*)(MMIO_BASE+0x00200038))
+#define GPEDS0          ((volatile unsigned int*)(MMIO_BASE+0x00200040))
+#define GPEDS1          ((volatile unsigned int*)(MMIO_BASE+0x00200044))
+#define GPHEN0          ((volatile unsigned int*)(MMIO_BASE+0x00200064))
+#define GPHEN1          ((volatile unsigned int*)(MMIO_BASE+0x00200068))
+#define GPPUD           ((volatile unsigned int*)(MMIO_BASE+0x00200094))
+#define GPPUDCLK0       ((volatile unsigned int*)(MMIO_BASE+0x00200098))
+#define GPPUDCLK1       ((volatile unsigned int*)(MMIO_BASE+0x0020009C))
 
 void uart_init();
 char uart_recv();

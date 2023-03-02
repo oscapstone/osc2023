@@ -3,7 +3,8 @@
 
 void print_hello();
 void print_help();
-void print_unsupport();
+void print_unsupport(char *);
+int read_cmd(char *, int);
 void shell();
 
 #endif

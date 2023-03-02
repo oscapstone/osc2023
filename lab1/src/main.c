@@ -3,6 +3,5 @@
 
 void kernel_main() {
   uart_init();
-
   shell();
 }

@@ -1,6 +1,7 @@
 CC=clang
 CFLAGS=-mcpu=cortex-a53+nosimd --target=aarch64-rpi3-elf
 CFLAGS+=-Wall -O2 -ffreestanding -nostdinc -nostdlib -Iinclude
+ASMFLAGS=-Iinclude
 
 SRC_DIR=src
 BUILD_DIR=build

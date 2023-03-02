@@ -1,5 +1,3 @@
-#include "mm.h"
-
 .section ".text.boot"
 
 .globl _start
