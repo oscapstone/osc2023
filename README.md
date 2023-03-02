@@ -2,3 +2,7 @@
 - Github account name: GalenWang2017
 - Student ID: 311554040
 - Student name: 王璟倫
+
+---
+#### Make kernel image
+`make`
