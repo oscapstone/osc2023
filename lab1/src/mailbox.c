@@ -23,7 +23,7 @@ int mailbox_call(volatile unsigned int *mailbox)
                 */
                 while (*MAILBOX_STATUS & MAILBOX_EMPTY) { asm volatile("nop"); }
                 if (msg == *MAILBOX_READ) {
-                    return (mailbox[1] != MAILBOX_REQUEST_SUCCEED);
+                        return (mailbox[1] != MAILBOX_REQUEST_SUCCEED);
                 }
         }
         return 1;
