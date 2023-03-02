@@ -127,9 +127,10 @@ void uart_init(void)
 	 */
 	put32(AUX_MU_BAUD_REG, 270);
 
-	// TODO: what is this???
-	// Disable interrupts
-	// put32(AUX_MU_IIR_REG, 6);
+	/*
+	 * Interrupt identify no FIFO.
+	 */
+	put32(AUX_MU_IIR_REG, 6);
 
 	/*
 	 * Enables transmitter and receiver
