@@ -4,9 +4,15 @@
 |----------------|------------|---------------|
 | nigauri1215    | 0816080    | 許舒茵        |
 
-## About this repository
-- This repository is for NYCU OSDI 2023 class
+## Lab 1: Hello World
 
-## Lab
+- [Lab page](https://oscapstone.github.io/labs/lab1.html)
 
-- [Lab page](https://oscapstone.github.io/)
+## How to build
+```
+make
+```
+## How to run
+```
+make run
+```
