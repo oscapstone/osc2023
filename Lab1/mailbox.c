@@ -4,7 +4,7 @@
 void mailbox_call(unsigned int* mailbox){
     // Write the data (shifted into the upper 28 bits) combined with 
     // the channel (in the lower four bits) to the write register.
-    unsigned int r = (((unsigned long)mailbox) & ~0xf) | 8;
+    unsigned int r = (((unsigned long)mailbox) & ~0xf) | 8; //mail_ch_prop
     // & ~0xf => only "and" upper 28 bit can be saved 
     // |8 => if upper 28 is 1 => save  and ensure last 4 bit is 1
 

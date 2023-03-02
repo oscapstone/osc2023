@@ -15,6 +15,38 @@
 #define AUX_MU_STAT     ((volatile unsigned int*)(MMIO_BASE+0x00215064))
 #define AUX_MU_BAUD     ((volatile unsigned int*)(MMIO_BASE+0x00215068))
 
+/*
+
+AUX_ENABLE : Enable modules
+
+If set the mini UART is enabled. The UART will immediately start receiving data, especially if the UART1_RX line is low.
+If clear the mini UART is disabled. That also disables any mini UART register access
+
+AUX_MU_CNTL :
+
+If this bit is set the mini UART receiver is enabled.
+If this bit is clear the mini UART receiver is disabled
+
+AUX_MU_LCR : controls the line data format and gives access to the baudrate register
+
+If clear the UART works in 7-bit mode RW 0x0
+If set the UART works in 8-bit mode
+
+
+AUX_MU_MCR : controls the ‘modem’ signals.
+
+AUX_MU_IER : primarily used to enable interrupts.
+
+If this bit is set the interrupt line is asserted whenever the transmit FIFO is empty.
+If this bit is clear no transmit interrupts are generated.
+
+
+AUX_MU_IIR : shows the interrupt status.
+
+AUX_MU_BAUD : allows direct access to the 16-bit wide baudrate counter
+*/
+
+
 /**
  * Set baud rate and characteristics (115200 8N1) and map to GPIO
  */
@@ -41,7 +73,7 @@ void uart_init()
     *GPPUDCLK0 = (1 << 14) | (1 << 15);
     r = 150; while(r--) { asm volatile("nop"); }
     *GPPUDCLK0 = 0;        // flush GPIO setup
-    *AUX_MU_CNTL = 3;      // enable Tx, Rx
+    *AUX_MU_CNTL = 3;      // enable Tx, Rx // bit1:transmitter bit0:receiver
 }
 
 /**
