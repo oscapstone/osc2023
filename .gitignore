@@ -1,0 +1,5 @@
+# Ignore Output Files
+**/build
+*.o
+*.img
+*.elf
