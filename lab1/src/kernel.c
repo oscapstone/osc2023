@@ -46,7 +46,7 @@ void boot_message(){
 	uart_print("Boot Success!\r\n");
 
 	uint32_t board_revision;
-    uint64_t arm_memory_base_addr;
+    uint32_t arm_memory_base_addr;
     uint32_t arm_memory_size;
 	get_board_revision(&board_revision);
     get_ARM_memory_base_address_and_size(&arm_memory_base_addr, &arm_memory_size);
