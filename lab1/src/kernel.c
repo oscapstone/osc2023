@@ -56,7 +56,7 @@ void boot_message(){
 	uart_print("\r\n");
 
 	uart_print("arm_memory_base_addr: ");
-	uart_print_hex(arm_memory_base_addr, 64);
+	uart_print_hex(arm_memory_base_addr, 32);
 	uart_print("\r\n");
 
 	uart_print("arm_memory_size: ");

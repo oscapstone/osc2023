@@ -25,6 +25,7 @@ SECTIONS
 		_data_end = .;
 	} >RAM
 	.bss : {
+		. = ALIGN(0x8);
 		_bss_begin = .;
 		*(.bss)
 		_bss_end = .;
