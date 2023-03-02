@@ -4,6 +4,15 @@
 |----------------|------------|---------------|
 | nigauri1215    | 0816080    | 許舒茵        |
 
-## Lab 2
+## Lab 1: Hello World
 
-- [Lab page](https://oscapstone.github.io/)
+- [Lab page](https://oscapstone.github.io/labs/lab1.html)
+
+## How to build
+```
+make
+```
+## How to run
+```
+make run
+```
