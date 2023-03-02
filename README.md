@@ -1,25 +1,27 @@
-Tutorial 08 - Power management
-==============================
+# OSC2023
 
-For embedded systems, power consumption is critical. The Raspberry Pi 3 has a very sophisticated
-PM interface. You can turn each device on and off idependently. There's a catch though, the GPIO
-VCC pins are hardwired, there's no way to turn them off programatically. This means if you connect
-some devices to them, you'll have to implement a way to turn those devices off (with a transistor
-connected to a data GPIO pin for example).
+| Github Account | Student ID | Name          |
+|----------------|------------|---------------|
+| RobertttBS     | 311555026  | 謝柏陞         |
 
-Power.h, power.c
-----------------
+## Requirements
 
-The power management controller is one of the peripherals that are not emulated properly by qemu.
-Works on real hardware though.
+* Initialize rpi3 after booted by bootloader.
+* Follow UART to set up mini UART.
+* Implement a simple shell supporting the listed commands.
+* Get the hardware’s information by mailbox and print them, you should at least print board revision and ARM memory base address and size.
+* Add a <reboot> command.
 
-`power_off()` shutdowns the board to a almost zero power consumption state.
+## Build 
 
-`reset()` reboots the machine. Also handled by the PMC, and since the Raspberry Pi does not have
-a hardware reset button, it's very useful.
+```
+make
+```
 
-Main
-----
+## Test With QEMU
 
-We display a simple menu, and wait for user input. Depending on the input, we reboot the system or
-power it off.
+```
+make run
+# or 
+qemu-system-aarch64 -M raspi3b -kernel kernel8.img -serial null -serial stdio
+```
