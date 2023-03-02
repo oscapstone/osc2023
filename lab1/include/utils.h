@@ -2,5 +2,6 @@
 #define __UTILS_H__
 
 int strcmp(const char *l, const char *r);
+void printhex(int value);
 
 #endif
