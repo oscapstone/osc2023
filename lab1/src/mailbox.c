@@ -28,7 +28,7 @@ void get_board_revision(void) {
     if (mailbox_call(mailbox) == REQUEST_SUCCEED) { // message passing procedure call
         mini_uart_puts("Board Revision:\t\t");
         printhex(mailbox[5]);                       // should be 0xA020D3 for RPI3 B+
-        mini_uart_puts("\n");
+        mini_uart_puts("\r\n");
     }
 }
 
@@ -47,9 +47,9 @@ void get_arm_memory(void) {
     if (mailbox_call(mailbox) == REQUEST_SUCCEED) {
         mini_uart_puts("Memory Base Address:\t");
         printhex(mailbox[5]);
-        mini_uart_puts("\n");
+        mini_uart_puts("\r\n");
         mini_uart_puts("Memory Size:\t\t");
         printhex(mailbox[6]);
-        mini_uart_puts("\n");
+        mini_uart_puts("\r\n");
     }
 }

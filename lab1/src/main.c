@@ -5,10 +5,10 @@
 #define SIZE 64
 
 void usage(void) {
-    mini_uart_puts("help\t: print this help memu\n");
-    mini_uart_puts("info\t: print hardware's information\n");
-    mini_uart_puts("hello\t: print Hello World!\n");
-    mini_uart_puts("reboot\t: reboot the device\n");
+    mini_uart_puts("help\t: print this help memu\r\n");
+    mini_uart_puts("info\t: print hardware's information\r\n");
+    mini_uart_puts("hello\t: print Hello World!\r\n");
+    mini_uart_puts("reboot\t: reboot the device\r\n");
 }
 
 void info(void) {
@@ -17,7 +17,7 @@ void info(void) {
 }
 
 void hello(void) {
-    mini_uart_puts("Hello World!\n");
+    mini_uart_puts("Hello World!\r\n");
 }
 
 void reboot(void) {
@@ -25,7 +25,7 @@ void reboot(void) {
 }
 
 void message(void) {
-    mini_uart_puts("command not found\n");
+    mini_uart_puts("command not found\r\n");
 }
 
 int main(void) {

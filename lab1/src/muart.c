@@ -35,9 +35,10 @@ void mini_uart_gets(char *buffer, int size) {
 
     for (int i = 0; i < size - 1; i++) {
         char c = mini_uart_getc();
-        mini_uart_putc(c);
-        if (c == '\n') break;
-        *p++ = c;
+        if (c == '\r' || c == '\n') {
+            mini_uart_puts("\r\n"); break;
+        }
+        mini_uart_putc(c); *p++ = c;
     }
 
     *p = '\0';
