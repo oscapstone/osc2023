@@ -20,7 +20,19 @@ master:
 
 	mov	sp, #LOW_MEMORY 	// Set stack pointer(4MB), LOW_MEMORY is defined in mm.h
 	bl	main				// "main" is defined in main.c
-	b 	proc_hang			// !!! Should never come here !!!
+	b 	proc_hang			// !!! never come here !!!
+
+
+
+
+
+
+
+
+
+
+
+
 
 /*
 mrs: load value from system register to general register
