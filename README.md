@@ -1,8 +1,8 @@
 # OSC2023
 
-| Github Account | Student ID | Name         |
-|----------------|------------|--------------|
-| CRTao          | 311551008  | Yin-Tao Ling |
+| Github Account | Student ID | Name           |
+|----------------|------------|----------------|
+| Elmo-Lin       | B111021    | Meng-Syuan Lin |
 
 ## Requirements
 
