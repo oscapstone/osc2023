@@ -35,6 +35,13 @@ void uart_init()
     *AUX_MU_CNTL_REG = 3;      // enable TX/RX
 }
 
+char uart_getc() {
+    char r;
+    while(!(*AUX_MU_LSR_REG & 0x01)){};
+    r = (char)(*AUX_MU_IO_REG);
+    return r;
+}
+
 char uart_recv() {
     char r;
     while(!(*AUX_MU_LSR_REG & 0x01)){};

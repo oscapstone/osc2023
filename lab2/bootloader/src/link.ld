@@ -1,7 +1,9 @@
-_heap_stack_size = 8M;
+_heap_stack_size = 1M;
+_new_kernel_size = 128K;
 
 SECTIONS
 {
+    /* bootloader 0x60000, kernel 0x80000 */
     . = 0x80000;
     _start = .;
     .text : { *(.text.boot) *(.text) }
@@ -21,6 +23,8 @@ SECTIONS
         . = ALIGN(8);
         _stack_top = .;
     }
+    _kernel_start_addr = .;
+    . = . + _new_kernel_size;
     _end = .;
 
 }

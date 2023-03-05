@@ -2,6 +2,10 @@
 #include "uart1.h"
 #include "power.h"
 
+#define SHIFT_ADDR 0x100000
+
+extern char _kernel_start_addr[];
+
 struct CLI_CMDS cmd_list[CLI_MAX_CMD]=
 {
     {.command="loadimg", .help="load image via uart1"},
@@ -86,7 +90,24 @@ void do_cmd_help()
 
 void do_cmd_loadimg()
 {
-    uart_puts("loadimg - TBD\r\n");
+    char c;
+    unsigned long long kernel_size = 0;
+    volatile char* kernel_start = (char*) (&_kernel_start_addr);
+    uart_puts("Please upload the image file.\r\n");
+    for (int i=0; i<8; i++)
+    {
+        c = uart_getc();
+        kernel_size += c<<(i*8);
+    }
+    for (int i=0; i<kernel_size; i++)
+    {
+        c = uart_getc();
+        kernel_start[i] = c;
+    }
+    uart_puts("Image file downloaded successfully.\r\n");
+    uart_puts("Point to new kernel ...\r\n");
+
+    ((void (*)(void))kernel_start)();
 }
 
 void do_cmd_reboot()

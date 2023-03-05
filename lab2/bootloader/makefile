@@ -31,8 +31,11 @@ all: bootloader.img
 clean:
 	rm -rf $(BUILD_DIR) *.img
 
-run:
+run_std:
 	qemu-system-aarch64 -M raspi3b -kernel bootloader.img -serial null -serial stdio
+
+run_pty:
+	qemu-system-aarch64 -M raspi3b -kernel bootloader.img -serial null -serial pty
 
 debug:
 	qemu-system-aarch64 -M raspi3b -kernel bootloader.img -display none -S -s
