@@ -3,7 +3,7 @@ _new_kernel_size = 128K;
 
 SECTIONS
 {
-    /* bootloader 0x60000, kernel 0x80000 */
+    /* bootloader 0x60000(config.txt), kernel 0x80000 */
     . = 0x80000;
     _start = .;
     .text : { *(.text.boot) *(.text) }

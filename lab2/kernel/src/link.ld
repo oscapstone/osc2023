@@ -1,15 +1,27 @@
+_heap_stack_size = 1M;
+
 SECTIONS
 {
+    /* bootloader 0x60000, kernel 0x80000 */
     . = 0x80000;
+    _start = .;
     .text : { *(.text.boot) *(.text) }
     .rodata : { *(.rodata) }
     .data : { *(.data) }
     .bss : {
-        . = ALIGN(16);
-        __bss_start = .;
+        _bss_top = .;
         *(.bss) 
-        __bss_end = .;
     }
+    _bss_size = SIZEOF(.bss) >> 3;
+    .heap : {
+        . = ALIGN(8);
+        _heap_top = .;
+    } 
+    . = . + _heap_stack_size;
+    .stack : {
+        . = ALIGN(8);
+        _stack_top = .;
+    }
+    _end = .;
+
 }
-# 64bit
-__bss_size = (__bss_end - __bss_start) >> 3;

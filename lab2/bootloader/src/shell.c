@@ -1,6 +1,7 @@
 #include "shell.h"
 #include "uart1.h"
 #include "power.h"
+#include "utils.h"
 
 #define SHIFT_ADDR 0x100000
 
@@ -12,20 +13,6 @@ struct CLI_CMDS cmd_list[CLI_MAX_CMD]=
     {.command="help", .help="print all available commands"},
     {.command="reboot", .help="reboot the device"}
 };
-
-int cli_cmd_strcmp(const char* p1, const char* p2)
-{
-    const unsigned char *s1 = (const unsigned char*) p1;
-    const unsigned char *s2 = (const unsigned char*) p2;
-    unsigned char c1, c2;
-
-    do {
-        c1 = (unsigned char) *s1++;
-        c2 = (unsigned char) *s2++;
-        if ( c1 == '\0' ) return c1 - c2;
-    } while ( c1 == c2 );
-    return c1 - c2;
-}
 
 void cli_cmd_clear(char* buffer, int length)
 {
@@ -58,11 +45,11 @@ void cli_cmd_read(char* buffer)
 
 void cli_cmd_exec(char* buffer)
 {
-    if (cli_cmd_strcmp(buffer, "loadimg") == 0) {
+    if (strcmp(buffer, "loadimg") == 0) {
         do_cmd_loadimg();
-    } else if (cli_cmd_strcmp(buffer, "help") == 0) {
+    } else if (strcmp(buffer, "help") == 0) {
         do_cmd_help();
-    } else if (cli_cmd_strcmp(buffer, "reboot") == 0) {
+    } else if (strcmp(buffer, "reboot") == 0) {
         do_cmd_reboot();
     } else if (*buffer){
         uart_puts(buffer);
