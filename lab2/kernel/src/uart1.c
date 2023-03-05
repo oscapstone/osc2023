@@ -1,6 +1,7 @@
 #include "bcm2837/rpi_gpio.h"
 #include "bcm2837/rpi_uart1.h"
 #include "uart1.h"
+#include "utils.h"
 
 void uart_init()
 {
@@ -54,12 +55,21 @@ void uart_send(unsigned int c) {
     *AUX_MU_IO_REG = c;
 }
 
-void uart_puts(char *str) {
+int uart_puts(char *fmt, ...) {
+    __builtin_va_list args;
+    __builtin_va_start(args, fmt);
+    char buf[VSPRINT_MAX_BUF_SIZE];
+
+    char *str = (char*)buf;
+    int count = vsprintf(str,fmt,args);
+
     while(*str) {
         if(*str=='\n')
             uart_send('\r');
         uart_send(*str++);
     }
+    __builtin_va_end(args);
+    return count;
 }
 
 void uart_2hex(unsigned int d) {
