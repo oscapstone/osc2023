@@ -1,5 +1,5 @@
 _heap_stack_size = 1M;
-_new_kernel_size = 128K;
+_new_kernel_size = 256K;
 
 SECTIONS
 {
@@ -23,7 +23,8 @@ SECTIONS
         . = ALIGN(8);
         _stack_top = .;
     }
-    _kernel_start_addr = .;
+    . = 0x3000000;
+    _kernel_start_addr = 0x3000000;
     . = . + _new_kernel_size;
     _end = .;
 

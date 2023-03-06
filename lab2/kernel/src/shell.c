@@ -59,8 +59,9 @@ void cli_cmd_exec(char* buffer)
 
 void cli_print_banner()
 {
+    uart_puts("\r\n");
     uart_puts("=======================================\r\n");
-    uart_puts("  Welcome to NYCU-OSC 2023 Lab1 Shell  \r\n");
+    uart_puts("  Welcome to NYCU-OSC 2023 Lab2 Shell  \r\n");
     uart_puts("=======================================\r\n");
 }
 

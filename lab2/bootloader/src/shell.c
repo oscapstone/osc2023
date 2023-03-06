@@ -59,6 +59,7 @@ void cli_cmd_exec(char* buffer)
 
 void cli_print_banner()
 {
+    uart_puts("\r\n");
     uart_puts("=======================================\r\n");
     uart_puts("    NYCU-OSC 2023 Lab2 - Bootloader    \r\n");
     uart_puts("=======================================\r\n");
