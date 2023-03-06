@@ -1,14 +1,20 @@
+#include <stddef.h>
 #include "shell.h"
 #include "uart1.h"
 #include "mbox.h"
 #include "power.h"
+#include "cpio.h"
 #include "utils.h"
+
+#define CLI_MAX_CMD 6
 
 struct CLI_CMDS cmd_list[CLI_MAX_CMD]=
 {
+    {.command="cat", .help="concatenate files and print on the standard output"},
     {.command="hello", .help="print Hello World!"},
     {.command="help", .help="print all available commands"},
     {.command="info", .help="get device information via mailbox"},
+    {.command="ls", .help="list directory contents"},
     {.command="reboot", .help="reboot the device"}
 };
 
@@ -34,8 +40,6 @@ void cli_cmd_read(char* buffer)
             uart_puts("\r\n");
             break;
         }
-        if ( c > 16 && c < 32 ) continue;
-        if ( c > 127 ) continue;
         buffer[idx++] = c;
         uart_send(c);
     }
@@ -43,17 +47,40 @@ void cli_cmd_read(char* buffer)
 
 void cli_cmd_exec(char* buffer)
 {
-    if (strcmp(buffer, "hello") == 0) {
+    if (!buffer) return;
+
+    char* cmd = buffer;
+    char* argvs;
+
+    while(1){
+        if(*buffer == '\0')
+        {
+            argvs = buffer;
+            break;
+        }
+        if(*buffer == ' ')
+        {
+            *buffer = '\0';
+            argvs = buffer + 1;
+            break;
+        }
+        buffer++;
+    }
+
+    if (strcmp(cmd, "cat") == 0) {
+        do_cmd_cat(argvs);
+    } else if (strcmp(cmd, "hello") == 0) {
         do_cmd_hello();
-    } else if (strcmp(buffer, "help") == 0) {
+    } else if (strcmp(cmd, "help") == 0) {
         do_cmd_help();
-    } else if (strcmp(buffer, "info") == 0) {
+    } else if (strcmp(cmd, "info") == 0) {
         do_cmd_info();
-    } else if (strcmp(buffer, "reboot") == 0) {
+    } else if (strcmp(cmd, "ls") == 0) {
+        do_cmd_ls(argvs);
+    } else if (strcmp(cmd, "reboot") == 0) {
         do_cmd_reboot();
-    } else if (*buffer){
-        uart_puts(buffer);
-        uart_puts(": command not found\r\n");
+    } else {
+        uart_puts("%s: command not found.\r\n", cmd);
     }
 }
 
@@ -63,6 +90,34 @@ void cli_print_banner()
     uart_puts("=======================================\r\n");
     uart_puts("  Welcome to NYCU-OSC 2023 Lab2 Shell  \r\n");
     uart_puts("=======================================\r\n");
+}
+
+void do_cmd_cat(char* filepath)
+{
+    char* c_filepath;
+    char* c_filedata;
+    unsigned int c_filesize;
+    struct cpio_newc_header *header_ptr = CPIO_DEFAULT_PLACE;
+
+    while(header_ptr!=0)
+    {
+        int error = cpio_newc_parse_header(header_ptr, &c_filepath, &c_filesize, &c_filedata, &header_ptr);
+        //if parse header error
+        if(error)
+        {
+            uart_puts("cpio parse error");
+            break;
+        }
+
+        if(strcmp(c_filepath, filepath)==0)
+        {
+            uart_puts("%s", c_filedata);
+            break;
+        }
+
+        //if this is TRAILER!!! (last of file)
+        if(header_ptr==0) uart_puts("cat: %s: No such file or directory\n", filepath);
+    }
 }
 
 void do_cmd_help()
@@ -118,6 +173,29 @@ void do_cmd_info()
         uart_puts("\r\n");
     }
 }
+
+void do_cmd_ls(char* workdir)
+{
+    char* c_filepath;
+    char* c_filedata;
+    unsigned int c_filesize;
+    struct cpio_newc_header *header_ptr = CPIO_DEFAULT_PLACE;
+
+    while(header_ptr!=0)
+    {
+        int error = cpio_newc_parse_header(header_ptr, &c_filepath, &c_filesize, &c_filedata, &header_ptr);
+        //if parse header error
+        if(error)
+        {
+            uart_puts("cpio parse error");
+            break;
+        }
+
+        //if this is not TRAILER!!! (last of file)
+        if(header_ptr!=0) uart_puts("%s\n", c_filepath);
+    }
+}
+
 
 void do_cmd_reboot()
 {

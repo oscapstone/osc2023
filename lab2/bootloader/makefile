@@ -35,7 +35,7 @@ run_std:
 	qemu-system-aarch64 -M raspi3b -kernel bootloader.img -serial null -serial stdio
 
 run_pty:
-	qemu-system-aarch64 -M raspi3b -kernel bootloader.img -serial null -serial pty
+	qemu-system-aarch64 -M raspi3b -kernel bootloader.img -serial null -serial pty -initrd initramfs.cpio
 
 debug:
 	qemu-system-aarch64 -M raspi3b -kernel bootloader.img -display none -S -s
