@@ -1,9 +1,9 @@
 _heap_stack_size = 1M;
-_new_kernel_size = 256K;
+_bootloader_size = 64K;
 
 SECTIONS
 {
-    /* bootloader 0x60000(config.txt), kernel 0x80000 */
+    /* bootloader 0x80000, then self-relocated*/
     . = 0x80000;
     _start = .;
     .text : { *(.text.boot) *(.text) }
@@ -23,9 +23,11 @@ SECTIONS
         . = ALIGN(8);
         _stack_top = .;
     }
-    . = 0x3000000;
-    _kernel_start_addr = 0x3000000;
-    . = . + _new_kernel_size;
     _end = .;
 
+    . = 0x3000000;
+    _bootloader_relocated_addr = 0x3000000;
+    . = . + _bootloader_size;
 }
+
+__code_size = (_end - _start);

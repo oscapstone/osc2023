@@ -5,7 +5,7 @@
 
 #define SHIFT_ADDR 0x100000
 
-extern char _kernel_start_addr[];
+extern char _start[];
 
 struct CLI_CMDS cmd_list[CLI_MAX_CMD]=
 {
@@ -80,7 +80,7 @@ void do_cmd_loadimg()
 {
     char c;
     unsigned long long kernel_size = 0;
-    volatile char* kernel_start = (char*) (&_kernel_start_addr);
+    volatile char* kernel_start = (char*) (&_start);
     uart_puts("Please upload the image file.\r\n");
     for (int i=0; i<8; i++)
     {
