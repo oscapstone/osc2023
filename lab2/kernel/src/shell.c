@@ -5,12 +5,17 @@
 #include "power.h"
 #include "cpio.h"
 #include "utils.h"
+#include "dtb.h"
 
-#define CLI_MAX_CMD 6
+#define CLI_MAX_CMD 7
+
+extern char* dtb_ptr;
+void* CPIO_DEFAULT_PLACE;
 
 struct CLI_CMDS cmd_list[CLI_MAX_CMD]=
 {
     {.command="cat", .help="concatenate files and print on the standard output"},
+    {.command="dtb", .help="show device tree"},
     {.command="hello", .help="print Hello World!"},
     {.command="help", .help="print all available commands"},
     {.command="info", .help="get device information via mailbox"},
@@ -69,6 +74,8 @@ void cli_cmd_exec(char* buffer)
 
     if (strcmp(cmd, "cat") == 0) {
         do_cmd_cat(argvs);
+    } else if (strcmp(cmd, "dtb") == 0){
+        do_cmd_dtb();
     } else if (strcmp(cmd, "hello") == 0) {
         do_cmd_hello();
     } else if (strcmp(cmd, "help") == 0) {
@@ -79,8 +86,6 @@ void cli_cmd_exec(char* buffer)
         do_cmd_ls(argvs);
     } else if (strcmp(cmd, "reboot") == 0) {
         do_cmd_reboot();
-    } else {
-        uart_puts("%s: command not found.\r\n", cmd);
     }
 }
 
@@ -118,6 +123,11 @@ void do_cmd_cat(char* filepath)
         //if this is TRAILER!!! (last of file)
         if(header_ptr==0) uart_puts("cat: %s: No such file or directory\n", filepath);
     }
+}
+
+void do_cmd_dtb()
+{
+    traverse_device_tree(dtb_ptr, dtb_callback_show_tree);
 }
 
 void do_cmd_help()

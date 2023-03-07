@@ -15,7 +15,7 @@ setup_bss:
 init_bss:
     cbz     w2, run_main
     str     xzr, [x1], #8
-    sub     w2, w2, #8
+    sub     w2, w2, #1
     cbnz    w2, init_bss
 
 run_main:

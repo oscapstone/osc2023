@@ -9,7 +9,7 @@
 */
 
 #define CPIO_NEWC_HEADER_MAGIC "070701"    // big endian
-#define CPIO_DEFAULT_PLACE  (void*) 0x8000000
+
 struct cpio_newc_header
 {
     char c_magic[6];            //magic   The string	"070701".

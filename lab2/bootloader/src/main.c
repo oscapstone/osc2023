@@ -4,6 +4,7 @@
 extern char* _bootloader_relocated_addr;
 extern unsigned long long __code_size;
 extern unsigned long long _start;
+char* _dtb;
 
 int relocated_flag = 1;
 
@@ -16,11 +17,12 @@ void code_relocate(char* addr)
         addr[i] = start[i];
     }
 
-    ((void (*)(void))addr)();
+    ((void (*)(char*))addr)(_dtb);
 }
 
 
-void main(){
+void main(char* arg){
+    _dtb = arg;
     char* relocated_ptr = (char*)&_bootloader_relocated_addr;
 
     if (relocated_flag)

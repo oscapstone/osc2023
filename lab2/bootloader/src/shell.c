@@ -5,6 +5,7 @@
 
 #define SHIFT_ADDR 0x100000
 
+extern char* _dtb;
 extern char _start[];
 
 struct CLI_CMDS cmd_list[CLI_MAX_CMD]=
@@ -78,9 +79,10 @@ void do_cmd_help()
 
 void do_cmd_loadimg()
 {
+    char* bak_dtb = _dtb;
     char c;
     unsigned long long kernel_size = 0;
-    volatile char* kernel_start = (char*) (&_start);
+    char* kernel_start = (char*) (&_start);
     uart_puts("Please upload the image file.\r\n");
     for (int i=0; i<8; i++)
     {
@@ -95,7 +97,7 @@ void do_cmd_loadimg()
     uart_puts("Image file downloaded successfully.\r\n");
     uart_puts("Point to new kernel ...\r\n");
 
-    ((void (*)(void))kernel_start)();
+    ((void (*)(char*))kernel_start)(bak_dtb);
 }
 
 void do_cmd_reboot()
