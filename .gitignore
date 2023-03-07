@@ -1,0 +1,6 @@
+# Ctags output
+tags
+
+# Object file
+*.o
+
