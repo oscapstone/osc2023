@@ -7,18 +7,15 @@ int main(void)
     uart_init();
     uart_flush();
     /* print hardware information */
+    unsigned int request_message[8] = {0};
     uart_write_string("BOARD REVISION: ");
-    get_hw_info(GET_BOARD_REVISION);
+    get_hw_info(GET_BOARD_REVISION, &request_message);
     uart_write_string("ARM MEMORY: ");
-    get_hw_info(GET_ARM_MEMORY);
+    get_hw_info(GET_ARM_MEMORY, &request_message);
     uart_write_string("MAC ADDRESS: ");
-    get_hw_info(GET_MAC_ADDRESS);
-    //uart_write_string("CLOCKS: ");
-    //get_hw_info(GET_CLOCKS);
-    //uart_write_string("MAX CLOCK RATE: ");
-    //get_hw_info(GET_MAX_CLOCK_RATE);
+    get_hw_info(GET_MAC_ADDRESS, &request_message);
     uart_write_string("TEMPERATURE: ");
-    get_hw_info(GET_TEMPERATURE);
+    get_hw_info(GET_TEMPERATURE, &request_message);
     
     /* shell */
     unsigned int read_cnt;

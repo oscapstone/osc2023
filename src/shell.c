@@ -152,7 +152,7 @@ int run_if_builtin(char *first_arg, char *other_args)
         return 1;
     } else if (strcmp(first_arg, "reboot") == 0) {
         reset(0);
-        while (1) delay(100); // hang until reboot
+        while (1) delay(10); // hang until reboot
         return 1;
     }
     return 0;
