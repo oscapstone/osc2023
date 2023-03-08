@@ -17,8 +17,11 @@ CFLAGS_BASE    = -std=c17 -pedantic-errors -Wall -Wextra -ffreestanding \
 CFLAGS_DEBUG   = -g
 CFLAGS_RELEASE = -O3 -mcpu=cortex-a53
 
-OBJS      = start main delay mailbox mailbox_info reset serial shell libc/string
-LD_SCRIPT = $(SRC_DIR)/linker.ld
+OBJS                 = start main delay mailbox mailbox_info reset serial \
+                       shell libc/string
+OBJS_BOOTLOADER      = start bootloader-main bootloader_crc32 delay serial
+LD_SCRIPT            = $(SRC_DIR)/linker.ld
+LD_SCRIPT_BOOTLOADER = $(SRC_DIR)/bootloader.ld
 
 # ------------------------------------------------------------------------------
 
@@ -29,21 +32,26 @@ CPPFLAGS = $(CPPFLAGS_BASE) $(CPPFLAGS_$(PROFILE))
 ASFLAGS  = $(ASFLAGS_BASE) $(ASFLAGS_$(PROFILE))
 CFLAGS   = $(CFLAGS_BASE) $(CFLAGS_$(PROFILE))
 
-OBJ_PATHS = $(addprefix $(OUT_DIR)/,$(addsuffix .o,$(OBJS)))
+OBJ_PATHS            = $(addprefix $(OUT_DIR)/,$(addsuffix .o,$(OBJS)))
+OBJ_PATHS_BOOTLOADER = $(addprefix $(OUT_DIR)/,$(addsuffix .o,$(OBJS_BOOTLOADER)))
 
 # ------------------------------------------------------------------------------
 
 .PHONY: all qemu qemu-debug gdb clean-profile clean
 
-all: $(OUT_DIR)/kernel8.img
+all: $(OUT_DIR)/kernel8.img $(OUT_DIR)/bootloader.img
 
-$(OUT_DIR)/kernel8.img: $(OUT_DIR)/kernel8.elf
+$(OUT_DIR)/%.img: $(OUT_DIR)/%.elf
 	@mkdir -p $(@D)
 	$(OBJCOPY) -O binary $^ $@
 
 $(OUT_DIR)/kernel8.elf: $(OBJ_PATHS) $(LD_SCRIPT)
 	@mkdir -p $(@D)
 	$(LD) -T $(LD_SCRIPT) $(filter-out $(LD_SCRIPT),$^) -o $@
+
+$(OUT_DIR)/bootloader.elf: $(OBJ_PATHS_BOOTLOADER) $(LD_SCRIPT)
+	@mkdir -p $(@D)
+	$(LD) -T $(LD_SCRIPT_BOOTLOADER) $(filter-out $(LD_SCRIPT),$^) -o $@
 
 $(OUT_DIR)/%.o: $(SRC_DIR)/%.c
 	@mkdir -p $(@D)

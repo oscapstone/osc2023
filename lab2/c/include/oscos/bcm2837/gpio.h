@@ -40,10 +40,14 @@ typedef struct {
 #define GPFSEL_FSEL4_MASK ((uint32_t)((uint32_t)0x7 << GPFSEL_FSEL4_POSN))
 #define GPFSEL_FSEL5_POSN 15
 #define GPFSEL_FSEL5_MASK ((uint32_t)((uint32_t)0x7 << GPFSEL_FSEL5_POSN))
+#define GPFSEL_FSEL_INPUT ((uint32_t)0x0)
 #define GPFSEL_FSEL_ALT5 ((uint32_t)0x2)
+#define GPFSEL_FSEL4_INPUT ((uint32_t)(GPFSEL_FSEL_INPUT << GPFSEL_FSEL4_POSN))
 #define GPFSEL_FSEL4_ALT5 ((uint32_t)(GPFSEL_FSEL_ALT5 << GPFSEL_FSEL4_POSN))
+#define GPFSEL_FSEL5_INPUT ((uint32_t)(GPFSEL_FSEL_INPUT << GPFSEL_FSEL5_POSN))
 #define GPFSEL_FSEL5_ALT5 ((uint32_t)(GPFSEL_FSEL_ALT5 << GPFSEL_FSEL5_POSN))
 
 #define GPPUD_PUD_OFF ((uint32_t)0x0)
+#define GPPUD_PUD_PULL_DOWN ((uint32_t)0x1)
 
 #endif

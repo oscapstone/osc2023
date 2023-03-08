@@ -1,7 +1,5 @@
 #include "oscos/delay.h"
 
-#define NS_PER_SEC ((uint64_t)1000000000)
-
 void delay_ns(const uint64_t ns) {
   uint64_t start_counter_val;
   // Normally, we need "isb sy" here to prevent the counter from being read too

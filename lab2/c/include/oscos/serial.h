@@ -39,6 +39,13 @@ typedef enum {
 /// See the file-level documentation for requirements on initialization.
 void serial_init(void);
 
+/// \brief De-initializes the serial console.
+///
+/// When calling this function, the serial console must be initialized. This
+/// function may not be called when the serial console is being accessed by any
+/// other thread.
+void serial_deinit(void);
+
 /// \brief Acquires the lock of the serial console.
 ///
 /// When calling this function, the current thread must not have acquired the
