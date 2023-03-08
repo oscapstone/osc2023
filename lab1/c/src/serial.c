@@ -37,9 +37,6 @@
 //   https://datasheets.raspberrypi.com/bcm2835/bcm2835-peripherals.pdf
 // [bcm2835-datasheet-errata]: https://elinux.org/BCM2835_datasheet_errata
 
-// * Serial console locking is disabled since the spinlock doesn't work on a
-// * real Raspberry Pi Model 3 B+.
-
 #include "oscos/serial.h"
 
 #include <stdbool.h>
@@ -52,7 +49,7 @@
 #include "oscos/delay.h"
 #include "oscos/spinlock.h"
 
-// static atomic_flag _serial_spinlock = ATOMIC_FLAG_INIT;
+static atomic_flag _serial_spinlock = ATOMIC_FLAG_INIT;
 static SerialMode _serial_mode = SM_TEXT;
 
 void serial_init(void) {
@@ -115,13 +112,9 @@ void serial_init(void) {
   PERIPHERAL_READ_BARRIER();
 }
 
-void serial_lock(void) {
-  // SPIN_LOCK(&_serial_spinlock);
-}
+void serial_lock(void) { SPIN_LOCK(&_serial_spinlock); }
 
-void serial_unlock(void) {
-  // SPIN_UNLOCK(&_serial_spinlock);
-}
+void serial_unlock(void) { SPIN_UNLOCK(&_serial_spinlock); }
 
 void serial_set_mode(const SerialMode mode) {
   // ? Should we check the value of `mode`?

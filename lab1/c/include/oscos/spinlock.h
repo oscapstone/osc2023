@@ -1,8 +1,3 @@
-// Currently doesn't work on a real Raspberry Pi Model 3 B+.
-// TODO: Fix.
-// * FIXME: After fixing the lock, re-enable serial console locking in
-// * `src/serial.c`.
-
 #ifndef OSCOS_SPINLOCK_H
 #define OSCOS_SPINLOCK_H
 

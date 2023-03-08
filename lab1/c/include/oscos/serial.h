@@ -9,9 +9,10 @@
 /// may have unintended consequences.
 ///
 /// In order to prevent race condition, the serial console is protected by a
-/// spinlock. Before operating the serial console (except initialization), the
-/// current thread must acquire the lock by calling serial_lock(void). The lock
-/// is released by calling serial_unlock(void).
+/// spinlock. If the serial console may be accessed from multiple threads, the
+/// current thread must acquire the lock by calling serial_lock(void) before
+/// operating the serial console (except initialization). The lock is released
+/// by calling serial_unlock(void).
 ///
 /// The serial console implements two modes: text mode and binary mode. In text
 /// mode, automatic newline translation is performed. A "\r" character received
@@ -54,46 +55,52 @@ void serial_unlock(void);
 
 /// \brief Sets the mode of the serial console.
 ///
-/// When calling this function, the current thread must have acquired the lock
-/// of the serial console.
+/// When calling this function in a multi-threaded context, the current thread
+/// must have acquired the lock of the serial console.
 ///
 /// \param mode The mode. Must be `SM_TEXT` or `SM_BINARY`.
 void serial_set_mode(SerialMode mode);
 
 /// \brief Waits until all characters in the transmit FIFO have been sent.
 ///
-/// When calling this function, the serial console must be initialized. Also,
-/// the current thread must have acquired the lock of the serial console.
+/// When calling this function, the serial console must be initialized. Also, in
+/// a multi-threaded context, the current thread must have acquired the lock of
+/// the serial console.
 void serial_flush(void);
 
 /// \brief Reads a character from the serial console.
 ///
-/// When calling this function, the serial console must be initialized. Also,
-/// the current thread must have acquired the lock of the serial console.
+/// When calling this function, the serial console must be initialized. Also, in
+/// a multi-threaded context, the current thread must have acquired the lock of
+/// the serial console.
 char serial_getc(void);
 
 /// \brief Writes a character to the serial console.
 ///
-/// When calling this function, the serial console must be initialized. Also,
-/// the current thread must have acquired the lock of the serial console.
+/// When calling this function, the serial console must be initialized. Also, in
+/// a multi-threaded context, the current thread must have acquired the lock of
+/// the serial console.
 char serial_putc(char c);
 
 /// \brief Writes a string to the serial console without trailing newline.
 ///
-/// When calling this function, the serial console must be initialized. Also,
-/// the current thread must have acquired the lock of the serial console.
+/// When calling this function, the serial console must be initialized. Also, in
+/// a multi-threaded context, the current thread must have acquired the lock of
+/// the serial console.
 void serial_fputs(const char *s);
 
 /// \brief Writes a string to the serial console with trailing newline.
 ///
-/// When calling this function, the serial console must be initialized. Also,
-/// the current thread must have acquired the lock of the serial console.
+/// When calling this function, the serial console must be initialized. Also, in
+/// a multi-threaded context, the current thread must have acquired the lock of
+/// the serial console.
 void serial_puts(const char *s);
 
 /// \brief Writes a `uint32_t` to the serial console in hexadecimal.
 ///
-/// When calling this function, the serial console must be initialized. Also,
-/// the current thread must have acquired the lock of the serial console.
+/// When calling this function, the serial console must be initialized. Also, in
+/// a multi-threaded context, the current thread must have acquired the lock of
+/// the serial console.
 void serial_print_hex(uint32_t x);
 
 #endif

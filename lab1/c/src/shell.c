@@ -30,44 +30,27 @@ static size_t _shell_read_cmd(char *const buf, const size_t n) {
 }
 
 static void _shell_do_cmd_help(void) {
-  serial_lock();
   serial_puts("help   : print this help menu\n"
               "hello  : print Hello World!\n"
               "reboot : reboot the device");
-  serial_unlock();
 }
 
-static void _shell_do_cmd_hello(void) {
-  serial_lock();
-  serial_puts("Hello World!");
-  serial_unlock();
-}
+static void _shell_do_cmd_hello(void) { serial_puts("Hello World!"); }
 
-noreturn static void _shell_do_cmd_reboot(void) {
-  serial_lock();
-  reboot();
-}
+noreturn static void _shell_do_cmd_reboot(void) { reboot(); }
 
 static void _shell_cmd_not_found(const char *const cmd) {
-  serial_lock();
-
   serial_fputs("oscsh: ");
   serial_fputs(cmd);
   serial_puts(": command not found");
-
-  serial_unlock();
 }
 
 void run_shell(void) {
   for (;;) {
-    serial_lock();
-
     _shell_print_prompt();
 
     char cmd_buf[MAX_CMD_LEN + 1];
     _shell_read_cmd(cmd_buf, MAX_CMD_LEN + 1);
-
-    serial_unlock();
 
     if (strcmp(cmd_buf, "help") == 0) {
       _shell_do_cmd_help();
