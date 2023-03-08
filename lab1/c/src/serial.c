@@ -123,9 +123,14 @@ void serial_set_mode(const SerialMode mode) {
   _serial_mode = mode;
 }
 
-void serial_flush(void) {
+static void _serial_flush(void) {
   while (!(AUX_MU->LSR_REG & AUX_MU_LSR_REG_TRANSMITTER_IDLE))
     ;
+}
+
+void serial_flush(void) {
+  _serial_flush();
+  PERIPHERAL_READ_BARRIER();
 }
 
 // Raw I/O functions.
