@@ -45,11 +45,13 @@
 
 void uart_setup(void);
 void uart_send(unsigned int);
+char uart_get(void);
 char uart_getc(void);
 void uart_putc(char);
 void uart_puts(char *s);
 void uart_puti(unsigned int);
 void uart_puth(unsigned int);
 void uart_gets(char *s);
+void read_kernel();
 
 #endif // UART_H

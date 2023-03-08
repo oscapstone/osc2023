@@ -60,6 +60,15 @@ void uart_send(unsigned int c) {
   *AUX_MU_IO = c;                  // Write to buffer
 }
 
+char uart_get() {
+  char c;
+  do {
+    asm volatile("nop");
+  } while (!(*AUX_MU_LSR & 0x01)); // Check If data to read
+  c = (char)(*AUX_MU_IO);
+  return c;
+}
+
 char uart_getc() {
   char c;
   do {
@@ -110,3 +119,57 @@ void uart_puth(unsigned int h) {
   }
   return;
 }
+
+// Load the kernel from uart to 0x80000
+void read_kernel(){
+	// Initial uart
+	uart_setup();
+	uart_puts("Wait for kernel!\n");
+	volatile char* ke_lo = (volatile char*)0x80000;
+	int size = 0;
+	// Get the kernel size
+redo:
+	size = 0;
+	size = uart_getc() - '0';
+	uart_puts("current size:\n");
+	uart_puti(size);
+	size *= 10;
+	size += uart_getc() - '0';
+	uart_puts("current size:\n");
+	uart_puti(size);
+	size *= 10;
+	size += uart_getc() - '0';
+	uart_puts("current size:\n");
+	uart_puti(size);
+	size *= 10;
+	size += uart_getc() - '0';
+	uart_puts("current size:\n");
+	uart_puti(size);
+
+	if(size < 64 || size > 1024 * 1024){
+		uart_puts("TOO large, Try again.\n");
+		goto redo;
+	}
+	uart_puts("Good, start kernel.\n");
+
+	while(size--){
+		*ke_lo++  = uart_get();
+		uart_puti(size);
+	}
+	uart_puts("Kernel transmition Done.\n");
+	 asm volatile(
+	 		
+	 	"mov x0, x10;"
+	 	"mov x1, x11;"
+	 	"mov x2, x12;"
+	 	"mov x3, x13;"
+		"mov x4, #0x80000;"
+		"br x4;"
+	 	"mov x30, 0x80000;"
+	 	"ret"
+	 );
+	return ;
+}
+
+
+

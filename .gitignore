@@ -3,4 +3,5 @@ tags
 
 # Object file
 *.o
+*/obj/
 

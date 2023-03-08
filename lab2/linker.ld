@@ -6,6 +6,7 @@ PHDRS
 SECTIONS
 {
 	. = 0x80000;
+	__all_start = .;
 	.text : { KEEP( *(text.boot) ) *(.text .text.* .gnu.linkonce.t*) } :text
 	/* Note: text.boot need to place at 0x80000 */
 	/* KEEP: keep the section which will not be GC */
@@ -22,3 +23,4 @@ SECTIONS
 	/DISCARD/ : {*(.comment) *(.gnu*) *(.note*) *(.eh_frame) } :data
 }
 __bss_size = (__bss_end - __bss_start) >> 3;
+__code_size = (_end - __all_start) >> 2; 	/* Get the code size of the bootloader */
