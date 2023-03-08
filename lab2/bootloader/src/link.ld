@@ -3,7 +3,6 @@ _bootloader_size = 64K;
 
 SECTIONS
 {
-    /* bootloader 0x80000, then self-relocated*/
     . = 0x80000;
     _start = .;
     .text : { *(.text.boot) *(.text) }

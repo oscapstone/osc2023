@@ -77,6 +77,8 @@ void do_cmd_help()
     }
 }
 
+/* Overwrite image file into _start,
+   Please make sure this current code has been relocated. */
 void do_cmd_loadimg()
 {
     char* bak_dtb = _dtb;
