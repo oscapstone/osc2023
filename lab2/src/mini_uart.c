@@ -11,6 +11,9 @@ void uart_send(char c)
 	put32(AUX_MU_IO_REG, c);
 }
 
+/*
+ * Receive 1 byte from uart
+ */
 char uart_recv(void)
 {
 	/*
@@ -64,6 +67,50 @@ void uart_send_hex(unsigned int n)
 	}
 	uart_send_string("0x");
 	uart_send_string(out);
+}
+
+int uart_recv_int(void)
+{
+	int num = 0;
+	for (int i = 0; i < 4; i++) {
+		char c = uart_recv();
+		num <<= 8;
+		num += (int)c;
+	}
+	return num;
+}
+
+void uart_send_int(int num)
+{
+	char out[12];
+	int i = 10;
+
+	int neg = 0;
+	if (num < 0) {
+		neg = 1;
+		num = -num;
+	}
+
+	out[11] = '\0';
+	do {
+		out[i] = '0' + (num % 10);
+		num /= 10;
+		i--;
+	} while (num > 0);
+
+	if (neg) {
+		out[i] = '-';
+	} else {
+		i++;
+	}
+
+	uart_send_string(&out[i]);
+}
+
+void uart_endl(void)
+{
+	uart_send('\r');
+	uart_send('\n');
 }
 
 void uart_init(void)
