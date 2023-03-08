@@ -15,16 +15,27 @@ static size_t _shell_read_cmd(char *const buf, const size_t n) {
 
   for (;;) {
     const char c = serial_getc();
-    serial_putc(c);
 
-    if (c == '\n')
+    if (c == '\n') {
+      serial_putc('\n');
       break;
-
-    if (cmd_len < n - 1) {
-      buf[cmd_len++] = c;
+    } else if (c == '\x7f') { // Backspace.
+      if (cmd_len > 0) {
+        serial_fputs("\b \b");
+        cmd_len--;
+      }
+    } else {
+      serial_putc(c);
+      if (cmd_len < n - 1) {
+        buf[cmd_len] = c;
+      }
+      cmd_len++;
     }
   }
 
+  if (cmd_len >= n - 1) {
+    cmd_len = n - 1;
+  }
   buf[cmd_len] = '\0';
   return cmd_len;
 }
@@ -50,9 +61,11 @@ void run_shell(void) {
     _shell_print_prompt();
 
     char cmd_buf[MAX_CMD_LEN + 1];
-    _shell_read_cmd(cmd_buf, MAX_CMD_LEN + 1);
+    const size_t cmd_len = _shell_read_cmd(cmd_buf, MAX_CMD_LEN + 1);
 
-    if (strcmp(cmd_buf, "help") == 0) {
+    if (cmd_len == 0) {
+      // No-op.
+    } else if (strcmp(cmd_buf, "help") == 0) {
       _shell_do_cmd_help();
     } else if (strcmp(cmd_buf, "hello") == 0) {
       _shell_do_cmd_hello();
