@@ -2,7 +2,11 @@
 #include "uart.h"
 #include "str.h"
 
-#define memcmp __builtin_memcmp
+int memcmp(void* s1, void* s2, int n){
+	unsigned char *a=s1,*b=s2;
+	while(n-->0){ if(*a!=*b) { return *a-*b; } a++; b++; }
+	return 0;
+}
 /**
  * The value stores in the cpio header
  * is hex value, we need this function 
@@ -36,6 +40,7 @@ void initrd_list(char* buf){
 	uart_puts("size\t");
 	uart_puts("namesize\t");
 	uart_puts("name\n");
+	//uart_putsn(buf, 6);
 	while(!(memcmp(buf, "070701", 6)) && memcmp(buf + sizeof(cpio_t), "TRAILER!!", 9)){	// test magic number of new ascii 
 		cpio_t *header = (cpio_t*)buf;
 		int ns = hex2bin(header->namesize, 8);	// Get the size of name
@@ -57,6 +62,7 @@ void initrd_list(char* buf){
 
 		buf += (sizeof(cpio_t) + ns + fs); 	// Jump to next record
 	}
+	return;
 }
 
 /**

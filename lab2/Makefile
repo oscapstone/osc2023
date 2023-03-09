@@ -3,7 +3,7 @@ OBJ_DIR :=	obj
 
 SRCS = 		$(wildcard $(SRC_DIR)/*.c)
 OBJS = 		$(SRCS:$(SRC_DIR)/%.c=$(OBJ_DIR)/%.o)
-CPPFLAGS := 	-Iinclude -MMD -MP
+CPPFLAGS := 	-Iinclude -MMD -MP -static
 CFLAGS = 	-Wall -O3
 LDFLAGS = 	-nostdlib 
 
