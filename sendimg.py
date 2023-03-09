@@ -10,19 +10,43 @@ parser.add_argument("image")
 parser.add_argument("tty")
 args = parser.parse_args()
 
+try:
+    ser = serial.Serial(args.tty, 115200)
+except:
+    print("Serial init failed!")
+    exit(1)
+
+# usage
+# $ python sendimg.py command.txt /dev/cu.usbserial-0001
+
 
 def checksum(bytecodes):
     # convert bytes to int
     return int(np.array(list(bytecodes), dtype=np.int32).sum())
 
+def receiveMsg():
+    print("=========receive========")
+    if ser.inWaiting() > 0:
+        # 读取接收缓冲区中的所有数据
+        data = ser.read(ser.inWaiting())
+        print(data.decode())
+    else:
+        print('No data available.')
+    print("======end========")
+
+def sendMsg():
+    cmd = input("# ")
+    if cmd == "exit":
+        return 0
+    cmd = '\n' + cmd + '\n'
+    for c in cmd:
+        ser.write(c.encode())
+        time.sleep(0.01)
+    # ser.write(b'\n')
+    time.sleep(0.1)
+    return 1
 
 def main():
-    try:
-        ser = serial.Serial(args.tty, 115200)
-    except:
-        print("Serial init failed!")
-        exit(1)
-
     file_path = args.image
     file_size = os.stat(file_path).st_size
 
@@ -37,25 +61,26 @@ def main():
     #     time.sleep(0.01)
     # ser.write(b'\n')
     # time.sleep(0.1)
-    cmd = "help\n"
-    for c in cmd:
-        ser.write(c.encode())
-        time.sleep(0.01)
-    ser.write(b'\n')
-    time.sleep(0.1)
 
+    # cmd = "\nhelp\n"
+    # for c in cmd:
+    #     ser.write(c.encode())
+    #     time.sleep(0.01)
+    # # ser.write(b'\n')
+    # time.sleep(0.1)
+
+    # To communicate with Raspi 3
     while True:
-        data = ser.read(100)  # 從串口中讀取 10 個字節的資料
-        if data:
-            print(data)
+        if sendMsg():
+            receiveMsg()
         else:
-            print("Timeout occurred!")
+            break
 
-    print("After send command")
 
     ser.write(file_size.to_bytes(4, byteorder="big"))
     ser.write(file_checksum.to_bytes(4, byteorder="big"))
 
+    print("------------------")
     print(f"Image Size: {file_size}, Checksum: {file_checksum}")
 
     per_chunk = 128
