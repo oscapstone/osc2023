@@ -26,6 +26,7 @@
 SRCS = $(wildcard *.c)
 OBJS = $(SRCS:.c=.o)
 CFLAGS = -Wall -O2 -ffreestanding -nostdinc -nostdlib -nostartfiles
+
 TOOLCHAIN = aarch64-none-linux-gnu
 # TOOLCHAIN = /Users/robert/Downloads/aarch64-unknown-linux-gnu/bin/aarch64-unknown-linux-gnu
 
