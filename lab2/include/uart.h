@@ -52,6 +52,7 @@ void uart_puts(char *s);
 void uart_puti(unsigned int);
 void uart_puth(unsigned int);
 void uart_gets(char *s);
+void uart_putsn(char *s, int n);	// only print n chars
 void read_kernel();
 
 #endif // UART_H

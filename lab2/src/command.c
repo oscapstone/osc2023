@@ -2,6 +2,7 @@
 #include "mailbox.h"
 #include "terminal.h"
 #include "uart.h"
+#include "initrd.h"
 
 struct command commands[] = {{
                                  .name = "help",
@@ -20,9 +21,19 @@ struct command commands[] = {{
                              },
                              {
                                  .name = "reboot",
-                                 .help = "Reboot the device",
+                                 .help = "Reboot the device.\n",
                                  .func = reboot,
                              },
+			     {
+				     .name = "ls", 
+				     .help = "List file name in FS.\n",
+				     .func = ls,
+			     },
+			     {
+				     .name = "cat", 
+				     .help = "Show the content of target file.\n",
+				     .func = cat,
+			     },
 
                              // ALWAYS The last item of the array!!!
                              {
@@ -30,12 +41,51 @@ struct command commands[] = {{
                              }};
 
 int help() {
-  uart_puts("help\t: print this help message.\n"
-            "hello\t: print Hello World!\n"
-            "lshw\t: print the information of device \n"
-            "reboot\t: reboot the device.\n");
-  return 0;
+	int i = 0;
+	while(1){
+		if (!strcmp(commands[i].name, "NULL")){
+			break;
+		}
+		uart_puts(commands[i].name);
+		uart_puts(": ");
+		uart_puts(commands[i].help);
+		i ++;
+	}
+	return 0;
 }
+
+int cat(){
+	char buf[256] = {0};
+	char *tmp = buf;
+	uart_puts("Name:\n");
+	for(int i = 0; i < 255; i ++){
+		*tmp  = uart_getc();
+		uart_putc(*tmp);
+		if (*tmp == 127) {
+			*tmp = 0;
+			tmp--;
+			*tmp = 0;
+			tmp--;
+			uart_send('\b');
+			uart_send(' ');
+			uart_send('\b');
+		}
+		if (*tmp == '\n') {
+			*(tmp) = '\0';
+			break;
+		}
+		tmp++;
+	}
+	initrd_cat(buf, (char*)0x8000000);
+	return 0;
+}
+
+int ls(){
+	initrd_list((char*)0x8000000);
+	return 0;
+}
+
+
 
 int hello() {
   uart_puts("Hello World!\n");

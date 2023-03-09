@@ -11,6 +11,8 @@ int reboot(void);
 int hello(void);
 int invalid_command(const char *);
 int lshw(void);
+int ls(void);
+int cat(void);
 
 struct command {
   const char *name;

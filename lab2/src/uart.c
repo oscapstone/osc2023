@@ -1,5 +1,6 @@
 #include "uart.h"
 #include "gpio.h"
+#include "str.h"
 
 void uart_setup() {
 
@@ -87,6 +88,17 @@ void uart_puts(char *s) {
   }
   return;
 }
+
+void uart_putsn(char *s, int n) {
+  while (n-- > 0 ) {
+    if (*s == '\n') {
+      uart_send('\r');
+    }
+    uart_send(*s++);
+  }
+  return;
+}
+
 void uart_putc(char c) {
   if (c == '\n') {
     uart_send('\n');
@@ -96,16 +108,24 @@ void uart_putc(char c) {
   uart_send(c);
 }
 
-void uart_puti(unsigned int i) {
-  if (i == 0) {
-    uart_send('\0');
-    return;
-  }
+void l2s_r(char **p, long int i){
 
-  while (i > 0) {
-    uart_send(i % 10 + '0');
-    i = i / 10;
-  }
+	char d = ( i % 10 ) + '0';
+	if(i >= 10)
+		l2s_r(p, i / 10);
+	*((*p) ++) = d;
+}
+
+void uart_puti(unsigned int i) {
+	static char buf[24];
+	char *p = buf;
+	if (i < 0){
+		*p++ = '-';
+		i = 0 - i;
+	}
+	l2s_r(&p, i);
+	*p = '\0';
+	uart_puts(buf);
   return;
 }
 
@@ -154,7 +174,7 @@ redo:
 
 	while(size--){
 		*ke_lo++  = uart_get();
-		uart_puti(size);
+		uart_putc('o');
 	}
 	uart_puts("Kernel transmition Done.\n");
 	 asm volatile(
