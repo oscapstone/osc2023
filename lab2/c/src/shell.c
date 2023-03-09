@@ -1,12 +1,18 @@
 #include "oscos/shell.h"
 
+#include <stdbool.h>
 #include <stdnoreturn.h>
 
+#include "oscos/initrd.h"
 #include "oscos/libc/string.h"
 #include "oscos/reset.h"
 #include "oscos/serial.h"
 
 #define MAX_CMD_LEN 78
+
+static bool _shell_is_initrd_valid;
+
+static void _shell_init(void) { _shell_is_initrd_valid = initrd_is_valid(); }
 
 static void _shell_print_prompt(void) { serial_fputs("# "); }
 
@@ -43,12 +49,56 @@ static size_t _shell_read_cmd(char *const buf, const size_t n) {
 static void _shell_do_cmd_help(void) {
   serial_puts("help   : print this help menu\n"
               "hello  : print Hello World!\n"
-              "reboot : reboot the device");
+              "reboot : reboot the device\n"
+              "ls     : list all files in the initial ramdisk\n"
+              "cat    : print the content of a file in the initial ramdisk");
 }
 
 static void _shell_do_cmd_hello(void) { serial_puts("Hello World!"); }
 
 noreturn static void _shell_do_cmd_reboot(void) { reboot(); }
+
+static void _shell_do_cmd_ls(void) {
+  if (!_shell_is_initrd_valid) {
+    serial_puts("oscsh: ls: initrd is invalid");
+    return;
+  }
+
+  INITRD_FOR_ENTRY(entry) { serial_puts(CPIO_NEWC_PATHNAME(entry)); }
+}
+
+static void _shell_do_cmd_cat(void) {
+  if (!_shell_is_initrd_valid) {
+    serial_puts("oscsh: cat: initrd is invalid");
+    return;
+  }
+
+  serial_fputs("Filename: ");
+
+  char filename_buf[MAX_CMD_LEN + 1];
+  _shell_read_cmd(filename_buf, MAX_CMD_LEN + 1);
+
+  const cpio_newc_entry_t *const entry =
+      initrd_find_entry_by_pathname(filename_buf);
+  if (!entry) {
+    serial_puts("oscsh: cat: no such file or directory");
+    return;
+  }
+
+  const uint32_t mode = CPIO_NEWC_HEADER_VALUE(entry, mode);
+  const uint32_t file_type = mode & CPIO_NEWC_MODE_FILE_TYPE_MASK;
+  if (file_type == CPIO_NEWC_MODE_FILE_TYPE_REG) {
+    serial_write(CPIO_NEWC_FILE_DATA(entry), CPIO_NEWC_FILESIZE(entry));
+  } else if (file_type == CPIO_NEWC_MODE_FILE_TYPE_DIR) {
+    serial_puts("oscsh: cat: is a directory");
+  } else if (file_type == CPIO_NEWC_MODE_FILE_TYPE_LNK) {
+    serial_fputs("Symbolic link to: ");
+    serial_write(CPIO_NEWC_FILE_DATA(entry), CPIO_NEWC_FILESIZE(entry));
+    serial_putc('\n');
+  } else {
+    serial_puts("oscsh: cat: unknown file type");
+  }
+}
 
 static void _shell_cmd_not_found(const char *const cmd) {
   serial_fputs("oscsh: ");
@@ -57,6 +107,8 @@ static void _shell_cmd_not_found(const char *const cmd) {
 }
 
 void run_shell(void) {
+  _shell_init();
+
   for (;;) {
     _shell_print_prompt();
 
@@ -71,6 +123,10 @@ void run_shell(void) {
       _shell_do_cmd_hello();
     } else if (strcmp(cmd_buf, "reboot") == 0) {
       _shell_do_cmd_reboot();
+    } else if (strcmp(cmd_buf, "ls") == 0) {
+      _shell_do_cmd_ls();
+    } else if (strcmp(cmd_buf, "cat") == 0) {
+      _shell_do_cmd_cat();
     } else {
       _shell_cmd_not_found(cmd_buf);
     }

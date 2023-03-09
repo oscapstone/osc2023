@@ -367,6 +367,21 @@ FN_DECL_BINARY_MODE(PUTC_SPEC) {
 
 FN_DEFN(PUTC_SPEC)
 
+// void write(const char *buf, size_t count)
+
+#define WRITE_RET_TY(X, V) V
+#define WRITE_ARGS(X, D) X(const char *const, buf) D X(const size_t, count)
+#define WRITE_SPEC(X) X(WRITE_RET_TY, write, WRITE_ARGS)
+
+#define WRITE_IMPL(MODE)                                                       \
+  {                                                                            \
+    for (size_t i = 0; i < count; i++) {                                       \
+      _serial_putc_##MODE(buf[i]);                                             \
+    }                                                                          \
+  }
+
+FN_DEFN_COMPOSED(WRITE_SPEC, WRITE_IMPL)
+
 // void fputs(const char *s)
 
 #define FPUTS_RET_TY(X, V) V

@@ -1,7 +1,7 @@
 _sbootloader = 0x60000;
 _skernel = 0x80000;
 /* See linker.ld. */
-_max_ekernel = 1024M - 76M;
+_max_ekernel = 0x8000000;
 
 MEMORY
 {

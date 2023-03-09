@@ -17,8 +17,8 @@ CFLAGS_BASE    = -std=c17 -pedantic-errors -Wall -Wextra -ffreestanding \
 CFLAGS_DEBUG   = -g
 CFLAGS_RELEASE = -O3 -mcpu=cortex-a53
 
-OBJS                 = start main delay mailbox mailbox_info reset serial \
-                       shell libc/string
+OBJS                 = start main delay initrd mailbox mailbox_info reset \
+                       serial shell libc/string
 OBJS_BOOTLOADER      = start bootloader-main bootloader_crc32 delay serial
 LD_SCRIPT            = $(SRC_DIR)/linker.ld
 LD_SCRIPT_BOOTLOADER = $(SRC_DIR)/bootloader.ld
@@ -66,12 +66,12 @@ $(OUT_DIR)/%.s: $(SRC_DIR)/%.S
 	$(CPP) $(CPPFLAGS) $^ -o $@
 
 qemu: $(OUT_DIR)/kernel8.img
-	qemu-system-aarch64 -M raspi3b -kernel $< -display none -serial null \
-		-serial stdio
+	qemu-system-aarch64 -M raspi3b -kernel $< -initrd ../tests/initramfs.cpio \
+		-display none -serial null -serial stdio
 
 qemu-debug: $(OUT_DIR)/kernel8.img
-	qemu-system-aarch64 -M raspi3b -kernel $< -display none -serial null \
-		-serial stdio -S -s
+	qemu-system-aarch64 -M raspi3b -kernel $< -initrd ../tests/initramfs.cpio \
+		-display none -serial null -serial stdio -S -s
 
 gdb: $(OUT_DIR)/kernel8.elf
 	gdb -s $< -ex 'target remote :1234'

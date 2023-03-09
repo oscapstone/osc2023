@@ -1,15 +1,16 @@
 _skernel = 0x80000;
+/* The loading address of the initial ramdisk */
+_max_ekernel = 0x8000000;
 
 MEMORY
 {
-    RAM_KERNEL : ORIGIN = _skernel,
-                 /* Total system SDRAM is 1G. Top 76M are reserved for
-                    VideoCore. */
-                 LENGTH = (1024M - 76M) - _skernel
+    RAM_KERNEL : ORIGIN = _skernel, LENGTH = _max_ekernel - _skernel
 }
 
-/* Must be 16-byte aligned. */
-_estack = ORIGIN(RAM_KERNEL) + LENGTH(RAM_KERNEL);
+/* Must be 16-byte aligned.
+   The highest address the ARM core can use. Total system SDRAM is 1G. Top 76M
+   are reserved for VideoCore. */
+_estack = 1024M - 76M;
 
 ENTRY(_start)
 

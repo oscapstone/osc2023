@@ -89,6 +89,13 @@ char serial_getc(void);
 /// the serial console.
 char serial_putc(char c);
 
+/// \brief Writes characters to the serial console.
+///
+/// When calling this function, the serial console must be initialized. Also, in
+/// a multi-threaded context, the current thread must have acquired the lock of
+/// the serial console.
+void serial_write(const char *buf, size_t count);
+
 /// \brief Writes a string to the serial console without trailing newline.
 ///
 /// When calling this function, the serial console must be initialized. Also, in
