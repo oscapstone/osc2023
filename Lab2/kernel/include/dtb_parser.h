@@ -9,7 +9,7 @@
 #define FDT_PROP        0x00000003
 #define FDT_NOP         0x00000004
 #define FDT_END         0x00000009
-#define DT_ADDR         0x100000
+#define DT_ADDR         0x200000
 
 
 

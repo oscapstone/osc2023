@@ -71,9 +71,10 @@ void parse_dt(){
     if ( ((unsigned long)size_dt_struct == 0 ) ){
         uart_puts("parse_size is zero\n");
     } 
-
+    uart_puts("parse_dt_7\n");
 
     while((unsigned long)struct_ptr < struct_end_addr){
+        uart_puts("parse_dt_8\n");
         uart_puts("parse_dt");
         cur_val = convert_big_to_small_endian(*struct_ptr);
         struct_ptr += 1;
