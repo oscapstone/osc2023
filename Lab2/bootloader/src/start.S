@@ -31,8 +31,8 @@ beq x0, zero, L1
 
 _start:
     /* store dt loading address to 0x200000 */
-    /* ldr     	x1, =0x200000 */
-    /* str     	x0, [x1]          */  
+    ldr     	x1, =0x200000 
+    str     	x0, [x1]           
 
     b     	    init_bss
 

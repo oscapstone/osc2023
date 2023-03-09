@@ -20,6 +20,7 @@ void loading(){
     void (*function_call)(void) = (void (*)(void))(func_addr - (unsigned long int)__start + TEMP_ADDR);
     function_call();
 
+
 }
 
 void load_new_kernel(){
