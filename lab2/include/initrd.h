@@ -1,4 +1,5 @@
 #ifndef INITRD_H
+#define INITRD_H
 #define __cpio_start (volatile unsigned char*)0x40000
 typedef struct{
 	char magic[6];      	/* Magic header "070701". */
