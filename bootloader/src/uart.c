@@ -100,6 +100,18 @@ char uart_getc() {
     return r=='\r'?'\n':r;
 }
 
+char uart_getraw() {
+    char r;
+
+    do {
+        asm volatile("nop");
+    } while (*UART0_FR&0x10);
+
+    r = (char)(*UART0_DR);
+    
+    return r;
+}
+
 /**
  * Display a string
  */

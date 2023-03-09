@@ -10,10 +10,6 @@ void shell_init()
     uart_puts("\n\n Hello from Raspi 3\n");
 }
 
-
-
-
-
 void shell_input(char *cmd)
 {
     char c;
