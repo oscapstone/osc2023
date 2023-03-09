@@ -48,4 +48,6 @@ SECTIONS
         . = ALIGN(16);
         _ebss = .;
     } > RAM_KERNEL
+
+    _ekernel = .;
 }

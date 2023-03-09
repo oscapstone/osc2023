@@ -18,7 +18,7 @@ CFLAGS_DEBUG   = -g
 CFLAGS_RELEASE = -O3 -mcpu=cortex-a53
 
 OBJS                 = start main delay initrd mailbox mailbox_info reset \
-                       serial shell libc/string
+                       serial shell simple_malloc libc/string
 OBJS_BOOTLOADER      = start bootloader-main bootloader_crc32 delay serial
 LD_SCRIPT            = $(SRC_DIR)/linker.ld
 LD_SCRIPT_BOOTLOADER = $(SRC_DIR)/bootloader.ld
