@@ -3,11 +3,16 @@
 #include "uart.h"
 #include "power.h"
 
+
 void shell_init()
 {
     uart_init();
     uart_puts("\n\n Hello from Raspi 3\n");
 }
+
+
+
+
 
 void shell_input(char *cmd)
 {

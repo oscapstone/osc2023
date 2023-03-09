@@ -26,24 +26,23 @@
 SRCS = $(wildcard *.c)
 OBJS = $(SRCS:.c=.o)
 CFLAGS = -Wall -O2 -ffreestanding -nostdinc -nostdlib -nostartfiles
-# TOOLCHAIN_PREFIX = aarch64-none-linux-gnu
-TOOLCHAIN_PREFIX = /Applications/ARM/bin/arm-none-eabi
-
+TOOLCHAIN = aarch64-none-linux-gnu
+# TOOLCHAIN = /Users/robert/Downloads/aarch64-unknown-linux-gnu/bin/aarch64-unknown-linux-gnu
 
 all: clean kernel8.img
 
 start.o: start.S
-	$(TOOLCHAIN_PREFIX)-gcc $(CFLAGS) -c start.S -o start.o
+	$(TOOLCHAIN)-gcc $(CFLAGS) -c start.S -o start.o
 
 %.o: %.c
-	$(TOOLCHAIN_PREFIX)-gcc $(CFLAGS) -c $< -o $@
+	$(TOOLCHAIN)-gcc $(CFLAGS) -c $< -o $@
 
 kernel8.img: start.o $(OBJS)
-	$(TOOLCHAIN_PREFIX)-ld -nostdlib start.o $(OBJS) -T link.ld -o kernel8.elf
-	$(TOOLCHAIN_PREFIX)-objcopy -O binary kernel8.elf kernel8.img
+	$(TOOLCHAIN)-ld -nostdlib start.o $(OBJS) -T link.ld -o kernel8.elf
+	$(TOOLCHAIN)-objcopy -O binary kernel8.elf kernel8.img
 
 clean:
 	rm kernel8.elf *.o >/dev/null 2>/dev/null || true
 
 run:
-	qemu-system-aarch64 -M raspi3b -kernel kernel8.img -serial null -serial stdio
+	qemu-system-aarch64 -M raspi3b -kernel kernel8.img -serial stdio
