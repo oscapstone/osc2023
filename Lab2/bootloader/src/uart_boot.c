@@ -5,6 +5,7 @@ extern char __end[];
 
 
 void loading(){
+
 	uart_puts("Copy bootloader to 0x60000\r\n");
     char *current_addr = __start;
     char *end_addr = __end;
@@ -24,6 +25,7 @@ void loading(){
 }
 
 void load_new_kernel(){
+    
     uart_puts("Copy new kernel to 0x80000\r\n");
     char *current_addr;
     current_addr = KERNEL_ADDR;

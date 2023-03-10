@@ -2,7 +2,7 @@
 
 SECTIONS
 {
-    . = 0x60000;
+    . = 0x80000;
     __start = .;
 
     .text : { 
