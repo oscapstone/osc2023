@@ -16,4 +16,6 @@ SECTIONS
         bss_begin = .;
         .bss : { *(.bss*) } 
         bss_end = .;
+
+        heap_start = .;
 }
