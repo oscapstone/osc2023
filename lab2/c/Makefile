@@ -1,6 +1,7 @@
-DEFAULT_PROFILE = DEBUG
-SRC_DIR         = src
-BUILD_DIR       = build
+DEFAULT_PROFILE  = DEBUG
+BOOTLOADER_RELOC = 1
+SRC_DIR          = src
+BUILD_DIR        = build
 
 AS      = aarch64-linux-gnu-as
 CC      = aarch64-linux-gnu-gcc
@@ -19,9 +20,10 @@ CFLAGS_RELEASE = -O3 -mcpu=cortex-a53
 
 OBJS                 = start main delay initrd mailbox mailbox_info reset \
                        serial shell simple_malloc libc/string
-OBJS_BOOTLOADER      = start bootloader-main bootloader_crc32 delay serial
+OBJS_BOOTLOADER      = $(if $(BOOTLOADER_RELOC),bootloader-reloc) start \
+                       bootloader-main bootloader_crc32 delay serial
 LD_SCRIPT            = $(SRC_DIR)/linker.ld
-LD_SCRIPT_BOOTLOADER = $(SRC_DIR)/bootloader.ld
+LD_SCRIPT_BOOTLOADER = $(SRC_DIR)/bootloader$(if $(BOOTLOADER_RELOC),-reloc).ld
 
 # ------------------------------------------------------------------------------
 
@@ -72,6 +74,14 @@ qemu: $(OUT_DIR)/kernel8.img
 qemu-debug: $(OUT_DIR)/kernel8.img
 	qemu-system-aarch64 -M raspi3b -kernel $< -initrd ../tests/initramfs.cpio \
 		-display none -serial null -serial stdio -S -s
+
+qemu-bootloader: $(OUT_DIR)/bootloader.img
+	qemu-system-aarch64 -M raspi3b -kernel $< -initrd ../tests/initramfs.cpio \
+		-display none -serial null -serial pty
+
+qemu-debug-bootloader: $(OUT_DIR)/bootloader.img
+	qemu-system-aarch64 -M raspi3b -kernel $< -initrd ../tests/initramfs.cpio \
+		-display none -serial null -serial pty -S -s
 
 gdb: $(OUT_DIR)/kernel8.elf
 	gdb -s $< -ex 'target remote :1234'
