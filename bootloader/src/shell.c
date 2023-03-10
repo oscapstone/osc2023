@@ -3,6 +3,8 @@
 #include "uart.h"
 #include "power.h"
 
+#define BASEADDRESS         ((volatile char*)(0x00800000))
+
 
 void shell_init()
 {
@@ -35,6 +37,7 @@ void shell_controller(char *cmd)
         uart_puts("help      : print this help menu\n");
         uart_puts("hello     : print Hello World!\n");
         // uart_puts("timestamp: get current timestamp\n");
+        uart_puts("loadimg   : load image\n");
         uart_puts("reboot    : reboot the device\n");
     } else if (!strcmp(cmd, "hello")) {
         uart_puts("Hello World!\n");
@@ -42,7 +45,41 @@ void shell_controller(char *cmd)
         reset();
     } else if (!strcmp(cmd, "shutdown")) {
         power_off();
+    } else if (!strcmp(cmd, "loadimg")) {
+        load_img();
     } else {
         uart_puts("shell: command not found\n");
     }
+}
+
+void load_img()
+{
+    char c;
+    char *kernel_address = (char *) 0x80000;
+
+    // int tmp;
+    // tmp = read_int();
+    // uart_hex(tmp);
+
+
+    int img_size = 0;
+    for (int i = 0; i < 4; i++) {
+        img_size <<= 8;
+        img_size |= (int) uart_getb();
+    }
+
+    uart_puts("img_size: ");
+    uart_hex(img_size);
+    uart_send('\n');
+
+    // Start receive image
+    for (int i = 0; i < img_size; i++) {
+        c = uart_getb();
+        *(kernel_address + i) = c;
+    }
+
+    uart_puts("Jump to image\n");
+
+    void (*start_os)(void) = (void *)kernel_address;
+    start_os();
 }

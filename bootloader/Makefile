@@ -36,7 +36,7 @@ TOOLCHAIN = aarch64-none-linux-gnu
 
 .PHONY: all clean
 
-all: clean build_dir bootloader.img
+all: clean build_dir kernel8.img
 
 $(BUILD_DIR)/src/%.o: $(SRC_DIR)/%.S
 	mkdir -p $(@D)
@@ -48,10 +48,10 @@ $(BUILD_DIR)/src/%.o: $(SRC_DIR)/%.c
 	mkdir -p $(@D)
 	$(TOOLCHAIN)-gcc $(CFLAGS) $< -o $@
 
-bootloader.img: $(SRC_OBJS)
+kernel8.img: $(SRC_OBJS)
 	@echo "SRC_OBJS is $(SRC_OBJS)"
 	$(TOOLCHAIN)-ld -nostdlib $(SRC_OBJS) -T link.ld -o kernel8.elf
-	$(TOOLCHAIN)-objcopy -O binary kernel8.elf bootloader.img
+	$(TOOLCHAIN)-objcopy -O binary kernel8.elf kernel8.img
 
 clean:
 	rm -rf $(BUILD_DIR)/*
