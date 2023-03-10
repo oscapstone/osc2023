@@ -20,3 +20,15 @@ make
 ```
 make run
 ```
+
+## Send image to Raspi 3
+
+```
+make sendimg
+```
+
+## Communicate with Raspi 3 after `make sendimg`
+
+```
+make commu
+```
