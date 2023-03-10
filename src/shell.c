@@ -44,7 +44,8 @@ void shell_controller(char *cmd)
     } else if (!strcmp(cmd, "shutdown")) {
         power_off();
     } else if (!strcmp(cmd, "ls")) {
-        initrd_list((char*)&_binary_ramdisk_start);
+        // initrd_list((char*)&_binary_ramdisk_start);
+        initrd_list((char*) 0x8000000);
     } else {
         uart_puts("shell: command not found\n");
     }

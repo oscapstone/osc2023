@@ -49,7 +49,10 @@ $(BUILD_DIR)/src/%.o: $(SRC_DIR)/%.c
 	$(TOOLCHAIN)-gcc $(CFLAGS) $< -o $@
 
 cpio:
-	ls *.md *.py | cpio -H hpodc -o >ramdisk
+	# ls *.md *.py | cpio -H hpodc -o >ramdisk
+
+initramfs.cpio:
+	ls *.md *.py | cpio -o -H hpodc >initramfs.cpio
 
 rd.o: ramdisk
 	aarch64-none-linux-gnu-ld -r -b binary -o rd.o ramdisk
@@ -62,8 +65,9 @@ clean:
 	rm -rf $(BUILD_DIR)/*
 	rm *.elf *.img *.o >/dev/null 2>/dev/null || true
 
-run:
-	qemu-system-aarch64 -M raspi3b -kernel kernel8.img -serial stdio
+run: initramfs.cpio
+	qemu-system-aarch64 -M raspi3b -kernel kernel8.img -initrd initramfs.cpio -serial stdio
+	# qemu-system-aarch64 -M raspi3b -kernel kernel8.img -serial stdio
 
 tty:
 	qemu-system-aarch64 -M raspi3b -serial null -serial pty
