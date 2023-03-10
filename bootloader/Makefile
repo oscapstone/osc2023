@@ -61,7 +61,7 @@ run:
 	qemu-system-aarch64 -M raspi3b -kernel kernel8.img -serial stdio
 
 tty:
-	qemu-system-aarch64 -M raspi3b -serial null -serial pty
+	qemu-system-aarch64 -M raspi3b -kernel kernel8.img -serial pty
 
 
 build_dir: $(BUILD_DIR)

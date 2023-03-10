@@ -63,6 +63,12 @@ run:
 tty:
 	qemu-system-aarch64 -M raspi3b -serial null -serial pty
 
+sendimg:
+	python sendimg.py kernel8.img /dev/cu.usbserial-0001
+
+commu:
+	python communicate.py /dev/cu.usbserial-0001
+
 
 build_dir: $(BUILD_DIR)
 

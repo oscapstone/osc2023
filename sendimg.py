@@ -18,6 +18,7 @@ except:
 
 # usage
 # $ python sendimg.py kernel8.img /dev/cu.usbserial-0001
+# $ python sendimg.py kernel8.img /dev/ttys002 # test in qemu
 
 
 def checksum(bytecodes):
@@ -33,7 +34,7 @@ def receiveMsg():
         print('====No data available====')
 
 def sendMsg():
-    cmd = input("# ")
+    cmd = input("$ ")
     if cmd == "exit":
         exit()
     cmd = '\n' + cmd + '\n'
@@ -44,6 +45,17 @@ def sendMsg():
     time.sleep(0.1)
     return 1
 
+def communicate():
+    while True:
+        receiveMsg()
+        if sendMsg():
+            time.sleep(0.01)
+            receiveMsg()
+            time.sleep(0.01)
+        else:
+            break
+
+
 def main():
     file_path = args.image
     file_size = os.stat(file_path).st_size
@@ -53,6 +65,17 @@ def main():
         bytecodes = f.read()
 
     file_checksum = checksum(bytecodes)
+
+    # # To communicate with Raspi 3 shell
+    # while True:
+    #     receiveMsg()
+    #     if sendMsg():
+    #         print("Write int into rapi 3")
+    #         receiveMsg()
+    #         time.sleep(0.01)
+    #         ser.write(file_size.to_bytes(4, byteorder="big"))
+    #     else:
+    #         break
 
     # send command to Raspi 3
     time.sleep(0.1)
@@ -68,18 +91,6 @@ def main():
 
     # Show the message printed by Raspi 3
     receiveMsg()
-
-    # # To communicate with Raspi 3 shell
-    # while True:
-    #     receiveMsg()
-    #     if sendMsg():
-    #         print("Write int into rapi 3")
-    #         receiveMsg()
-    #         time.sleep(0.01)
-    #         ser.write(file_size.to_bytes(4, byteorder="big"))
-    #     else:
-    #         break
-
 
     # # Write checksum to Raspi 3
     # ser.write(file_checksum.to_bytes(4, byteorder="big"))
@@ -99,7 +110,9 @@ def main():
             pass
     receiveMsg()
     print("------------------")
-    print(f"Image Size: {hex(file_size)}, Checksum: {file_checksum}")
+    # print(f"Image Size: {hex(file_size)}, Checksum: {file_checksum}")
+    print(f"Image Size: {hex(file_size)}")
+    communicate()
 
 
 if __name__ == "__main__":
