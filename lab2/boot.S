@@ -6,7 +6,7 @@ _start:
 	//mrs	x1, mpidr_el1	// read the cpu id
 	mov	sp, #0x30000	// Set stack to 0x30000		
 				// Note: stack is growing lower
-	mov	x10, x0
+	mov	x10, x0		// Note: x0 for the start address of btb
 	mov 	x11, x1
 	mov	x12, x2
 	mov	x13, x3

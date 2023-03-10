@@ -45,6 +45,8 @@ void initrd_list(char* buf){
 		cpio_t *header = (cpio_t*)buf;
 		int ns = hex2bin(header->namesize, 8);	// Get the size of name
 		int fs = hex2bin(header->filesize, 8);	// Get teh size of file content
+		int pad_n = (4 - ((sizeof(cpio_t) + ns) % 4)) % 4;	// Padding size
+		int pad_f = (4 - (fs % 4)) % 4;
 
 		// Print the meta of file
 		// Mode
@@ -60,7 +62,7 @@ void initrd_list(char* buf){
 		uart_putsn(buf + sizeof(cpio_t), ns);
 		uart_puts("\n");
 
-		buf += (sizeof(cpio_t) + ns + fs); 	// Jump to next record
+		buf += (sizeof(cpio_t) + ns + fs + pad_n + pad_f); 	// Jump to next record
 	}
 	return;
 }
@@ -73,19 +75,23 @@ void initrd_list(char* buf){
 void initrd_cat(const char* name, char* buf){
 	int ns = 0;
 	int fs = 0;
+	int pad_n = 0;
+	int pad_f = 0;
 	while(!(memcmp(buf, "070701", 6)) && memcmp(buf + sizeof(cpio_t), "TRAILER!!", 9)){	// test magic number of new ascii 
 		cpio_t *header = (cpio_t*)buf;
 		ns = hex2bin(header->namesize, 8);	// Get the size of name
 		fs = hex2bin(header->filesize, 8);	// Get teh size of file content
+		pad_n = (4 - ((sizeof(cpio_t) + ns) % 4)) % 4;	// Padding size
+		pad_f = (4 - (fs % 4)) % 4;
 		// Find the target file
 		if(!(strncmp(buf + sizeof(cpio_t), name, ns - 1)))
 			break;
-		buf += (sizeof(cpio_t) + ns + fs);	// Jump to next record
+		buf += (sizeof(cpio_t) + ns + fs + pad_n + pad_f);	// Jump to next record
 	}
 	if(fs > 0){
 		uart_putsn(buf + sizeof(cpio_t), ns);		// Show File name
 		uart_puts("\'s content :\n");
-		uart_putsn(buf + sizeof(cpio_t) + ns, fs);	// Show File content
+		uart_putsn(buf + sizeof(cpio_t) + ns + pad_n, fs);	// Show File content
 	}
 	return;
 }

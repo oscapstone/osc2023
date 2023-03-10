@@ -33,7 +33,7 @@ kernel.elf:  start.o $(OBJS)
 %.img: %.elf
 	$(OBJCOPY) -O binary $< $@ 
 
-initramfs.cpio: write.sh
+initramfs.cpio: write.sh boot.S start.S
 	ls $^ | cpio -H newc -o > $@
 
 run_asm: kernel8.img kernel.img
@@ -46,7 +46,10 @@ run: kernel8.img kernel.img
 	$(QEMU) -M raspi3 -display none -serial null -serial pty -kernel $<
 
 run_kernel: kernel.img initramfs.cpio
-	$(QEMU) -M raspi3 -display none -serial null -serial stdio -initrd initramfs.cpio -kernel $<
+	$(QEMU) -M raspi3 -display none -serial null -serial stdio -initrd initramfs.cpio -dtb bcm2710-rpi-3-b-plus.dtb -kernel $<
+
+run_kernel_dbg: kernel.img initramfs.cpio
+	$(QEMU) -M raspi3 -display none -serial null -serial stdio -initrd initramfs.cpio -dtb bcm2710-rpi-3-b-plus.dtb -S -s -kernel $<
 
 $(OBJ_DIR):
 	mkdir -p $@
