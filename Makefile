@@ -48,9 +48,14 @@ $(BUILD_DIR)/src/%.o: $(SRC_DIR)/%.c
 	mkdir -p $(@D)
 	$(TOOLCHAIN)-gcc $(CFLAGS) $< -o $@
 
-kernel8.img: $(SRC_OBJS)
-	@echo "SRC_OBJS is $(SRC_OBJS)"
-	$(TOOLCHAIN)-ld -nostdlib $(SRC_OBJS) -T link.ld -o kernel8.elf
+cpio:
+	ls *.md *.py | cpio -H hpodc -o >ramdisk
+
+rd.o: ramdisk
+	aarch64-none-linux-gnu-ld -r -b binary -o rd.o ramdisk
+
+kernel8.img: $(SRC_OBJS) rd.o
+	$(TOOLCHAIN)-ld -nostdlib $(SRC_OBJS) rd.o -T link.ld -o kernel8.elf
 	$(TOOLCHAIN)-objcopy -O binary kernel8.elf kernel8.img
 
 clean:

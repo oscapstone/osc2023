@@ -2,17 +2,13 @@
 #include "my_string.h"
 #include "uart.h"
 #include "power.h"
-
+#include "initrd.h"
 
 void shell_init()
 {
     uart_init();
     uart_puts("\n\n Hello from Raspi 3\n");
 }
-
-
-
-
 
 void shell_input(char *cmd)
 {
@@ -38,6 +34,7 @@ void shell_controller(char *cmd)
     else if (!strcmp(cmd, "help")) {
         uart_puts("help      : print this help menu\n");
         uart_puts("hello     : print Hello World!\n");
+        uart_puts("ls        : list file in rd.o\n");
         // uart_puts("timestamp: get current timestamp\n");
         uart_puts("reboot    : reboot the device\n");
     } else if (!strcmp(cmd, "hello")) {
@@ -46,6 +43,8 @@ void shell_controller(char *cmd)
         reset();
     } else if (!strcmp(cmd, "shutdown")) {
         power_off();
+    } else if (!strcmp(cmd, "ls")) {
+        initrd_list((char*)&_binary_ramdisk_start);
     } else {
         uart_puts("shell: command not found\n");
     }
