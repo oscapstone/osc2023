@@ -100,6 +100,18 @@ char uart_getc() {
     return r=='\r'?'\n':r;
 }
 
+char uart_getb() {
+    char r;
+
+    do {
+        asm volatile("nop");
+    } while (*UART0_FR&0x10);
+
+    r = (char)(*UART0_DR);
+    
+    return r;
+}
+
 /**
  * Display a string
  */
@@ -125,4 +137,17 @@ void uart_hex(unsigned int d) {
         n+=n>9?0x37:0x30;
         uart_send(n);
     }
+}
+
+int check_digit(char ch) { return (ch >= '0') && (ch <= '9'); }
+
+int read_int() {
+    int x = 0, f = 0;
+    char ch = 0;
+    while (!check_digit(ch)) {
+        f |= ch == '-';
+        ch = uart_getc();
+    }
+    while (check_digit(ch)) x = (x << 3) + (x << 1) + (ch ^ 48), ch = uart_getc();
+    return f ? -x : x;
 }

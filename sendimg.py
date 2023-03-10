@@ -17,7 +17,7 @@ except:
     exit(1)
 
 # usage
-# $ python sendimg.py command.txt /dev/cu.usbserial-0001
+# $ python sendimg.py kernel8.img /dev/cu.usbserial-0001
 
 
 def checksum(bytecodes):
@@ -25,19 +25,17 @@ def checksum(bytecodes):
     return int(np.array(list(bytecodes), dtype=np.int32).sum())
 
 def receiveMsg():
-    print("=========receive========")
     if ser.inWaiting() > 0:
         # 读取接收缓冲区中的所有数据
         data = ser.read(ser.inWaiting())
         print(data.decode())
     else:
-        print('No data available.')
-    print("======end========")
+        print('====No data available====')
 
 def sendMsg():
     cmd = input("# ")
     if cmd == "exit":
-        return 0
+        exit()
     cmd = '\n' + cmd + '\n'
     for c in cmd:
         ser.write(c.encode())
@@ -49,41 +47,46 @@ def sendMsg():
 def main():
     file_path = args.image
     file_size = os.stat(file_path).st_size
+    print(file_size)
 
     with open(file_path, 'rb') as f:
         bytecodes = f.read()
 
     file_checksum = checksum(bytecodes)
 
-    # cmd = "loadimg\n"
-    # for c in cmd:
-    #     ser.write(c.encode())
-    #     time.sleep(0.01)
-    # ser.write(b'\n')
-    # time.sleep(0.1)
+    # send command to Raspi 3
+    time.sleep(0.1)
+    cmd = "loadimg\n"
+    for c in cmd:
+        ser.write(c.encode())
+        time.sleep(0.01)
+    time.sleep(0.1)
 
-    # cmd = "\nhelp\n"
-    # for c in cmd:
-    #     ser.write(c.encode())
-    #     time.sleep(0.01)
-    # # ser.write(b'\n')
-    # time.sleep(0.1)
-
-    # To communicate with Raspi 3
-    while True:
-        if sendMsg():
-            receiveMsg()
-        else:
-            break
-
-
+    # Write file size to Raspi 3
     ser.write(file_size.to_bytes(4, byteorder="big"))
-    ser.write(file_checksum.to_bytes(4, byteorder="big"))
+    time.sleep(0.01)
 
-    print("------------------")
-    print(f"Image Size: {file_size}, Checksum: {file_checksum}")
+    # Show the message printed by Raspi 3
+    receiveMsg()
+
+    # # To communicate with Raspi 3 shell
+    # while True:
+    #     receiveMsg()
+    #     if sendMsg():
+    #         print("Write int into rapi 3")
+    #         receiveMsg()
+    #         time.sleep(0.01)
+    #         ser.write(file_size.to_bytes(4, byteorder="big"))
+    #     else:
+    #         break
+
+
+    # # Write checksum to Raspi 3
+    # ser.write(file_checksum.to_bytes(4, byteorder="big"))
+
 
     per_chunk = 128
+    # Compute the chunk count of image file
     chunk_count = file_size // per_chunk
     chunk_count = chunk_count + 1 if file_size % per_chunk else chunk_count
 
@@ -94,6 +97,9 @@ def main():
         ser.write(bytecodes[i * per_chunk: (i+1) * per_chunk])
         while not ser.writable():
             pass
+    receiveMsg()
+    print("------------------")
+    print(f"Image Size: {hex(file_size)}, Checksum: {file_checksum}")
 
 
 if __name__ == "__main__":
