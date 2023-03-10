@@ -24,11 +24,10 @@ void *simple_malloc(const size_t size) {
     alloc_head = ALLOC_AREA_START;
   }
 
-  char *const end = alloc_head + size;
-  if (end > ALLOC_AREA_END) // Not enough memory.
+  if ((size_t)(ALLOC_AREA_END - alloc_head) < size) // Not enough memory.
     return NULL;
 
   void *const result = alloc_head;
-  alloc_head = (char *)ALLOC_ALIGN((uintptr_t)end);
+  alloc_head = (char *)ALLOC_ALIGN((uintptr_t)(alloc_head + size));
   return result;
 }

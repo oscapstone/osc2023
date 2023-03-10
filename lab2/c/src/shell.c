@@ -32,17 +32,23 @@ static size_t _shell_read_cmd(char *const buf, const size_t n) {
       }
     } else {
       serial_putc(c);
-      if (cmd_len < n - 1) {
+      if (n > 0 && cmd_len < n - 1) {
         buf[cmd_len] = c;
       }
       cmd_len++;
     }
   }
 
-  if (cmd_len >= n - 1) {
+  if (n == 0) {
+    cmd_len = 0;
+  } else if (cmd_len >= n - 1) {
     cmd_len = n - 1;
   }
-  buf[cmd_len] = '\0';
+
+  if (n > 0) {
+    buf[cmd_len] = '\0';
+  }
+
   return cmd_len;
 }
 
