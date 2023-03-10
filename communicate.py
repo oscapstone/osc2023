@@ -1,3 +1,7 @@
+# usage
+# $ python communicate.py /dev/cu.usbserial-0001
+# $ python communicate.py /dev/ttys002 # test in qemu
+
 import argparse
 import serial
 import os
@@ -14,11 +18,6 @@ try:
 except:
     print("Serial init failed!")
     exit(1)
-
-# usage
-# $ python communicate.py /dev/cu.usbserial-0001
-# $ python communicate.py /dev/ttys002 # test in qemu
-
 
 def receiveMsg():
     if ser.inWaiting() > 0:
@@ -50,10 +49,8 @@ def communicate():
         else:
             break
 
-
 def main():
     communicate()
-
 
 if __name__ == "__main__":
     main()
