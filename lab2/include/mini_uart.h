@@ -10,5 +10,6 @@ void uart_send_hex(unsigned int n);
 int  uart_recv_int(void);
 void uart_send_int(int num);
 void uart_endl(void);
+void uart_readline(char* buffer, int len);
 
 #endif /* MINI_UART_H */

@@ -113,6 +113,27 @@ void uart_endl(void)
 	uart_send('\n');
 }
 
+void uart_readline(char* buffer, int len)
+{
+	unsigned int idx = 0;
+        char c = '\0';
+        
+        while (1) {
+                c = uart_recv();
+                if (c == '\r' || c == '\n') {
+                        uart_endl();
+                        
+                        if (idx < len) buffer[idx] = '\0';
+                        else buffer[len - 1] = '\0';
+                        
+                        break;
+                } else {
+                        uart_send(c);
+                        buffer[idx++] = c;
+                } 
+        }
+}
+
 void uart_init(void)
 {
 	unsigned int selector;
