@@ -1,7 +1,7 @@
 # usage
 # $ python sendimg.py kernel8.img /dev/cu.usbserial-0001
 # $ python sendimg.py kernel8.img /dev/ttys002 # test in qemu
-# $ python sendimg.py kernel8.img /dev/pts/1 # test in qemu, ubuntu
+# $ python sendimg.py kernel8.img /dev/pts/2 # test in qemu, ubuntu, not work!!
 
 import argparse
 import serial

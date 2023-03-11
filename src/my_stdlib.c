@@ -1,9 +1,18 @@
+#include "my_stdlib.h"
+#include "my_stddef.h"
 
+unsigned long available = 0;
 
-
-int memcmp(void *s1, void *s2, int n)
+void *simple_malloc(size_t size)
 {
-    unsigned char *a=s1,*b=s2;
-    while(n-->0){ if(*a!=*b) { return *a-*b; } a++; b++; }
-    return 0;
+    if (BASE + available > LIMIT)
+        return NULL;
+    void * returned_pointer = (void *) (BASE + available);
+    available += size;
+    return returned_pointer;
+}
+
+int return_available()
+{
+    return (int) BASE + available;
 }

@@ -27,6 +27,7 @@
 #include "power.h"
 #include "shell.h"
 #include "mbox.h"
+#include "my_stdlib.h"
 
 #define CMD_LEN 128
 
@@ -35,6 +36,19 @@ void main()
     shell_init();
     get_board_revision();
     get_memory_info();
+
+    uart_hex(return_available());
+    uart_send('\n');
+    char *string = (char *) simple_malloc(sizeof(char) * 8);
+    uart_hex(return_available());
+    uart_send('\n');
+
+    char *string2 = (char *) simple_malloc(sizeof(char) * 20);
+    uart_hex(return_available());
+    uart_send('\n');
+
+
+
     while(1) {
         uart_puts("# ");
         char cmd[CMD_LEN];

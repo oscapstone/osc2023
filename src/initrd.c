@@ -22,12 +22,11 @@
  * DEALINGS IN THE SOFTWARE.
  *
  */
-
 #include "uart.h"
 #include "shell.h"
 #include "my_string.h"
 #include "file.h"
-#include "my_stdlib.h"
+#include "my_string.h"
 #include "initrd.h"
 
 #define buf_size 128
