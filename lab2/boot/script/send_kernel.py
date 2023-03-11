@@ -24,6 +24,6 @@ with open(args.img, 'rb') as f:
         for i in range(img_size):
                 k = f.read(1)
                 tty.write(k)
-                sleep(0.0001)
+                sleep(0.001)
 
 print('Finished sending kernel')
