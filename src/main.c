@@ -47,8 +47,6 @@ void main()
     uart_hex(return_available());
     uart_send('\n');
 
-
-
     while(1) {
         uart_puts("# ");
         char cmd[CMD_LEN];
