@@ -1,11 +1,12 @@
+#include "uart.h"
 
 
-
-void readfile(char *target, char *buffer, unsigned long buff_size)
+void readfile(char *target, unsigned long file_size)
 {
-
+    while (file_size-- > 0)
+        uart_send(*(target++));
 }
 void readline(char *target, char *buffer, unsigned long buff_size)
 {
-    
+
 }

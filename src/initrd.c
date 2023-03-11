@@ -26,6 +26,7 @@
 #include "uart.h"
 #include "shell.h"
 #include "my_string.h"
+#include "file.h"
 
 // add memory compare, gcc has a built-in for that, clang needs implementation
 #ifdef __clang__
@@ -68,18 +69,18 @@ void initrd_list(char *buf)
         // if it's a cpio newc archive. Cpio also has a trailer entry
     while(!memcmp(buf,"070701",6) && memcmp(buf+sizeof(cpio_f),"TRAILER!!",9)) {
         cpio_f *header = (cpio_f*) buf;
-        int ns = oct2bin(header->namesize, 8);
-        int fs = oct2bin(header->filesize, 8);
+        int ns = hex2bin(header->namesize, 8);
+        int fs = hex2bin(header->filesize, 8);
         // print out meta information
-        uart_hex(oct2bin(header->mode, 8));  // mode (access rights + type)
+        uart_hex(hex2bin(header->mode, 8));  // mode (access rights + type)
         uart_send(' ');
         uart_hex((unsigned int)((unsigned long)buf)+sizeof(cpio_f)+ns);
         uart_send(' ');
         uart_hex(fs);                       // file size in hex
         uart_send(' ');
-        uart_hex(oct2bin(header->uid, 8));   // user id in hex
+        uart_hex(hex2bin(header->uid, 8));   // user id in hex
         uart_send('.');
-        uart_hex(oct2bin(header->gid, 8));   // group id in hex
+        uart_hex(hex2bin(header->gid, 8));   // group id in hex
         uart_send('\t');
         uart_puts(buf+sizeof(cpio_f));      // filename
         uart_puts("\n");
@@ -98,8 +99,8 @@ void initrd_ls(char *buf)
     // if it's a cpio newc archive. Cpio also has a trailer entry
     while(!memcmp(buf,"070701",6) && memcmp(buf+sizeof(cpio_f),"TRAILER!!",9)) {
         cpio_f *header = (cpio_f*) buf;
-        int ns = oct2bin(header->namesize, 8);
-        int fs = oct2bin(header->filesize, 8);
+        int ns = hex2bin(header->namesize, 8);
+        int fs = hex2bin(header->filesize, 8);
         // print out filename
         uart_puts(buf+sizeof(cpio_f));      // filename
         uart_puts("\n");
@@ -119,19 +120,24 @@ void initrd_cat(char *buf)
     // if it's a cpio newc archive. Cpio also has a trailer entry
     while(!memcmp(buf,"070701",6) && memcmp(buf+sizeof(cpio_f),"TRAILER!!",9)) {
         cpio_f *header = (cpio_f*) buf;
-        int ns = oct2bin(header->namesize, 8);
-        int fs = oct2bin(header->filesize, 8);
+        int ns = hex2bin(header->namesize, 8);
+        int fs = hex2bin(header->filesize, 8);
 
         // check filename with buffer
         if (!strcmp(buffer, buf + sizeof(cpio_f))) {
-            uart_puts("\nFound the file\n");
+            if (fs == 0) {
+                uart_send('\n');
+                uart_puts("This is a directory\n");
+                return;
+            } else {
+                uart_send('\n');
+                readfile(buf + sizeof(cpio_f) + ns, fs);
+                return;
+            }
         }
-
-        // // print out filename
-        // uart_puts(buf+sizeof(cpio_f));      // filename
-        // uart_puts("\n");
 
         // jump to the next file
         buf+=(sizeof(cpio_f) + ns + fs);
     }
+    uart_puts("File not found\n");
 }
