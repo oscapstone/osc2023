@@ -64,6 +64,8 @@ typedef struct {
  */
 void initrd_list(char *buf)
 {
+    if (memcmp(buf, "070701", 6))
+        return;
     uart_puts("Type     Offset   Size     Access rights\tFilename\n");
 
         // if it's a cpio newc archive. Cpio also has a trailer entry
@@ -94,6 +96,8 @@ void initrd_list(char *buf)
  */
 void initrd_ls(char *buf)
 {
+    if (memcmp(buf, "070701", 6))
+        return;
     uart_puts(".\n");
 
     // if it's a cpio newc archive. Cpio also has a trailer entry
@@ -111,6 +115,8 @@ void initrd_ls(char *buf)
 
 void initrd_cat(char *buf)
 {
+    if (memcmp(buf, "070701", 6))
+        return;
     char buffer[buf_size];
 
     // get file name
