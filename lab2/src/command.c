@@ -76,12 +76,12 @@ int cat(){
 		}
 		tmp++;
 	}
-	initrd_cat(buf, (char*)0x8000000);
+	initrd_cat(buf);
 	return 0;
 }
 
 int ls(){
-	initrd_list((char*)0x8000000);
+	initrd_list();
 	return 0;
 }
 

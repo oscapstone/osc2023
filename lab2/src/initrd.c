@@ -1,6 +1,9 @@
+#include "dtb.h"
 #include "initrd.h"
 #include "uart.h"
 #include "str.h"
+
+static void* lo_ramfs = 0x0;
 
 int memcmp(void* s1, void* s2, int n){
 	unsigned char *a=s1,*b=s2;
@@ -35,7 +38,8 @@ static int hex2bin(char *s, int n){
  *
  * Note: The cpio header is defined in the initrd.h
  */
-void initrd_list(char* buf){
+void initrd_list(void){
+	char* buf = (char*)lo_ramfs;
 	uart_puts("mode\t\t");
 	uart_puts("size\t");
 	uart_puts("namesize\t");
@@ -72,7 +76,8 @@ void initrd_list(char* buf){
  *
  * name: name of the target file.
  */
-void initrd_cat(const char* name, char* buf){
+void initrd_cat(const char* name){
+	char* buf = (char*) lo_ramfs;
 	int ns = 0;
 	int fs = 0;
 	int pad_n = 0;
@@ -96,3 +101,17 @@ void initrd_cat(const char* name, char* buf){
 	return;
 }
 
+int initrd_fdt_callback(void* start, int size){
+	if(size != 4){
+		uart_puti(size);
+		uart_puts("Size not 4!\n");
+		return 1;
+	}
+	uint32_t t = *((uint32_t*) start);
+	lo_ramfs = (void*)(b2l_32(t));
+	return 0;
+}
+
+int initrd_getLo(){
+	return lo_ramfs;
+}

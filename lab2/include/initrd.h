@@ -17,7 +17,11 @@ typedef struct{
 	char namesize[8];   	/* Length of filename in bytes. */
 	char check[8];   	/* Check field, should be all zero. */
 }cpio_t;
-void initrd_list(char* buf);
-void initrd_cat(const char* name, char* buf);
+void initrd_list(void);
+void initrd_cat(const char* name);
+
+// Callback function of dts
+int initrd_fdt_callback(void*, int);
+int initrd_getLo(void);
 #endif	//INITRD_H
 

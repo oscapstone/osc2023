@@ -4,12 +4,12 @@
 
 _start:
 	//mrs	x1, mpidr_el1	// read the cpu id
-	mov	sp, #0x30000	// Set stack to 0x30000		
 				// Note: stack is growing lower
-	mov	x10, x0		// Note: x0 for the start address of btb
+	mov	x25, x0		// Note: x0 for the start address of btb
 	mov 	x11, x1
 	mov	x12, x2
 	mov	x13, x3
+	mov	sp, #0x30000	// Set stack to 0x30000		
 
 2:
 
@@ -40,7 +40,7 @@ _start:
 	mov 	x1, #0x80000
 	str	xzr, [x1]
 	bl	read_kernel	//start reading kernel
-	mov	x0, x10
+	mov	x0, x25
 	mov 	x1, x11
 	mov	x2, x12
 	mov	x3, x13

@@ -140,6 +140,18 @@ void uart_puth(unsigned int h) {
   return;
 }
 
+// For 64 bit hex output
+void uart_puthl(uint64_t h) {
+  unsigned int n;
+  int c;
+  for (c = 60; c >= 0; c -= 4) {
+    n = (h >> c) & 0xf;
+    n += n > 9 ? 0x37 : '0';
+    uart_send(n);
+  }
+  return;
+}
+
 // Load the kernel from uart to 0x80000
 void read_kernel(){
 	// Initial uart
@@ -151,6 +163,10 @@ void read_kernel(){
 redo:
 	size = 0;
 	size = uart_getc() - '0';
+	uart_puts("current size:\n");
+	uart_puti(size);
+	size *= 10;
+	size += uart_getc() - '0';
 	uart_puts("current size:\n");
 	uart_puti(size);
 	size *= 10;
@@ -179,13 +195,11 @@ redo:
 	uart_puts("Kernel transmition Done.\n");
 	 asm volatile(
 	 		
-	 	"mov x0, x10;"
+	 	"mov x0, x25;"
 	 	"mov x1, x11;"
 	 	"mov x2, x12;"
 	 	"mov x3, x13;"
-		"mov x4, #0x80000;"
-		"br x4;"
-	 	"mov x30, 0x80000;"
+	 	"mov x30, #0x80000;"
 	 	"ret"
 	 );
 	return ;
