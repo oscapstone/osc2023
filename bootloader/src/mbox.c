@@ -65,39 +65,3 @@ int mbox_call(unsigned char ch)
     }
     return 0;
 }
-
-void get_board_revision()
-{
-    mbox[0] = 7 * 4;
-    mbox[1] = 0; // MBOX_REQUEST
-    mbox[2] = GET_BOARD_REVISION; // tag identifier
-    mbox[3] = 4;
-    mbox[4] = 0; // the TAG_REQUEST_CODE is 0
-    mbox[5] = 0;
-    mbox[6] = 0; // MBOX_TAG_LAST
-    mbox_call(8);
-
-    uart_puts("0x");
-    uart_hex(mbox[5]);
-    uart_send('\n');
-}
-
-void get_memory_info()
-{
-    mbox[0] = 8 * 4;
-    mbox[1] = 0;
-    mbox[2] = GET_ARM_MEMORY;
-    mbox[3] = 8;
-    mbox[4] = 0; // TAG_REQUEST_CODE is 0
-    mbox[5] = 0;
-    mbox[6] = 0;
-    mbox[7] = 0; // MBOX_TAG_LAST
-    mbox_call(8);
-
-    uart_puts("arm memory base address : 0x");
-    uart_hex(mbox[5]);
-    uart_send('\n');
-    uart_puts("arm memory base size : ");
-    uart_hex(mbox[6]);
-    uart_send('\n');
-}

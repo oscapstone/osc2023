@@ -26,7 +26,6 @@
 #include "uart.h"
 #include "power.h"
 #include "shell.h"
-#include "mbox.h"
 
 #define CMD_LEN 128
 
@@ -35,8 +34,6 @@ void main()
     // set up serial console
     // uart_init();
     shell_init();
-    get_board_revision();
-    get_memory_info();
     while(1) {
         uart_puts("# ");
         char cmd[CMD_LEN];

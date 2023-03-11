@@ -52,7 +52,8 @@ cpio:
 	# ls *.md *.py | cpio -H hpodc -o >ramdisk
 
 initramfs.cpio:
-	ls *.md *.py | cpio -o -H hpodc >initramfs.cpio
+	cd rootfs
+	ls . | cpio -o -H newc > ../initramfs.cpio
 
 rd.o: ramdisk
 	aarch64-none-linux-gnu-ld -r -b binary -o rd.o ramdisk

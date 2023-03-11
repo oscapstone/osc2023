@@ -24,6 +24,8 @@
  */
 
 #include "uart.h"
+#include "shell.h"
+#include "my_string.h"
 
 // add memory compare, gcc has a built-in for that, clang needs implementation
 #ifdef __clang__
@@ -37,112 +39,99 @@ int memcmp(void *s1, void *s2, int n)
 #define memcmp __builtin_memcmp
 #endif
 
-/* POSIX ustar header format */
-typedef struct {                /* byte offset */
-  char name[100];               /*   0 */
-  char mode[8];                 /* 100 */
-  char uid[8];                  /* 108 */
-  char gid[8];                  /* 116 */
-  char size[12];                /* 124 */
-  char mtime[12];               /* 136 */
-  char chksum[8];               /* 148 */
-  char typeflag;                /* 156 */
-  char linkname[100];           /* 157 */
-  char magic[6];                /* 257 */
-  char version[2];              /* 263 */
-  char uname[32];               /* 265 */
-  char gname[32];               /* 297 */
-  char devmajor[8];             /* 329 */
-  char devminor[8];             /* 337 */
-  char prefix[167];             /* 345 */
-} __attribute__((packed)) tar_t;
+#define buf_size 128
 
-/* cpio hpodc format */
 typedef struct {
-    char magic[6];      /* Magic header '070707'. */
-    char dev[6];        /* device number. */
-    char ino[6];        /* "i-node" number. */
-    char mode[6];       /* Permisions. */
-    char uid[6];        /* User ID. */
-    char gid[6];        /* Group ID. */
-    char nlink[6];      /* Number of hard links. */
-    char rdev[6];       /* device major/minor number. */
-    char mtime[11];     /* Modification time. */
-    char namesize[6];   /* Length of filename in bytes. */
-    char filesize[11];  /* File size. */
-} __attribute__((packed)) cpio_t;
-
-/**
- * Helper function to convert ASCII octal number into binary
- * s string
- * n number of digits
- */
-int oct2bin(char *s, int n)
-{
-    int r=0;
-    while(n-->0) {
-        r<<=3;
-        r+=*s++-'0';
-    }
-    return r;
-}
+    char magic[6];
+    char ino[8];
+    char mode[8];
+    char uid[8];
+    char gid[8];
+    char nlink[8];
+    char mtime[8];
+    char filesize[8];
+    char devmajor[8];
+    char devminor[8];
+    char rdevmajor[8];
+    char rdevminor[8];
+    char namesize[8];
+    char check[8];
+} __attribute__((packed)) cpio_f;
 
 /**
  * List the contents of an archive
  */
 void initrd_list(char *buf)
 {
-    char *types[]={"regular", "link  ", "symlnk", "chrdev", "blkdev", "dircty", "fifo  ", "???   "};
-
     uart_puts("Type     Offset   Size     Access rights\tFilename\n");
 
-    // iterate on archive's contents
-    while(!memcmp(buf+257,"ustar",5)) {
-        // if it's an ustar archive
-        tar_t *header=(tar_t*)buf;
-        int fs=oct2bin(header->size,11);
+        // if it's a cpio newc archive. Cpio also has a trailer entry
+    while(!memcmp(buf,"070701",6) && memcmp(buf+sizeof(cpio_f),"TRAILER!!",9)) {
+        cpio_f *header = (cpio_f*) buf;
+        int ns = oct2bin(header->namesize, 8);
+        int fs = oct2bin(header->filesize, 8);
         // print out meta information
-        uart_puts(types[header->typeflag-'0']);
+        uart_hex(oct2bin(header->mode, 8));  // mode (access rights + type)
         uart_send(' ');
-        uart_send(' ');
-        uart_hex((unsigned int)((unsigned long)buf)+sizeof(tar_t));
-        uart_send(' ');
-        uart_hex(fs);               // file size in hex
-        uart_send(' ');
-        uart_puts(header->mode);    // access bits in octal
-        uart_send(' ');
-        uart_puts(header->uname);   // owner
-        uart_send('.');
-        uart_puts(header->gname);   // group
-        uart_send('\t');
-        uart_puts(buf);             // filename
-        if(header->typeflag=='2') {
-            uart_puts(" -> ");      // symlink target
-            uart_puts(header->linkname);
-        }
-        uart_puts("\n");
-        // jump to the next file
-        buf+=(((fs+511)/512)+1)*512;
-    }
-    // if it's a cpio archive. Cpio also has a trailer entry
-    while(!memcmp(buf,"070707",6) && memcmp(buf+sizeof(cpio_t),"TRAILER!!",9)) {
-        cpio_t *header = (cpio_t*)buf;
-        int ns=oct2bin(header->namesize,6);
-        int fs=oct2bin(header->filesize,11);
-        // print out meta information
-        uart_hex(oct2bin(header->mode,6));  // mode (access rights + type)
-        uart_send(' ');
-        uart_hex((unsigned int)((unsigned long)buf)+sizeof(cpio_t)+ns);
+        uart_hex((unsigned int)((unsigned long)buf)+sizeof(cpio_f)+ns);
         uart_send(' ');
         uart_hex(fs);                       // file size in hex
         uart_send(' ');
-        uart_hex(oct2bin(header->uid,6));   // user id in hex
+        uart_hex(oct2bin(header->uid, 8));   // user id in hex
         uart_send('.');
-        uart_hex(oct2bin(header->gid,6));   // group id in hex
+        uart_hex(oct2bin(header->gid, 8));   // group id in hex
         uart_send('\t');
-        uart_puts(buf+sizeof(cpio_t));      // filename
+        uart_puts(buf+sizeof(cpio_f));      // filename
         uart_puts("\n");
         // jump to the next file
-        buf+=(sizeof(cpio_t)+ns+fs);
+        buf+=(sizeof(cpio_f) + ns + fs);
+    }
+}
+
+/**
+ * List the filenames of an archive
+ */
+void initrd_ls(char *buf)
+{
+    uart_puts(".\n");
+
+    // if it's a cpio newc archive. Cpio also has a trailer entry
+    while(!memcmp(buf,"070701",6) && memcmp(buf+sizeof(cpio_f),"TRAILER!!",9)) {
+        cpio_f *header = (cpio_f*) buf;
+        int ns = oct2bin(header->namesize, 8);
+        int fs = oct2bin(header->filesize, 8);
+        // print out filename
+        uart_puts(buf+sizeof(cpio_f));      // filename
+        uart_puts("\n");
+        // jump to the next file
+        buf+=(sizeof(cpio_f) + ns + fs);
+    }
+}
+
+void initrd_cat(char *buf)
+{
+    char buffer[buf_size];
+
+    // get file name
+    uart_puts("filename: ");
+    shell_input(buffer);
+
+    // if it's a cpio newc archive. Cpio also has a trailer entry
+    while(!memcmp(buf,"070701",6) && memcmp(buf+sizeof(cpio_f),"TRAILER!!",9)) {
+        cpio_f *header = (cpio_f*) buf;
+        int ns = oct2bin(header->namesize, 8);
+        int fs = oct2bin(header->filesize, 8);
+
+        // check filename with buffer
+        if (!strcmp(buffer, buf + sizeof(cpio_f))) {
+            uart_puts("\nFound the file\n");
+        }
+
+        // // print out filename
+        // uart_puts(buf+sizeof(cpio_f));      // filename
+        // uart_puts("\n");
+
+        // jump to the next file
+        buf+=(sizeof(cpio_f) + ns + fs);
     }
 }

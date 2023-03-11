@@ -24,3 +24,5 @@
  */
 extern volatile unsigned char _binary_ramdisk_start;
 void initrd_list(char *buf);
+void initrd_ls(char *buf);
+void initrd_cat(char *buf);

@@ -13,9 +13,9 @@ void shell_init()
 void shell_input(char *cmd)
 {
     char c;
-
-    uart_puts("\r# ");
     int idx = 0, end = 0;
+
+    // uart_puts("\r# ");
 
     while ((c = uart_getc()) != '\n') {
         uart_send(c);
@@ -27,7 +27,6 @@ void shell_input(char *cmd)
 
 void shell_controller(char *cmd)
 {
-
     uart_send('\n');
     if (!strcmp(cmd, ""))
         return;
@@ -45,7 +44,13 @@ void shell_controller(char *cmd)
         power_off();
     } else if (!strcmp(cmd, "ls")) {
         // initrd_list((char*)&_binary_ramdisk_start);
+        initrd_ls((char*) 0x8000000);
+    } else if (!strcmp(cmd, "ls -l")) {
+        // initrd_list((char*)&_binary_ramdisk_start);
         initrd_list((char*) 0x8000000);
+    } else if (!strcmp(cmd, "cat")) {
+        // initrd_list((char*)&_binary_ramdisk_start);
+        initrd_cat((char*) 0x8000000);
     } else {
         uart_puts("shell: command not found\n");
     }
