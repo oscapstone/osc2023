@@ -26,8 +26,7 @@ void mini_uart_init(void) {
 
 char mini_uart_getc(void) {
     while ((*AUX_MU_LSR_REG & 0x01) == 0);
-    char c = (char) *AUX_MU_IO_REG;
-    return (c == '\r')? '\n': c;
+    return (char) *AUX_MU_IO_REG;
 }
 
 void mini_uart_gets(char *buffer, int size) {

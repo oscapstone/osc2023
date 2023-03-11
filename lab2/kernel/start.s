@@ -9,7 +9,7 @@ _start:
 
 _halt: 
     wfe                    /* wait for event */
-    b     _halt            /* halt the core */
+    b      _halt           /* halt the core */
 
 _core:
     ldr    x0, =_start     /* set stack top to the head of text section */
