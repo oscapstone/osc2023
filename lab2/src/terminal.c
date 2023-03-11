@@ -1,8 +1,8 @@
 #include "terminal.h"
 #include "command.h"
 #include "mailbox.h"
-#include "uart.h"
 #include "str.h"
+#include "uart.h"
 
 #define BUF_LEN 256
 

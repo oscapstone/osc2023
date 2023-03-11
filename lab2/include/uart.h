@@ -48,14 +48,14 @@
 void uart_setup(void);
 void uart_send(unsigned int);
 char uart_get(void);
-char uart_getc(void);			// get() + '\r' -> '\n'
-void uart_putc(char);			// send() + '\n' -> '\r'
-void uart_puts(char *s);		// Print string to '\0'
-void uart_puti(unsigned int);		// For dec output
+char uart_getc(void);         // get() + '\r' -> '\n'
+void uart_putc(char);         // send() + '\n' -> '\r'
+void uart_puts(char *s);      // Print string to '\0'
+void uart_puti(unsigned int); // For dec output
 void uart_puth(unsigned int);
-void uart_puthl(uint64_t);		// For 64-bit hex
+void uart_puthl(uint64_t); // For 64-bit hex
 void uart_gets(char *s);
-void uart_putsn(char *s, int n);	// only print n chars ignore '\0'
+void uart_putsn(char *s, int n); // only print n chars ignore '\0'
 void read_kernel();
 
 #endif // UART_H

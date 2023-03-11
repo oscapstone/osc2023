@@ -8,25 +8,21 @@
  */
 
 extern int _end;
-static char* head;
+static char *head;
 
 /**
  * Avoid override the location of data
  */
-int heap_init(){
-	head = (char*)&_end;
-	head ++;
-	return 0;
+int heap_init() {
+  head = (char *)&_end;
+  head++;
+  return 0;
 }
 
-void* malloc(int t){
-	void* tmp = (void*)head;
-	if(t <= 0)
-		return 0;
-	head += t;
-	return tmp;
+void *malloc(int t) {
+  void *tmp = (void *)head;
+  if (t <= 0)
+    return 0;
+  head += t;
+  return tmp;
 }
-	
-
-
-

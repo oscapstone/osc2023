@@ -2,6 +2,6 @@
 #define HEAP_H
 
 int heap_init();
-void* malloc(int);
+void *malloc(int);
 
-#endif //HEAP_H
+#endif // HEAP_H
