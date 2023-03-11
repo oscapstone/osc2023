@@ -27,37 +27,10 @@
 #include "shell.h"
 #include "my_string.h"
 #include "file.h"
-
-// add memory compare, gcc has a built-in for that, clang needs implementation
-#ifdef __clang__
-int memcmp(void *s1, void *s2, int n)
-{
-    unsigned char *a=s1,*b=s2;
-    while(n-->0){ if(*a!=*b) { return *a-*b; } a++; b++; }
-    return 0;
-}
-#else
-#define memcmp __builtin_memcmp
-#endif
+#include "my_stdlib.h"
+#include "initrd.h"
 
 #define buf_size 128
-
-typedef struct {
-    char magic[6];
-    char ino[8];
-    char mode[8];
-    char uid[8];
-    char gid[8];
-    char nlink[8];
-    char mtime[8];
-    char filesize[8];
-    char devmajor[8];
-    char devminor[8];
-    char rdevmajor[8];
-    char rdevminor[8];
-    char namesize[8];
-    char check[8];
-} __attribute__((packed)) cpio_f;
 
 /**
  * List the contents of an archive
@@ -68,7 +41,7 @@ void initrd_list(char *buf)
         return;
     uart_puts("Type     Offset   Size     Access rights\tFilename\n");
 
-        // if it's a cpio newc archive. Cpio also has a trailer entry
+    // if it's a cpio newc archive. Cpio also has a trailer entry
     while(!memcmp(buf,"070701",6) && memcmp(buf+sizeof(cpio_f),"TRAILER!!",9)) {
         cpio_f *header = (cpio_f*) buf;
         int ns = hex2bin(header->namesize, 8);

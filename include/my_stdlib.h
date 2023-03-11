@@ -1,0 +1,1 @@
+int memcmp(void *s1, void *s2, int n);

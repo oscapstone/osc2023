@@ -5,7 +5,6 @@
 
 #define BASEADDRESS         ((volatile char*)(0x00800000))
 
-
 void shell_init()
 {
     uart_init();
@@ -15,8 +14,6 @@ void shell_init()
 void shell_input(char *cmd)
 {
     char c;
-
-    uart_puts("\r# ");
     int idx = 0, end = 0;
 
     while ((c = uart_getc()) != '\n') {
@@ -24,7 +21,6 @@ void shell_input(char *cmd)
         cmd[idx++] = c;
         cmd[++end] = '\0';
     }
-
 }
 
 void shell_controller(char *cmd)
@@ -56,11 +52,6 @@ void load_img()
 {
     char c;
     char *kernel_address = (char *) 0x80000;
-
-    // int tmp;
-    // tmp = read_int();
-    // uart_hex(tmp);
-
 
     int img_size = 0;
     for (int i = 0; i < 4; i++) {

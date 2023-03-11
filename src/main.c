@@ -32,8 +32,6 @@
 
 void main()
 {
-    // set up serial console
-    // uart_init();
     shell_init();
     get_board_revision();
     get_memory_info();
@@ -42,11 +40,5 @@ void main()
         char cmd[CMD_LEN];
         shell_input(cmd);
         shell_controller(cmd);
-
-        // c=uart_getc();
-        // uart_send(c);
-        // uart_puts("\n\n");
-        // if(c=='1') power_off();
-        // if(c=='2') reset();
     }
 }
