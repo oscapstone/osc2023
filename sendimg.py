@@ -36,7 +36,7 @@ def sendMsg():
     cmd = input("$ ")
     if cmd == "exit":
         exit()
-    cmd = '\n' + cmd + '\n'
+    cmd = cmd + '\n'
     for c in cmd:
         ser.write(c.encode())
         time.sleep(0.01)
