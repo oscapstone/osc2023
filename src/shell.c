@@ -33,7 +33,8 @@ void shell_controller(char *cmd)
     else if (!strcmp(cmd, "help")) {
         uart_puts("help      : print this help menu\n");
         uart_puts("hello     : print Hello World!\n");
-        uart_puts("ls        : list file in rd.o\n");
+        uart_puts("ls        : list file in initramfs.cpio\n");
+        uart_puts("cat       : show the file content\n");
         // uart_puts("timestamp: get current timestamp\n");
         uart_puts("reboot    : reboot the device\n");
     } else if (!strcmp(cmd, "hello")) {
