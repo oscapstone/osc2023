@@ -25,11 +25,29 @@
 
 SECTIONS
 {
-    . = 0x60000;
-    .text : { KEEP(*(.text.boot)) *(.text .text.* .gnu.linkonce.t*) }
+    . = 0x80000;
+
+    .relocate : {
+        KEEP(*(.text.relocate))
+    }
+
+    . = ALIGN(4096);
+    _begin = .;
+
+    . = ALIGN(4096);
+    .text : { 
+        KEEP(*(.text.boot)) 
+        *(.text) 
+    }
+
+    . = ALIGN(4096);
     .rodata : { *(.rodata .rodata.* .gnu.linkonce.r*) }
     PROVIDE(_data = .);
+
+    . = ALIGN(4096);
     .data : { *(.data .data.* .gnu.linkonce.d*) }
+
+    . = ALIGN(4096);
     .bss (NOLOAD) : {
         . = ALIGN(16);
         __bss_start = .;
@@ -37,8 +55,8 @@ SECTIONS
         *(COMMON)
         __bss_end = .;
     }
-    _end = .;
 
-   /DISCARD/ : { *(.comment) *(.gnu*) *(.note*) *(.eh_frame*) }
+    _end = .;
 }
 __bss_size = (__bss_end - __bss_start)>>3;
+__boot_loader = 0x60000;

@@ -27,8 +27,9 @@ SRC_DIR = src
 
 SRC_C = $(wildcard $(SRC_DIR)/*.c)
 SRC_ASM = $(wildcard $(SRC_DIR)/*.S)
-SRC_OBJS = $(SRC_C:$(SRC_DIR)/%.c=$(BUILD_DIR)/src/%.o)
-SRC_OBJS += $(SRC_ASM:$(SRC_DIR)/%.S=$(BUILD_DIR)/src/%.o)
+SRC_OBJS = $(SRC_C:$(SRC_DIR)/%.c=$(BUILD_DIR)/%.o)
+SRC_OBJS += $(SRC_ASM:$(SRC_DIR)/%.S=$(BUILD_DIR)/%.o)
+
 CFLAGS = -Wall -O2 -ffreestanding -nostdinc -nostdlib -nostartfiles -Iinclude -c
 
 TOOLCHAIN = aarch64-none-linux-gnu
@@ -38,13 +39,13 @@ TOOLCHAIN = aarch64-none-linux-gnu
 
 all: clean build_dir kernel8.img
 
-$(BUILD_DIR)/src/%.o: $(SRC_DIR)/%.S
+# build
+
+$(BUILD_DIR)/%.o: $(SRC_DIR)/%.S
 	mkdir -p $(@D)
 	$(TOOLCHAIN)-gcc $(CFLAGS) -c $< -o $@
 
-# %.o: %.c
-# 	$(TOOLCHAIN)-gcc $(CFLAGS) -c $< -o $@
-$(BUILD_DIR)/src/%.o: $(SRC_DIR)/%.c
+$(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
 	mkdir -p $(@D)
 	$(TOOLCHAIN)-gcc $(CFLAGS) $< -o $@
 
@@ -52,9 +53,7 @@ kernel8.img: $(SRC_OBJS)
 	$(TOOLCHAIN)-ld -nostdlib $(SRC_OBJS) -T link.ld -o kernel8.elf
 	$(TOOLCHAIN)-objcopy -O binary kernel8.elf kernel8.img
 
-clean:
-	rm -rf $(BUILD_DIR)/*
-	rm *.elf *.img *.o >/dev/null 2>/dev/null || true
+# qemu
 
 run:
 	qemu-system-aarch64 -M raspi3b -kernel kernel8.img -serial stdio
@@ -62,8 +61,13 @@ run:
 tty:
 	qemu-system-aarch64 -M raspi3b -kernel kernel8.img -serial pty
 
+# utility
 
 build_dir: $(BUILD_DIR)
 
 $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)
+
+clean:
+	rm -rf $(BUILD_DIR)/*
+	rm *.elf *.img *.o >/dev/null 2>/dev/null || true

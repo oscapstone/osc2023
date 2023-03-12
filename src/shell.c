@@ -45,11 +45,9 @@ void shell_controller(char *cmd)
         initrd_ls((char*) 0x8000000);
         initrd_ls((char*) 0x20000000);
     } else if (!strcmp(cmd, "ls -l")) {
-        // initrd_list((char*)&_binary_ramdisk_start);
         initrd_list((char*) 0x8000000);
         initrd_list((char*) 0x20000000);
     } else if (!strcmp(cmd, "cat")) {
-        // initrd_list((char*)&_binary_ramdisk_start);
         initrd_cat((char*) 0x8000000);
         initrd_cat((char*) 0x20000000);
     } else {

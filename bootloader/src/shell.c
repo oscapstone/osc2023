@@ -8,7 +8,7 @@
 void shell_init()
 {
     uart_init();
-    uart_puts("\n\n Hello from Raspi 3\n");
+    uart_puts("\n\n Hello from Raspi 3b\n");
 }
 
 void shell_input(char *cmd)
@@ -25,14 +25,13 @@ void shell_input(char *cmd)
 
 void shell_controller(char *cmd)
 {
-
     uart_send('\n');
+    
     if (!strcmp(cmd, ""))
         return;
     else if (!strcmp(cmd, "help")) {
         uart_puts("help      : print this help menu\n");
         uart_puts("hello     : print Hello World!\n");
-        // uart_puts("timestamp: get current timestamp\n");
         uart_puts("loadimg   : load image\n");
         uart_puts("reboot    : reboot the device\n");
     } else if (!strcmp(cmd, "hello")) {

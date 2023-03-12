@@ -32,6 +32,7 @@
 void main()
 {
     shell_init();
+
     while(1) {
         uart_puts("# ");
         char cmd[CMD_LEN];
