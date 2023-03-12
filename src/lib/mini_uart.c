@@ -1,6 +1,8 @@
 #include <utils.h>
 #include <mini_uart.h>
 #include <BCM.h>
+#include <type.h>
+#include <stdarg.h>
 
 void uart_send (char c){
 	while(1) {
@@ -53,6 +55,87 @@ int uart_recv_line(char* buf, int maxline){
 
 	*buf = 0;
 	return cnt;
+}
+
+uint32 uart_recv_uint(void){
+	char buf[4];
+    
+    for (int i = 0; i < 4; ++i) {
+        buf[i] = uart_recv();
+    }
+
+    return *((uint32*)buf);
+}
+
+static void uart_send_num(int32 num, int base, int type)
+{
+    static const char digits[16] = "0123456789ABCDEF";
+    char tmp[66];
+    int i;
+
+    if (type | 1) {
+        if (num < 0) {
+            uart_send('-');
+        }
+    }
+
+    i = 0;
+
+    if (num == 0) {
+        tmp[i++] = '0';
+    } else {
+        while (num != 0) {
+            uint8 r = (uint32)num % base;
+            num = (uint32)num / base;
+            tmp[i++] = digits[r];
+        }
+    }
+
+    while (--i >= 0) {
+        uart_send(tmp[i]);
+    }
+}
+
+void uart_printf(char *fmt, ...){
+
+    const char *s;
+    char c;
+    uint32 num;   
+
+    va_list args;
+    va_start(args, fmt);
+
+    for (; *fmt; ++fmt) {
+        if (*fmt != '%') {
+            uart_send(*fmt);
+            continue;
+        }
+
+        ++fmt;
+        switch (*fmt) {
+        case 'c':
+            c = va_arg(args, uint32) & 0xff;
+            uart_send(c);
+            continue;
+        case 'd':
+            num = va_arg(args, int32);
+            uart_send_num(num, 10, 1);
+            continue;
+        case 's':
+            s = va_arg(args, char *);
+            uart_send_string((char*)s);
+            continue;
+        case 'x':
+            num = va_arg(args, uint32);
+            uart_send_num(num, 16, 0);
+            continue;
+        }
+    }
+}
+
+void uart_sendn(char *str, int n){
+    while (n--) 
+        uart_send(*str++);
 }
 
 void uart_init (void)

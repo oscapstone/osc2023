@@ -3,6 +3,7 @@
 
 #ifndef __ASSEMBLER__
 void memzero(unsigned long src, unsigned long n);
+void memncpy(unsigned long dst, unsigned long src, unsigned long n);
 
 #endif
 
