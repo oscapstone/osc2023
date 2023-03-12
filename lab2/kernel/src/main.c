@@ -1,8 +1,9 @@
 #include "mini_uart.h"
 #include "shell.h"
 #include "cpio.h"
+#include "utils.h"
 #include "peripherals/mailbox.h"
-#define MAX_CMD 64
+#define MAX_CMD 512
 
 enum stat {
 	read,
@@ -12,7 +13,24 @@ enum stat {
 void kernel_main(void)
 {
 	uart_init();
-	uart_puts("OSC 2023 shell fron Stefan, please type: \n");
+	uart_puts("\n");
+	void *memory = (void *)0x120000;
+    char *mac = simple_malloc(&memory, 8);
+    uart_puts("8 bytes allocated, starts from: \n");
+    uart_hex((unsigned int)mac);
+    uart_puts("\n");
+    mac = simple_malloc(&memory, 34);
+    uart_puts("34 bytes  bytes allocated, starts from: \n");
+    uart_hex((unsigned int)mac);
+    uart_puts("\n");
+    mac = simple_malloc(&memory, 3);
+    uart_puts("3 bytes  bytes allocated, starts from: \n");
+    uart_hex((unsigned int)mac);
+    uart_puts("\n");
+
+	Welcome();
+	uart_puts("\n");
+	uart_puts("Please type: \n");
 	
 	enum stat s = read;
 	char *cmd[MAX_CMD];
@@ -31,4 +49,12 @@ void kernel_main(void)
 			s = read;
 		}
 	}
+}
+
+void Welcome(){
+	uart_puts("  ____ _____ _____ _____ _    _   _    ___  ____   ____ ____   ___ ____  _____ \n");
+	uart_puts(" / ___|_   _| ____|  ___/ \\  | \\ | |  / _ \\/ ___| / ___|___ \\ / _ \\___ \\|___ / \n");
+	uart_puts(" \\___ \\ | | |  _| | |_ / _ \\ |  \\| | | | | \\___ \\| |     __) | | | |__) | |_ \\ \n");
+	uart_puts("  ___) || | | |___|  _/ ___ \\| |\\  | | |_| |___) | |___ / __/| |_| / __/ ___) |\n");
+	uart_puts(" |____/ |_| |_____|_|/_/   \\_\\_| \\_|  \\___/|____/ \\____|_____|\\___/_____|____/ \n");
 }

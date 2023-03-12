@@ -49,3 +49,9 @@ int atoi(char * c){
 }
 
 // void uart_printf(char *s, )
+
+void* simple_malloc(void **now, int size) {
+    void *ret = *now;
+    *now = *(char **)now + size;
+    return ret;
+}
