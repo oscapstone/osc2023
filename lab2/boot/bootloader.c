@@ -1,7 +1,7 @@
 #include "mini_uart.h"
 #include "utils.h"
 
-void kernel_main(void)
+void bootloader_main(void)
 {
 	uart_init();
 	uart_send_string("Bootloader Starts...\r\n");
@@ -10,6 +10,11 @@ void kernel_main(void)
 	uart_send_string("Kernel size: ");
 	uart_send_int(img_size);
 	uart_endl();
+
+	if (img_size <= 0) {
+		uart_send_string("Failed\r\n");
+		while (1) {}
+	}
 
 	uart_send_string("Receiveing kernel...\r\n");
 	char *adr = (char*)0x80000;

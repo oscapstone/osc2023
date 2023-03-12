@@ -13,16 +13,16 @@ _start:
         /*
          * Gets the processor ID from the mpidr_el1 system register
          */
-        mrs    x0, mpidr_el1
-        and    x0, x0, #0xFF
-        cbz    x0, master
-        b      proc_hang
+        mrs     x0, mpidr_el1
+        and     x0, x0, #0xFF
+        cbz     x0, master
+        b       proc_hang
 
 /*
  * Puts all of the other cores in an endless loop
  */
 proc_hang: 
-        b      proc_hang
+        b       proc_hang
 
 /*
  * Works only with the first core
@@ -32,15 +32,35 @@ master:
          * Cleans the .bss section by calling memzero
          * Arguments are passed to the called function via registers x0–x6
          */
-        adr    x0, bss_begin
-        adr    x1, bss_end
-        sub    x1, x1, x0
-        bl     memzero
-
+        adr     x0, bss_begin
+        adr     x1, bss_end
+        sub     x1, x1, x0
+        bl      memzero
         /*
-         * Initializes the stack pointer
-         * and pass execution to the kernel_main function
-         * LOW_MEMORY is defined in mm.h and is equal to 4MB
+         * Sets arguments for relocation loop
          */
-        mov    sp, #LOW_MEMORY
-        bl     kernel_main
+        adr     x0, bootloader_start
+        adr     x1, relocation_adr
+        adr     x2, bootloader_end
+        sub     x2, x2, x0
+
+relocation_loop:
+        ldr     x3, [x0], #8
+        str     x3, [x1], #8
+        sub     x2,  x2,  #8
+        cbnz    x2, relocation_loop
+
+relocation_branch:
+        /*
+         * Calculates relocated address of bootloader_main
+         */
+        adr     x0, bootloader_main
+        adr     x1, relocation_adr
+        adr     x2, bootloader_start
+        sub     x0, x0, x2
+        add     x0, x0, x1
+        /*
+         * Moves stack pointer and branch to relocated address
+         */
+        mov     sp, #0x80000
+        br      x0

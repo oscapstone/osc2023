@@ -1,8 +1,10 @@
 SECTIONS
 {
-        /* Executes from 0x60000 after booting */
-        /* config.txt */
-        . = 0x60000;
+        /* Executes from 0x80000 after booting */
+        . = 0x80000;
+
+        bootloader_start = .;
+
         /* Puts the OS startup code inside this section */
         .text.boot : { *(.text.boot) }
         .text :  { *(.text) }
@@ -17,5 +19,7 @@ SECTIONS
         .bss : { *(.bss*) } 
         bss_end = .;
 
-        heap_start = .;
+        bootloader_end = .;
 }
+
+relocation_adr = 0x60000;
