@@ -8,17 +8,17 @@ BUILD_DIR = ../build
 
 .PHONY: all clean
 
-$(BUILD_DIR)/%_c.o: %.c
+$(BUILD_DIR)/src_%_c.o: %.c
 	mkdir -p $(@D)
 	$(CC) $(CFLAGS) -MMD -c $< -o $@
 
-$(BUILD_DIR)/%_s.o: %.S
+$(BUILD_DIR)/src_%_s.o: %.S
 	$(CC) $(ASMFLAGS) -MMD -c $< -o $@
 
 C_FILES = $(wildcard *.c)
 ASM_FILES = $(wildcard *.S)
-OBJ_FILES = $(C_FILES:%.c=$(BUILD_DIR)/%_c.o)
-OBJ_FILES += $(ASM_FILES:%.S=$(BUILD_DIR)/%_s.o)
+OBJ_FILES = $(C_FILES:%.c=$(BUILD_DIR)/src_%_c.o)
+OBJ_FILES += $(ASM_FILES:%.S=$(BUILD_DIR)/src_%_s.o)
 
 DEP_FILES = $(OBJ_FILES:%.o=%.d)
 -include $(DEP_FILES)

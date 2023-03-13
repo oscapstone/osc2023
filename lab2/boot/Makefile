@@ -18,22 +18,22 @@ clean:
 	rm -rf $(OBJ_FILES) $(DEP_FILES)
 	rm -rf $(IMG_DIR)/bootloader.img $(BUILD_DIR)/bootloader.elf
 
-$(BUILD_DIR)/%_c.o: %.c
+$(BUILD_DIR)/boot_%_c.o: %.c
 	mkdir -p $(@D)
 	$(CC) $(CFLAGS) -MMD -c $< -o $@
 
-$(BUILD_DIR)/%_s.o: %.S
+$(BUILD_DIR)/boot_%_s.o: %.S
 	$(CC) $(ASMFLAGS) -MMD -c $< -o $@
 
 C_FILES = $(wildcard *.c)
 ASM_FILES = $(wildcard *.S)
-OBJ_FILES = $(C_FILES:%.c=$(BUILD_DIR)/%_c.o)
-OBJ_FILES += $(ASM_FILES:%.S=$(BUILD_DIR)/%_s.o)
+OBJ_FILES = $(C_FILES:%.c=$(BUILD_DIR)/boot_%_c.o)
+OBJ_FILES += $(ASM_FILES:%.S=$(BUILD_DIR)/boot_%_s.o)
 
 SRC_C_FILES = mini_uart.c
 SRC_ASM_FILES = utils.S mm.S
-SRC_OBJ_FILES = $(SRC_C_FILES:%.c=$(BUILD_DIR)/%_c.o)
-SRC_OBJ_FILES += $(SRC_ASM_FILES:%.S=$(BUILD_DIR)/%_s.o)
+SRC_OBJ_FILES = $(SRC_C_FILES:%.c=$(BUILD_DIR)/src_%_c.o)
+SRC_OBJ_FILES += $(SRC_ASM_FILES:%.S=$(BUILD_DIR)/src_%_s.o)
 
 DEP_FILES = $(OBJ_FILES:%.o=%.d)
 -include $(DEP_FILES)
