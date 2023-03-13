@@ -17,6 +17,8 @@ OBJ_FILES += $(ASM_FILES:%.s=$(BUILD_DIR)/%.o)
 LIB_FILES    = $(wildcard $(LIB_DIR)/*.c)
 LIBOBJ_FILES = $(LIB_FILES:$(LIB_DIR)/%.c=$(BUILD_DIR)/%.o)
 
+CPIO = ../initramfs.cpio
+
 ELF   = kernel8.elf
 PROGS = kernel8.img
 
@@ -38,6 +40,9 @@ $(PROGS): $(BUILD_DIR)/$(ELF)
 
 run: $(PROGS)
 	$(QEMU) -M raspi3 -kernel $< -display none -serial null -serial stdio
+
+cpio: $(PROGS)
+	$(QEMU) -M raspi3 -kernel $< -display none -serial null -serial stdio -initrd $(CPIO)
 
 debug: $(PROGS)
 	$(QEMU) -M raspi3 -kernel $< -display none -S -s -serial null -serial stdio
