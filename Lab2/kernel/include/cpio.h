@@ -3,8 +3,10 @@
 #include "uart.h"
 #include "string.h"
 
-#define CPIO_ADDR ((char*)0x8000000)    //QEMU(0x8000000)
-//#define CPIO_ADDR ((char*)0x30000000) 
+//#define CPIO_ADDR ((char*)0x8000000)    //QEMU(0x8000000)
+#define CPIO_ADDR ((char*)0x20000000) 
+
+
 
 
 /* Magic identifiers for the "cpio" file format. */

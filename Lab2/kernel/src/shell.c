@@ -168,7 +168,9 @@ void command_controller ( enum SPECIAL_CHARACTER input_parse, char c, char buffe
 	        else if ( !strcmp(buffer, "cat"         ) ) command_cpio_cat(args);
             else if ( !strcmp(buffer, "dtb_ls"      ) ) command_dt_info();
 	        else if ( !strcmp(buffer, "dtb_cat"     ) ) command_parse_dt();
-	
+            else if ( !strcmp(buffer, "dtb"         ) ) command_dtb();
+	        else if ( !strcmp(buffer, "cpiotest"    ) ) cpio_test();                           
+                                        
             else                                        command_not_found(buffer);
 
         }

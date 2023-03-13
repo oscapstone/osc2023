@@ -18,6 +18,7 @@ void welcome_msg() {
 
 void shell_start () 
 {
+    
     int buffer_counter = 0;
     char input_char;
     char buffer[MAX_BUFFER_LEN];
@@ -28,13 +29,13 @@ void shell_start ()
     // new line head
     uart_puts("# ");
 
+    int loadflag = 1;
     // read input
     while(1)
     {
-        input_char = uart_getc();
-
         
-
+        
+        input_char = uart_getc();
         input_parse = parse ( input_char );
 
         command_controller ( input_parse, input_char, buffer, &buffer_counter);
@@ -110,7 +111,6 @@ void command_controller ( enum SPECIAL_CHARACTER input_parse, char c, char buffe
             else if ( !strcmp(buffer, "reboot"      ) ) command_reboot();
             else if ( !strcmp(buffer, "loading"     ) ) command_loading();
             else if ( !strcmp(buffer, "clear"       ) ) command_clear();
-
             else                                        command_not_found(buffer);
         }
             

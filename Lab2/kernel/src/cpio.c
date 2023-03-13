@@ -1,6 +1,10 @@
 #include "cpio.h"
 #include "string.h"
 
+extern void *CPIO_DEFAULT_PLACE;
+
+
+
 unsigned long  align(unsigned long  size, unsigned long  multiplier){
     if(multiplier <= 0) return 0;
     else return (multiplier - (size % multiplier)) % multiplier;
@@ -14,8 +18,10 @@ void extract_header(struct cpio_newc_header *cpio_addr, struct cpio_info *size_i
     size_info->offset = CPIO_SIZE + size_info->file_size + size_info->file_align + size_info->name_size + size_info->name_align;
 }
 
+
 void cpio_list(){
-    char *now_ptr = CPIO_ADDR;
+    //char *now_ptr = CPIO_ADDR;
+    char *now_ptr = CPIO_DEFAULT_PLACE;
     struct cpio_newc_header *cpio_addr = (struct cpio_newc_header* )now_ptr;
     struct cpio_info size_info;
     while(1){
@@ -31,7 +37,8 @@ void cpio_list(){
 }
 
 void cpio_cat(char *args){
-    char *now_ptr = CPIO_ADDR;
+    //char *now_ptr = CPIO_ADDR;
+    char *now_ptr = CPIO_DEFAULT_PLACE;
     struct cpio_newc_header *cpio_addr = (struct cpio_newc_header* )now_ptr;
     struct cpio_info size_info;
     int flag = 0;
@@ -55,6 +62,11 @@ void cpio_cat(char *args){
 }
 
 
-
-
-
+void cpio_test(){
+    uart_puts("CPIO_DEFAULT_PLACE:[");
+    uart_puts(CPIO_DEFAULT_PLACE);
+    uart_puts("]\n");
+    uart_puts("CPIO_ADDR:         [");
+    uart_puts(CPIO_ADDR);
+    uart_puts("]\n");
+}

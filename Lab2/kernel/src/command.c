@@ -5,6 +5,7 @@
 #include "uart_boot.h"
 #include "cpio.h"
 #include "dtb_parser.h"
+#include "dtb.h"
 
 void command_not_found (char * s) 
 {
@@ -22,6 +23,7 @@ void input_buffer_overflow_message ( char cmd[] )
     uart_puts("The maximum length of input is 64.");
 }
 
+extern void* CPIO_DEFAULT_PLACE;
 void command_help ()
 {
     uart_puts("help\t:  Print this help menu.\n");
@@ -33,7 +35,11 @@ void command_help ()
     uart_puts("cat\t:  Cat the file.\n");
     uart_puts("dtb_ls\t:  List device tree.\n");
     uart_puts("dtb_cat\t:  Parse device tree.\n");
+    uart_puts("dtb\t:  Show device tree.\n");
     //uart_puts("timestamp\t:  Get current timestamp.\n");
+    uart_puts("CPIO_DEFAULT_PLACE:[");
+    uart_puts(CPIO_DEFAULT_PLACE);
+    uart_puts("]\n");
 
 }
 
@@ -146,4 +152,10 @@ void command_dt_info(){
 }
 void command_parse_dt(){
     parse_dt();
+}
+
+void *base = (void *) DT_ADDR;
+void command_dtb()
+{
+    traverse_device_tree( base, dtb_callback_show_tree);
 }

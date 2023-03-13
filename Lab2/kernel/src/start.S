@@ -33,17 +33,17 @@ beq x0, zero, L1
 _start:
     /* store dt loading address to 0x200000 */
     /* ldr     	x1, =0x200000 */
-    /* str     	x0, [x1] */            
+    /* str     	x0, [x1] */   
     /* read cpu id, stop slave cores */
     mrs         x1, mpidr_el1
     and         x1, x1, #3
-    cbz         x1, set_stack
+    cbz         x1, set_stack 
     /* cpu id > 0, stop */
 
 proc_hang:
     /* cpu id > 0 */
     wfe
-	b 		    proc_hang
+	b 		    proc_hang 
 
 set_stack:
     /* cpu id == 0 */
@@ -64,3 +64,9 @@ init_bss:
 loop_end:
     bl          kernel
     b           proc_hang
+
+memzero:
+    str 		xzr, [x0], #8
+    subs 		x1, x1, #8
+    b.gt 		memzero
+    ret

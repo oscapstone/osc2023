@@ -6,21 +6,21 @@ SECTIONS
     __start = .;
     .text : { 
         KEEP(*(.text.boot)) 
-        . = ALIGN(128);
+
         }
 
     .rodata : { 
         *(.rodata .rodata.* .gnu.linkonce.r*) 
-        . = ALIGN(128);
+
         }
 
     .data : { 
         *(.data) 
-        . = ALIGN(128);
+
         }
 
-    .bss (NOLOAD) : {
-        . = ALIGN(8);
+    .bss  : {
+
         __bss_start = .;
         *(.bss)
         __bss_end = .;

@@ -15,6 +15,7 @@ void command_cpio_list();
 void command_cpio_cat(char *args);
 void command_dt_info();
 void command_parse_dt();
+void command_dtb();
 
 
 
