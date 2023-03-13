@@ -1,14 +1,15 @@
 .section ".text"
 
-.global _start
+.global init
 
-_start:
+init:
     ldr     x1, =_start
     mov     sp, x1
 
     ldr     x1, =__bss_start
     ldr     w2, =__bss_size
 
+// clear bss
 1:
     cbz     w2, 2f
     str     xzr, [x1], #8
