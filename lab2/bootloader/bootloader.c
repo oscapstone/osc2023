@@ -1,14 +1,12 @@
 #include "muart.h"
 #include "utils.h"
 
-#define SIZE 64
-
 void bootloader(void) {
     mini_uart_init();
 
     while (1) {
-        char buffer[SIZE];
-        mini_uart_gets(buffer, SIZE);
+        char buffer[BUFSIZE];
+        mini_uart_gets(buffer, BUFSIZE);
         if (strcmp(buffer, "loadimg") != 0) {
             mini_uart_puts("Please type \"loadimg\" to load the kernel image\r\n");
         } else {
