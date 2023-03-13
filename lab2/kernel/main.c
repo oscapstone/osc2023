@@ -1,47 +1,22 @@
 #include "muart.h"
 #include "utils.h"
-#include "reboot.h"
-#include "mailbox.h"
-
-#define SIZE 64
-
-void usage(void) {
-    mini_uart_puts("help\t: print this help memu\r\n");
-    mini_uart_puts("info\t: print hardware's information\r\n");
-    mini_uart_puts("hello\t: print Hello World!\r\n");
-    mini_uart_puts("reboot\t: reboot the device\r\n");
-}
-
-void info(void) {
-    get_board_revision();
-    get_arm_memory();
-}
-
-void hello(void) {
-    mini_uart_puts("Hello World!\r\n");
-}
-
-void reboot(void) {
-    mini_uart_puts("rebooting...\r\n");
-    reset(100);
-}
-
-void message(char *s) {
-    mini_uart_puts(s);
-    mini_uart_puts(" command not found\r\n");
-}
+#include "shell.h"
 
 int main(void) {
     mini_uart_init();
     mini_uart_puts("\r\nBasic Shell\r\n");
 
     while (1) {
-        char buffer[SIZE];
+        char buffer[BUFSIZE];
         mini_uart_puts("# ");
-        mini_uart_gets(buffer, SIZE);
+        mini_uart_gets(buffer, BUFSIZE);
         
         if (strcmp(buffer, "\0") == 0) {
             mini_uart_puts("\r\n");
+        } else if (strcmp(buffer, "ls") == 0) {
+            ls();
+        } else if (strcmp(buffer, "cat") == 0) {
+            cat();
         } else if (strcmp(buffer, "help") == 0) {
             usage();
         } else if (strcmp(buffer, "info") == 0) {
