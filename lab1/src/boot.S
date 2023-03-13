@@ -15,7 +15,7 @@ _start: //get cpu id, let cpu0 working only.
 	
 2: //cpu id ==0
 	//set top of stack just before our code (stack grows to a lower address)
-	ldr	x0, = _start 
+	ldr	x0, = _start //ldr:load address
 	mov 	sp, x0	 //sp:stack pointer
    //clear bss (check if empty)
 	ldr	x0, =__bss_start
