@@ -18,12 +18,19 @@ print("Kernel ", args.img, " size: ", img_size, "bytes")
 
 tty = serial.Serial(args.port, 115200)
 
-tty.write(img_size.to_bytes(4, 'big'))
+img_size_bytes = img_size.to_bytes(4, 'big')
+
+for i in range(4):
+        print(img_size_bytes[i].to_bytes(1, 'big'))
+        tty.write(img_size_bytes[i].to_bytes(1, 'big'))
+        tty.flush()
+        sleep(0.001)
 
 with open(args.img, 'rb') as f:
         for i in range(img_size):
                 k = f.read(1)
                 tty.write(k)
+                tty.flush()
                 sleep(0.001)
 
 print('Finished sending kernel')
