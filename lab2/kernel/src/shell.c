@@ -6,8 +6,9 @@
 #include "cpio.h"
 #include "utils.h"
 #include "dtb.h"
+#include "heap.h"
 
-#define CLI_MAX_CMD 7
+#define CLI_MAX_CMD 8
 
 extern char* dtb_ptr;
 void* CPIO_DEFAULT_PLACE;
@@ -18,6 +19,7 @@ struct CLI_CMDS cmd_list[CLI_MAX_CMD]=
     {.command="dtb", .help="show device tree"},
     {.command="hello", .help="print Hello World!"},
     {.command="help", .help="print all available commands"},
+    {.command="malloc", .help="simple allocator in heap session"},
     {.command="info", .help="get device information via mailbox"},
     {.command="ls", .help="list directory contents"},
     {.command="reboot", .help="reboot the device"}
@@ -82,6 +84,8 @@ void cli_cmd_exec(char* buffer)
         do_cmd_help();
     } else if (strcmp(cmd, "info") == 0) {
         do_cmd_info();
+    } else if (strcmp(cmd, "malloc") == 0) {
+        do_cmd_malloc();
     } else if (strcmp(cmd, "ls") == 0) {
         do_cmd_ls(argvs);
     } else if (strcmp(cmd, "reboot") == 0) {
@@ -182,6 +186,22 @@ void do_cmd_info()
         uart_2hex(pt[6]);
         uart_puts("\r\n");
     }
+}
+
+void do_cmd_malloc()
+{
+    //test malloc
+    char* test1 = malloc(0x18);
+    memcpy(test1,"test malloc1",sizeof("test malloc1"));
+    uart_puts("%s\n",test1);
+
+    char* test2 = malloc(0x20);
+    memcpy(test2,"test malloc2",sizeof("test malloc2"));
+    uart_puts("%s\n",test2);
+
+    char* test3 = malloc(0x28);
+    memcpy(test3,"test malloc3",sizeof("test malloc3"));
+    uart_puts("%s\n",test3);
 }
 
 void do_cmd_ls(char* workdir)
