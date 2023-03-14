@@ -38,3 +38,8 @@
 
 
 ## Advanced Exercise 2 - Devicetree
+
+- [devicetree-specification](https://github.com/devicetree-org/devicetree-specification/releases/tag/v0.4-rc1)
+- [Parameters in general-purpose registers](https://developer.arm.com/documentation/den0024/a/The-ABI-for-ARM-64-bit-Architecture/Register-use-in-the-AArch64-Procedure-Call-Standard/Parameters-in-general-purpose-registers)
+- [Inline Assembly & Memory Barrier](https://ithelp.ithome.com.tw/articles/10213500)
+- [How does the linux kernel know about the initrd when booting with a device tree?](https://stackoverflow.com/questions/73974443/how-does-the-linux-kernel-know-about-the-initrd-when-booting-with-a-device-tree)
