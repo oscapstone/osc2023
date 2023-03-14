@@ -1,9 +1,9 @@
 #include "mini_uart.h"
 #include "string_utils.h"
+#include "device_tree.h"
 
 #define MAX_NUM_FILE  10
 #define CPIO_HEADER_SIZE 110
-#define RAMDISK_ADDRESS (char*)(0x20000000)
 
 struct cpio_newc_header {
         char c_magic[6];
@@ -32,10 +32,18 @@ struct file_list_struct file_list[MAX_NUM_FILE];
 int parsed = 0;
 int file_count = 0;
 
+static struct cpio_newc_header *header_ptr = 0;
+void set_ramdisk_adr(char* ptr, unsigned int len)
+{
+        long long int tmp = 0;
+        tmp |= big_bytes_to_uint(ptr, 4);
+        header_ptr = (struct cpio_newc_header*)tmp;
+}
+
 void parse(void)
 {
-        struct cpio_newc_header *header_ptr = 
-                        (struct cpio_newc_header*)RAMDISK_ADDRESS;
+        fdt_traverse("chosen", "linux,initrd-start", set_ramdisk_adr);
+
         char *ptr = (char*)header_ptr + CPIO_HEADER_SIZE;
         /*
          * c_mode is 00000000 if it is the special record 

@@ -41,3 +41,20 @@ int string_hex_to_int(char *str, int len)
         }
         return out;
 }
+
+unsigned int strlen(const char *str)
+{
+	const char *s;
+	for (s = str; *s; ++s);
+	return (s - str);
+}
+
+unsigned int big_bytes_to_uint(char* ptr, int len)
+{
+        unsigned int ans = 0;
+        for (int i = 0; i < len; i++) {
+                ans <<= 8;
+                ans += (int)ptr[i];
+        }
+        return ans;
+}

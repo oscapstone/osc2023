@@ -11,6 +11,10 @@
 .globl _start
 _start:
         /*
+         * Move device tree address to an empty register
+         */
+        mov     x28, x0
+        /*
          * Gets the processor ID from the mpidr_el1 system register
          */
         mrs     x0, mpidr_el1
