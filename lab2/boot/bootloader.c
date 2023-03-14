@@ -6,6 +6,12 @@ void bootloader_main(void)
 	uart_init();
 	uart_send_string("Bootloader Starts...\r\n");
 
+	while (1) {
+		uart_send_string("Press Enter to receive kernel...\r\n");
+		char c = uart_recv();
+		if (c == '\n' || c == '\r') break;
+	}
+
 	int img_size = uart_recv_int();
 	uart_send_string("Kernel size: ");
 	uart_send_int(img_size);
