@@ -14,6 +14,7 @@
 #define AUX_MU_BAUD_REG PRPHRL(0x215068U)
 
 void uart_init();
+char uart_recvraw();
 char uart_recv();
 void uart_send(char c);
 void uart_puts(char * s);
