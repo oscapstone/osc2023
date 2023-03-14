@@ -112,6 +112,9 @@ void shell_start()
                 if (i > 0)
                     i--;
             }
+            else if (c == 127) // Also backspace but delete
+            {
+            }
             else
             {
                 if (i < COMMAND_BUFFER)

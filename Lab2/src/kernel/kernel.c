@@ -11,7 +11,7 @@ void kernel_main(void)
 
 	mbox_main();
 
-	// fdt_traverse(initramfs_callback);
+	// fdt_traverse(_dtb_ptr);
 
 	shell_start();
 }

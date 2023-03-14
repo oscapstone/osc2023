@@ -17,6 +17,4 @@ void printf(char *fmt, ...);
 unsigned int sprintf(char *dst, char *fmt, ...);
 unsigned int vsprintf(char *dst, char *fmt, __builtin_va_list args);
 
-uint32_t align_up(uint32_t size, int alignment);
-
 #endif /*_STDLIB_H */

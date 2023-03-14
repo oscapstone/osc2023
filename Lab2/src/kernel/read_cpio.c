@@ -42,6 +42,8 @@ void read_cpio(char *cpioDest)
         uart_send_string(cpioDest + sizeof(cpio_t)); // filename
         uart_send_string("\n");
         // jump to the next file
+        if (fs % 4 != 0)
+            fs += 4 - fs % 4;
         if ((sizeof(cpio_t) + ns) % 4 != 0)
             cpioDest += (sizeof(cpio_t) + ns + (4 - (sizeof(cpio_t) + ns) % 4) + fs);
         else
@@ -64,6 +66,8 @@ void read_content(char *cpioDest, char *filename)
         }
         int fs = hex2int(header->c_filesize, 8);
         // jump to the next file
+        if (fs % 4 != 0)
+            fs += 4 - fs % 4;
         if ((sizeof(cpio_t) + ns) % 4 != 0)
             cpioDest += (sizeof(cpio_t) + ns + (4 - (sizeof(cpio_t) + ns) % 4) + fs);
         else
