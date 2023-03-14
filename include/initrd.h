@@ -23,6 +23,9 @@
  *
  */
 // extern volatile unsigned char _binary_ramdisk_start;
+#ifndef INITRD_H
+#define INITRD_H
+
 void initrd_list(char *buf);
 void initrd_ls(char *buf);
 void initrd_cat(char *buf);
@@ -43,3 +46,5 @@ typedef struct {
     char namesize[8];
     char check[8];
 } __attribute__((packed)) cpio_f;
+
+#endif

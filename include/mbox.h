@@ -24,6 +24,9 @@
  */
 
 /* a properly aligned buffer */
+#ifndef MBOX_H
+#define MBOX_H
+
 extern volatile unsigned int mbox[36];
 
 #define MBOX_REQUEST    0
@@ -47,4 +50,6 @@ extern volatile unsigned int mbox[36];
 int mbox_call(unsigned char ch);
 void get_board_revision();
 void get_memory_info();
+
+#endif
 

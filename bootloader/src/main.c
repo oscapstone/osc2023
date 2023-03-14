@@ -24,7 +24,6 @@
  */
 
 #include "uart.h"
-#include "power.h"
 #include "shell.h"
 
 #define CMD_LEN 128

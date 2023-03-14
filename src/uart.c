@@ -141,7 +141,7 @@ void uart_hex(unsigned int d) {
 
 int check_digit(char ch) { return (ch >= '0') && (ch <= '9'); }
 
-int read_int() {
+int uart_geti() {
     int x = 0, f = 0;
     char ch = 0;
     while (!check_digit(ch)) {

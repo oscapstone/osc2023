@@ -6,10 +6,9 @@ void relocate()
     char *new_bl = (char*) (&__boot_loader);
     char *bl = (char *)&_begin;
 
-    for (int i = 0; i <= kernel_size; i++) {
+    for (int i = 0; i <= kernel_size; i++)
         *new_bl++ = *bl++;
-    }
 
-    void (*start)(void) = (void *)&__boot_loader;
+    void (*start)(void) = (void *) &__boot_loader;
     start();
 }

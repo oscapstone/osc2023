@@ -37,6 +37,11 @@ _relocate:
     b       1b
 
 2:  // cpu id == 0
+
+    // get the dtb address
+    ldr     x1, =__dtb
+    str     x0, [x1]
+
     // set top of stack just before our code (stack grows to a lower address per AAPCS64)
     ldr     x1, =_relocate
     mov     sp, x1

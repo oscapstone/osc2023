@@ -56,7 +56,7 @@ kernel8.img: $(SRC_OBJS)
 # qemu
 
 run:
-	qemu-system-aarch64 -M raspi3b -kernel kernel8.img -serial stdio
+	qemu-system-aarch64 -M raspi3b -kernel kernel8.img -serial stdio -dtb bcm2710-rpi-3-b-plus.dtb
 
 tty:
 	qemu-system-aarch64 -M raspi3b -kernel kernel8.img -serial pty

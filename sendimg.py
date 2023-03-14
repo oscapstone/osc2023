@@ -62,8 +62,6 @@ def main():
     with open(file_path, 'rb') as f:
         bytecodes = f.read()
 
-    # file_checksum = checksum(bytecodes)
-
     # # To communicate with Raspi 3 shell
     # communicate()
 
@@ -82,9 +80,6 @@ def main():
     # Show the message printed by Raspi 3
     receiveMsg()
 
-    # # Write checksum to Raspi 3
-    # ser.write(file_checksum.to_bytes(4, byteorder="big"))
-
     per_chunk = 128
     # Compute the chunk count of image file
     chunk_count = file_size // per_chunk
@@ -99,7 +94,6 @@ def main():
             pass
     receiveMsg()
     print("------------------")
-    # print(f"Image Size: {hex(file_size)}, Checksum: {file_checksum}")
     print(f"After sending image to Raspi 3, Image Size: {hex(file_size)}")
     communicate()
 

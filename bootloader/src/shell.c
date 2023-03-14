@@ -1,9 +1,7 @@
 #include "shell.h"
 #include "my_string.h"
 #include "uart.h"
-#include "power.h"
 
-#define BASEADDRESS         ((volatile char*)(0x00800000))
 
 void shell_init()
 {
@@ -31,15 +29,7 @@ void shell_controller(char *cmd)
         return;
     else if (!strcmp(cmd, "help")) {
         uart_puts("help      : print this help menu\n");
-        uart_puts("hello     : print Hello World!\n");
         uart_puts("loadimg   : load image\n");
-        uart_puts("reboot    : reboot the device\n");
-    } else if (!strcmp(cmd, "hello")) {
-        uart_puts("Hello World!\n");
-    } else if (!strcmp(cmd, "reboot")) {
-        reset();
-    } else if (!strcmp(cmd, "shutdown")) {
-        power_off();
     } else if (!strcmp(cmd, "loadimg")) {
         load_img();
     } else {

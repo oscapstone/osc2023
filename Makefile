@@ -67,8 +67,11 @@ clean:
 	rm *.elf *.img *.o >/dev/null 2>/dev/null || true
 
 run: initramfs.cpio
-	qemu-system-aarch64 -M raspi3b -kernel kernel8.img -initrd initramfs.cpio -serial stdio
+	qemu-system-aarch64 -M raspi3b -kernel kernel8.img -initrd initramfs.cpio -dtb bcm2710-rpi-3-b-plus.dtb -serial stdio
 	# qemu-system-aarch64 -M raspi3b -kernel kernel8.img -serial stdio
+
+dtb: initramfs.cpio
+	qemu-system-aarch64 -M raspi3b -kernel kernel8.img -initrd initramfs.cpio -dtb bcm2710-rpi-3-b-plus.dtb -serial stdio
 
 tty:
 	qemu-system-aarch64 -M raspi3b -serial null -serial pty

@@ -60,3 +60,4 @@ SECTIONS
 }
 __bss_size = (__bss_end - __bss_start)>>3;
 __boot_loader = 0x60000;
+__dtb = 0x7fff0;
