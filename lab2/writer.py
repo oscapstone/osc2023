@@ -9,8 +9,7 @@ parser.add_argument('--device', metavar='TTY',
                     default='/dev/ttyUSB0', type=str,  help='path to UART device')
 parser.add_argument('--baud', metavar='Hz', default=115200,
                     type=int,  help='baud rate')
-parser.add_argument('--address', metavar='s', default='0x80000',
-                    type=str,  help='load address')
+
 args = parser.parse_args()
 
 with open(args.filename, 'rb') as file:
@@ -19,6 +18,7 @@ with open(args.filename, 'rb') as file:
         raw = file.read()
         length = len(raw)
         length_sent = len(raw)
+        print("image size: {}".format(length))
 
         while length_sent > 0:
 
