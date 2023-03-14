@@ -23,6 +23,8 @@ int main(void) {
             info();
         } else if (strcmp(buffer, "hello") == 0) {
             hello();
+        } else if (strcmp(buffer, "alloc") == 0) {
+            alloc();
         } else if (strcmp(buffer, "reboot") == 0) {
             reboot();
         } else {

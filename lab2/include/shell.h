@@ -6,6 +6,7 @@ void cat(void);
 void info(void);
 void usage(void);
 void hello(void);
+void alloc(void);
 void reboot(void);
 void message(char *s);
 
