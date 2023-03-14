@@ -116,7 +116,7 @@ char uart_getb() {
  * Display a string
  */
 void uart_puts(char *s) {
-    while(*s) {
+    while(*s != '\0') {
         /* convert newline to carrige return + newline */
         if(*s=='\n')
             uart_send('\r');

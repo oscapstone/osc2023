@@ -51,7 +51,7 @@ void main()
     // uart_hex(return_available());
     // uart_send('\n');
 
-    fdt_traverse();
+    fdt_traverse(initramfs_callback);
 
     while(1) {
         uart_puts("# ");

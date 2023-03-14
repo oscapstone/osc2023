@@ -26,9 +26,15 @@
 #ifndef INITRD_H
 #define INITRD_H
 
-void initrd_list(char *buf);
-void initrd_ls(char *buf);
-void initrd_cat(char *buf);
+extern char *cpio_base;
+
+// void initrd_list(char *buf);
+// void initrd_ls(char *buf);
+// void initrd_cat(char *buf);
+
+void initrd_list();
+void initrd_ls();
+void initrd_cat();
 
 typedef struct {
     char magic[6];

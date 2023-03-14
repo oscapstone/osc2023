@@ -42,14 +42,17 @@ void shell_controller(char *cmd)
         power_off();
     } else if (!strcmp(cmd, "ls")) {
         // initrd_list((char*)&_binary_ramdisk_start);
-        initrd_ls((char*) 0x8000000);
-        initrd_ls((char*) 0x20000000);
+        // initrd_ls((char*) 0x8000000);
+        // initrd_ls((char*) 0x20000000);
+        initrd_ls();
     } else if (!strcmp(cmd, "ls -l")) {
-        initrd_list((char*) 0x8000000);
-        initrd_list((char*) 0x20000000);
+        // initrd_list((char*) 0x8000000);
+        // initrd_list((char*) 0x20000000);
+        initrd_list();
     } else if (!strcmp(cmd, "cat")) {
-        initrd_cat((char*) 0x8000000);
-        initrd_cat((char*) 0x20000000);
+        // initrd_cat((char*) 0x8000000);
+        // initrd_cat((char*) 0x20000000);
+        initrd_cat();
     } else {
         uart_puts("shell: command not found\n");
     }

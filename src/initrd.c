@@ -31,24 +31,27 @@
 
 #define buf_size 128
 
+char *cpio_base;
+
 /**
  * List the contents of an archive
  */
-void initrd_list(char *buf)
+void initrd_list()
 {
+    char *buf = cpio_base;
     if (memcmp(buf, "070701", 6))
         return;
     uart_puts("Type     Offset   Size     Access rights\tFilename\n");
 
     // if it's a cpio newc archive. Cpio also has a trailer entry
-    while(!memcmp(buf,"070701",6) && memcmp(buf+sizeof(cpio_f),"TRAILER!!",9)) {
+    while(!memcmp(buf, "070701",6) && memcmp(buf + sizeof(cpio_f),"TRAILER!!",9)) {
         cpio_f *header = (cpio_f*) buf;
         int ns = hex2bin(header->namesize, 8);
         int fs = hex2bin(header->filesize, 8);
         // print out meta information
         uart_hex(hex2bin(header->mode, 8));  // mode (access rights + type)
         uart_send(' ');
-        uart_hex((unsigned int)((unsigned long)buf)+sizeof(cpio_f)+ns);
+        uart_hex((unsigned int)((unsigned long) buf) + sizeof(cpio_f) + ns);
         uart_send(' ');
         uart_hex(fs);                       // file size in hex
         uart_send(' ');
@@ -56,18 +59,19 @@ void initrd_list(char *buf)
         uart_send('.');
         uart_hex(hex2bin(header->gid, 8));   // group id in hex
         uart_send('\t');
-        uart_puts(buf+sizeof(cpio_f));      // filename
+        uart_puts(buf + sizeof(cpio_f));      // filename
         uart_puts("\n");
         // jump to the next file
-        buf+=(sizeof(cpio_f) + ns + fs);
+        buf += (sizeof(cpio_f) + ns + fs);
     }
 }
 
 /**
  * List the filenames of an archive
  */
-void initrd_ls(char *buf)
+void initrd_ls()
 {
+    char *buf = cpio_base;
     if (memcmp(buf, "070701", 6))
         return;
     uart_puts(".\n");
@@ -85,8 +89,9 @@ void initrd_ls(char *buf)
     }
 }
 
-void initrd_cat(char *buf)
+void initrd_cat()
 {
+    char *buf = cpio_base;
     if (memcmp(buf, "070701", 6))
         return;
     char buffer[buf_size];
