@@ -40,6 +40,4 @@ SECTIONS
     _loader_end = .;
 }
 _bss_size = (_bss_end - _bss_start) >> 3;
-/* _loader_block = (_loader_end - _loader_start) >> 3;
-_loader_size = (_loader_end - _loader_start); */
 _loader_size = (_loader_end - _loader_start) >> 3;

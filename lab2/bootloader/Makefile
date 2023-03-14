@@ -13,7 +13,7 @@ OBJ_CPY = aarch64-none-elf-objcopy
 
 .PHONY: clean run deploy
 
-all: bootloader.img
+all: kernel8.img
 
 $(OBJ_DIR)/start.o: $(SRC_DIR)/start.S
 	$(CC) $(CFLAGS) -c $< -o $@
@@ -21,20 +21,18 @@ $(OBJ_DIR)/start.o: $(SRC_DIR)/start.S
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
 	$(CC) $(CFLAGS) -I$(INCLUDE_DIR) -c $< -o $@
 
-bootloader.img: $(OBJS) link.ld
-	$(LINKER) -nostdlib $(OBJS) -T link.ld -o bootloader.elf
-	$(OBJ_CPY) -O binary bootloader.elf bootloader.img
+kernel8.img: $(OBJS) link.ld
+	$(LINKER) -nostdlib $(OBJS) -T link.ld -o kernel8.elf
+	$(OBJ_CPY) -O binary kernel8.elf kernel8.img
 
 clean:
-	rm bootloader.elf bootloader.img build/*.o >/dev/null 2>/dev/null || true
+	rm kernel8.elf kernel8.img build/*.o >/dev/null 2>/dev/null || true
 
 deploy: all
-	cp ./bootloader.img /run/media/brothre23/4DFF-0A36/
-	sudo eject /dev/sdc
+	cp ./kernel8.img /Volumes/NO\ NAME
 
 run: all
-	# qemu-system-aarch64 -M raspi3b -kernel bootloader.img -serial stdio -serial pty
-	qemu-system-aarch64 -M raspi3b -kernel bootloader.img -serial null -serial stdio -serial pty
+	qemu-system-aarch64 -M raspi3b -kernel kernel8.img -serial null -serial stdio -serial pty -display none
 
 pty:
-	qemu-system-aarch64 -M raspi3b -kernel bootloader.img -serial null -serial pty
+	qemu-system-aarch64 -M raspi3b -kernel kernel8.img -serial null -serial pty -display none

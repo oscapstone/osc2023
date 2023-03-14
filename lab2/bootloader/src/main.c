@@ -30,8 +30,6 @@ int main()
         exponent++;
     }
 
-    printf("Kernel Size: %d\n", size);
-
     char *kernel = (char *)0x80000;
 
     for (int i = 0; i < size; i++)
