@@ -1,6 +1,6 @@
 export PATH := /usr/local/opt/llvm/bin:$(PATH)
 
-SRC := $(wildcard */*.c)
+SRC := $(wildcard src/*/*.c)
 OBJ := $(SRC:.c=.o) a.o
 
 IMG := kernel8.img
