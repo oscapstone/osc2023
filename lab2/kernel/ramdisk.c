@@ -33,16 +33,25 @@ int parsed = 0;
 int file_count = 0;
 
 static struct cpio_newc_header *header_ptr = 0;
-void set_ramdisk_adr(char* ptr, unsigned int len)
+/*
+ * Callback function for fdt_traverse. Returns 1 on success.
+ */
+int set_ramdisk_adr(char* node_name, char* prop_name, 
+                        char* value_ptr, unsigned int len)
 {
+        if (strcmp(node_name, "chosen") 
+                || strcmp(prop_name, "linux,initrd-start")) {
+                return 0;
+        }
         long long int tmp = 0;
-        tmp |= big_bytes_to_uint(ptr, 4);
+        tmp |= big_bytes_to_uint(value_ptr, 4);
         header_ptr = (struct cpio_newc_header*)tmp;
+        return 1;
 }
 
 void parse(void)
 {
-        fdt_traverse("chosen", "linux,initrd-start", set_ramdisk_adr);
+        fdt_traverse(set_ramdisk_adr);
 
         char *ptr = (char*)header_ptr + CPIO_HEADER_SIZE;
         /*

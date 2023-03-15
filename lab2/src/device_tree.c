@@ -39,8 +39,7 @@ int get_device_tree_adr(void)
         return 0;
 }
 
-void fdt_traverse(char* req_node, char* req_prop, 
-                  void (*req_callback)(char*, unsigned int))
+void fdt_traverse(int (*req_callback)(char*, char*, char*, unsigned int))
 {
         char* ptr = dt_struct_adr;
         char* node_name;
@@ -77,9 +76,8 @@ void fdt_traverse(char* req_node, char* req_prop,
                         offset += (4 - tmp) % 4;
                         ptr += offset;
 
-                        if (!strcmp(node_name, req_node)
-                                        && !strcmp(prop_name, req_prop)) {
-                                req_callback(prop_value_ptr, prop_len);
+                        if (req_callback(node_name, prop_name, 
+                                        prop_value_ptr, prop_len)) {
                                 break;
                         }
                 } else if (token == FDT_NOP) {
