@@ -36,10 +36,9 @@ void main()
 {
     fdt_init();
     shell_init();
-
-
-    get_board_revision();
-    get_memory_info();
+    
+    // get_board_revision();
+    // get_memory_info();
 
     uart_puts("===test simple_malloc===\n");
     uart_hex(return_available());

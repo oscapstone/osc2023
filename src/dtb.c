@@ -17,8 +17,6 @@ uint32_t swap_endian(uint32_t num)
 void fdt_init()
 {
     uint32_t *tmp_pointer = (uint32_t *) &__dtb_address;
-    // uint32_t *tmp_pointer = (uint32_t *) 0x7fff0;
-
     dtb_address = (fdt_header *) *tmp_pointer;
 }
 
