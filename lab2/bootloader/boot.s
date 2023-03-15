@@ -3,17 +3,19 @@
 .global _start
 
 _start:
+    mov    x20, x0            /* move dtb address to x20 */
     mrs    x0, mpidr_el1      /* move the contents of a special register to a general-purpose register */
     and    x0, x0, #3         /* read [0:2] and get CPU ID */
     cbz    x0, _core          /* go to _core if CPU ID equals to 0 */
 
 _halt: 
     wfe                       /* wait for event */
-    b     _halt               /* halt the core */
+    b      _halt              /* halt the core */
 
 _core:
-    adr    x0, __bss_start
-    adr    x1, __bss_size
+    ldr    x0, =__bss_start
+    ldr    x1, =__bss_end
+    sub    x1, x1, x0
 
 _zero:
     cbz    x1, _relocate      /* go to _relocate if bss section is 0 */

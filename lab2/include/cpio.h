@@ -1,6 +1,8 @@
 #ifndef __CPIO_H__
 #define __CPIO_H__
 
+#include "devicetree.h"
+
 #define CPIO_MAGIC      "070701"
 #define CPIO_FOOTER     "TRAILER!!!"
 
@@ -26,5 +28,6 @@ struct cpio_newc_header {
 
 void cpio_list(void);
 void cpio_concatenate(void);
+void initramfs_callback(char *nodename, char *propname, struct fdt_prop* prop);
 
 #endif

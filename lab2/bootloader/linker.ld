@@ -17,4 +17,3 @@ SECTIONS
 }
 
 __relocation = 0x60000;
-__bss_size = (__bss_end - __bss_start) >> 3;

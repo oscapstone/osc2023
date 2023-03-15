@@ -14,10 +14,11 @@ ASM_FILES  = $(wildcard *.s)
 OBJ_FILES  = $(C_FILES:%.c=$(BUILD_DIR)/%.o)
 OBJ_FILES += $(ASM_FILES:%.s=$(BUILD_DIR)/%.o)
 
-LIB_FILES    = $(wildcard $(LIB_DIR)/*.c)
+LIB_FILES    = $(LIB_DIR)/muart.c $(LIB_DIR)/utils.c
 LIBOBJ_FILES = $(LIB_FILES:$(LIB_DIR)/%.c=$(BUILD_DIR)/%.o)
 
 CPIO = ../initramfs.cpio
+DTB  = ../bcm2710-rpi-3-b-plus.dtb
 
 ELF   = bootloader.elf
 PROGS = bootloader.img
@@ -44,8 +45,11 @@ run: $(PROGS)
 cpio: $(PROGS)
 	$(QEMU) -M raspi3 -kernel $< -display none -serial null -serial pty -initrd $(CPIO)
 
-debug: $(PROGS)
-	$(QEMU) -M raspi3 -kernel $< -display none -S -s -serial null -serial pty
+dtb: $(PROGS)
+	$(QEMU) -M raspi3 -kernel $< -display none -serial null -serial pty -initrd $(CPIO) -dtb $(DTB)
+
+debug: $(BUILD_DIR)/$(ELF)
+	$(QEMU) -M raspi3 -kernel $< -display none -S -s -serial null -serial pty -initrd $(CPIO) -dtb $(DTB)
 
 clean:
 	rm $(PROGS) $(OBJ_FILES) $(BUILD_DIR)/$(ELF)

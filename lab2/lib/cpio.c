@@ -1,10 +1,13 @@
 #include "cpio.h"
 #include "muart.h"
 #include "utils.h"
+#include "devicetree.h"
+
+void *DEVICETREE_CPIO_BASE = 0;
 
 void cpio_list(void) {
     unsigned int headerlen = sizeof(struct cpio_newc_header);
-    struct cpio_newc_header *current = (void*) CPIO_RPI_BASE;
+    struct cpio_newc_header *current = (void*) DEVICETREE_CPIO_BASE;
 
     while (1) {
         char *filename = ((void*) current) + headerlen;
@@ -33,7 +36,7 @@ void cpio_list(void) {
 
 void cpio_concatenate(void) {
     unsigned int headerlen = sizeof(struct cpio_newc_header);
-    struct cpio_newc_header *current = (void*) CPIO_RPI_BASE;
+    struct cpio_newc_header *current = (void*) DEVICETREE_CPIO_BASE;
 
     char buffer[BUFSIZE];
 
@@ -71,5 +74,12 @@ void cpio_concatenate(void) {
 
         filesize = (filesize % 4)? ((filesize / 4) + 1) * 4: filesize;
         current  = ((void*) current) + offset + filesize;
+    }
+}
+
+void initramfs_callback(char *nodename, char *propname, struct fdt_prop* prop) {
+    if (strncmp(nodename, "chosen", 7) == 0 && 
+        strncmp(propname, "linux,initrd-start", 19) == 0) {
+        DEVICETREE_CPIO_BASE = (void*) to_little_endian(*((unsigned int*)(prop + 1)));
     }
 }

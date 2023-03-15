@@ -57,3 +57,13 @@ int strncmp(const char *l, const char *r, unsigned int size) {
 
     return 0;
 }
+
+unsigned int strlen(const char *s) {
+    unsigned int len = 0;
+
+    while (*s != '\0') {
+        len++; s++;
+    }
+
+    return len;
+}

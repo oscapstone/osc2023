@@ -1,9 +1,15 @@
+#include "cpio.h"
 #include "muart.h"
 #include "utils.h"
 #include "shell.h"
+#include "devicetree.h"
 
 int main(void) {
     mini_uart_init();
+
+    devicetree_get_address();
+    fdt_traverse(initramfs_callback);
+
     mini_uart_puts("\r\nBasic Shell\r\n");
 
     while (1) {
