@@ -23,11 +23,20 @@ sudo apt update
 sudo apt install qemu-system-aarch64 gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu -y
 ```
 
-### Run on QEMU
+### Build Library
 
 ```shell
-make
-make run
+cd library && make && cd ..
+```
+
+### Run on QEMU
+
+```sehll
+# bootloader
+cd bootloader && make && make run
+
+# or kernel
+cd kernel && make && make run 
 ```
 
 ## Version History

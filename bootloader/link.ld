@@ -1,7 +1,8 @@
 SECTIONS
 {
-    . = 0x60000;
-    _start = .;
+    . = 0x80000;
+
+    __prog_start = .;
 
     .text : {
         *(.text .text.*)
@@ -15,8 +16,11 @@ SECTIONS
         *(.data .data.*)
     }
 
+    __prog_end = .;
+
     .bss : {
         . = ALIGN(16);
+
         __bss_start = .;
         *(.bss .bss.*)
         *(COMMON)
@@ -24,4 +28,5 @@ SECTIONS
     }
 }
 
-__bss_size = (__bss_end - __bss_start)>>3;
+__bss_size = (__bss_end - __bss_start) >> 3;
+__prog_size = (__prog_end - __prog_start) >> 3;

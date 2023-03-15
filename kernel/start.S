@@ -1,23 +1,22 @@
-.section ".text"
+.section ".text.boot"
 
-.global init
+.global _start
 
-init:
+_start:
     ldr     x1, =_start
     mov     sp, x1
 
     ldr     x1, =__bss_start
     ldr     w2, =__bss_size
+    cbz     w2, run_main
 
-// clear bss
-1:
-    cbz     w2, 2f
+clear_bss:
     str     xzr, [x1], #8
     sub     w2, w2, #1
-    cbnz    w2, 1b
+    cbnz    w2, clear_bss
 
-2:
+run_main:
     bl      main
 
-3:
-    b       3b
+hang:
+    b       hang

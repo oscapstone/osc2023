@@ -1,7 +1,5 @@
 int min(int n1, int n2)
 {
-    int result = n1;
-
     return n1 < n2 ? n1 : n2;
 }
 
