@@ -13,3 +13,6 @@
 
 # Tools
 load
+
+#initrd
+*.cpio
