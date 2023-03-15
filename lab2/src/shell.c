@@ -59,13 +59,12 @@ void shell_option(char* command)
 	}
 	else if(!strcmp(command,"alloc"))
 	{
-		/*char* string = memalloc(8);
+		char* string = memalloc(8);
 		uart_hex(string);
 		uart_send_string("\r\n");
 		char* string2 = memalloc(5);
 		uart_hex(string2);
 		uart_send_string("\r\n");
-		*/
 	}
 	else
 	{

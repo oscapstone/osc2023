@@ -64,7 +64,7 @@ void init_rd(char *buffer)
 {
 	index = 0;
 	uart_send_string("Offset\tSize\tUID.GID\t\tFile_name\r\n");
-	while(!bufcmp(buffer,"070701",6) && bufcmp(buffer+sizeof(cpio),"TRAILER!!!",10))		//start by "070707" , and not yet end by "TRAILER!!!"
+	while(!bufcmp(buffer,"070701",6) && bufcmp(buffer+sizeof(cpio),"TRAILER!!!",10))		//start by "070701" , and not yet end by "TRAILER!!!"
 	{
 		cpio *header = (cpio*)buffer;
 		int ns = hex_to_int(header->namesize,8);
