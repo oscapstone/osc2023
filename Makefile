@@ -45,6 +45,6 @@ bootloader-run:
 tools:
 	$(MAKE) -C tools
 
-clean-all:
+clean-all: clean
 	$(MAKE) -C bootloader clean
 	$(MAKE) -C tools clean
