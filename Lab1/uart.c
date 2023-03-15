@@ -45,26 +45,31 @@
 void uart_init()
 {
     register unsigned int r;
-
-    /* initialize UART */
-    *AUX_ENABLE |=1;       // enable UART1, AUX mini uart
-    *AUX_MU_CNTL = 0;
-    *AUX_MU_LCR = 3;       // 8 bits
-    *AUX_MU_MCR = 0;
-    *AUX_MU_IER = 0;
-    *AUX_MU_IIR = 0xc6;    // disable interrupts
-    *AUX_MU_BAUD = 270;    // 115200 baud
     /* map UART1 to GPIO pins */
-    r=*GPFSEL1;
-    r&=~((7<<12)|(7<<15)); // gpio14, gpio15
-    r|=(2<<12)|(2<<15);    // alt5
+    r =* GPFSEL1;
+    r &= ~((7<<12)|(7<<15)); // gpio14, gpio15
+    r |= (2<<12)|(2<<15);    // Set alt5 for gpio14, gpio15
     *GPFSEL1 = r;
-    *GPPUD = 0;            // enable pins 14 and 15
-    r=150; while(r--) { asm volatile("nop"); }
-    *GPPUDCLK0 = (1<<14)|(1<<15);
-    r=150; while(r--) { asm volatile("nop"); }
-    *GPPUDCLK0 = 0;        // flush GPIO setup
-    *AUX_MU_CNTL = 3;      // enable Tx, Rx
+    *GPPUD = 0; // Disable pull-up/down for gpio14, gpio15
+    r = 150;
+    while(r--) { // Wait 150 cycles
+        asm volatile("nop");
+    }
+    *GPPUDCLK0 = (1<<14)|(1<<15); // Set clock on line 14, 15
+    r = 150;
+    while(r--) { // Wait 150 cycles
+        asm volatile("nop");
+    }
+    *GPPUDCLK0 = 0;         // flush GPIO setup
+    /* initialize UART */
+    *AUX_ENABLE |=1;        // Set AUXENB register to enable mini UART. Then mini UART register can be accessed.
+    *AUX_MU_CNTL = 0;       // Set AUX_MU_CNTL_REG to 0. Disable transmitter and receiver during configuration.
+    *AUX_MU_IER = 0;        // Set AUX_MU_IER_REG to 0. Disable interrupt because currently you don’t need interrupt.
+    *AUX_MU_LCR = 3;        // Set AUX_MU_LCR_REG to 3. Set the data size to 8 bit.
+    *AUX_MU_MCR = 0;        // Set AUX_MU_MCR_REG to 0. Don’t need auto flow control.
+    *AUX_MU_BAUD = 270;     // Set AUX_MU_BAUD to 270. Set baud rate to 115200 After booting, the system clock is 250 MHz.
+    *AUX_MU_IIR = 0x6;      // Set AUX_MU_IIR_REG to 6. No FIFO.
+    *AUX_MU_CNTL = 3;       // Set AUX_MU_CNTL_REG to 3. Enable the transmitter and receiver.
 }
 
 /**
