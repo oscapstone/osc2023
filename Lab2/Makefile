@@ -46,3 +46,6 @@ test:
 
 pseudoTTY:
 	qemu-system-aarch64 -M raspi3 -kernel bootloader.img -serial null -serial pty -display none -initrd initramfs.cpio -dtb bcm2710-rpi-3-b-plus.dtb
+
+debug_boot:
+	qemu-system-aarch64 -M raspi3 -kernel bootloader.img -serial null -serial pty -display none -initrd initramfs.cpio -dtb bcm2710-rpi-3-b-plus.dtb -s -S

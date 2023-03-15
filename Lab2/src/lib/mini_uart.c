@@ -35,6 +35,12 @@ void uart_send_string(char *str)
 		uart_send(*str++);
 }
 
+void uart_send_space(int size)
+{
+	while (size--)
+		uart_send(' ');
+}
+
 void uart_send_string_of_size(char *str, int size)
 {
 	while (size--)

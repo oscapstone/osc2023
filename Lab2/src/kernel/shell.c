@@ -2,6 +2,10 @@
 #include "mini_uart.h"
 #include "reboot.h"
 #include "read_cpio.h"
+#include "device_tree.h"
+
+extern void *_dtb_ptr;
+extern char *cpioDest;
 
 #define COMMAND_BUFFER 20
 #define FILENAME_BUFFER 20
@@ -15,6 +19,7 @@ void shell_main(char *command)
         uart_send_string("reboot\t: reboot the device\n");
         uart_send_string("ls\t:\n");
         uart_send_string("cat\t:\n");
+        uart_send_string("dts\t:\n");
     }
     else if (!strcmp(command, "hello"))
     {
@@ -29,8 +34,28 @@ void shell_main(char *command)
     }
     else if (!strcmp(command, "ls"))
     {
-        char *cpioDest = (char *)0x8000000;
+        // char *cpioDest = (char *)0x8000000;
         read_cpio((char *)cpioDest);
+    }
+    else if (!memcmp(command, "cat", 3))
+    {
+        if (command[3] != ' ' || command[4] == '\0')
+        {
+            printf("Usage: cat <filename>\n");
+            return;
+        }
+
+        char filename[FILENAME_BUFFER];
+        memset(filename, '\0', FILENAME_BUFFER);
+        int i = 4;
+        while (command[i] != '\0')
+        {
+            filename[i - 4] = command[i];
+            i++;
+        }
+        filename[i] = '\0';
+
+        read_content((char *)cpioDest, filename);
     }
     else if (!strcmp(command, "cat"))
     {
@@ -39,7 +64,7 @@ void shell_main(char *command)
         char c;
         int i = 0;
         char filename[FILENAME_BUFFER];
-        char *cpioDest = (char *)0x8000000;
+        // char *cpioDest = (char *)0x8000000;
 
         memset(filename, '\0', FILENAME_BUFFER);
 
@@ -77,6 +102,10 @@ void shell_main(char *command)
             }
         }
     }
+    else if (!strcmp(command, "dts"))
+    {
+        fdt_traverse(dtb_parser, _dtb_ptr);
+    }
 }
 
 void shell_start()
@@ -101,6 +130,7 @@ void shell_start()
                 command[i] = '\0';
                 uart_send(c);
                 shell_main(command);
+                memset(command, '\0', COMMAND_BUFFER);
                 i = 0;
                 uart_send_string("# ");
             }

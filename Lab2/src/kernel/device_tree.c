@@ -1,6 +1,8 @@
 #include <stdint.h>
 #include "peripherals/device_tree.h"
 #include "stdlib.h"
+#include "mini_uart.h"
+#include "device_tree.h"
 
 typedef struct fdt_header
 {
@@ -22,13 +24,14 @@ typedef struct
     uint32_t nameoff;
 } fdt_prop;
 
+char *cpioDest;
+
 static uint64_t pad_to_4(void *num);
 static uint32_t rev32(uint32_t val);
 static uint64_t endian_rev(void *input, int dtype_size);
 
-int get_property(void *_dtb)
+int initramfs_callback(void *dtb)
 {
-    uintptr_t dtb = (uintptr_t)_dtb;
     fdt_header *header = (fdt_header *)dtb;
 
     // Magic Number
@@ -68,13 +71,12 @@ int get_property(void *_dtb)
             p += sizeof(fdt_prop);
             prop_name = (char *)off_dt_strings + rev32(prop->nameoff);
             prop_val = (char *)p;
-            // printf("prop_name = %s\n", prop_name);
-
             if (!strcmp(FDT_CPIO_INITRAMFS_PROPNAME, prop_name))
             {
-                printf("FOUND\n");
+                uint64_t addr = (uint64_t)rev32(*((uint32_t *)prop_val));
+                printf("initramfs_addr at %p\n", addr);
+                cpioDest = (char *)addr;
             }
-
             p += rev32(prop->len);
             p += pad_to_4(p);
             break;
@@ -94,16 +96,82 @@ int get_property(void *_dtb)
     return -1;
 }
 
-void initramfs_callback()
+int dtb_parser(void *dtb)
 {
+    fdt_header *header = (fdt_header *)dtb;
+
+    // Magic Number
+    if (rev32(header->magic) != FDT_MAGIC)
+    {
+        printf("Wrong Magic Number 0x%08x\n", rev32(header->magic));
+        return -1;
+    }
+
+    uint8_t *off_dt_struct = (uint8_t *)header + rev32(header->off_dt_struct);
+    uint8_t *off_dt_strings = (uint8_t *)header + rev32(header->off_dt_strings);
+
+    int depth = 0;
+    uint8_t *p = off_dt_struct;
+    char *node_name = NULL;
+    fdt_prop *prop = NULL;
+    char *prop_name = NULL;
+    char *prop_val = NULL;
+
+    // Traverse the device tree structure
+    while (1)
+    {
+        const uint32_t token = rev32(*(uint32_t *)p);
+        switch (token)
+        {
+        case FDT_BEGIN_NODE:
+            // Move to the next entry
+            p += 4;
+            node_name = (char *)p;
+            uart_send_space(depth * 3);
+            printf("%s {\n", node_name);
+            p += strlen((char *)(p)) + 1; // +1 for null terminated string
+            p += pad_to_4(p);
+            depth++;
+            break;
+        case FDT_END_NODE:
+            // Move to the next entry
+            p += 4;
+            depth--;
+            uart_send_space(depth * 3);
+            printf("};\n");
+            printf("\n");
+            break;
+        case FDT_PROP:
+            p += 4;
+            prop = (fdt_prop *)p;
+            p += sizeof(fdt_prop);
+            prop_name = (char *)off_dt_strings + rev32(prop->nameoff);
+            prop_val = (char *)p;
+            uart_send_space(depth * 3);
+            printf("%s = %s\n", prop_name, prop_val);
+            p += rev32(prop->len);
+            p += pad_to_4(p);
+            break;
+        case FDT_NOP:
+            p += 4;
+            break;
+        case FDT_END:
+            return rev32(header->totalsize);
+        default:
+            // Invalid entry
+            printf("Invalid FDT entry\n");
+            return -1;
+        }
+    }
+
+    // Property not found
+    return -1;
 }
 
-void fdt_traverse(void *dtb)
+void fdt_traverse(fdt_callback cb, char *dtb)
 {
-    printf("dtb = %p\n", dtb);
-    int prop;
-    prop = get_property((void *)dtb);
-    printf("%d\n", prop);
+    if (cb(dtb) == -1)
+        printf("fdt_traverse failed.\n");
 
     return;
 }
