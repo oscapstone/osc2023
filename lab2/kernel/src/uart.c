@@ -171,3 +171,23 @@ void uart_hex(unsigned int d)
         uart_send(n);
     }
 }
+
+void uart_uint(unsigned int i)
+{
+    char c[10];
+    if (i == 0)
+    {
+        uart_send('0');
+        return;
+    }
+    int digits = -1;
+    while (i != 0)
+    {
+        c[++digits] = '0' + i % 10;
+        i /= 10;
+    }
+    for (; digits >= 0; --digits)
+    {
+        uart_send(c[digits]);
+    }
+}

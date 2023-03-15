@@ -82,7 +82,6 @@ void HardwareInformation()
 }
 void shellStart()
 {
-    void *memory = (void *)BASS;
     while (1)
     {
         uart_puts("# ");
@@ -120,15 +119,15 @@ void shellStart()
         }
         if (!strcmp(command, "malloc"))
         {
-            void *s = simpleMalloc(&memory, 8);
+            void *s = simpleMalloc(8);
             uart_puts("Allocated 8 bytes of memory\n");
             uart_hex((unsigned int)s);
             uart_puts("\n");
-            s = simpleMalloc(&memory, 16);
+            s = simpleMalloc(16);
             uart_puts("Allocated 16 bytes of memory\n");
             uart_hex((unsigned int)s);
             uart_puts("\n");
-            s = simpleMalloc(&memory, 32);
+            s = simpleMalloc(32);
             uart_puts("Allocated 32 bytes of memory\n");
             uart_hex((unsigned int)s);
             uart_puts("\n");

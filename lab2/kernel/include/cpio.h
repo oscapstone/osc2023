@@ -2,6 +2,7 @@
 #define CPIO_H
 
 #define CPIO_ADDRESS  0x8000000;
+
 typedef struct
 {
     char	   c_magic[6];
@@ -22,11 +23,15 @@ typedef struct
 
 
 
+
+
 int hex2int(char *p, int len);
 void read(char **address, char *target, int count);
 int round2four(int origin, int option);
 void cpioParse(char **ramfs, char *file_name, char *file_content);
 void cpioLs();
 void cpioCat(char findFileName[]);
+void initrd_fdt_callback(void *start, int size);
+int initrdGet();
 
 #endif

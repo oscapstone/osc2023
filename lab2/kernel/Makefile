@@ -6,7 +6,7 @@ INCLUDE_DIR = include
 SRC_DIR = src
 OBJ_DIR = build
 
-CFLAGS = -Wall -O2 -ffreestanding -nostdlib -nostdinc  -nostartfiles
+CFLAGS = -Wall -O2 -ffreestanding -MMD -MP -static
 CC = aarch64-none-elf-gcc
 LINKER = aarch64-none-elf-ld
 OBJ_CPY = aarch64-none-elf-objcopy
@@ -33,10 +33,10 @@ deploy: all
 	diskutil eject /Volumes/NO\ NAME
 
 run: all
-	qemu-system-aarch64 -M raspi3b -kernel kernel8.img -serial null -serial stdio -display none -initrd initramfs.cpio 
+	qemu-system-aarch64 -M raspi3b -kernel kernel8.img -serial null -serial stdio -display none -initrd initramfs.cpio -dtb bcm2710-rpi-3-b-plus.dtb
 
 pty:
 	qemu-system-aarch64 -M raspi3b -kernel kernel8.img -initrd initramfs.cpio -serial null -serial pty -display none
 
 debug:
-	qemu-system-aarch64 -M raspi3b -kernel kernel8.img -initrd initramfs.cpio -serial null  -display none -S -s
+	qemu-system-aarch64 -M raspi3b -kernel kernel8.img -initrd initramfs.cpio -serial null  -display none  -initrd initramfs.cpio -dtb bcm2710-rpi-3-b -S -s

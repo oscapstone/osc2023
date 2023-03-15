@@ -1,8 +1,16 @@
 #include "utils.h"
 
-void *simpleMalloc(void **current, int size)
+extern int _end;
+static char *header;
+
+void heapInit()
 {
-    void *ret = *current;
-    *current = *(char **)current + size;
+    header = (char *)&_end;
+    header++;
+}
+void *simpleMalloc(int size)
+{
+    void *ret = (void *)header;
+    header += size;
     return ret;
 }

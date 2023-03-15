@@ -28,6 +28,10 @@
 .global _start
 
 _start:
+   // mov     x10, x0
+   // mov     x11, x1
+   // mov     x12, x2
+   // mov     x13, x3
     // read cpu id, stop slave cores
     mrs     x1, mpidr_el1
     and     x1, x1, #3
@@ -50,6 +54,10 @@ _start:
     cbnz    w2, 3b
 
     // jump to C code, should not return
-4:  bl      main
+4:  //mov     x0, x10
+    //mov     x1, x11
+    //mov     x2, x12
+    //mov     x3, x13
+    bl      main
     // for failsafe, halt this core too
     b       1b

@@ -29,3 +29,4 @@ char uart_getc();
 void uart_puts(char *s);
 void uart_getcommand(char *command);
 void uart_hex(unsigned int d);
+void uart_uint(unsigned int i);

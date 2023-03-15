@@ -1,6 +1,9 @@
 #include "cpio.h"
 #include "string.h"
 #include "uart.h"
+#include "dtb.h"
+
+static void *RAMFS = 0x0;
 int hex2int(char *p, int len)
 {
     int val = 0;
@@ -55,6 +58,22 @@ int round2four(int origin, int option)
 
     return answer;
 }
+
+void initrd_fdt_callback(void *start, int size)
+{
+    if (size != 4)
+    {
+        uart_uint(size);
+        uart_puts("Size not 4!\n");
+        return 1;
+    }
+    uint32_t t = *((uint32_t *)start);
+    RAMFS = (void *)(b2l_32(t));
+}
+int initrdGet()
+{
+    return RAMFS;
+}
 void cpioParse(char **ramfs, char *file_name, char *file_content)
 {
     cpio_t header;
@@ -78,7 +97,7 @@ void cpioLs()
 {
     char fileName[100];
     char fileContent[1000];
-    char *ramfs = (char *)CPIO_ADDRESS;
+    char *ramfs = (char *)RAMFS;
     while (1)
     {
         strset(fileName, '0', 100);
@@ -90,11 +109,12 @@ void cpioLs()
         uart_puts("\n");
     }
 }
+
 void cpioCat(char findFileName[])
 {
     char fileName[100];
     char fileContent[1000];
-    char *ramfs = (char *)CPIO_ADDRESS;
+    char *ramfs = (char *)RAMFS;
     int found = 0;
     while (1)
     {
