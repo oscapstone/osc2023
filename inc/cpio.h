@@ -18,7 +18,7 @@ struct cpio_newc_header {
 		   char	   c_check[8];
 };
 
-void _ls(char* cpio);
-void _cat(char* cpio, char* filename);
+void cpio_ls(char* cpio);
+void cpio_cat(char* cpio, char* filename);
 
 #endif

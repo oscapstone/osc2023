@@ -12,7 +12,11 @@ typedef short int16;
 typedef char int8;
 
 typedef uint32 size_t;
+typedef uint8 uint8_t;
+typedef uint32 fdt32_t;
+typedef uint64 fdt64_t;
 
 #define ALIGN(num, base) ((num + base - 1) & ~(base - 1))
+#define NULL 0
 
 #endif /* _TYPES_H */

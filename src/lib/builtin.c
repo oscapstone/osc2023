@@ -3,6 +3,11 @@
 #include <mbox.h>
 #include <builtin.h>
 #include <utils.h>
+#include <cpio.h>
+#include <type.h>
+#include <dt17.h>
+#include <string.h>
+#include <mem.h>
 
 void _help(int mode){
     uart_printf(
@@ -17,6 +22,8 @@ void _help(int mode){
         uart_printf(
             "ls\t: " "list files in initramfs"  "\r\n"
             "cat <filename>\t: " "get file content"  "\r\n"
+            "parsedtb\t: " "parse device tree" "\r\n"
+            "malloc <size>\t: " "allocate a block of memory with size" "\r\n"
         );
     }
 }
@@ -46,4 +53,26 @@ void _reboot(void){
 
 void _echo(char* shell_buf){
     uart_printf(shell_buf);
+}
+
+void _ls(uint64 _initramfs_addr){
+    cpio_ls((char*)_initramfs_addr);
+}
+
+void _cat(uint64 _initramfs_addr, char* filename){
+    cpio_cat((char*)_initramfs_addr, filename);
+}
+
+void _parsedtb(char* fdt_base){
+    dtb_traverse(fdt_base);
+}
+
+void* _malloc(char* size){
+    int int_size = atoi(size);
+    if(int_size==-1){
+        uart_printf("[x] malloc size type is wrong or too large!\r\n");
+        return NULL;
+    }
+    uart_printf("Ready to allocate %d size of memory!\r\n",int_size);
+    return simple_malloc(int_size);
 }

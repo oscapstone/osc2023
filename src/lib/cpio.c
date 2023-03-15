@@ -20,11 +20,11 @@ static uint32 cpio_read_hex(char* p){
     return result;
 }
 
-void _ls(char* cpio){
+void cpio_ls(char* cpio){
     char* cur = cpio;
 
     while(1){
-        struct cpio_newc_header *pheader = cur;
+        struct cpio_newc_header *pheader = (struct cpio_newc_header *)cur;
         cur += sizeof(struct cpio_newc_header);
         if(!strcmp(pheader->c_magic, "070701")){
             uart_printf("Only support new ASCII format for cpio. \r\n");
@@ -53,11 +53,11 @@ void _ls(char* cpio){
     }
 }
 
-void _cat(char* cpio, char* filename){
+void cpio_cat(char* cpio, char* filename){
     char* cur = cpio;
 
     while(1){
-        struct cpio_newc_header *pheader = cur;
+        struct cpio_newc_header *pheader = (struct cpio_newc_header *) cur;
         cur += sizeof(struct cpio_newc_header);
         if(!strcmp(pheader->c_magic, "070701")){
             uart_printf("Only support new ASCII format for cpio. \r\n");

@@ -1,5 +1,6 @@
 _stack_top = 0x400000;
-
+start_mem  = 0x6000000;
+end_mem    = 0x7ffffff;
 SECTIONS
 {
   . = 0x0;
