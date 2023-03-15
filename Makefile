@@ -83,8 +83,10 @@ $(OBJ_DIR)/$(LIB_DIR)/%_c.o: $(SRC_DIR)/$(LIB_DIR)/%.c
 $(INITRAMFS_CPIO): $(INITRAMFS_FILE)
 		cd rootfs; find . | cpio -o -H newc > ../$(INITRAMFS_CPIO)
 
-qemub: all 
+qemub: all $(INITRAMFS_CPIO) $(RPI3_DTB)
 		qemu-system-aarch64 -M raspi3 -kernel $(BOOTLOADER_IMG) -display none \
+											-dtb $(RPI3_DTB) \
+											-initrd $(INITRAMFS_CPIO) \
 											-serial null -serial pty
 qemuk: all $(INITRAMFS_CPIO) $(RPI3_DTB)
 		qemu-system-aarch64 -M raspi3 -kernel $(KERNEL_IMG) -display none \

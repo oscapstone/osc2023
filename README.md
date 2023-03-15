@@ -12,11 +12,12 @@
 ## Build 
 
 ```
-make kernel.img
+make
 ```
 
 ## Test With QEMU
-
-```
-qemu-system-aarch64 -M raspi3b -kernel kernel.img -initrd initramfs.cpio -serial null -serial stdio -dtb bcm2710-rpi-3-b-plus.dtb
+place your dtb file in the img/ directory
+```command
+$ cp bcm2710-rpi-3-b-plus.dtb <osc_dir>/img/.
+$ make qemuk
 ```

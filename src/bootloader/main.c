@@ -7,32 +7,28 @@ char shell_buf[BUFSIZE];
 char* dtp_pass;
 extern char _kernel[];
 
-typedef void (*kernel_funcp)(char *fdt);
-
 void _load(void){
     uart_send_string("[*] Loading kernel...\r\n");
 
     unsigned int len;
     char *p = _kernel;
 
-    // uart_send_string("[*] Kernel base address:");
-    // uart_send_hex(_kernel);
-    // uart_send_string("\r\n");
-
     len = uart_recv_uint();
     uart_send_string("[*] Receiving kernel with len:");
     uart_send_hex(len);
     uart_send_string("\r\n");
 
-    while(len--)
+    // uart_send_hex(p);
+    while(len--) {
         *p++= uart_recv();
+    }
 
     uart_send_string("[*] Jumping to the kernel\r\n");
     // Jump to the kernel and execute
-    // typedef void (*func_ptr)(char*);
-    // func_ptr ptr = (func_ptr)_kernel;
-    // ptr(dtp_pass);
-    ((kernel_funcp)_kernel)(dtp_pass);
+    typedef void (*func_ptr)(char*);
+    func_ptr ptr = (func_ptr)_kernel;
+    // uart_send_hex(ptr);
+    ptr(dtp_pass);
 }
 
 void shell_interact(void){

@@ -6,12 +6,12 @@ SECTIONS
 {
   . = _bootloader;
 
-  .text.boot :{
-    *(text.boot)
+  .text.boot : {
+    *(.text.boot)
   }
 
-  .text : { 
-    *(.text) 
+  .text : {
+    *(.text)
   }
 
   .rodata : {
@@ -19,13 +19,15 @@ SECTIONS
   }
 
   .data : {
+    *(.got)
+    *(.got.plt)
     *(.data)
   }
 
   end_data = .;
   
   bss_begin = .;
-  .bss :{
+  .bss : {
     *(.bss*)
   }
   bss_end = .;

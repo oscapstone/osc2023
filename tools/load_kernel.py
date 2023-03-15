@@ -6,8 +6,10 @@ import struct
 # And then send all of kernel
 
 def send_kernel(args):
+    
     with open(args.file, 'rb') as kernel_file:
         kernel = kernel_file.read()
+        print(len(kernel))
 
     with open(args.dev, 'wb', buffering=0) as target:
         target.write(struct.pack('<I', len(kernel)))

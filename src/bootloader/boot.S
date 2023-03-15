@@ -22,7 +22,7 @@ master:
 	// Get offset
 	adr x0, _start
 	ldr x1, =_bootloader
-	sub x0, x0, x1
+	subs x0, x0, x1 // G_G
 	// If start address not equals to desired bootloader adddress, 
 	// copy mem and jump to desired address
 	b.ne relocate
