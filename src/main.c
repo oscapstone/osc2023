@@ -36,11 +36,10 @@ void main()
 {
     fdt_init();
     shell_init();
-    
+
     // get_board_revision();
     // get_memory_info();
 
-    uart_puts("===test simple_malloc===\n");
     uart_hex(return_available());
     uart_send('\n');
     char *string = (char *) simple_malloc(sizeof(char) * 8);
@@ -50,7 +49,6 @@ void main()
     char *string2 = (char *) simple_malloc(sizeof(char) * 20);
     uart_hex(return_available());
     uart_send('\n');
-    uart_puts("===end test===\n");
 
     fdt_traverse(initramfs_callback);
 
