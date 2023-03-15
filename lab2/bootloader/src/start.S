@@ -3,8 +3,8 @@
 .global _start
 
 _start:
-    mov     x10, x0
-    mov     x11, x1
+    mov     x10, x0 // dtb address
+    mov     x11, x1 /* x1-x3 must is 0 */
     mov     x12, x2
     mov     x13, x3
 

@@ -62,20 +62,16 @@ typedef struct
 #define FDT_MAGIC 0xd00dfeed /* 4: version, 4: total size */
 #define FDT_TAGSIZE sizeof(uint32_t)
 
-#define FDT_BEGIN_NODE 0x00000001 /* Start node: full name */
-#define FDT_END_NODE 0x00000002	  /* End node */
-#define FDT_PROP 0x00000003		  /* Property: name off, size, content */
-#define FDT_NOP 0x00000004		  /* nop */
-#define FDT_END 0x00000009
+#define FDT_BEGIN_NODE 0x1 /* Start node: full name */
+#define FDT_END_NODE 0x2   /* End node */
+#define FDT_PROP 0x3	   /* Property: name off, size, content */
+#define FDT_NOP 0x4		   /* nop */
+#define FDT_END 0x9
 
 int32_t b2l_32(int32_t input);
 int64_t b2l_64(int64_t input);
-
-// Find attribute and callback
-// 1: Start address of FDT
-// 2: Node name
-// 3: Property name
-// 4: Callback function
+int dump_fdt_struct(char *dtb_start, uint32_t off_struct,
+					uint32_t off_string, uint32_t size_struct);
 int fdt_find_do(void *, const char *, int (*fn)(void *, int));
 int fdt_header_b2l(fdt_header *dtb_info);
 // Target properties location of initrd.

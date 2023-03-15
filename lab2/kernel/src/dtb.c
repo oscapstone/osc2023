@@ -114,13 +114,8 @@ int fdt_find_do(void *dtb_start, const char *name, int (*fn)(void *, int))
             t_prop.nameoff = b2l_32(prop->nameoff);
             t_prop.len = b2l_32(prop->len);
             cur += 8;
-            // uart_puts(str_lo + prop->nameoff);
-            // uart_uint(prop->len);
-            // uart_puts("\n");
             if (!strcmp(str_lo + t_prop.nameoff, name))
             {
-                // uart_puts(str_lo + prop->nameoff);
-                // uart_puts("TRUE start callback\n");
                 fn((void *)cur, t_prop.len);
                 return 0;
             }
