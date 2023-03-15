@@ -144,7 +144,7 @@ void shell(void) {
 
         // Lab 1
         if (strcmp("hello", command) == 0) {
-            uart_puts("Hello World!\n");
+            uart_puts("Hello Kernel!\n");
         }
         else if (strcmp("help", command) == 0) {
             uart_puts("help\t: print this help menu\n");

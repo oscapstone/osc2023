@@ -24,7 +24,7 @@ void shell(void) {
         // Lab 1
         if (strcmp("hello", command) == 0) {
             uart_puts("\n");
-            uart_puts("Hello World!\n");
+            uart_puts("Hello Bootloader!\n");
         }
         // Lab 2
         else if (strcmp("load", command) == 0) {
