@@ -4,7 +4,7 @@ import time
 file_size = os.path.getsize('kernel8.img')
 print("File Size is :", file_size, "bytes")
 
-# with open('/dev/pts/60', "wb", buffering=0) as tty:
+# with open('/dev/pts/12', "wb", buffering=0) as tty:
 with open('/dev/ttyUSB0', "wb", buffering=0) as tty:
     # send Start
     tty.write(b"Start")

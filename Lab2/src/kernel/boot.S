@@ -4,8 +4,8 @@
 
 .globl _start
 _start:
-	ldr x1, =_dtb_ptr
-    str x0, [x1]
+	ldr x20, =_dtb_ptr
+    str x0, [x20]
 	mrs	x0, mpidr_el1		
 	and	x0, x0,#0xFF		// Check processor id
 	cbz	x0, master		// Hang for all non-primary CPU

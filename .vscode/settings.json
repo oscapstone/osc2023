@@ -3,6 +3,9 @@
         "array": "c",
         "string_view": "c",
         "initializer_list": "c",
-        "utility": "c"
+        "utility": "c",
+        "typeinfo": "c",
+        "stdlib.h": "c",
+        "mini_uart.h": "c"
     }
 }

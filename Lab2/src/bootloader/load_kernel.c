@@ -4,9 +4,12 @@
 #include "stdlib.h"
 
 extern int __loader_size;
+extern void *_dtb_ptr;
 
 void load_kernel(char *dest)
 {
+    char *const kernel_addr = dest;
+
     int size = 0;
 
     uart_send_string("Waiting for kernel8.img ...\n");
@@ -40,6 +43,10 @@ void load_kernel(char *dest)
     }
 
     uart_send_string("End transmitting ...\n");
+
+    // goto *kernel_addr;
+
+    // ((void (*)(char *))kernel_addr)(_dtb_ptr);
 
     // restore arguments and jump to the new kernel.
     asm volatile(

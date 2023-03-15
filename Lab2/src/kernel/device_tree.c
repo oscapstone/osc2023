@@ -22,18 +22,20 @@ typedef struct
     uint32_t nameoff;
 } fdt_prop;
 
+static uint64_t pad_to_4(void *num);
 static uint32_t rev32(uint32_t val);
 static uint64_t endian_rev(void *input, int dtype_size);
 
-void *get_property(const void *dtb, const char *name, int *size)
+int get_property(void *_dtb)
 {
+    uintptr_t dtb = (uintptr_t)_dtb;
     fdt_header *header = (fdt_header *)dtb;
 
     // Magic Number
     if (rev32(header->magic) != FDT_MAGIC)
     {
         printf("Wrong Magic Number 0x%08x\n", rev32(header->magic));
-        return NULL;
+        return -1;
     }
 
     uint8_t *off_dt_struct = (uint8_t *)header + rev32(header->off_dt_struct);
@@ -41,52 +43,75 @@ void *get_property(const void *dtb, const char *name, int *size)
 
     uint8_t *p = off_dt_struct;
     fdt_prop *prop = NULL;
+    char *prop_name = NULL;
+    char *prop_val = NULL;
 
     // Traverse the device tree structure
-    while (*p != FDT_END)
+    while (1)
     {
-        switch (*p)
+        const uint32_t token = rev32(*(uint32_t *)p);
+        switch (token)
         {
         case FDT_BEGIN_NODE:
             // Move to the next entry
             p += 4;
+            p += strlen((char *)(p)) + 1; // +1 for null terminated string
+            p += pad_to_4(p);
             break;
         case FDT_END_NODE:
             // Move to the next entry
             p += 4;
             break;
-        case FDT_PROP_NODE:
+        case FDT_PROP:
             p += 4;
             prop = (fdt_prop *)p;
             p += sizeof(fdt_prop);
+            prop_name = (char *)off_dt_strings + rev32(prop->nameoff);
+            prop_val = (char *)p;
+            // printf("prop_name = %s\n", prop_name);
+
+            if (!strcmp(FDT_CPIO_INITRAMFS_PROPNAME, prop_name))
+            {
+                printf("FOUND\n");
+            }
+
+            p += rev32(prop->len);
+            p += pad_to_4(p);
             break;
+        case FDT_NOP:
+            p += 4;
+            break;
+        case FDT_END:
+            return rev32(header->totalsize);
         default:
             // Invalid entry
-            return NULL;
+            printf("Invalid FDT entry\n");
+            return -1;
         }
     }
 
     // Property not found
-    return NULL;
+    return -1;
 }
 
 void initramfs_callback()
 {
 }
 
-void fdt_traverse(char *dtb)
+void fdt_traverse(void *dtb)
 {
-    size_t size;
-    void *prop;
-    int prop_size;
-
-    // Get the "linux,initrd-start" property
-    prop = get_property(dtb, FDT_CPIO_INITRAMFS_PROPNAME, &prop_size);
-
-    // Print the property value
-    printf("%s = 0x%x\n", FDT_CPIO_INITRAMFS_PROPNAME, *(uint32_t *)prop);
+    printf("dtb = %d\n", dtb);
+    int prop;
+    prop = get_property((void *)dtb);
+    printf("%d\n", prop);
 
     return;
+}
+
+static uint64_t pad_to_4(void *num)
+{
+    uint64_t modded = ((uint64_t)num) % 4;
+    return modded == 0 ? 0 : 4 - modded;
 }
 
 static uint32_t rev32(uint32_t val)
