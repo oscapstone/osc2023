@@ -2,18 +2,10 @@
 
 extern char __kernel[];
 
-static inline char tty_uart_recv() {
-    char c = uart_recvraw();
-    if (c == '\r') {
-        c = uart_recvraw();
-    }
-    return c;
-}
-
 static inline unsigned int read_kernel_size() {
     unsigned int size = 0;
     for (int i = 0; i < 4; ++i) {
-        size = size | ((unsigned int)tty_uart_recv() << (i * 8));
+        size = size | ((unsigned int)uart_recvraw() << (i * 8));
     }
     return size;
 }
@@ -21,7 +13,7 @@ static inline unsigned int read_kernel_size() {
 static inline void _load_kernel(unsigned int size) {
     char * addr = __kernel;
     while (size--) {
-        *(addr++) = tty_uart_recv();
+        *(addr++) = uart_recvraw();
     }
 }
 
