@@ -11,9 +11,8 @@ void uart_send(char c);
 void uart_puts(char *s);
 void uart_hex(unsigned int d);
 void uart_hexdump(unsigned int d);
-void set(long addr, unsigned int value);
-void reset(int tick);
-void cancel_reset();
-void mbox_call(unsigned char ch);
+int atoi(char * ch);
+void uart_int(int i);
+int exp(int i, int j);
 
 #endif  /*_MINI_UART_H */

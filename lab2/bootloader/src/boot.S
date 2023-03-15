@@ -4,6 +4,7 @@
 
 _start:
 // relocate bootloader text section to place before 0x80000 before execute
+    mov     x28, x0
     mov     x1, 0x80000
     mov     x2, 0x60000
     ldr     w3, =__loader_size

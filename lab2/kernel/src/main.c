@@ -3,6 +3,7 @@
 #include "cpio.h"
 #include "utils.h"
 #include "peripherals/mailbox.h"
+#include "dtb.h"
 #define MAX_CMD 512
 
 enum stat {
@@ -10,7 +11,7 @@ enum stat {
 	parse
 };
 
-void kernel_main(void)
+void kernel_main(void *dtb)
 {
 	uart_init();
 	uart_puts("\n");
@@ -28,9 +29,23 @@ void kernel_main(void)
     uart_hex((unsigned int)mac);
     uart_puts("\n");
 
+	uart_puts("initrd before callback:");
+	uart_hex(get_initramfs());
+	uart_puts("\nfind dtb from ");
+	uart_hex(dtb);
+	find_dtb(dtb, "linux,initrd-start", 18, callback_initramfs);
+
+	uart_puts("\ninitrd after callback:");
+	uart_hex(get_initramfs());
+	uart_puts("\n");
 	Welcome();
 	uart_puts("\n");
+	uart_puts("Parse DTB for resources. Location of 0x");
+	uart_hex(dtb);
+	uart_puts("\n");
 	uart_puts("Please type: \n");
+
+	
 	
 	enum stat s = read;
 	char *cmd[MAX_CMD];
@@ -44,7 +59,7 @@ void kernel_main(void)
 			s = parse;
 		} else {
 			// TO test inst,  modify this line
-			parse_cmd(cmd);
+			parse_cmd(cmd, dtb);
 			// parse_cmd("ls");
 			s = read;
 		}

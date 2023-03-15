@@ -1,5 +1,6 @@
 #include "mini_uart.h"
 #define MAX_CMD 64
+#define KSIZE 5
 
 void kernel_main(void)
 {
@@ -7,14 +8,28 @@ void kernel_main(void)
 	
 	// char *kernel=(char*)0x80000;
 	volatile unsigned char *kernel = (unsigned char *)0x80000;
+	char * size_ch[KSIZE];
 	int size = 0;
 again:
-	// uart_puts("Kernel Size:");
-	// size=uart_getc();
-	// size|=uart_getc()<<8;
-	// size|=uart_getc()<<16;
-	// size|=uart_getc()<<24;
-	size = 2402;
+	size = 0;
+	// uart_puts("Kernel Size (4 digits):");
+	
+	char tp;
+	// while ((tp = uart_getc()) != '\n')
+    // {
+	// 	uart_send(tp);
+	// 	size*=10;
+	// 	size+=(tp-'0');
+    // }
+	for(int i = 0; i < 4; i++){
+		tp = uart_getc();
+		uart_send(tp);
+		size*=10;
+		size+=(tp-'0');
+	}
+	uart_puts("\n");
+	uart_int(size);
+	uart_puts("\nStart: ");
 	// size = 2606;
 
 	if (size < 64 || size > 1024*1024){
@@ -22,9 +37,10 @@ again:
 		uart_send('L');
 		goto again;
 	}
+	uart_puts("\n");
 
 	// if(uart_getc() == '\n'){
-		uart_puts("Transmission Start:\n");
+		// uart_puts("\nTransmission Start:\n");
 	// }
 	int cnt = 0;
 	char c;
@@ -39,6 +55,8 @@ again:
 		cnt += 1;
 		*kernel=c;
 		uart_hexdump(c);
+		// uart_int(size);
+		uart_send(' ');
 		kernel++;
 	}
 	// for (int i = 0; i < size; i++) {
@@ -55,7 +73,7 @@ again:
 	
 	asm volatile (
         // we must force an absolute address to branch to
-        "mov x30, #0x80000; mov     sp, 0x60000; ret"
+        "mov x30, #0x80000; mov x0, x28; ret"
     );
 	uart_puts("Failed to load, no return\n");
 	return;

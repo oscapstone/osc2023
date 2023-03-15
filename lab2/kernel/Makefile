@@ -4,6 +4,10 @@ LD = $(ARMGNU)-ld
 OBJCOPY = $(ARMGNU)-objcopy
 BUILD_DIR = build
 SRC_DIR = src
+CPIO = initramfs.cpio
+DTB = bcm2710-rpi-3-b-plus.dtb
+# This is temporory, CPIO can remove when DTB is done
+ENV_HDR = -initrd initramfs.cpio -dtb bcm2710-rpi-3-b-plus.dtb
 
 all : kernel8.img
 
@@ -38,7 +42,10 @@ kernel8.img : $(SRC_DIR)/linker.ld  $(OBJ_FILES)
 	$(OBJCOPY) -O binary $(BUILD_DIR)/kernel8.elf kernel8.img
 
 run: kernel8.img
-	qemu-system-aarch64 -M raspi3b -kernel kernel8.img -display none -serial null -serial stdio  -initrd initramfs.cpio
+	qemu-system-aarch64 -M raspi3b -kernel kernel8.img -display none -serial null -serial stdio ${ENV_HDR}
+
+asm: kernel8.img
+	qemu-system-aarch64 -M raspi3b -kernel kernel8.img -display none -serial null -serial stdio ${ENV_HDR} -d in_asm
 
 # aarch64-linux-gnu-gcc -c a.S
 # aarch64-linux-gnu-ld -T linker.ld -o kernel8.elf a.o
@@ -46,4 +53,4 @@ run: kernel8.img
 # qemu-system-aarch64 -M raspi3 -kernel kernel8.img -display none -d in_asm
 
 debug: kernel8.img
-	qemu-system-aarch64 -M raspi3b -kernel kernel8.img -display none -initrd initramfs.cpio -S -s
+	qemu-system-aarch64 -M raspi3b -kernel kernel8.img -display none ${ENV_HDR} -S -s

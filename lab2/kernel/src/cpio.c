@@ -1,5 +1,9 @@
 #include "mini_uart.h"
 #include "utils.h"
+#include "dtb.h"
+#include <stdint.h>
+
+static void * initramfs = 0x0;
 
 typedef struct {
     char	   c_magic[6];
@@ -69,4 +73,14 @@ void cat_list () {
             off = 4-off;
         buf+=(sizeof(cpio_t)+ns+fs+off);
     }
+}
+
+int callback_initramfs(void * addr, int size){
+    uint32_t t = *((uint32_t*)addr);
+    initramfs = (void*)(bswap_32(t));
+    return;
+}
+
+int get_initramfs(){
+    return initramfs;
 }

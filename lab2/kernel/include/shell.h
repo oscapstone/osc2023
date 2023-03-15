@@ -2,7 +2,7 @@
 #define _SHELL_H
 
 void shell_input(char *cmd);
-unsigned int parse_cmd(char *cmd);
+unsigned int parse_cmd(char *cmd, void *dtb);
 int str_comp(char *x, char *y);
 void buf_clear(char *cmd);
 

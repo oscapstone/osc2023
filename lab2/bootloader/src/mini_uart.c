@@ -10,26 +10,27 @@ volatile unsigned int  __attribute__((aligned(16))) mbox[36];
  */
 void uart_init ( void ) {
     register unsigned int r;
-
-    *AUX_ENABLES |=1;       // enable UART1, AUX mini uart
-    *AUX_MU_CNTL_REG = 0;
-    *AUX_MU_IER_REG = 0;
-    *AUX_MU_LCR_REG = 3;       // 8 bits
-    *AUX_MU_MCR_REG = 0;
-    *AUX_MU_BAUD_REG = 270;    // 115200 baud
-    *AUX_MU_IIR_REG = 6;
-    *AUX_MU_CNTL_REG = 3;
-    /* map UART1 to GPIO pins */
     r=*GPFSEL1;
     r&=~((7<<12)|(7<<15)); // gpio14, gpio15
     r|=(2<<12)|(2<<15);    // alt5
     *GPFSEL1 = r;
     *GPPUD = 0;            // enable pins 14 and 15
+
     r=150; while(r--) { asm volatile("nop"); }
     *GPPUDCLK0 = (1<<14)|(1<<15);
     r=150; while(r--) { asm volatile("nop"); }
     *GPPUDCLK0 = 0;        // flush GPIO setup
     *AUX_MU_CNTL_REG = 3;      // enable Tx, Rx
+
+    *AUX_ENABLES |=1;       // enable UART1, AUX mini uart
+    *AUX_MU_CNTL_REG = 0;
+    *AUX_MU_LCR_REG = 3;       // 8 bits
+    *AUX_MU_MCR_REG = 0;
+    *AUX_MU_IER_REG = 0;
+    *AUX_MU_IIR_REG = 6;
+    *AUX_MU_BAUD_REG = 270;    // 115200 baud
+    *AUX_MU_CNTL_REG = 3;
+    /* map UART1 to GPIO pins */
 }
 
 /**
@@ -101,65 +102,36 @@ void uart_hexdump(unsigned int d) {
     uart_send(' ');
 }
 
-void set(long addr, unsigned int value) {
-    volatile unsigned int* point = (unsigned int*)addr;
-    *point = value;
-}
-
-void reset(int tick) {                 // reboot after watchdog timer expire
-    set(PM_RSTC, PM_PASSWORD | 0x20);  // full reset
-    set(PM_WDOG, PM_PASSWORD | tick);  // number of watchdog tick
-}
-
-void cancel_reset() {
-    set(PM_RSTC, PM_PASSWORD | 0);  // full reset
-    set(PM_WDOG, PM_PASSWORD | 0);  // number of watchdog tick
-}
-
-void mbox_call(unsigned char ch)
-{
-
-    // get the board's unique serial number with a mailbox call
-    mbox[0] = 7*4;                  // length of the message
-    mbox[1] = MBOX_REQUEST;         // this is a request message
-    
-    mbox[2] = GET_BOARD_REVISION;   // get serial number command
-    mbox[3] = 4;                    // buffer size
-    mbox[4] = TAG_REQUEST_CODE;
-    mbox[5] = 0;                    // clear output buffer
-    mbox[6] = END_TAG;
-
-    unsigned int r = (((unsigned int)((unsigned long)&mbox)&~0xF) | (ch&0xF));
-    do{asm volatile("nop");}while(*MBOX_STATUS & MBOX_FULL);
-    *MBOX_WRITE = r;
-    // while(1) {
-    //     do{asm volatile("nop");}while(*MBOX_STATUS & MBOX_EMPTY);
+int atoi(char * ch){
+    int ret = 0;
+    for(int i = 0; i<5; i++){
+        ret*=10;
+        ret+=(ch[i]-'0');
+    }
+    // while(*ch != '\0'){
+    //     ret*=10;
+    //     ret += (*ch-'0');
+    //     ch++;
     // }
-    uart_puts("board revision: ");
-    uart_hex(mbox[5]);
-    uart_puts("\n");
+    // return ret;
+}
 
-    mbox[0] = 8*4;                  // length of the message
-    mbox[1] = MBOX_REQUEST;         // this is a request message
-    
-    mbox[2] = GET_ARM_MEMORY;       // get serial number command
-    mbox[3] = 8;                    // buffer size
-    mbox[4] = TAG_REQUEST_CODE;
-    mbox[5] = 0;                    // clear output buffer
-    mbox[6] = 0;
-    mbox[7] = END_TAG;
+int exp(int i, int j){
+    int ret = 1;
+    for (; j>0; j--){
+        ret*=i;
+    }
+    return ret;
+}
 
-    r = (((unsigned int)((unsigned long)&mbox)&~0xF) | (ch&0xF));
-    do{asm volatile("nop");}while(*MBOX_STATUS & MBOX_FULL);
-    *MBOX_WRITE = r;
-    // while(1) {
-    //     do{asm volatile("nop");}while(*MBOX_STATUS & MBOX_EMPTY);
-    // }
-    uart_puts("ARM memory base address: ");
-    uart_hex(mbox[5]);
-    uart_puts("\n");
-
-    uart_puts("ARM memory size: ");
-    uart_hex(mbox[6]);
-    uart_puts("\n");
+void uart_int(int i){
+    int e = 0;
+    int temp = i;
+    while ((i /= 10) >0){
+        e++;
+    }
+    for(;e; e--){
+        uart_send((temp/exp(10, e))%10+'0');
+    }
+    uart_send('0'+(temp%10));
 }

@@ -27,17 +27,24 @@ int hex2bin(char *s, int n){
     return r;
 }
 
+int exp(int i, int j){
+    int ret = 1;
+    for (; j>0; j--){
+        ret*=i;
+    }
+    return ret;
+}
+
 void uart_int(int i){
-    int offset;
-    if (i == 0) {
-        uart_send('0');
-        return;
+    int e = 0;
+    int temp = i;
+    while ((i /= 10) >0){
+        e++;
     }
-    while(i){
-        offset = i%10;
-        uart_send('0'+offset);
-        i/=10;
+    for(;e; e--){
+        uart_send((temp/exp(10, e))%10+'0');
     }
+    uart_send('0'+(temp%10));
 }
 
 int atoi(char * c){

@@ -66,6 +66,20 @@ void uart_puts(char *s) {
 	}
 }
 
+/**
+ * Display a string. Solve the problem: Auto stop when encounter 0x0
+ */
+void uart_puts_l(char *s, int l) {
+	for (int i = 0; i<l; i++) {
+        if(s[i]=='\n')
+            uart_send('\r');
+		if(s[i]=='\0')
+            uart_send(' ');
+        else
+            uart_send((char)s[i]);
+	}
+}
+
 void uart_hex(unsigned int d) {
     unsigned int n;
     int c;

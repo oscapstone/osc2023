@@ -9,6 +9,7 @@ void uart_init ( void );
 char uart_getc ( void );
 void uart_send(char c);
 void uart_puts(char *s);
+void uart_puts_l(char *s, int l);
 void uart_hex(unsigned int d);
 void set(long addr, unsigned int value);
 void reset(int tick);

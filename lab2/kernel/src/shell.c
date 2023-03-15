@@ -32,19 +32,24 @@ void shell_input(char *cmd){
 /**
  * Define all commands
  */
-unsigned int parse_cmd(char *cmd){
+unsigned int parse_cmd(char *cmd, void *dtb){
     char *help = "help";
     char *hello = "hello";
     char *mbx = "mailbox";
     char *reboot = "reboot";
     char *ls = "ls";
     char *cat = "cat";
+    char *lshw = "lshw";
     // DEBUG
     // cmd = "ls";
     if (str_comp(cmd, hello)) {uart_puts("Hello World!\n");}
     else if (str_comp(cmd, help)) {
         uart_puts("help\t: print this help menu\n");
         uart_puts("hello\t: print Hello World!\n");
+        uart_puts("mailbox\t: Mailbox address and size\n");
+        uart_puts("ls\t: show the directory\n");
+        uart_puts("cat\t: show file content\n");
+        uart_puts("lshw\t: show hardware resuorces\n");
         uart_puts("reboot\t: reboot the device\n");
     }
     else if (str_comp(cmd, mbx)){
@@ -58,6 +63,9 @@ unsigned int parse_cmd(char *cmd){
     }
     else if (str_comp(cmd, cat)){
         cat_list();
+    }
+    else if (str_comp(cmd, lshw)){
+        dtb_list(dtb);
     }
     else uart_puts("shell: command not found\n");
     buf_clear(cmd);
