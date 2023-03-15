@@ -15,6 +15,8 @@ void send_help_message(void)
         uart_send_string("hello:\t\tprint Hello World!\r\n");
         uart_send_string("reboot:\t\treboot device\r\n");
         uart_send_string("hw-info:\tprint hardware information\r\n");
+        uart_send_string("ls:\t\tlist files in ramdisk\r\n");
+        uart_send_string("cat:\t\tprint file\r\n");
 }
 
 void parse_cmd(void)
