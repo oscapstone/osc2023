@@ -1,7 +1,13 @@
 #ifndef MY_STDINT_H
 #define MY_STDINT_H
 
+#ifndef __bool_defined
+typedef int                          bool;
+#define __bool_defined
+#endif
 
+#define true 1
+#define false 0
 
 
 #ifndef __uint32_t_defined

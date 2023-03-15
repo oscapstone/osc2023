@@ -22,16 +22,6 @@ void fdt_init()
     dtb_address = (fdt_header *) *tmp_pointer;
 }
 
-int len_str(char *str)
-{
-    int count = 0;
-    while (*str != '\0') {
-        count++;
-        str++;
-    }
-    return count;
-}
-
 void fdt_traverse(void (*callback)(fdt_prop *, char *, char *))
 {
     if (swap_endian(dtb_address->magic) != FDT_MAGIC)
@@ -41,25 +31,30 @@ void fdt_traverse(void (*callback)(fdt_prop *, char *, char *))
     char *string_sp = (char *) ((uint32_t) dtb_address + swap_endian(dtb_address->off_dt_strings));
     
     char *node_name;
+    bool END = false;
 
-    while (1) {
+    while (!END) {
         uint32_t token = swap_endian(*struct_sp);
-        if (token == FDT_BEGIN_NODE) {
+
+        switch (token) {
+        case FDT_BEGIN_NODE:;
             fdt_node_header *node = (fdt_node_header *) struct_sp;
             node_name = node->name;
-            struct_sp += ALIGN(len_str(node->name), 4) / 4;
-        } else if (token == FDT_PROP) {
-            fdt_prop* prop = (fdt_prop*)(struct_sp + 1);
-            struct_sp += (sizeof(fdt_prop)+ALIGN(swap_endian(prop->len), 4))/4;
-            char *property_name = string_sp+swap_endian(prop->nameoff);
-            
+            struct_sp += ALIGN(strlen(node->name), 4) / 4;
+            break;
+        case FDT_PROP:;
+            fdt_prop *prop = (fdt_prop*)(struct_sp + 1);
+            struct_sp += (sizeof(fdt_prop) + ALIGN(swap_endian(prop->len), 4)) / 4;
+            char *property_name = string_sp + swap_endian(prop->nameoff);
             callback(prop, node_name, property_name);
-            
-        } else if (token == FDT_END_NODE || token == FDT_NOP) {
-
-        } else if (token == FDT_END) {
+            break;
+        case FDT_END:
+            END = true;
+            break;
+        default:
             break;
         }
+
         struct_sp++;
     }
 }

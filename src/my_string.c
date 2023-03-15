@@ -51,3 +51,13 @@ int memcmp(void *s1, void *s2, int n)
     while(n-->0){ if(*a!=*b) { return *a-*b; } a++; b++; }
     return 0;
 }
+
+int strlen(char *str)
+{
+    int count = 0;
+    while (*str != '\0') {
+        count++;
+        str++;
+    }
+    return count;
+}
