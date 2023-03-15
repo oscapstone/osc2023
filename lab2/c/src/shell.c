@@ -12,7 +12,7 @@
 
 static bool _shell_is_initrd_valid;
 
-static void _shell_init(void) { _shell_is_initrd_valid = initrd_is_valid(); }
+static void _shell_init(void) { _shell_is_initrd_valid = initrd_init(); }
 
 static void _shell_print_prompt(void) { serial_fputs("# "); }
 

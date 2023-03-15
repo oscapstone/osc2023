@@ -67,18 +67,20 @@ static bool load_kernel(void) {
 /// \brief Executes the loaded kernel.
 ///
 /// Before calling this function, the kernel must have been properly loaded.
-static noreturn void exec_kernel(void) {
+static noreturn void exec_kernel(const void *dtb_start) {
   serial_deinit();
 
   // We don't need to synchronize the data cache and the instruction cache since
   // we haven't enabled any of them. Nonetheless, we still have to synchronize
   // the fetched instruction stream using the `isb` instruction.
   __asm__ __volatile__("isb\n"
-                       "b _skernel");
+                       "mov x0, %0\n"
+                       "b _skernel" ::"r"(dtb_start)
+                       : "x0");
   __builtin_unreachable();
 }
 
-noreturn void main(void) {
+noreturn void main(const void *dtb_start) {
   serial_init();
 
   serial_set_mode(SM_BINARY);
@@ -86,5 +88,5 @@ noreturn void main(void) {
   while (!load_kernel())
     ;
   delay_ns(EXEC_KERNEL_DELAY_SEC);
-  exec_kernel();
+  exec_kernel(dtb_start);
 }

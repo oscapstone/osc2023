@@ -36,3 +36,11 @@ int strncmp(const char *const s1, const char *const s2, const size_t n) {
     return 1;
   return 0;
 }
+
+size_t strlen(const char *const s) {
+  size_t result = 0;
+  for (const char *c = s; *c; c++) {
+    result++;
+  }
+  return result;
+}

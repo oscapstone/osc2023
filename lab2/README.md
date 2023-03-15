@@ -36,6 +36,11 @@ TBD
 
 See the [repository-level README](../README.md#test-with-qemu)
 for information on testing the kernel.
+Before testing, the files for the initial ramdisk (`tests/initramfs.cpio`)
+and the devicetree blob (`tests/bcm2710-rpi-3-b-plus.dtb`) must exist.
+You may use `tests/build-initrd.sh`
+to build the initial ramdisk with the C source code inside
+and `tests/get-dtb.sh` to download the devicetree blob.
 
 ### Testing the C Project
 
@@ -65,10 +70,16 @@ TBD
 
 ## Running on a Raspberry Pi Model 3 B+
 
-When using the self-relocating bootloader,
-copy the bootloader image to the boot partition,
-and copy [config-bootloader-reloc.txt](config-bootloader-reloc.txt)
-to the boot partition and rename it to `config.txt`.
+The bootloader image (`bootloader.img`),
+the initial ramdisk (`initramfs.cpio`),
+the devicetree blob (`bcm2710-rpi-3-b-plus.dtb`),
+and the configuration file (`config.txt`)
+must be present in the boot partition.
+See the section on [testing with QEMU](#testing-with-qemu)
+for instructions on obtaining the initial ramdisk and the devicetree blob.
 
+When using the self-relocating bootloader,
+use [`config-bootloader-reloc.txt`](config-bootloader-reloc.txt)
+as the configuration file.
 When using the non-self-relocating bootloader,
-copy the bootloader image and [config.txt](config.txt) to the boot partition.
+use [`config.txt`](config.txt) as the configuration file.

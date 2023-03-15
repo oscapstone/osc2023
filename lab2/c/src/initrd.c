@@ -1,5 +1,9 @@
 #include "oscos/initrd.h"
 
+#include "oscos/devicetree.h"
+
+static const void *_initrd_start = NULL;
+
 static bool _cpio_newc_is_header_field_valid(const char field[const static 8]) {
   for (size_t i = 0; i < 8; i++) {
     if (!(('0' <= field[i] && field[i] <= '9') ||
@@ -9,7 +13,7 @@ static bool _cpio_newc_is_header_field_valid(const char field[const static 8]) {
   return true;
 }
 
-bool initrd_is_valid(void) {
+static bool _initrd_is_valid(void) {
   // Cannot use INITRD_FOR_ENTRY here, since it will evaluate
   // `CPIO_NEWC_IS_ENTRY_LAST(entry)` before `entry` is validated.
   for (const cpio_newc_entry_t *entry = INITRD_HEAD;;
@@ -35,6 +39,35 @@ bool initrd_is_valid(void) {
 
   return true;
 }
+
+static control_flow_t
+_initrd_init_dtb_traverse_callback(void *const _arg,
+                                   const fdt_item_t *const node) {
+  (void)_arg;
+
+  if (strcmp(FDT_NODE_NAME(node), "chosen") == 0) {
+    FDT_FOR_ITEM(node, item) {
+      if (FDT_TOKEN(item) == FDT_PROP) {
+        const fdt_prop_t *const prop = (const fdt_prop_t *)item->payload;
+        if (strcmp(FDT_PROP_NAME(prop), "linux,initrd-start") == 0) {
+          const uint32_t adr = rev_u32(*(const uint32_t *)FDT_PROP_VALUE(prop));
+          _initrd_start = (const void *)(uintptr_t)adr;
+          break;
+        }
+      }
+    }
+    return CF_BREAK;
+  } else {
+    return CF_CONTINUE;
+  }
+}
+
+bool initrd_init(void) {
+  fdt_traverse(_initrd_init_dtb_traverse_callback, NULL);
+  return _initrd_is_valid();
+}
+
+const void *initrd_get_start(void) { return _initrd_start; }
 
 uint32_t cpio_newc_parse_header_field(const char field[static 8]) {
   uint32_t result = 0;

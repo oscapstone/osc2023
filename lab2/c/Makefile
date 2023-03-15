@@ -18,8 +18,8 @@ CFLAGS_BASE    = -std=c17 -pedantic-errors -Wall -Wextra -ffreestanding \
 CFLAGS_DEBUG   = -g
 CFLAGS_RELEASE = -O3 -mcpu=cortex-a53
 
-OBJS                 = start main delay initrd mailbox mailbox_info reset \
-                       serial shell simple_malloc libc/string
+OBJS                 = start main delay devicetree initrd mailbox mailbox_info \
+                       reset serial shell simple_malloc libc/string
 OBJS_BOOTLOADER      = $(if $(BOOTLOADER_RELOC),bootloader-reloc) start \
                        bootloader-main bootloader_crc32 delay serial
 LD_SCRIPT            = $(SRC_DIR)/linker.ld
@@ -69,19 +69,23 @@ $(OUT_DIR)/%.s: $(SRC_DIR)/%.S
 
 qemu: $(OUT_DIR)/kernel8.img
 	qemu-system-aarch64 -M raspi3b -kernel $< -initrd ../tests/initramfs.cpio \
-		-display none -serial null -serial stdio
+		-dtb ../tests/bcm2710-rpi-3-b-plus.dtb -display none -serial null \
+		-serial stdio
 
 qemu-debug: $(OUT_DIR)/kernel8.img
 	qemu-system-aarch64 -M raspi3b -kernel $< -initrd ../tests/initramfs.cpio \
-		-display none -serial null -serial stdio -S -s
+		-dtb ../tests/bcm2710-rpi-3-b-plus.dtb -display none -serial null \
+		-serial stdio -S -s
 
 qemu-bootloader: $(OUT_DIR)/bootloader.img
 	qemu-system-aarch64 -M raspi3b -kernel $< -initrd ../tests/initramfs.cpio \
-		-display none -serial null -serial pty
+		-dtb ../tests/bcm2710-rpi-3-b-plus.dtb -display none -serial null \
+		-serial pty
 
 qemu-debug-bootloader: $(OUT_DIR)/bootloader.img
 	qemu-system-aarch64 -M raspi3b -kernel $< -initrd ../tests/initramfs.cpio \
-		-display none -serial null -serial pty -S -s
+		-dtb ../tests/bcm2710-rpi-3-b-plus.dtb -display none -serial null \
+		-serial pty -S -s
 
 gdb: $(OUT_DIR)/kernel8.elf
 	gdb -s $< -ex 'target remote :1234'

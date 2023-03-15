@@ -3,30 +3,30 @@
 _start:
     // Park the non-boot cores.
 
-    mrs x0, MPIDR_EL1
-    tst x0, 0x3
+    mrs x1, MPIDR_EL1
+    tst x1, 0x3
     bne .Lpark_loop
 
     // Clear the .bss section.
 
-    ldr x0, =_sbss
-    ldr x1, =_ebss
+    ldr x1, =_sbss
+    ldr x2, =_ebss
     b .Lclear_bss_loop_test
 
 .Lclear_bss_loop_body:
     // This does not generate unaligned memory accesses, since the .bss section
     // is 16-byte aligned. See `linker.ld`.
-    stp xzr, xzr, [x0], 16
+    stp xzr, xzr, [x1], 16
 
 .Lclear_bss_loop_test:
-    cmp x0, x1
+    cmp x1, x2
     bne .Lclear_bss_loop_body
 
     // Set the stack pointer.
 
-    ldr x0, =_estack
-    mov sp, x0
-    mov fp, x0
+    ldr x1, =_estack
+    mov sp, x1
+    mov fp, x1
 
     // Call the main function.
 

@@ -7,53 +7,53 @@ _reloc:
 
     // Relocate the .text section.
 
-    ldr x0, =_sitext
-    ldr x1, =_stext
-    ldr x2, =_etext
+    ldr x1, =_sitext
+    ldr x2, =_stext
+    ldr x3, =_etext
     b .Lreloc_text_loop_test
 
 .Lreloc_text_loop_body:
     // These instructions do not generate unaligned memory accesses, since the
     // .text section is 16-byte aligned. See `bootloader-reloc.ld`.
-    ldp x3, x4, [x0], 16
-    stp x3, x4, [x1], 16
+    ldp x4, x5, [x1], 16
+    stp x4, x5, [x2], 16
 
 .Lreloc_text_loop_test:
-    cmp x1, x2
+    cmp x2, x3
     bne .Lreloc_text_loop_body
 
     // Relocate the .rodata section.
 
-    ldr x0, =_sirodata
-    ldr x1, =_srodata
-    ldr x2, =_erodata
+    ldr x1, =_sirodata
+    ldr x2, =_srodata
+    ldr x3, =_erodata
     b .Lreloc_rodata_loop_test
 
 .Lreloc_rodata_loop_body:
     // These instructions do not generate unaligned memory accesses, since the
     // .rodata section is 16-byte aligned. See `bootloader-reloc.ld`.
-    ldp x3, x4, [x0], 16
-    stp x3, x4, [x1], 16
+    ldp x4, x5, [x1], 16
+    stp x4, x5, [x2], 16
 
 .Lreloc_rodata_loop_test:
-    cmp x1, x2
+    cmp x2, x3
     bne .Lreloc_rodata_loop_body
 
     // Relocate the .data section.
 
-    ldr x0, =_sidata
-    ldr x1, =_sdata
-    ldr x2, =_edata
+    ldr x1, =_sidata
+    ldr x2, =_sdata
+    ldr x3, =_edata
     b .Lreloc_data_loop_test
 
 .Lreloc_data_loop_body:
     // These instructions do not generate unaligned memory accesses, since the
     // .data section is 16-byte aligned. See `bootloader-reloc.ld`.
-    ldp x3, x4, [x0], 16
-    stp x3, x4, [x1], 16
+    ldp x4, x5, [x1], 16
+    stp x4, x5, [x2], 16
 
 .Lreloc_data_loop_test:
-    cmp x1, x2
+    cmp x2, x3
     bne .Lreloc_data_loop_body
 
     // Jump to the relocated entry point to complete initialization.

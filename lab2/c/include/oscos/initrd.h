@@ -1,8 +1,8 @@
 /// \file include/oscos/initrd.h
 /// \brief Initial ramdisk.
 ///
-/// Before reading the initial ramdisk, it must be validated by calling
-/// initrd_is_valid(void).
+/// Before reading the initial ramdisk, it must be initialized by calling
+/// initrd_init(void).
 
 #ifndef OSCOS_INITRD_H
 #define OSCOS_INITRD_H
@@ -12,8 +12,6 @@
 
 #include "oscos/align.h"
 #include "oscos/libc/string.h"
-
-#define INITRD_ADDR ((void *)0x8000000)
 
 /// \brief New ASCII Format CPIO archive header.
 typedef struct {
@@ -45,7 +43,7 @@ typedef struct {
 } cpio_newc_entry_t;
 
 /// \brief Pointer to the first file entry of the initial ramdisk.
-#define INITRD_HEAD ((const cpio_newc_entry_t *)INITRD_ADDR)
+#define INITRD_HEAD ((const cpio_newc_entry_t *)initrd_get_start())
 
 /// \brief The value of the given header of the file entry.
 #define CPIO_NEWC_HEADER_VALUE(ENTRY, HEADER)                                  \
@@ -83,9 +81,17 @@ typedef struct {
        !CPIO_NEWC_IS_ENTRY_LAST(ENTRY_NAME);                                   \
        ENTRY_NAME = CPIO_NEWC_NEXT_ENTRY(ENTRY_NAME))
 
-/// \brief Determines if the initial ramdisk is a valid New ASCII format CPIO
-///        archive.
-bool initrd_is_valid(void);
+/// \brief Initializes the initial ramdisk.
+///
+/// This function obtains the loading address of the initial ramdisk from the
+/// device tree and determines if the initial ramdisk is a valid New ASCII
+/// format CPIO archive.
+///
+/// \return Whether or not initialization is successful.
+bool initrd_init(void);
+
+/// \brief Returns the loading address of the initial ramdisk.
+const void *initrd_get_start(void);
 
 /// \brief Parses the given header field of a New ASCII format CPIO archive.
 ///
