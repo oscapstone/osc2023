@@ -33,6 +33,9 @@ int64_t b2l_64(int64_t input) {
   return t.u64;
 }
 
+/************************************************
+ * Dump the fdt_header
+ ***********************************************/
 static int dump_fdt_header(fdt_header *dtb_info) {
   // Magic
   uart_puts("Magic: ");
@@ -77,6 +80,9 @@ static int dump_fdt_header(fdt_header *dtb_info) {
   return 0;
 }
 
+/*************************************************
+ * Convert the ftd_header to little endian
+ ************************************************/
 static int fdt_header_b2l(fdt_header *dtb_info) {
   // If the header is already little endian, ignore it.
   if (dtb_info->magic == 0xd00dfeed)
@@ -95,12 +101,12 @@ static int fdt_header_b2l(fdt_header *dtb_info) {
   return 0;
 }
 
-/*
- * 1: The start address of FDT
- * 2: The offset of struct block
- * 3: The offset of string block
- * 4: The size of struct block
- */
+/**************************************************************
+ * dtb_start: The start address of FDT
+ * off_struct: The offset of struct block
+ * off_string: The offset of string block
+ * size_struct: The size of struct block
+ **************************************************************/
 static int dump_fdt_struct(char *dtb_start, uint32_t off_struct,
                            uint32_t off_string, uint32_t size_struct) {
   // calculate the start of struct block
@@ -158,7 +164,7 @@ static int dump_fdt_struct(char *dtb_start, uint32_t off_struct,
       if (t_prop.len == 0) {
         break;
       }
-      uart_putsn(cur, t_prop.len);
+      uart_putsn(cur, t_prop.len); // Not all value is string
       uart_puts("\n");
       cur += t_prop.len;
       cur += (4 - (t_prop.len % 4)) % 4; // Padding to 4.
@@ -265,12 +271,7 @@ int fdt_find_do(void *dtb_start, const char *name, int (*fn)(void *, int)) {
       t_prop.nameoff = b2l_32(prop->nameoff);
       t_prop.len = b2l_32(prop->len);
       cur += 8;
-      // uart_puts(str_lo + prop->nameoff);
-      // uart_puti(prop->len);
-      // uart_puts("\n");
       if (!strcmp(str_lo + t_prop.nameoff, name)) {
-        // uart_puts(str_lo + prop->nameoff);
-        // uart_puts("TRUE start callback\n");
         fn((void *)cur, t_prop.len);
         return 0;
       }

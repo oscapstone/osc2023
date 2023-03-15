@@ -16,14 +16,13 @@ int memcmp(void *s1, void *s2, int n) {
   }
   return 0;
 }
-/**
- * The value stores in the cpio header
- * is hex value, we need this function
+/*************************************************************************
+ * The value stores in the cpio header is hex value, we need this function
  * to transform from hex char* to bin
  *
- * S the string of hex numbers.
- * n the size of string.
- */
+ * s : The string of hex numbers.
+ * n : The size of string.
+ ***********************************************************************/
 static int hex2bin(char *s, int n) {
   int r = 0;
   while (n-- > 0) {
@@ -41,6 +40,8 @@ static int hex2bin(char *s, int n) {
  * Implement the function `ls` in the cpio archive.
  *
  * Note: The cpio header is defined in the initrd.h
+ * Note: The padding is important, name should pad to 4-byte with header.
+ * 	 And content should to padding to 4-byte.
  */
 void initrd_list(void) {
   char *buf = (char *)lo_ramfs;
@@ -51,7 +52,7 @@ void initrd_list(void) {
   // uart_putsn(buf, 6);
   while (!(memcmp(buf, "070701", 6)) &&
          memcmp(buf + sizeof(cpio_t), "TRAILER!!",
-                9)) { // test magic number of new ascii
+                9)) { // test magic number of new ascii format
     cpio_t *header = (cpio_t *)buf;
     int ns = hex2bin(header->namesize, 8); // Get the size of name
     int fs = hex2bin(header->filesize, 8); // Get teh size of file content
@@ -109,6 +110,11 @@ void initrd_cat(const char *name) {
   return;
 }
 
+/*********************************************************
+ * This is callback function for getting the start
+ * address of the initrd. Please use this function 
+ * with `fdt_find_do()`.
+ *******************************************************/
 int initrd_fdt_callback(void *start, int size) {
   if (size != 4) {
     uart_puti(size);
@@ -120,4 +126,7 @@ int initrd_fdt_callback(void *start, int size) {
   return 0;
 }
 
+/********************************************************
+ * Function return the location (address) of the initrd.
+ *******************************************************/
 int initrd_getLo() { return lo_ramfs; }
