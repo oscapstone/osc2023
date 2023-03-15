@@ -14,6 +14,8 @@ CPU := cortex-a53
 CFLAGS := --target=$(ARC) -mcpu=$(CPU)
 CINCLD := -I ./include
 
+.PHONY: clean run bootloader bootloader-run tools clean-all
+
 all: clean $(IMG)
 
 $(IMG): $(ELF)
@@ -32,4 +34,17 @@ clean:
 	rm -rf $(ELF) $(IMG) $(OBJ)
 
 run:
-	@qemu-system-aarch64 -M raspi3b -kernel kernel8.img -serial null -serial stdio
+	@qemu-system-aarch64 -M raspi3b -kernel $(IMG) -display none -serial null -serial stdio
+
+bootloader:
+	$(MAKE) -C bootloader
+
+bootloader-run:
+	$(MAKE) -C bootloader run
+
+tools:
+	$(MAKE) -C tools
+
+clean-all:
+	$(MAKE) -C bootloader clean
+	$(MAKE) -C tools clean
