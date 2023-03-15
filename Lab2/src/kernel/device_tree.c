@@ -100,7 +100,7 @@ void initramfs_callback()
 
 void fdt_traverse(void *dtb)
 {
-    printf("dtb = %d\n", dtb);
+    printf("dtb = %p\n", dtb);
     int prop;
     prop = get_property((void *)dtb);
     printf("%d\n", prop);
