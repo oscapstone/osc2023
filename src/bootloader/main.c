@@ -1,6 +1,7 @@
 #include <mini_uart.h>
 #include <string.h>
 #include <builtin.h>
+#include <utils.h>
 
 #define BUFSIZE 0x100
 char shell_buf[BUFSIZE];
@@ -24,6 +25,7 @@ void _load(void){
     }
 
     uart_send_string("[*] Jumping to the kernel\r\n");
+    delay(5000);
     // Jump to the kernel and execute
     typedef void (*func_ptr)(char*);
     func_ptr ptr = (func_ptr)_kernel;

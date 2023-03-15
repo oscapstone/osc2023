@@ -51,8 +51,8 @@ void kernel_main(char *fdt){
 
     fdt_base = fdt;
     uart_init();
-    uart_printf("[*] fdt base: %x\r\n", fdt);
     uart_printf("[*] Kernel start running!\r\n");
+    uart_printf("[*] fdt base: %x\r\n", fdt);
 
     initramfs_init(fdt);
 
