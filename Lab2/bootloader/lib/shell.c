@@ -3,7 +3,7 @@
 
 /* shell */
 void shell(void) {
-    uart_puts("! Welcome Lab1 !\n");
+    uart_puts("! Welcome Bootloader !\n");
 
     char command[32];
     int idx = 0;

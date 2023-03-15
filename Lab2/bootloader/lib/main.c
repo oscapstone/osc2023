@@ -1,4 +1,6 @@
 #include "uart.h"
+#include "shell.h"
+
 int relocated = 1;
 extern char* dtb_base;
 

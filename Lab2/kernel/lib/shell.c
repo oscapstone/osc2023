@@ -1,6 +1,7 @@
 #include "uart.h"
 #include "mbox.h"
 #include "string.h"
+#include "malloc.h"
 #include "cpio.h"
 
 extern char *cpio_start;
