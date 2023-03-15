@@ -127,8 +127,13 @@ int dtb_parser(void *dtb)
             // Move to the next entry
             p += 4;
             node_name = (char *)p;
-            uart_send_space(depth * 3);
-            printf("%s {\n", node_name);
+            if (depth == 0)
+                printf("\\ {\n");
+            else
+            {
+                uart_send_space(depth * 3);
+                printf("%s {\n", node_name);
+            }
             p += strlen((char *)(p)) + 1; // +1 for null terminated string
             p += pad_to_4(p);
             depth++;
@@ -147,8 +152,33 @@ int dtb_parser(void *dtb)
             p += sizeof(fdt_prop);
             prop_name = (char *)off_dt_strings + rev32(prop->nameoff);
             prop_val = (char *)p;
-            uart_send_space(depth * 3);
-            printf("%s = %s\n", prop_name, prop_val);
+
+            if (!strcmp(prop_name, "#address-cells") || !strcmp(prop_name, "#size-cells") || !strcmp(prop_name, "interrupt-parent"))
+            {
+                // <u32>
+                uart_send_space(depth * 3);
+                printf("%s = <%d>;\n", prop_name, rev32(*((uint32_t *)prop_val)));
+            }
+            else if (!strcmp(prop_name, "model") || !strcmp(prop_name, "status") || !strcmp(prop_name, "name") || !strcmp(prop_name, "device_type") ||
+                     !strcmp(prop_name, "chassis-type") || !strcmp(prop_name, "bootargs") || !strcmp(prop_name, "stdout-path") || !strcmp(prop_name, "stdin-path") ||
+                     !strcmp(prop_name, "power-isa-version") || !strcmp(prop_name, "mmu-type") || !strcmp(prop_name, "label") || !strcmp(prop_name, "phy-connection-type"))
+            {
+                // <string>
+                uart_send_space(depth * 3);
+                printf("%s = \"%s\";\n", prop_name, prop_val);
+            }
+            else if (!strcmp(prop_name, "compatible"))
+            {
+                // <stringlist>
+                uart_send_space(depth * 3);
+                printf("%s = \"%s\";\n", prop_name, prop_val);
+            }
+            else
+            {
+                uart_send_space(depth * 3);
+                printf("%s = %s;\n", prop_name, prop_val);
+            }
+
             p += rev32(prop->len);
             p += pad_to_4(p);
             break;
