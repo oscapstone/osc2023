@@ -16,6 +16,12 @@ int main(void *dtb_location) {
   uart_puts("initrams(after): ");
   uart_puth(initrd_getLo());
   uart_puts("\n");
+  uart_puts("malloc test: ");
+  uart_puth(malloc(8));
+  uart_puts("\n");
+  uart_puts("malloc test: ");
+  uart_puth(malloc(8));
+  uart_puts("\n");
   terminal_run();
 
   return 0;
