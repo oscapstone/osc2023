@@ -1,5 +1,5 @@
 #include "bcm2835/uart.h"
-#include "kernel/shell.h"
+#include "init/shell.h"
 
 #define PM_MGIC 0x5A000000U
 #define PM_RSTC PRPHRL(0x10001C)

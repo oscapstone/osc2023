@@ -1,6 +1,6 @@
 #include "bcm2835/mailbox.h"
 #include "bcm2835/uart.h"
-#include "kernel/shell.h"
+#include "init/shell.h"
 
 static void print_hwinfo() {
     // RPI board info
