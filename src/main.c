@@ -43,12 +43,12 @@ void main()
 
     uart_hex(return_available());
     uart_send('\n');
-    char *string = (char *) simple_malloc(sizeof(char) * 8);
-    uart_hex(return_available());
+    char *string1 = (char *) simple_malloc(sizeof(char) * 8);
+    uart_hex(string1);
     uart_send('\n');
 
     char *string2 = (char *) simple_malloc(sizeof(char) * 20);
-    uart_hex(return_available());
+    uart_hex(string2);
     uart_send('\n');
 
     fdt_traverse(initramfs_callback);
