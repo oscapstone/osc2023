@@ -5,6 +5,8 @@
 //.global makes the symbol visible to ld.
 .global _start
 _start:
+	ldr    x1, =_dtb_ptr // bootloader put dtb address on x1 and wake kernel up
+    str    x0, [x1]
 	mrs	x0, mpidr_el1		
 	and	x0, x0,#0xFF		// Check processor id
 	cbz	x0, master		// Hang for all non-primary CPU
@@ -25,3 +27,7 @@ master:
 	mov	sp, #LOW_MEMORY 
 	bl	main        // branch PC to main function which is defined in main.c
 	b 	proc_hang		// should never come here
+
+.global _dtb_ptr
+.section .data
+_dtb_ptr: .dc.a 0x0

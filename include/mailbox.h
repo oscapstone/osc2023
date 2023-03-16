@@ -14,5 +14,5 @@
 #define MAILBOX_CHANNEL_PROP  8
 #define RESPONSE_CODE_SUCCESS 0x80000000
 
-extern void mailbox_call(unsigned int *mailbox);
+extern void mailbox_call(unsigned int *mailbox, int channel);
 #endif

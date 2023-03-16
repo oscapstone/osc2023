@@ -38,7 +38,6 @@ unsigned int get_buffer_size(unsigned int tag_identifier)
   case UNLOCK_MEMORY:
   case RELEASE_MEMORY:
     return 4;
-    /* code */
     break;
   case GET_ARM_MEMORY:
   case GET_MAC_ADDRESS:
@@ -61,7 +60,7 @@ unsigned int get_buffer_size(unsigned int tag_identifier)
   }
 }
 
-void get_hw_info(unsigned int tag_identifier) 
+void get_hw_info(unsigned int tag_identifier, unsigned int *request_message) 
 {
   volatile unsigned int  __attribute__((aligned(16))) mailbox[48];
   unsigned int buffer_size = get_buffer_size(tag_identifier);
@@ -73,16 +72,16 @@ void get_hw_info(unsigned int tag_identifier)
   mailbox[3] = buffer_size; // maximum of request and response value buffer's length.
   mailbox[4] = TAG_REQUEST_CODE;
   unsigned int buffer_addr_len = (buffer_size >> 2);
-  //my_bzero(mailbox + 5, buffer_size);
-  for (int i = 1; i <= buffer_addr_len; i++)
-    mailbox[4 + i] = 0; // value buffer
+  // copy request message
+  memcpy(mailbox + 5, request_message, buffer_size);
   // tags end
   mailbox[5 + buffer_addr_len] = END_TAG;
 
-  mailbox_call(mailbox); // message passing procedure call, you should implement it following the 6 steps provided above.
+  // channel 8 for ARM -> VC
+  mailbox_call(mailbox, 8);
 
   if (mailbox[1] != RESPONSE_CODE_SUCCESS) {
-    uart_write_string("message did not be handled appropriately!\n\r");
+    uart_write_string("message did not be handled appropriately!\n");
     return;
   }
   for (int i = 1; i <= buffer_addr_len; i++) {
@@ -91,5 +90,18 @@ void get_hw_info(unsigned int tag_identifier)
     uart_write_no_hex(value);
     uart_write(' ');
   }
-  uart_write_string("\n\r");
+  uart_write_string("\n");
+}
+
+void print_hw_info(void) {
+  /* print hardware information */
+  unsigned int request_message[8] = {0};
+  uart_write_string("BOARD REVISION: ");
+  get_hw_info(GET_BOARD_REVISION, &request_message);
+  uart_write_string("ARM MEMORY: ");
+  get_hw_info(GET_ARM_MEMORY, &request_message);
+  uart_write_string("MAC ADDRESS: ");
+  get_hw_info(GET_MAC_ADDRESS, &request_message);
+  uart_write_string("TEMPERATURE: ");
+  get_hw_info(GET_TEMPERATURE, &request_message);
 }

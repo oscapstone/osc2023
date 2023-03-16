@@ -1,0 +1,2 @@
+file build/bootloader.elf
+target remote :1234
