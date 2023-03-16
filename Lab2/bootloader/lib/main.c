@@ -1,5 +1,7 @@
 #include "uart.h"
 #include "shell.h"
+#include "load.h"
+#include "relocate.h"
 
 int relocated = 1;
 extern char* dtb_base;

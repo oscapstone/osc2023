@@ -1,5 +1,6 @@
 #include "uart.h"
 #include "string.h"
+#include "load.h"
 
 /* shell */
 void shell(void) {
@@ -13,7 +14,6 @@ void shell(void) {
         uart_puts("$ ");
         while (1) {
             command[idx] = uart_getc();
-            uart_send(command[idx]);
             if (command[idx] == '\n') {
                 command[idx] = '\0';
                 break;

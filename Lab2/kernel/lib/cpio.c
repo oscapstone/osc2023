@@ -9,6 +9,8 @@ extern char * dtb_base;
 
 /* Parse one file system object */
 /* write pathname,data,next header into corresponding parameter */
+#include "cpio.h"
+
 /* if no next header, next_header_pointer = 0 */
 /* return -1 if parse error*/
 int cpio_newc_parse_header(struct cpio_newc_header *this_header_pointer, char **pathname, unsigned int *filesize, char **data, struct cpio_newc_header **next_header_pointer)

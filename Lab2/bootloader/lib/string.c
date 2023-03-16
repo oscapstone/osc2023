@@ -97,3 +97,24 @@ int atoi(char *str)
 
     return res;
 }
+
+
+unsigned int parse_hex_str(char* hex_string, unsigned int size) {
+    unsigned int result = 0;
+    unsigned int i;
+    for (i = 0; i < size; i++) {
+        char c = *(hex_string + i);
+        int value;
+        if (c >= '0' && c <= '9') {
+            value = c - '0';
+        } else if (c >= 'a' && c <= 'f') {
+            value = c - 'a' + 10;
+        } else if (c >= 'A' && c <= 'F') {
+            value = c - 'A' + 10;
+        } else {
+            return -1;
+        }
+        result = (result << 4) | value;
+    }
+    return result;
+}

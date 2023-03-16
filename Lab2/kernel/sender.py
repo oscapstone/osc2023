@@ -16,7 +16,7 @@ def sendKernelImg(s, f):
             tty.write(byte)
             byte = fp.read(1)
             time.sleep(0.0001)
-    tty.write('\n'.encode('utf-8'))
+    # tty.write('\n'.encode('utf-8'))
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

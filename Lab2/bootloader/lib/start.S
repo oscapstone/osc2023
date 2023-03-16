@@ -9,9 +9,9 @@ _start:
     cbz     x1, master
     // cpu id > 0, stop
 
-halt:  
+busyloop:  
     wfe
-    b       halt
+    b       busyloop
 
 master:
     ldr     x1, =_start
@@ -20,15 +20,12 @@ master:
     ldr     x1, =__bss_start
     ldr     w2, =__bss_size
 
-bssinitloop:
-    // use a loop to initialize every position of bss to zero
+bssinitloop:  
     cbz     w2, kernel
     str     xzr, [x1], #8
     sub     w2, w2, #1
     cbnz    w2, bssinitloop
 
 kernel:
-    // jump to C code
     bl      main
-    // if fail
-    b       halt
+    b       busyloop

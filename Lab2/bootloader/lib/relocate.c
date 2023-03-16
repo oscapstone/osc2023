@@ -1,3 +1,5 @@
+#include "relocate.h"
+
 extern char __end;
 extern char __start;
 

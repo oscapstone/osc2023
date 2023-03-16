@@ -1,7 +1,7 @@
 SRC_DIR = lib
 OBJ_DIR = build
 INCLUDE = include
-CFLAGS = -ggdb -fno-stack-protector -Wno-implicit -ffreestanding -nostdlib -nostartfiles -I$(INCLUDE) 
+CFLAGS = -ggdb -Wno-implicit -ffreestanding -nostdlib -nostartfiles -I$(INCLUDE) 
 SRC_S:=$(wildcard $(SRC_DIR)/*.S)
 SRC_C:=$(wildcard $(SRC_DIR)/*.c)
 OBJS:= $(SRC_C:$(SRC_DIR)/%.c=$(OBJ_DIR)/%.o) \
@@ -33,6 +33,10 @@ tty: $(IMAGE).img
 
 dbg: $(IMAGE).img 
 	qemu-system-aarch64 -machine $(MACHINE) -kernel $(IMAGE).img -initrd $(CPIO_FILE) -dtb $(DTB_FILE) -display none -serial null -serial stdio -s -S 
+
+ddbg: $(IMAGE).img 
+	qemu-system-aarch64 -machine $(MACHINE) -kernel $(IMAGE).img -initrd $(CPIO_FILE) -dtb $(DTB_FILE) -display none -serial null -serial pty -s -S 
+
 
 clean:
 	rm -rf $(OBJ_DIR) *.img *.elf */*.elf
