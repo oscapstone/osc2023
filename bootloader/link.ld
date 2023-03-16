@@ -23,33 +23,41 @@
  *
  */
 
-.section ".text.boot"
+SECTIONS
+{
+    . = 0x80000;
 
-.global _start
+    .relocate : {
+        KEEP(*(.text.relocate))
+    }
 
-_start:
-    // read cpu id, stop slave cores
-    mrs     x1, mpidr_el1
-    and     x1, x1, #3
-    cbz     x1, 2f
-    // cpu id > 0, stop
-1:  wfe
-    b       1b
-2:  // cpu id == 0
+    . = ALIGN(4096);
+    _begin = .;
 
-    // set top of stack just before our code (stack grows to a lower address per AAPCS64)
-    ldr     x1, =_start
-    mov     sp, x1
+    . = ALIGN(4096);
+    .text : { 
+        KEEP(*(.text.boot)) 
+        *(.text) 
+    }
 
-    // clear bss
-    ldr     x1, =__bss_start
-    ldr     w2, =__bss_size
-3:  cbz     w2, 4f
-    str     xzr, [x1], #8
-    sub     w2, w2, #1
-    cbnz    w2, 3b
+    . = ALIGN(4096);
+    .rodata : { *(.rodata .rodata.* .gnu.linkonce.r*) }
+    PROVIDE(_data = .);
 
-    // jump to C code, should not return
-4:  bl      main
-    // for failsafe, halt this core too
-    b       1b
+    . = ALIGN(4096);
+    .data : { *(.data .data.* .gnu.linkonce.d*) }
+
+    . = ALIGN(4096);
+    .bss (NOLOAD) : {
+        . = ALIGN(16);
+        __bss_start = .;
+        *(.bss .bss.*)
+        *(COMMON)
+        __bss_end = .;
+    }
+
+    _end = .;
+}
+__bss_size = (__bss_end - __bss_start)>>3;
+__boot_loader = 0x60000;
+__dtb = 0x7fff0;

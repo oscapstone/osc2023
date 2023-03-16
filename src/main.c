@@ -27,26 +27,36 @@
 #include "power.h"
 #include "shell.h"
 #include "mbox.h"
+#include "stdlib.h"
+#include "dtb.h"
+#include "initrd.h"
 
 #define CMD_LEN 128
 
 void main()
 {
-    // set up serial console
-    // uart_init();
+    fdt_init();
     shell_init();
-    get_board_revision();
-    get_memory_info();
+
+    // get_board_revision();
+    // get_memory_info();
+
+    uart_hex(return_available());
+    uart_send('\n');
+    char *string1 = (char *) simple_malloc(sizeof(char) * 8);
+    uart_hex(string1);
+    uart_send('\n');
+
+    char *string2 = (char *) simple_malloc(sizeof(char) * 20);
+    uart_hex(string2);
+    uart_send('\n');
+
+    fdt_traverse(initramfs_callback);
+
     while(1) {
         uart_puts("# ");
         char cmd[CMD_LEN];
         shell_input(cmd);
         shell_controller(cmd);
-
-        // c=uart_getc();
-        // uart_send(c);
-        // uart_puts("\n\n");
-        // if(c=='1') power_off();
-        // if(c=='2') reset();
     }
 }

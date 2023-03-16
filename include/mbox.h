@@ -23,23 +23,33 @@
  *
  */
 
-SECTIONS
-{
-    . = 0x80000;
-    .text : { KEEP(*(.text.boot)) *(.text .text.* .gnu.linkonce.t*) }
-    .rodata : { *(.rodata .rodata.* .gnu.linkonce.r*) }
-    PROVIDE(_data = .);
-    .data : { *(.data .data.* .gnu.linkonce.d*) }
-    .bss (NOLOAD) : {
-        . = ALIGN(16);
-        __bss_start = .;
-        *(.bss .bss.*)
-        *(COMMON)
-        __bss_end = .;
-    }
-    _end = .;
+/* a properly aligned buffer */
+#ifndef MBOX_H
+#define MBOX_H
 
-   /DISCARD/ : { *(.comment) *(.gnu*) *(.note*) *(.eh_frame*) }
-}
-__bss_size = (__bss_end - __bss_start)>>3;
-__dtb_address = 0x7fff0;;
+extern volatile unsigned int mbox[36];
+
+#define MBOX_REQUEST    0
+
+/* channels */
+#define MBOX_CH_POWER   0
+#define MBOX_CH_FB      1
+#define MBOX_CH_VUART   2
+#define MBOX_CH_VCHIQ   3
+#define MBOX_CH_LEDS    4
+#define MBOX_CH_BTNS    5
+#define MBOX_CH_TOUCH   6
+#define MBOX_CH_COUNT   7
+#define MBOX_CH_PROP    8
+
+/* tags */
+#define MBOX_TAG_SETPOWER       0x28001
+#define MBOX_TAG_SETCLKRATE     0x38002
+#define MBOX_TAG_LAST           0
+
+int mbox_call(unsigned char ch);
+void get_board_revision();
+void get_memory_info();
+
+#endif
+

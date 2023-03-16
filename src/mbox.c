@@ -77,7 +77,7 @@ void get_board_revision()
     mbox[6] = 0; // MBOX_TAG_LAST
     mbox_call(8);
 
-    uart_puts("0x");
+    uart_puts("board revision: 0x");
     uart_hex(mbox[5]);
     uart_send('\n');
 }

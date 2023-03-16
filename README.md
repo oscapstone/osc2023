@@ -6,11 +6,8 @@
 
 ## Requirements
 
-* Initialize rpi3 after booted by bootloader.
-* Follow UART to set up mini UART.
-* Implement a simple shell supporting the listed commands.
-* Get the hardware’s information by mailbox and print them, you should at least print board revision and ARM memory base address and size.
-* Add a <reboot> command.
+* a cross-compiler for aarch64
+* (optional) qemu-system-arm
 
 ## Build 
 
@@ -18,10 +15,26 @@
 make
 ```
 
-## Test With QEMU
+## Test kernel8.img with QEMU
 
 ```
 make run
-# or 
-qemu-system-aarch64 -M raspi3b -kernel kernel8.img -serial null -serial stdio
+```
+
+## Test tty with QEMU
+* `make sendimg` and `make commu` is not applicable to this, since the port is not the same.
+```
+make tty
+```
+
+## Send image to Raspi 3
+
+```
+make sendimg
+```
+
+## Communicate with Raspi 3 after `make sendimg`
+
+```
+make commu
 ```

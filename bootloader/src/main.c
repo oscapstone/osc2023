@@ -23,23 +23,19 @@
  *
  */
 
-SECTIONS
-{
-    . = 0x80000;
-    .text : { KEEP(*(.text.boot)) *(.text .text.* .gnu.linkonce.t*) }
-    .rodata : { *(.rodata .rodata.* .gnu.linkonce.r*) }
-    PROVIDE(_data = .);
-    .data : { *(.data .data.* .gnu.linkonce.d*) }
-    .bss (NOLOAD) : {
-        . = ALIGN(16);
-        __bss_start = .;
-        *(.bss .bss.*)
-        *(COMMON)
-        __bss_end = .;
-    }
-    _end = .;
+#include "uart.h"
+#include "shell.h"
 
-   /DISCARD/ : { *(.comment) *(.gnu*) *(.note*) *(.eh_frame*) }
+#define CMD_LEN 128
+
+void main()
+{
+    shell_init();
+
+    while(1) {
+        uart_puts("# ");
+        char cmd[CMD_LEN];
+        shell_input(cmd);
+        shell_controller(cmd);
+    }
 }
-__bss_size = (__bss_end - __bss_start)>>3;
-__dtb_address = 0x7fff0;;
