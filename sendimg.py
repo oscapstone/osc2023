@@ -20,10 +20,6 @@ except:
     print("Serial init failed!")
     exit(1)
 
-def checksum(bytecodes):
-    # convert bytes to int
-    return int(np.array(list(bytecodes), dtype=np.int32).sum())
-
 def receiveMsg():
     if ser.inWaiting() > 0:
         # 读取接收缓冲区中的所有数据
@@ -62,9 +58,6 @@ def main():
     with open(file_path, 'rb') as f:
         bytecodes = f.read()
 
-    # # To communicate with Raspi 3 shell
-    # communicate()
-
     # send command to Raspi 3
     time.sleep(0.1)
     cmd = "loadimg\n"
@@ -80,7 +73,7 @@ def main():
     # Show the message printed by Raspi 3
     receiveMsg()
 
-    per_chunk = 128
+    per_chunk = 100
     # Compute the chunk count of image file
     chunk_count = file_size // per_chunk
     chunk_count = chunk_count + 1 if file_size % per_chunk else chunk_count
