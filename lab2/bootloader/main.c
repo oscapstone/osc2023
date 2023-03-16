@@ -25,7 +25,7 @@ void bootloader_main() {
   readline(buf, BUF_SIZE, false);
   int kernel_size = strtoi(buf, 10);
   printf("kernel image's size: %d\n", kernel_size);
-  
+
   char ch;
   unsigned long addr = KERNEL_ADDRESS;
   for (int i = 0; i < kernel_size; i++) {

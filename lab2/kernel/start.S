@@ -11,9 +11,8 @@ DTB_ADDR:
 .globl _start
 
 _start:
-    ;ldr     x2, =0x5FFF8
-    ;ldr     x3, [x2]
-    mov     x3, x0
+    ldr     x2, =0x5FFF8
+    ldr     x3, [x2]
     ldr     x1, =DTB_ADDR
     str     x3, [x1]
     mrs     x0, mpidr_el1

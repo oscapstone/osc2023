@@ -47,7 +47,7 @@ dump-asm: bootloader.img
 run-dbg: bootloader.img
 	qemu-system-aarch64 -M raspi3b -kernel bootloader.img -display none -S -s -serial null -serial stdio
 run-tty: bootloader.img
-	qemu-system-aarch64 -M raspi3b -kernel bootloader.img -display none -serial null -serial pty -initrd initramfs.cpio
+	qemu-system-aarch64 -M raspi3b -kernel bootloader.img -display none -serial null -serial pty -initrd initramfs.cpio -dtb bcm2710-rpi-3-b-plus.dtb
 run: bootloader.img
 	qemu-system-aarch64 -M raspi3b -kernel bootloader.img -display none -serial null -serial stdio
 

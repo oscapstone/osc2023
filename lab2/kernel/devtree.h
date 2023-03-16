@@ -31,6 +31,7 @@ struct fdt_prop {
 
 extern uint64_t DTB_ADDR;
 
+uint32_t u32_to_little_endian(uint32_t);
 void fdt_traverse(void (*)());
 
 #endif

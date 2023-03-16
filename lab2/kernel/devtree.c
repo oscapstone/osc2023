@@ -8,12 +8,14 @@ uint32_t u32_to_little_endian(uint32_t num) {
 }
 
 void fdt_traverse(void (*initramfs_callback)(const char *, const char *, void *)) {
-  printf("DTB ADDRESS: %#X\n", DTB_ADDR);
+  printf("DTB_ADDR: %#X\n", DTB_ADDR);
+  
   uint64_t *addr = (uint64_t *)DTB_ADDR;
   struct fdt_header *header = (struct fdt_header *)DTB_ADDR;
 
-  if (u32_to_little_endian(header->magic) == DTB_MAGIC) {
-    printf("get correct magic number: %#X\n", DTB_MAGIC);
+  if (u32_to_little_endian(header->magic) != DTB_MAGIC) {
+    printf("The magic number is not equal to %#X\n", DTB_MAGIC);
+    return;
   }
   
   uint32_t off_struct = u32_to_little_endian(header->off_dt_struct);
@@ -46,7 +48,9 @@ void fdt_traverse(void (*initramfs_callback)(const char *, const char *, void *)
       if (len_val % 4)
         len_val += 4 - len_val & 3;
 
-      initramfs_callback(nodename, propname, (void *)prop + sizeof(struct fdt_prop));
+      void *prop_val = (void *)prop + sizeof(struct fdt_prop);
+      
+      initramfs_callback(nodename, propname, prop_val);
       
       struct_addr += sizeof(struct fdt_prop) + len_val;
     }
@@ -62,5 +66,5 @@ void fdt_traverse(void (*initramfs_callback)(const char *, const char *, void *)
       break; 
     }
   }
-  print("done\n");
+  print("Successfully parsed the DeviceTree\n");
 }

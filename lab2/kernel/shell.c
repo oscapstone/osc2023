@@ -31,8 +31,6 @@ void shell() {
   print("Welcome to rpi-os shell!\n");
   print("Enter \"help\" for a list of built-in commands.\n");
 
-  uint64_t initrd_addr = 0x8000000;
-
   while (1) {
     print("# ");
     if (readline(buf, BUF_SIZE, interact) <= 0 || *buf == '\0')
@@ -51,7 +49,7 @@ void shell() {
       get_arm_memory();
     }
     else if (streq(buf, "ls") == 0) {
-      cpio_ls((void *)initrd_addr);
+      cpio_ls();
     }
     else if (strstartwith(buf, "cat ") == 0) {
       char *files = buf + 4;
@@ -59,13 +57,13 @@ void shell() {
       printf("%s\n", files);
       while (*files) {
         if (*files == ' ') {
-          cpio_cat(start, files - start, (void *)initrd_addr);
+          cpio_cat(start, files - start);
           start = ++files;
         } else {
           ++files;
         }
       }
-      cpio_cat(start, files - start, (void *)initrd_addr);
+      cpio_cat(start, files - start);
     }
     else {
       print_unsupport(buf);

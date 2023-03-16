@@ -2,8 +2,19 @@
 
 #include "string.h"
 #include "print.h"
+#include "devtree.h"
 
 #define CPIO_HEADER_MAGIC "070701"
+
+void initramfs_callback(const char *nodename, const char *propname, void *prop_val) {
+  if (streq(nodename, "chosen") == 0 &&
+      streq(propname, "linux,initrd-start") == 0) {
+    uint32_t initrd_addr = u32_to_little_endian(*(uint32_t *)prop_val);
+    INITRD_ADDR = (void *)initrd_addr;
+    printf("initrd addr: %#X\n", INITRD_ADDR);
+  }
+  return;
+}
 
 inline uint32_t get_file_size(cpio_newc_header_t *cpio_header) {
   return strtoui(cpio_header->c_filesize, 8, 16);
@@ -27,6 +38,8 @@ char *cpio_list_one(char *addr, char *filename) {
   cpio_newc_header_t *file_header = (cpio_newc_header_t *) addr;
 
   if (strneq(file_header->c_magic, CPIO_HEADER_MAGIC, 6) != 0) {
+    printf("no magic\n");
+    printf("%#X\n", file_header->c_magic);
     return (char *)0;
   }
 
@@ -50,7 +63,8 @@ char *cpio_list_one(char *addr, char *filename) {
   return addrptr;
 }
 
-void cpio_ls(char *addr) {
+void cpio_ls() {
+  char *addr = INITRD_ADDR;
   while (1) {
     char filename[sizeof("TRAILER!!!")];
     addr = cpio_list_one(addr, filename);
@@ -60,7 +74,8 @@ void cpio_ls(char *addr) {
   }
 }
 
-void cpio_cat(char *command, int len, char *addr) {
+void cpio_cat(char *command, int len) {
+  char *addr = INITRD_ADDR;
   char *new_addr;
   while (1) {
     char filename[sizeof("TRAILER!!!")];
