@@ -11,9 +11,10 @@ static char* ptr = &__heap_top;
 void* malloc(uint32_t size) {
 
     // 0x10 for heap_block header
-    char* r = __heap_top + 0x10;
+    char* r = ptr + 0x10;
+    
     // size paddling to multiple of 0x10
-    size = 0x10 + size - size % 0x10;
+    size = size - size % 0x10;
     *(unsigned int*)(r - 0x8) = size;
     ptr += size;
     return r;
