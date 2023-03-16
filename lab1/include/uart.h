@@ -3,6 +3,7 @@
 
 #include "mmio.h"
 #include "gpio.h"
+#include "utils.h"
 
 #define AUX_BASE        (MMIO_BASE + 0x215000)
 
@@ -17,10 +18,10 @@
 #define AUX_MU_CNTL_REG  ((volatile unsigned int*)(AUX_BASE + 0x60))
 #define AUX_MU_BAUD      ((volatile unsigned int*)(AUX_BASE + 0x68))
 
-void delay(int waits);
-void uart_init(void);
-char uart_read(void);
+void uart_init();
+char uart_read();
+void uart_reads(char *input, int size);
 void uart_write(unsigned int c);
-void uart_puts(char *s);
+void uart_writes(char *s);
 
 #endif

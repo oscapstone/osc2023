@@ -1,9 +1,5 @@
 #include "uart.h"
 
-void delay(int waits) {
-    while (waits--);
-}
-
 void uart_init() {
 
     register unsigned int r;
@@ -32,22 +28,39 @@ void uart_init() {
     *AUX_MU_CNTL_REG  = 3;    // Enable Tx and Rx
 }
 
-char uart_read(void) {
-    while(!(*AUX_MU_LSR_REG & 0x01)) delay(1); // Check data ready field
+char uart_read() {
+    while (!(*AUX_MU_LSR_REG & 0x01)) delay(1); // Check data ready field
     char c = (char)(*AUX_MU_IO_REG); // Read
     return (c == '\r') ? '\n' : c; // Convert carrige return to newline
 }
 
+void uart_reads(char *input, int size) {
+    char *p = input;
+    char c;
+
+    for (int i = 0; i < size - 1; i++) {
+        c = uart_read();
+        if (c == '\r' || c == '\n') {
+            uart_writes("\r\n");
+            break;
+        }
+        else if (c < 31 || c > 128) continue;
+        uart_write(c);
+        *p++ = c;
+    }
+    *p = '\0';
+}
+
 void uart_write(unsigned int c) {
-    while(!(*AUX_MU_LSR_REG & 0x20)) delay(1); // Check data transmitter field
+    while (!(*AUX_MU_LSR_REG & 0x20)) delay(1); // Check data transmitter field
     *AUX_MU_IO_REG = c;  // Write
 }
 
 /* Display a string  */
-void uart_puts(char *s) {
-    while(*s) {
+void uart_writes(char *s) {
+    while (*s) {
         // Convert newline to carrige return and newline 
-        if(*s=='\n')  uart_write('\r');
+        if (*s=='\n')  uart_write('\r');
         uart_write(*s++);
     }
 }
