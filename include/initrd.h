@@ -26,6 +26,8 @@
 #ifndef INITRD_H
 #define INITRD_H
 
+#include "dtb.h"
+
 extern char *cpio_base;
 
 // void initrd_list(char *buf);
@@ -35,6 +37,7 @@ extern char *cpio_base;
 void initrd_list();
 void initrd_ls();
 void initrd_cat();
+void initramfs_callback(fdt_prop *prop, char *node_name, char *property_name);
 
 typedef struct {
     char magic[6];

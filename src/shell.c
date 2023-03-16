@@ -1,5 +1,5 @@
 #include "shell.h"
-#include "my_string.h"
+#include "string.h"
 #include "uart.h"
 #include "power.h"
 #include "initrd.h"

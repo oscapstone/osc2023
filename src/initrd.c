@@ -24,10 +24,10 @@
  */
 #include "uart.h"
 #include "shell.h"
-#include "my_string.h"
+#include "string.h"
 #include "file.h"
-#include "my_string.h"
 #include "initrd.h"
+#include "stdint.h"
 
 #define buf_size 128
 
@@ -123,4 +123,15 @@ void initrd_cat()
         buf+=(sizeof(cpio_f) + ns + fs);
     }
     uart_puts("File not found\n");
+}
+
+void initramfs_callback(fdt_prop *prop, char *node_name, char *property_name)
+{
+    if (!strcmp(node_name, "chosen") && !strcmp(property_name, "linux,initrd-start")) {
+        uint32_t load_addr = *((uint32_t *)(prop + 1));
+        cpio_base = bswap_32(load_addr);
+        uart_puts("cpio_base: ");
+        uart_hex(cpio_base);
+        uart_send('\n');
+    }
 }

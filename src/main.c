@@ -27,8 +27,9 @@
 #include "power.h"
 #include "shell.h"
 #include "mbox.h"
-#include "my_stdlib.h"
+#include "stdlib.h"
 #include "dtb.h"
+#include "initrd.h"
 
 #define CMD_LEN 128
 

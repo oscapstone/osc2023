@@ -1,8 +1,9 @@
 #ifndef DTB_H
 #define DTB_H
 
-#include "my_stdint.h"
+#include "stdint.h"
 #include "kernel.h"
+#include "byteswap.h"
 
 #define FDT_MAGIC ((unsigned int) 0xd00dfeed)
 
@@ -41,7 +42,6 @@ void fdt_init();
 
 void fdt_traverse(void (*callback)(fdt_prop *, char *, char *));
 // void fdt_traverse();
-void initramfs_callback(fdt_prop *prop, char *node_name, char *property_name);
 
 
 #endif

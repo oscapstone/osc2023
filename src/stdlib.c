@@ -1,5 +1,5 @@
-#include "my_stdlib.h"
-#include "my_stddef.h"
+#include "stdlib.h"
+#include "stddef.h"
 
 volatile unsigned long available = 0;
 

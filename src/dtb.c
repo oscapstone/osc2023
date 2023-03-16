@@ -1,18 +1,18 @@
 #include "dtb.h"
 #include "uart.h"
 #include "file.h"
-#include "my_stdint.h"
-#include "my_string.h"
+#include "stdint.h"
+#include "string.h"
 #include "initrd.h"
 
 extern unsigned char __dtb_address;
 
 fdt_header *dtb_address;
 
-uint32_t swap_endian(uint32_t num)
-{
-    return num >> 24 | num << 24 | (num & 0x0000ff00) << 8 | (num & 0x00ff0000) >> 8;
-}
+// uint32_t swap_endian(uint32_t num)
+// {
+//     return num >> 24 | num << 24 | (num & 0x0000ff00) << 8 | (num & 0x00ff0000) >> 8;
+// }
 
 void fdt_init()
 {
@@ -22,17 +22,17 @@ void fdt_init()
 
 void fdt_traverse(void (*callback)(fdt_prop *, char *, char *))
 {
-    if (swap_endian(dtb_address->magic) != FDT_MAGIC)
+    if (bswap_32(dtb_address->magic) != FDT_MAGIC)
         return;
 
-    uint32_t *struct_sp = (uint32_t *) ((char *)dtb_address + swap_endian(dtb_address->off_dt_struct));
-    char *string_sp = (char *) ((uint32_t) dtb_address + swap_endian(dtb_address->off_dt_strings));
+    uint32_t *struct_sp = (uint32_t *) ((char *)dtb_address + bswap_32(dtb_address->off_dt_struct));
+    char *string_sp = (char *) ((uint32_t) dtb_address + bswap_32(dtb_address->off_dt_strings));
     
     char *node_name;
     bool END = false;
 
     while (!END) {
-        uint32_t token = swap_endian(*struct_sp);
+        uint32_t token = bswap_32(*struct_sp);
 
         switch (token) {
         case FDT_BEGIN_NODE:;
@@ -42,8 +42,8 @@ void fdt_traverse(void (*callback)(fdt_prop *, char *, char *))
             break;
         case FDT_PROP:;
             fdt_prop *prop = (fdt_prop*)(struct_sp + 1);
-            struct_sp += (sizeof(fdt_prop) + ALIGN(swap_endian(prop->len), 4)) / 4;
-            char *property_name = string_sp + swap_endian(prop->nameoff);
+            struct_sp += (sizeof(fdt_prop) + ALIGN(bswap_32(prop->len), 4)) / 4;
+            char *property_name = string_sp + bswap_32(prop->nameoff);
             callback(prop, node_name, property_name);
             break;
         case FDT_END:
@@ -54,17 +54,5 @@ void fdt_traverse(void (*callback)(fdt_prop *, char *, char *))
         }
 
         struct_sp++;
-    }
-}
-
-
-void initramfs_callback(fdt_prop *prop, char *node_name, char *property_name)
-{
-    if (!strcmp(node_name, "chosen") && !strcmp(property_name, "linux,initrd-start")) {
-        uint32_t load_addr = *((uint32_t *)(prop + 1));
-        cpio_base = swap_endian(load_addr);
-        uart_puts("cpio_base: ");
-        uart_hex(cpio_base);
-        uart_send('\n');
     }
 }

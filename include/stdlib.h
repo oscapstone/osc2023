@@ -1,5 +1,5 @@
-#ifndef MY_STDLIB_H
-#define MY_STDLIB_H
+#ifndef STDLIB_H
+#define STDLIB_H
 
 
 
