@@ -1,0 +1,8 @@
+*.elf
+*.img
+*.o
+*.cpio
+*.d
+debug/*
+.vscode/*
+.clang-format

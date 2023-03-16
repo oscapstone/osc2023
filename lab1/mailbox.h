@@ -43,22 +43,6 @@
 #define TAGS_HARDWARE_VC_MEM         0x00010006
 #define TAGS_HARDWARE_CLOCKS         0x00010007
 
-/** clock id */
-#define CLOCK_ID_RESERVED   0x000000000       
-#define CLOCK_ID_EMMC       0x000000001   
-#define CLOCK_ID_UART       0x000000002   
-#define CLOCK_ID_ARM        0x000000003          
-#define CLOCK_ID_CORE       0x000000004   
-#define CLOCK_ID_V3D        0x000000005   
-#define CLOCK_ID_H264       0x000000006   
-#define CLOCK_ID_ISP        0x000000007   
-#define CLOCK_ID_SDRAM      0x000000008   
-#define CLOCK_ID_PIXEL      0x000000009   
-#define CLOCK_ID_PWM        0x00000000a   
-#define CLOCK_ID_HEVC       0x00000000b   
-#define CLOCK_ID_EMMC2      0x00000000c   
-#define CLOCK_ID_M2MC       0x00000000d   
-#define CLOCK_ID_PIXEL_BVB  0x00000000e   
 
 /** clock tags operator */
 #define TAGS_GET_CLOCK      0x00030002
