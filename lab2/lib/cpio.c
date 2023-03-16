@@ -80,6 +80,6 @@ void cpio_concatenate(void) {
 void initramfs_callback(char *nodename, char *propname, struct fdt_prop* prop) {
     if (strncmp(nodename, "chosen", 7) == 0 && 
         strncmp(propname, "linux,initrd-start", 19) == 0) {
-        DEVICETREE_CPIO_BASE = (void*) to_little_endian(*((unsigned int*)(prop + 1)));
+        DEVICETREE_CPIO_BASE = (void*)((long unsigned int) to_little_endian(*((unsigned int*)(prop + 1))));
     }
 }
