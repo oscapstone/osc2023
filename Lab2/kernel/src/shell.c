@@ -2,7 +2,8 @@
 #include "string.h"
 #include "command.h"
 #include "uart.h"
-#include "dtb_parser.h"
+#include "dtb.h"
+#include "cpio.h"
 
 
 
@@ -28,17 +29,13 @@ void welcome_msg() {
         " Hey, welcome to Richard's OS! Hope you like it here.\n\n"
         "-------------------------------------------------------\n"
         "=                      kernel                         =\n"
-        "-------------------------------------------------------\n");
-
-        
+        "-------------------------------------------------------\n");    
 }
 
 
 
+void shell_start () {
 
-
-void shell_start () 
-{
     int buffer_counter = 0;
     char input_char;
     char buffer[MAX_BUFFER_LEN];
@@ -46,30 +43,25 @@ void shell_start ()
 
     strset (buffer, 0, MAX_BUFFER_LEN);   
 
-    
-
     // new line head
-    //uart_puts("# ");
+    // uart_puts("# ");
     uart_puts("richard");
     uart_puts("@");
     uart_puts("raspberry");
 	uart_puts(" $ ");
 
     // read input
-    while(1)
-    {
+    while(1){
+
         input_char = uart_getc();
-
-        
-
         input_parse = parse ( input_char );
-
         command_controller ( input_parse, input_char, buffer, &buffer_counter);
+
     }
 }
 
-enum SPECIAL_CHARACTER parse ( char c )
-{
+enum SPECIAL_CHARACTER parse ( char c ){
+
     if ( !(c < 128 && c >= 0) )
         return UNKNOWN;
 
@@ -86,9 +78,8 @@ enum SPECIAL_CHARACTER parse ( char c )
         return REGULAR_INPUT;    
 }
 
-void command_controller ( enum SPECIAL_CHARACTER input_parse, char c, char buffer[], int * counter )
-{   
-   
+void command_controller ( enum SPECIAL_CHARACTER input_parse, char c, char buffer[], int * counter ){
+
     /* args */
     char *args = buffer;  // 修改1：去掉&，args指向buffer数组的首地址
     int arg_idx = 0;
@@ -101,30 +92,26 @@ void command_controller ( enum SPECIAL_CHARACTER input_parse, char c, char buffe
     }
     /* 修改2：修正args指向字符串的位置 */
     if (arg_idx > 0) {
-        args = buffer + arg_idx + 1;}
+        args = buffer + arg_idx + 1;
+    }
     
-    
-    
-
-    if ( input_parse == UNKNOWN )
-        return;
+    if ( input_parse == UNKNOWN ) return;
     
     // Special key
-    if ( input_parse == BACK_SPACE)
-    {
+    if ( input_parse == BACK_SPACE){
   
-        if (  (*counter) > 0 )
-        {
+        if (  (*counter) > 0 ){
+
             uart_send('\b');
             uart_send(' ');
             uart_send('\b');
             (*counter) --;
         }
     }
-    if ( input_parse == DELETE )
-    {   
-        if (  (*counter) > 0 )
-        {
+    if ( input_parse == DELETE ){
+
+        if (  (*counter) > 0 ){
+
             uart_send('\b');
             uart_send(' ');
             uart_send('\b');
@@ -133,20 +120,17 @@ void command_controller ( enum SPECIAL_CHARACTER input_parse, char c, char buffe
         
 
 
-
-
     }
-    else if ( input_parse == NEW_LINE )
-    {
+    else if ( input_parse == NEW_LINE ){
+
         uart_send(c);
-        if ( (*counter) == MAX_BUFFER_LEN ) 
-        {
+        if ( (*counter) == MAX_BUFFER_LEN ) {
+
             input_buffer_overflow_message(buffer);
         }
-        else 
-        {
-            buffer[(*counter)] = '\0';
+        else {
 
+            buffer[(*counter)] = '\0';
             /* debug print*/
             /*
             uart_puts("\n");
@@ -160,17 +144,12 @@ void command_controller ( enum SPECIAL_CHARACTER input_parse, char c, char buffe
 
             if      ( !strcmp(buffer, "help"        ) ) command_help();
             else if ( !strcmp(buffer, "hello"       ) ) command_hello();
-            else if ( !strcmp(buffer, "timestamp"   ) ) command_timestamp();
             else if ( !strcmp(buffer, "reboot"      ) ) command_reboot();
             else if ( !strcmp(buffer, "info"        ) ) command_info();
             else if ( !strcmp(buffer, "clear"       ) ) command_clear();
-            else if ( !strcmp(buffer, "ls"          ) ) command_cpio_list();
-	        else if ( !strcmp(buffer, "cat"         ) ) command_cpio_cat(args);
-            else if ( !strcmp(buffer, "dtb_ls"      ) ) command_dt_info();
-	        else if ( !strcmp(buffer, "dtb_cat"     ) ) command_parse_dt();
             else if ( !strcmp(buffer, "dtb"         ) ) command_dtb();
-	        else if ( !strcmp(buffer, "cpiotest"    ) ) cpio_test();                           
-                                        
+            else if ( !strcmp(buffer, "ls"          ) ) command_ls();                        
+            else if ( !strcmp(buffer, "cat"         ) ) command_cat(args);                              
             else                                        command_not_found(buffer);
 
         }
@@ -184,11 +163,11 @@ void command_controller ( enum SPECIAL_CHARACTER input_parse, char c, char buffe
         uart_puts("raspberry");
 	    uart_puts(" $ ");
     }
-    else if ( input_parse == REGULAR_INPUT )
-    {
+    else if ( input_parse == REGULAR_INPUT ){
+
         uart_send(c);
-        if ( *counter < MAX_BUFFER_LEN)
-        {
+        if ( *counter < MAX_BUFFER_LEN){
+
             buffer[*counter] = c;
             (*counter) ++;
         }

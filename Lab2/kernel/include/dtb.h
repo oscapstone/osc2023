@@ -23,6 +23,18 @@ void traverse_device_tree(void *base,dtb_callback callback);  //traverse dtb tre
 void dtb_callback_show_tree(uint32_t node_type, char *name, void *value, uint32_t name_size);
 void dtb_callback_initramfs(uint32_t node_type, char *name, void *value, uint32_t name_size);
 
-
+/* All the header fields are 32-bit integers, stored in big-endian format. */
+struct fdt_header {
+    uint32_t magic;                 /* The value 0xd00dfeed (big-endian).*/
+    uint32_t totalsize;             /* The total size in bytes of the devicetree data structure. */
+    uint32_t off_dt_struct;         /* The offset in bytes of the structure block from the beginning of the header.*/
+    uint32_t off_dt_strings;        /* The offset in bytes of the strings block from the beginning of the header.*/
+    uint32_t off_mem_rsvmap;        /* The offset in bytes of the memory reservation block from the beginning of the header.*/
+    uint32_t version;               /* The version of the devicetree data structure.*/
+    uint32_t last_comp_version;     /* The lowest version of the devicetree data structure with which the version used is backwards compatible*/
+    uint32_t boot_cpuid_phys;       /* The physical ID of the system’s boot CPU.*/
+    uint32_t size_dt_strings;       /* The length in bytes of the strings block section of the devicetree blob.*/
+    uint32_t size_dt_struct;        /* The length in bytes of the structure block section of the devicetree blob.*/
+};
 
 #endif

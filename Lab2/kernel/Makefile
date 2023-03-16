@@ -30,7 +30,7 @@ vpath %.c %.S $(SRC_DIR)
 
 
 kernel8.img: start.o $(OBJS)
-	$(LD) -m aarch64elf -nostdlib $(OUT_DIR)/start.o $(addprefix $(OUT_DIR)/,$(notdir $(OBJS))) -T $(LINK_SCRIPT) -o kernel8.elf
+	$(LD) -m aarch64elf -nostdlib $(OUT_DIR)/start.o $(addprefix $(OUT_DIR)/,$(notdir $(OBJS))) -T $(SRC_DIR)/$(LINK_SCRIPT) -o kernel8.elf
 	$(OBJ_CPY) -O binary kernel8.elf $@
 
 all: kernel8.img
@@ -45,14 +45,17 @@ start.o: start.S
 
 # Make Command
 run:
-	qemu-system-aarch64 -M raspi3b -kernel kernel8.img -serial null -serial stdio $(QEMU_CPIO) $(QEMU_DTB) 
+	qemu-system-aarch64 -M raspi3b -kernel kernel8.img -serial null -serial stdio -initrd ../initramfs.cpio -dtb ../bcm2710-rpi-3-b-plus.dtb
+	
+run_pty:
+	qemu-system-aarch64 -M raspi3b -kernel kernel8.img -serial null -serial pty -initrd ../initramfs.cpio -dtb ../bcm2710-rpi-3-b-plus.dtb
 	
 
 clean:
-	rm kernel8.elf kernel8.img obj/*.o *.o >/dev/null 2>/dev/null || true
+	rm kernel8.elf boot.img obj/*.o *.o ../*.cpio >/dev/null 2>/dev/null || true
 
 debug:	
 	qemu-system-aarch64 -M raspi3b -kernel kernel8.img
 
-cpio: $(CPIO_FILES)
-	cd $(CPIO_DIR) && find . | cpio -o -H newc > ../$(CPIO)
+cpio: 
+	cd ../$(CPIO_DIR) ; find . | cpio -o -H newc > ../initramfs.cpio

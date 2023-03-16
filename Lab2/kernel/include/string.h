@@ -10,6 +10,6 @@ void ftoa       ( float n, char* res, int afterpoint );
 void reverse    ( char *s );
 void itohex_str ( uint64_t d, int size, char * s );
 unsigned long hextoint(char* addr, const int size);
-
+int strncmp     (const char *s1, const char *s2, unsigned long long n);
 
 #endif

@@ -1,72 +1,65 @@
 #include "cpio.h"
 #include "string.h"
 
-extern void *CPIO_DEFAULT_PLACE;
+/* Parse an ASCII hex string into an integer. (big endian)*/
+static unsigned int parse_hex_str(char *s, unsigned int max_len)
+{
+    unsigned int r = 0;
 
-
-
-unsigned long  align(unsigned long  size, unsigned long  multiplier){
-    if(multiplier <= 0) return 0;
-    else return (multiplier - (size % multiplier)) % multiplier;
-}
-
-void extract_header(struct cpio_newc_header *cpio_addr, struct cpio_info *size_info){
-    size_info->file_size = hextoint(cpio_addr->c_filesize, 8);
-    size_info->file_align = align(size_info->file_size, 4);
-    size_info->name_size = hextoint(cpio_addr->c_namesize, 8);
-    size_info->name_align = align(size_info->name_size + CPIO_SIZE, 4);
-    size_info->offset = CPIO_SIZE + size_info->file_size + size_info->file_align + size_info->name_size + size_info->name_align;
-}
-
-
-void cpio_list(){
-    //char *now_ptr = CPIO_ADDR;
-    char *now_ptr = CPIO_DEFAULT_PLACE;
-    struct cpio_newc_header *cpio_addr = (struct cpio_newc_header* )now_ptr;
-    struct cpio_info size_info;
-    while(1){
-        extract_header(cpio_addr, &size_info);
-        char *pathname = (char*)((char*)cpio_addr + CPIO_SIZE);
-        if(strcmp("TRAILER!!!", pathname) == 0) break;
-        uart_puts(pathname);
-        uart_puts("\r\n");
-        now_ptr += size_info.offset;//next_addr_offset;
-        cpio_addr = (struct cpio_newc_header* )now_ptr;
-           
-    }
-}
-
-void cpio_cat(char *args){
-    //char *now_ptr = CPIO_ADDR;
-    char *now_ptr = CPIO_DEFAULT_PLACE;
-    struct cpio_newc_header *cpio_addr = (struct cpio_newc_header* )now_ptr;
-    struct cpio_info size_info;
-    int flag = 0;
-    while(1){
-        extract_header(cpio_addr, &size_info);
-        char *pathname = (char*)((char*)cpio_addr + CPIO_SIZE);
-        if(strcmp("TRAILER!!!", pathname) == 0) break;
-        if(strcmp(args, pathname) == 0){
-            uart_puts_bySize((char*)((char*)cpio_addr + CPIO_SIZE + size_info.name_size + size_info.name_align), size_info.file_size);
-            uart_puts("\r\n");
-            flag = 1;
+    for (unsigned int i = 0; i < max_len; i++) {
+        r *= 16;
+        if (s[i] >= '0' && s[i] <= '9') {
+            r += s[i] - '0';
+        }  else if (s[i] >= 'a' && s[i] <= 'f') {
+            r += s[i] - 'a' + 10;
+        }  else if (s[i] >= 'A' && s[i] <= 'F') {
+            r += s[i] - 'A' + 10;
+        } else {
+            return r;
         }
-        now_ptr += size_info.offset;
-        cpio_addr = (struct cpio_newc_header* )now_ptr;
     }
-    if(flag == 0){
-        uart_puts("No such file: ");
-        uart_puts(args);
-        uart_puts("\r\n");
-    }
+    return r;
 }
 
 
-void cpio_test(){
-    uart_puts("CPIO_DEFAULT_PLACE:[");
-    uart_puts(CPIO_DEFAULT_PLACE);
-    uart_puts("]\n");
-    uart_puts("CPIO_ADDR:         [");
-    uart_puts(CPIO_ADDR);
-    uart_puts("]\n");
+/* write pathname, data, next header into corresponding parameter */
+/* if no next header, next_header_pointer = 0 */
+/* return -1 if parse error*/
+int cpio_newc_parse_header(struct cpio_newc_header *this_header_pointer, char **pathname, unsigned int *filesize, char **data, struct cpio_newc_header **next_header_pointer)
+{
+    /* Ensure magic header exists. */
+    if (strncmp(this_header_pointer->c_magic, CPIO_NEWC_HEADER_MAGIC, sizeof(this_header_pointer->c_magic)) != 0) return -1;
+
+    // transfer big endian 8 byte hex string to unsigned int and store into *filesize
+    *filesize = parse_hex_str(this_header_pointer->c_filesize,8);
+
+    // end of header is the pathname
+    *pathname = ((char *)this_header_pointer) + sizeof(struct cpio_newc_header); 
+
+    // get file data, file data is just after pathname
+    unsigned int pathname_length = parse_hex_str(this_header_pointer->c_namesize,8);
+    unsigned int offset = pathname_length + sizeof(struct cpio_newc_header);
+    // The file data is padded to a multiple of four bytes
+    offset = offset % 4 == 0 ? offset:(offset+4-offset%4);
+    *data = (char *)this_header_pointer+offset;
+
+    //get next header pointer
+    if(*filesize==0){
+
+        *next_header_pointer = (struct cpio_newc_header*)*data;
+    }
+    else{
+
+        offset = *filesize;
+        *next_header_pointer = (struct cpio_newc_header*)(*data + (offset%4==0?offset:(offset+4-offset%4)));
+    }
+
+    // if filepath is TRAILER!!! means there is no more files.
+    if(strncmp(*pathname,"TRAILER!!!", sizeof("TRAILER!!!"))==0){
+
+        *next_header_pointer = 0;
+        
+    }
+
+    return 0;
 }

@@ -3,7 +3,7 @@
 #include "uart.h"
 
 #define KERNEL_ADDR ((char*)0x80000)
-#define TEMP_ADDR   ((char*)0x60000)
+#define TEMP_ADDR ((char*)0x60000)
 
 void loading();
 void load_new_kernel();

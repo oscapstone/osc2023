@@ -1,54 +1,38 @@
 #ifndef _CPIO_H_
 #define _CPIO_H_
-#include "uart.h"
-#include "string.h"
 
-//#define CPIO_ADDR ((char*)0x8000000)    //QEMU(0x8000000)
-#define CPIO_ADDR ((char*)0x20000000) 
+/*
+    cpio format : https://manpages.ubuntu.com/manpages/bionic/en/man5/cpio.5.html
+    We are using "newc" format
+    header, file path, file data, header  ......
+    header + file path (padding 4 bytes)
+    file data (padding 4 bytes)  (max size 4gb)
+*/
 
+#define CPIO_NEWC_HEADER_MAGIC "070701"    // big endian constant, to check whether it is big endian or little endian
 
-
-
-/* Magic identifiers for the "cpio" file format. */
-#define CPIO_HEADER_MAGIC "070701"
-#define CPIO_FOOTER_MAGIC "TRAILER!!!"
-#define CPIO_ALIGNMENT 4
-
-
-#define CPIO_SIZE 110
-
-struct cpio_newc_header {
-    char c_magic[6];      /* Magic header '070701'. */
-    char c_ino[8];        /* "i-node" number. */
-    char c_mode[8];       /* Permisions. */
-    char c_uid[8];        /* User ID. */
-    char c_gid[8];        /* Group ID. */
-    char c_nlink[8];      /* Number of hard links. */
-    char c_mtime[8];      /* Modification time. */
-    char c_filesize[8];   /* File size. */
-    char c_devmajor[8];   /* Major dev number. */
-    char c_devminor[8];   /* Minor dev number. */
+// Using newc archive format
+struct cpio_newc_header
+{
+    char c_magic[6];            // fixed, "070701".
+    char c_ino[8];
+    char c_mode[8];
+    char c_uid[8];
+    char c_gid[8];
+    char c_nlink[8];
+    char c_mtime[8];
+    char c_filesize[8];
+    char c_devmajor[8];
+    char c_devminor[8];
     char c_rdevmajor[8];
     char c_rdevminor[8];
-    char c_namesize[8];   /* Length of filename in bytes. */
-    char c_check[8];      /* Checksum. */
+    char c_namesize[8];
+    char c_check[8];
 };
 
-struct cpio_info {
-    unsigned long file_size; 
-	unsigned long file_align;
-	unsigned long name_size; 
-	unsigned long name_align;
-    unsigned long offset;
-
-};
-
-
-unsigned long  align(unsigned long  size, unsigned long  multiplier);
-void extract_header(struct cpio_newc_header *cpio_addr, struct cpio_info *size_info);
-
-void cpio_list();
-void cpio_cat(char *args);
+/* write pathname, data, next header into corresponding parameter*/
+int cpio_newc_parse_header(struct cpio_newc_header *this_header_pointer,
+        char **pathname, unsigned int *filesize, char **data,
+        struct cpio_newc_header **next_header_pointer);
 
 #endif /* _CPIO_H_ */
-
