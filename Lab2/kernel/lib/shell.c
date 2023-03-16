@@ -153,7 +153,7 @@ void shell(void) {
             uart_puts("lshw\t: print hardware info from mailbox\n");
         }
         else if (strcmp("reboot", command) == 0) {
-            uart_puts("rebooting...\r\n");
+            uart_puts("rebooting...\n");
             reset(1000);
         }
         else if (strcmp("lshw", command) == 0) {
@@ -161,9 +161,14 @@ void shell(void) {
             get_arm_memory();
         }
         // Lab 2
-        else if (strcmp("allocate", command) == 0) {
-            uart_puts("allocating...\r\n");
-            // char* string = (char*) simple_malloc(8);
+        else if (strcmp("malloc", command) == 0) {
+            uart_puts("allocating...\n");
+            char* str = (char*) simple_malloc(8);
+            *str = 'a';
+            *(str + 1) = 'b';
+            *(str + 2) = 'c';
+            *(str + 3) = '\0';
+            uart_printf("%s\n", str);
         }
         else if (strcmp("ls", command) == 0) {
             ls(".");
@@ -172,7 +177,6 @@ void shell(void) {
             cat(command + 4);
         }
         else {
-            uart_puts("\n");
             uart_puts("unknown\n");
         }
         

@@ -1,7 +1,7 @@
 SRC_DIR = lib
 OBJ_DIR = build
 INCLUDE = include
-CFLAGS = -ggdb -fno-stack-protector -Wno-implicit -ffreestanding -nostdlib -nostartfiles -I$(INCLUDE) 
+CFLAGS = -ggdb -Wno-implicit -ffreestanding -nostdlib -nostartfiles -I$(INCLUDE) 
 SRC_S:=$(wildcard $(SRC_DIR)/*.S)
 SRC_C:=$(wildcard $(SRC_DIR)/*.c)
 OBJS:= $(SRC_C:$(SRC_DIR)/%.c=$(OBJ_DIR)/%.o) \

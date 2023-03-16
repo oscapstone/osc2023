@@ -42,8 +42,7 @@ struct fdt_property {
 
 #define FDT_BEGIN_NODE  0x1     /* Start node: full name */
 #define FDT_END_NODE    0x2     /* End node */
-#define FDT_PROP    0x3     /* Property: name off,
-                       size, content */
+#define FDT_PROP    0x3     /* Property: name off, size, content */
 #define FDT_NOP     0x4     /* nop */
 #define FDT_END     0x9
 
@@ -52,8 +51,10 @@ struct fdt_property {
 #define FDT_V3_SIZE (FDT_V2_SIZE + sizeof(unsigned int))
 #define FDT_V16_SIZE    FDT_V3_SIZE
 #define FDT_V17_SIZE    (FDT_V16_SIZE + sizeof(unsigned int))
+
 typedef void (*dtb_callback)(unsigned int node_type, char *name, void *value, unsigned int name_size);
 void fdt_traverse(dtb_callback callback);
 void initramfs_callback(unsigned int node_type, char *name, void *value, unsigned int name_size);
 unsigned int endian_big2little(unsigned int x) ;
-#endif /* _FDT_H */
+
+#endif 

@@ -32,6 +32,7 @@ void fdt_traverse(dtb_callback callback)
     char *end = (char *)dt_struct_ptr + struct_size;
     char *pointer = dt_struct_ptr;
 
+    // Find in structure block
     while (pointer < end)
     {
         unsigned int token_type = endian_big2little(*(unsigned int *)pointer);
@@ -53,7 +54,7 @@ void fdt_traverse(dtb_callback callback)
             callback(token_type, name, pointer, len);
             pointer += len;
             if ((unsigned long long)pointer % 4 != 0)
-                pointer += 4 - (unsigned long long)pointer % 4; // alignment 4 byte
+                pointer += 4 - (unsigned long long)pointer % 4; // alignment 4 byte = 32 bit
             break;
         case FDT_NOP:
             break;

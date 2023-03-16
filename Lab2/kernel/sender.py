@@ -20,7 +20,7 @@ def sendKernelImg(s, f):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument("-s", help="enter tty")
-    parser.add_argument("-f", help="enter img")
+    parser.add_argument("-s", help="enter tty", required=True)
+    parser.add_argument("-f", help="enter img", required=True)
     args = parser.parse_args()
     sendKernelImg(args.s, args.f)
