@@ -152,6 +152,7 @@ void print_dtb(int type, const char *name, const void *data, uint32_t size)
 //         break;
 //     }
 // }
+///
 void get_initramfs_addr(int type, const char *name, const void *data, uint32_t size)
 {
     // 檢查類型是否是 FDT_PROP，並且 name 是否是 "linux,initrd-start"
