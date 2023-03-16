@@ -81,7 +81,7 @@ void get_hw_info(unsigned int tag_identifier, unsigned int *request_message)
   mailbox_call(mailbox, 8);
 
   if (mailbox[1] != RESPONSE_CODE_SUCCESS) {
-    uart_write_string("message did not be handled appropriately!\n\r");
+    uart_write_string("message did not be handled appropriately!\n");
     return;
   }
   for (int i = 1; i <= buffer_addr_len; i++) {
@@ -90,5 +90,18 @@ void get_hw_info(unsigned int tag_identifier, unsigned int *request_message)
     uart_write_no_hex(value);
     uart_write(' ');
   }
-  uart_write_string("\n\r");
+  uart_write_string("\n");
+}
+
+void print_hw_info(void) {
+  /* print hardware information */
+  unsigned int request_message[8] = {0};
+  uart_write_string("BOARD REVISION: ");
+  get_hw_info(GET_BOARD_REVISION, &request_message);
+  uart_write_string("ARM MEMORY: ");
+  get_hw_info(GET_ARM_MEMORY, &request_message);
+  uart_write_string("MAC ADDRESS: ");
+  get_hw_info(GET_MAC_ADDRESS, &request_message);
+  uart_write_string("TEMPERATURE: ");
+  get_hw_info(GET_TEMPERATURE, &request_message);
 }

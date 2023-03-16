@@ -25,6 +25,6 @@ void mailbox_call(unsigned int *mailbox, int channel) {
         //If not, then you can read from Mailbox 0 Read/Write register.
         // Read response from mailbox
         if (*MAILBOX_READ == message) return;
-        uart_write_string("Mailbox response doesn't match!\n\r");
+        uart_write_string("Mailbox response doesn't match!\n");
     }
 }

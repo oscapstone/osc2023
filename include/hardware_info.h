@@ -29,5 +29,6 @@
 #define REQUEST_FAILED          0x80000001
 #define TAG_REQUEST_CODE        0x00000000
 #define END_TAG                 0x00000000
-extern void get_hw_info(unsigned int tag_identifier);
+extern void get_hw_info(unsigned int tag_identifier, unsigned int *request_message);
+extern void print_hw_info(void);
 #endif

@@ -5,4 +5,5 @@
 extern void shell_process_cmd(char *input_buffer, unsigned int input_buffer_size);
 extern int run_if_builtin(char *first_arg, char *other_args);
 extern unsigned int shell_read_string(char *buffer, unsigned int buffer_size);
+extern void shell_main(void);
 #endif
