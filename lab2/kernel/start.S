@@ -1,8 +1,21 @@
+.section ".data"
+
+.globl DTB_ADDR
+
+.align 4
+DTB_ADDR:
+    .quad 0
+
 .section ".text.boot"
 
 .globl _start
 
 _start:
+    ;ldr     x2, =0x5FFF8
+    ;ldr     x3, [x2]
+    mov     x3, x0
+    ldr     x1, =DTB_ADDR
+    str     x3, [x1]
     mrs     x0, mpidr_el1
     and     x0, x0, #0xFF
     cbz     x0, _one

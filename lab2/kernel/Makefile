@@ -48,4 +48,4 @@ run-dbg: kernel8.img
 run-tty: kernel8.img
 	qemu-system-aarch64 -M raspi3b -kernel kernel8.img -display none -serial null -serial pty
 run: kernel8.img
-	qemu-system-aarch64 -M raspi3b -kernel kernel8.img -display none -serial null -serial stdio -initrd ../initramfs.cpio
+	qemu-system-aarch64 -M raspi3b -kernel kernel8.img -display none -serial null -serial stdio -initrd ../initramfs.cpio -dtb ../bcm2710-rpi-3-b-plus.dtb

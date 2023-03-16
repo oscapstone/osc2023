@@ -9,5 +9,6 @@ int strstartwith(const char *, const char *);
 char *strcpy(char *, const char *);
 int strtoi(const char *, int);
 uint32_t strtoui(const char *, int, int);
+int strlen(const char *);
 
 #endif

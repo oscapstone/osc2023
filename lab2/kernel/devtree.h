@@ -16,9 +16,21 @@ struct fdt_header {
   uint32_t size_dt_struct;
 };
 
-struct fdt_reserve_entry {
-  uint64_t address;
-  uint64_t size;
+struct fdt_prop {
+  uint32_t len;
+  uint32_t nameoff;
 };
+
+#define FDT_BEGIN_NODE  0x00000001
+#define FDT_END_NODE    0x00000002
+#define FDT_PROP        0x00000003
+#define FDT_NOP         0x00000004
+#define FDT_END         0x00000009
+
+#define DTB_MAGIC       0xD00DFEED
+
+extern uint64_t DTB_ADDR;
+
+void fdt_traverse(void (*)());
 
 #endif

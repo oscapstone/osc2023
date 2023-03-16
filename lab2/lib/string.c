@@ -105,3 +105,11 @@ uint32_t strtoui(const char *str, int len, int base) {
   return num;
 }
 
+int strlen(const char *str) {
+  int len = 0;
+  while (*str) {
+    str++;
+    len++;
+  }
+  return len;
+}
