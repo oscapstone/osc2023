@@ -55,21 +55,9 @@ char uart_recv(void) {
     }
     return (read_reg_32(AUX_MU_IO_REG) & 0xff);
 }
-
 void uart_send_u64(unsigned long u64) {
     for(int cnt = 60; cnt >= 0; cnt -= 4) {
         uart_send(hex_char[(u64 >> cnt) & 0xF]);
     }
 }
 
-void uart_send_u32(unsigned int u32) {
-    for(int cnt = 28; cnt >= 0; cnt -= 4) {
-        uart_send(hex_char[(u32 >> cnt) & 0xF]);
-    }
-}
-
-void uart_send_string(const char *c) {
-    for(const char *ch = c; *ch != '\0'; ch ++) {
-        uart_send(*ch);
-    }
-}

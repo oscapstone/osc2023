@@ -1,6 +1,10 @@
 #include "peripherals/mini_uart.h"
 #include "mbox/mbox.h"
 #include "power.h"
+#include "utils.h"
+#include "cpio/cpio.h"
+#include "dtb/dtb.h"
+#include "mem.h"
 
 
 #define SHELL_BUFSIZE 64
@@ -9,66 +13,58 @@
 #define NOT_FOUND 1
 
 
-char buf[SHELL_BUFSIZE];
+// char buf[SHELL_BUFSIZE];
 const char hello_world[] = "Hello World!";
-const char help_menu[] = "help   \t: print this help menu\r\nhello  \t: print Hello World!\r\ninfo   \t: print machine info\r\nreboot\t: reboot machine";
+const char help_menu[] = "help   \t: print this help menu\r\nhello  \t: print Hello World!\r\ninfo   \t: print machine info\r\nreboot\t: reboot machine\r\nls    \t: list files\r\ncat   \t: show file content";
 
-int strncmp(char *s1, char *s2, unsigned int maxlen) {
-    int i;
-    for(i = 0; i < maxlen && s1[i] != '\0' && s2[i] != '\0'; i ++) {
-        if(s1[i] < s2[i]) {
-            return -1;
-        }
-        if(s1[i] > s2[i]) {
-            return 1;
-        }
-    }
-    if(s1[i] == '\0' && s2[i] != '\0') {
-        return -1;
-    }
-    if(s1[i] != '\0' && s2[i] == '\0') {
-        return 1;
-    }
-    return 0;
-}
+char *history[100];
+int history_cnt = 0;
 
-int strlen(const void *buf) {
-    int ret = 0;
-    for(const char *ch = (const char *)buf; *ch != '\0'; ch ++) {
-        ret += 1;
+void split_comm_arg(char *buf, char **comm, char **arg) {
+    *comm = buf;
+    while(*buf != ' ') {
+        buf += 1;
     }
-    return ret;
+    *buf = '\0';
+    *arg = buf + 1;
+    while(**arg <= ' ') {
+        *arg += 1;
+    }
 }
 
 int handle_input(char *buf) {
     // uart_send_string(buf);
     int tot_len = strlen(buf);
-    // discard leading space
-    while(tot_len && *buf == ' ') {
-        buf = buf + 1;
-        tot_len -= 1;
-    }
+
     // discard tailing space
-    while(buf[tot_len - 1] == ' ') {
+    while(tot_len && buf[tot_len - 1] <= ' ') {
         buf[tot_len - 1] = '\0';
         tot_len -= 1;
     }
+    // discard leading space
+    while(tot_len && *buf <= ' ') {
+        buf = buf + 1;
+        tot_len -= 1;
+    }
+    char *comm;
+    char *arg;
+    split_comm_arg(buf, &comm, &arg);
     if(tot_len == 0) return 0;
-    int cond = strncmp(buf, "hello", 5);
+    int cond = strncmp(comm, "hello", 5);
     if(cond == 0) {
         uart_send_string(hello_world);
         uart_send_string("\r\n");
         return 0;
     }
 
-    cond = strncmp(buf, "help", 4);
+    cond = strncmp(comm, "help", 4);
     if(cond == 0) {
         uart_send_string(help_menu);
         uart_send_string("\r\n");
         return 0;
     }
 
-    cond = strncmp(buf, "info", 4);
+    cond = strncmp(comm, "info", 4);
 
     if(cond == 0) {
         mbox_buf[0] = 7 * 4;
@@ -107,26 +103,64 @@ int handle_input(char *buf) {
         return 0;
     }
 
-    cond = strncmp(buf, "reboot", 6);
+    cond = strncmp(comm, "reboot", 6);
     if(cond == 0) {
         uart_send_string("Reboot in 100 ticks\r\n");
         reset(100);
         return EXIT;
     }
+    cond = strncmp(comm, "ls", 2);
+    if(cond == 0) {
+        list_files();
+        return 0;
+    }
 
+    cond = strncmp(comm, "cat", 3);
+    if(cond == 0) {
+        cat_file(arg);
+        return 0;
+    }
+    cond = strncmp(comm, "history", 3);
+    if(cond == 0) {
+        int x = history_cnt;
+        if(x > 100) {
+            x = 100;
+        }
+        for(int i = 0; i < x; i ++) {
+            uart_send_string(history[i]);
+            uart_send_string("\r\n");
+        }
+        return 0;
+    }
     uart_send_string("Command not Found!\r\n");
     return NOT_FOUND;
 }
 
-void memset(void *dest, char val, unsigned int size) {
-    for(int i = 0; i < size; i ++) {
-        *(char*)(dest + i) = val;
+
+const char shell_beg[] = "______________________\r\n"
+"< 109550062 OSDI Shell >\r\n"
+"----------------------\r\n"
+"        \\   ^__^\r\n"
+"         \\  (oo)\\_______\r\n"
+"            (__)\\       )\\/\\\r\n"
+"                ||----w |\r\n"
+"                ||     ||\r\n";
+
+
+void get_initramfs_addr(char *name, char *prop_name, char *data) {
+    if(strncmp(name, "chosen", 6) == 0) {
+        if(strncmp(prop_name, "linux,initrd-start", 18) == 0) {
+            set_initramfs_addr(ntohi(*(unsigned int*)(data)));
+        }
     }
 }
 
-void kernel_main(void) {
+void kernel_main(void* dtb_addr) {
+    fdt_param_init(dtb_addr);
+    fdt_traverse(&get_initramfs_addr);
     uart_init();
-    uart_send_string("Hello, World!\r\n# ");
+    uart_send_string(shell_beg);
+    uart_send_string("# ");
 
 	// while (1) {
 	// 	uart_send(uart_recv());
@@ -134,16 +168,18 @@ void kernel_main(void) {
 
     char cur;
 
+    char *buf = simple_malloc(64);
+
     int idx = 0;
     memset(buf, 0, 64);
     while(1) {
         cur = uart_recv();
         // uart_send(cur - 12);
-        if(cur == 127) {
+        if(cur == 127 || cur == 8) {
             if(idx == 0) continue;
             idx --;
             buf[idx] = '\0';
-            // uart_send(8);
+            uart_send(8);
             uart_send(127);
             continue;
         }
@@ -155,6 +191,8 @@ void kernel_main(void) {
             if(code == EXIT) {
                 return;
             }
+            history[history_cnt++ % 100] = buf;
+            buf = simple_malloc(64);
             idx = 0;
             memset(buf, 0, 64);
             uart_send_string("# ");
