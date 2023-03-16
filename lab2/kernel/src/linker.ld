@@ -34,12 +34,12 @@ SECTIONS
 		_heap_top = .;
 	}
 
+
+    . = ALIGN(32);
+    _stack_bottom = .;
     . = . + _heap_stack_size;
-    .stack : {
-        . = ALIGN(8);
-        _stack_top = .;
-        _end = .;
-    }
+    _stack_top = .;
+    _end = .;
 }
 
 __bss_size = (__bss_end - __bss_start) >> 3;
