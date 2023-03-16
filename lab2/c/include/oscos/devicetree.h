@@ -51,8 +51,7 @@ void devicetree_register(const void *dtb_start);
    rev_u32(((const fdt_header_t *)fdt_get_start())->off_dt_strings))
 
 /// \brief The starting token of an item in the structure block.
-// #define FDT_TOKEN(ITEM) (rev_u32((ITEM)->token)) // Triggers UB, presumably.
-#define FDT_TOKEN(ITEM) (load_be_u32_aligned((const char *)&(ITEM)->token))
+#define FDT_TOKEN(ITEM) (rev_u32((ITEM)->token))
 
 /// \brief The name of an node in the structure block.
 #define FDT_NODE_NAME(NODE) ((NODE)->payload)
