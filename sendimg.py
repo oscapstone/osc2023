@@ -73,7 +73,7 @@ def main():
     # Show the message printed by Raspi 3
     receiveMsg()
 
-    per_chunk = 100
+    per_chunk = 64
     # Compute the chunk count of image file
     chunk_count = file_size // per_chunk
     chunk_count = chunk_count + 1 if file_size % per_chunk else chunk_count
