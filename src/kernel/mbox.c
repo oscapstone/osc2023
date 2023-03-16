@@ -1,9 +1,11 @@
 #include "mbox/mbox.h"
 #include "utils.h"
+#include "peripherals/mini_uart.h"
 
 volatile unsigned int mbox_buf[16]__attribute__((aligned(16)));
 
 int mbox_call_func(unsigned char prop_tag) {
+
     unsigned int addr = (((unsigned long)&mbox_buf) & (~(0xF))) | prop_tag;
     while(1) {
         if((read_reg_32(MAIL_STATUS) & MAIL_FULL) == 0) {

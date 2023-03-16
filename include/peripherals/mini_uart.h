@@ -22,5 +22,5 @@ void uart_send(char c);
 void uart_send_string(const char *c);
 void uart_send_u32(unsigned int u32);
 void uart_send_u64(unsigned long u64);
-
+void uart_send_n(const char *c, unsigned long long n);
 #endif
