@@ -109,6 +109,56 @@ void serial_init(void) {
   // Enable TX and RX.
   AUX_MU->CNTL_REG = 3;
 
+  // Workaround for the issue of the serial console reading in an extraneous
+  // 0xf8 upon bootstrapping. Delay for the time to receive 2 characters (i.e.,
+  // 20 bauds) and clear the FIFOs. The delay period is determined by heuristic
+  // and not backed by exact science.
+  delay_ns(20 * NS_PER_SEC / 115200);
+  AUX_MU->IIR_REG = 6;
+
+  PERIPHERAL_READ_BARRIER();
+}
+
+static void _serial_flush(void) {
+  while (!(AUX_MU->LSR_REG & AUX_MU_LSR_REG_TRANSMITTER_IDLE))
+    ;
+}
+
+void serial_deinit(void) {
+  PERIPHERAL_WRITE_BARRIER();
+
+  _serial_flush();
+
+  // Disable TX and RX.
+  AUX_MU->CNTL_REG = 0;
+  // Clear the transmit and receive FIFOs.
+  AUX_MU->IIR_REG = 6;
+  // Reset registers.
+  AUX_MU->IER_REG = 0;
+  AUX_MU->LCR_REG = 0;
+  AUX_MU->MCR_REG = 0;
+  AUX_MU->BAUD = 0;
+  // Disable mini UART.
+  AUX->ENB &= ~AUXENB_MINI_UART_ENABLE;
+
+  PERIPHERAL_READ_BARRIER();
+
+  PERIPHERAL_WRITE_BARRIER();
+
+  // Set GPIO pin 14 & 15 back to input mode.
+  GP->FSEL[1] = (GP->FSEL[1] & ~(GPFSEL_FSEL4_MASK | GPFSEL_FSEL5_MASK)) |
+                (GPFSEL_FSEL4_INPUT | GPFSEL_FSEL5_INPUT);
+
+  // Re-enable the GPIO pull down on pin 14 (TXD1).
+  // See the comments in serial_init(void) for notes on the delay period.
+
+  GP->PUD = GPPUD_PUD_PULL_DOWN;
+  delay_ns(1000);
+  GP->PUDCLK[0] = 1 << 14;
+  delay_ns(1000);
+  GP->PUD = 0;
+  GP->PUDCLK[0] = 0;
+
   PERIPHERAL_READ_BARRIER();
 }
 
@@ -121,11 +171,6 @@ void serial_set_mode(const SerialMode mode) {
   // * FIXME: If the check is implemented, update the documentation in
   // * `include/oscos/serial.h`.
   _serial_mode = mode;
-}
-
-static void _serial_flush(void) {
-  while (!(AUX_MU->LSR_REG & AUX_MU_LSR_REG_TRANSMITTER_IDLE))
-    ;
 }
 
 void serial_flush(void) {
@@ -321,6 +366,21 @@ FN_DECL_BINARY_MODE(PUTC_SPEC) {
 }
 
 FN_DEFN(PUTC_SPEC)
+
+// void write(const char *buf, size_t count)
+
+#define WRITE_RET_TY(X, V) V
+#define WRITE_ARGS(X, D) X(const char *const, buf) D X(const size_t, count)
+#define WRITE_SPEC(X) X(WRITE_RET_TY, write, WRITE_ARGS)
+
+#define WRITE_IMPL(MODE)                                                       \
+  {                                                                            \
+    for (size_t i = 0; i < count; i++) {                                       \
+      _serial_putc_##MODE(buf[i]);                                             \
+    }                                                                          \
+  }
+
+FN_DEFN_COMPOSED(WRITE_SPEC, WRITE_IMPL)
 
 // void fputs(const char *s)
 

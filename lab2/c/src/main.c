@@ -1,8 +1,11 @@
 #include "oscos/bcm2837/mailbox_info.h"
+#include "oscos/devicetree.h"
 #include "oscos/serial.h"
 #include "oscos/shell.h"
 
-void main() {
+void main(const void *const dtb_start) {
+  devicetree_register(dtb_start);
+
   serial_init();
 
   const uint32_t board_revision = get_board_revision();

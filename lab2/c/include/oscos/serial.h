@@ -39,6 +39,13 @@ typedef enum {
 /// See the file-level documentation for requirements on initialization.
 void serial_init(void);
 
+/// \brief De-initializes the serial console.
+///
+/// When calling this function, the serial console must be initialized. This
+/// function may not be called when the serial console is being accessed by any
+/// other thread.
+void serial_deinit(void);
+
 /// \brief Acquires the lock of the serial console.
 ///
 /// When calling this function, the current thread must not have acquired the
@@ -81,6 +88,13 @@ char serial_getc(void);
 /// a multi-threaded context, the current thread must have acquired the lock of
 /// the serial console.
 char serial_putc(char c);
+
+/// \brief Writes characters to the serial console.
+///
+/// When calling this function, the serial console must be initialized. Also, in
+/// a multi-threaded context, the current thread must have acquired the lock of
+/// the serial console.
+void serial_write(const char *buf, size_t count);
 
 /// \brief Writes a string to the serial console without trailing newline.
 ///
