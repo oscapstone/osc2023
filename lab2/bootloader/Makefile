@@ -4,7 +4,7 @@ LD = $(ARMGNU)-ld
 OBJCOPY = $(ARMGNU)-objcopy
 BUILD_DIR = build
 SRC_DIR = src
-ENV_HDR = -initrd initramfs.cpio -dtb bcm2710-rpi-3-b.dtb
+ENV_HDR = -initrd initramfs.cpio -dtb bcm2710-rpi-3-b-plus.dtb
 
 all : kernel8.img
 

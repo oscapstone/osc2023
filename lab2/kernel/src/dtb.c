@@ -59,9 +59,12 @@ uint64_t bswap_64(uint64_t num) {
 }
 
 void dtb_list(void *dtb) {
-    volatile unsigned char *buf = (unsigned char *)dtb;
+    char *buf = (char *)dtb;
     fdt_header *header = (fdt_header*)dtb;
-    if (memcmp((char *)(bswap_32(buf)),"d00dfeed",8))
+    uart_puts("\n");
+    uart_hex(bswap_32(header->magic));
+
+    if (bswap_32(header->magic)==0xd00dfeed)
     {
         uart_puts("Magic of dtb: ");
         uart_hex(bswap_32(header->magic));
@@ -93,11 +96,14 @@ void dtb_list(void *dtb) {
             // debug++;
             // if (debug>100) break;
             type = (uint32_t*) buf;
-		    *type = bswap_32(*type);
-            if (*type==FDT_BEGIN_NODE){
+		    // *type = bswap_32(*type);
+            // uart_puts("\n");
+            
+            // uart_puts("\n");
+            if (bswap_32(*type)==FDT_BEGIN_NODE){
                 pad = 0;
                 buf += 4;
-                if (bswap_32(buf) == 0) {
+                if (bswap_32((uint32_t)buf) == 0) {
                     buf+=4;
                     continue;
                 }
@@ -110,10 +116,10 @@ void dtb_list(void *dtb) {
                 buf += (4-(pad%4))%4;
                 continue;
             }
-            else if (*type==FDT_END_NODE){
+            else if (bswap_32(*type)==FDT_END_NODE){
                 buf+=4;
             }
-            else if (*type==FDT_PROP){ //3
+            else if (bswap_32(*type)==FDT_PROP){ //3
                 buf += 4;
                 fdt_prop *prop = (fdt_prop*)buf;
                 uart_puts(" <");
@@ -140,15 +146,16 @@ void dtb_list(void *dtb) {
                 buf += (4-(bswap_32(prop->len)%4))%4;
                 continue;
             }
-            else if (*type==FDT_END) {
+            else if (bswap_32(*type)==FDT_END) {
                 uart_puts("\n");
                 return;
             }
-            else if (*type==FDT_NOP) {
+            else if (bswap_32(*type)==FDT_NOP) {
                 buf += 4;
                 continue;
             }
             else {
+                uart_int(*type);
                 uart_puts("Error! at ");
                 uart_hex(buf);
                 buf += 4;
@@ -158,12 +165,39 @@ void dtb_list(void *dtb) {
     }
 }
 
-int find_dtb(void *dtb, const char* name, int name_len, void (*func)(void*, int)){
-    volatile unsigned char *buf = (unsigned char *)dtb;
+int find_dtb(void *dtb, const char* name, int name_len, void (*func)(void*)){
+    char *buf = (char *)dtb;
     fdt_header *header = (fdt_header*)dtb;
-    if (memcmp((char *)(bswap_32(buf)),"d00dfeed",8))
+    uart_puts("\n");
+    uart_puts("Find Service ");
+    uart_puts(name);
+    uart_puts("\n");
+    uart_hex(bswap_32(header->magic));
+
+    if (bswap_32(header->magic)==0xd00dfeed)
     {
+        uart_puts("Magic of dtb: ");
+        uart_hex(bswap_32(header->magic));
+        uart_puts("\nSize of dtb:");
+        uart_hex(bswap_32(header->totalsize));
+        uart_puts("\nOffset of Structure Block:");
+        uart_int(bswap_32(header->off_dt_struct));
+        uart_puts("\nOffset of Strings Block:");
+        uart_int(bswap_32(header->off_dt_strings));
+        uart_puts("\nOffset of Memory Reservation Block:");
+        uart_int(bswap_32(header->off_mem_rsvmap));
+        uart_puts("\nCurrent Version:");
+        uart_int(bswap_32(header->version));
+        uart_puts("\nLast Compatible Version:");
+        uart_int(bswap_32(header->last_comp_version));
+        uart_puts("\nBoot Processor ID:");
+        uart_int(bswap_32(header->boot_cpuid_phys));
+        uart_puts("\nLength in bytes of the strings block:");
+        uart_int(bswap_32(header->size_dt_strings));
+        uart_puts("\nLength in bytes of the structure block:");
+        uart_int(bswap_32(header->size_dt_struct));
         char* str = buf + bswap_32(header->off_dt_strings);
+        uart_puts("\n");
         buf += bswap_32(header->off_dt_struct);
         int pad = 0;
         int debug = 0;
@@ -172,11 +206,14 @@ int find_dtb(void *dtb, const char* name, int name_len, void (*func)(void*, int)
             // debug++;
             // if (debug>100) break;
             type = (uint32_t*) buf;
-		    *type = bswap_32(*type);
-            if (*type==FDT_BEGIN_NODE){
+		    // *type = bswap_32(*type);
+            // uart_puts("\n");
+            
+            // uart_puts("\n");
+            if (bswap_32(*type)==FDT_BEGIN_NODE){
                 pad = 0;
                 buf += 4;
-                if (bswap_32(buf) == 0) {
+                if (bswap_32((uint32_t)buf) == 0) {
                     buf+=4;
                     continue;
                 }
@@ -189,37 +226,59 @@ int find_dtb(void *dtb, const char* name, int name_len, void (*func)(void*, int)
                 buf += (4-(pad%4))%4;
                 continue;
             }
-            else if (*type==FDT_END_NODE){
+            else if (bswap_32(*type)==FDT_END_NODE){
                 buf+=4;
             }
-            else if (*type==FDT_PROP){ //3
+            else if (bswap_32(*type)==FDT_PROP){ //3
                 buf += 4;
                 fdt_prop *prop = (fdt_prop*)buf;
+                uart_puts(" <");
+                // uart_hex(buf);
+                // uart_puts(", ");
+                uart_puts(str + bswap_32(prop->nameoff));
+                uart_puts(", ");
                 buf += sizeof(fdt_prop); //8
-                if(!memcmp(str + bswap_32(prop->nameoff), name, name_len)){
-                    func((void*)buf, bswap_32(prop->len));
-                    return;
-                }
+                // uart_int(bswap_32(prop->len));
+                // uart_puts("Property Value: ");
                 if (bswap_32(prop->len)==0) {
+                    uart_puts("None>");
                     continue;
                 }
+                if (bswap_32(prop->len)==4) {
+                    uart_hex(bswap_32(*buf));
+                    uart_puts(">");
+                    if(memcmp(str + bswap_32(prop->nameoff), name, name_len) == 0){
+                        uart_puts("FIND");
+                        func((void*)buf);
+                    }
+                    buf += bswap_32(prop->len);
+                    continue;
+                }
+                uart_puts_l(buf, bswap_32(prop->len)-1);
+                uart_puts(">");
                 buf += bswap_32(prop->len);
                 buf += (4-(bswap_32(prop->len)%4))%4;
                 continue;
             }
-            else if (*type==FDT_END) {
+            else if (bswap_32(*type)==FDT_END) {
+                uart_puts("\n");
                 return;
             }
-            else if (*type==FDT_NOP) {
+            else if (bswap_32(*type)==FDT_NOP) {
                 buf += 4;
                 continue;
             }
             else {
+                uart_int(*type);
                 uart_puts("Error! at ");
                 uart_hex(buf);
                 buf += 4;
                 continue;
             }
         }
+    }
+    else {
+        uart_puts("Service not Found!\n");
+        return;
     }
 }

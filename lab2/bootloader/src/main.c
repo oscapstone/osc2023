@@ -22,7 +22,12 @@ again:
 	// 	size+=(tp-'0');
     // }
 	for(int i = 0; i < 4; i++){
+		
 		tp = uart_getc();
+		if(tp < '0' || tp > '9'){
+			i--;
+			continue;
+		}
 		uart_send(tp);
 		size*=10;
 		size+=(tp-'0');
@@ -32,7 +37,13 @@ again:
 	uart_puts("\nStart: ");
 	// size = 2606;
 
-	if (size < 64 || size > 1024*1024){
+	void *memory = (void *)0x08200000;
+	for (int i = 0; i < 100; i++) {
+        uart_hexdump((*(char*)(memory+i)));
+		uart_send(' ');
+    }
+
+	if (size < 64 || size > 10000){
 		uart_send('E');
 		uart_send('L');
 		goto again;
@@ -59,9 +70,7 @@ again:
 		uart_send(' ');
 		kernel++;
 	}
-	// for (int i = 0; i < size; i++) {
-    //     *(code + i) = (unsigned char)uart_getc_pure();
-    // }
+
 
 	uart_puts("Finish\n");
 	// char *kernel=(char*)0x80000;
@@ -70,6 +79,10 @@ again:
 	// for(int i = 0; i < 100; i++){
 	// 	uart_hexdump(*kernel_debug+i);
 	// }
+	for (int i = 0; i < 100; i++) {
+        uart_hexdump((*(char*)(memory+i)));
+		uart_send(' ');
+    }
 	
 	asm volatile (
         // we must force an absolute address to branch to

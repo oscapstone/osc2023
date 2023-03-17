@@ -3,7 +3,7 @@
 #include "dtb.h"
 #include <stdint.h>
 
-static void * initramfs = 0x0;
+volatile unsigned char *mem = (unsigned char *)0x0;
 
 typedef struct {
     char	   c_magic[6];
@@ -20,14 +20,14 @@ typedef struct {
     char	   c_rdevminor[8];
     char	   c_namesize[8];
     char	   c_check[8];
-} __attribute__((packed)) cpio_t;
+} cpio_t;
 
 /**
  * List the contents of an archive
  */
 void initrd_list()
 {
-    volatile unsigned char *buf = (unsigned char *)0x8000000;
+    volatile unsigned char *buf = mem;
     uart_puts("Type     Position   Size     NameLen\tFilename\n");
     // uart_puts("Filename\n");
 
@@ -56,7 +56,7 @@ void initrd_list()
 }
 
 void cat_list () {
-    volatile unsigned char *buf = (unsigned char *)0x8000000;
+    volatile unsigned char *buf = mem;
     while(!memcmp(buf,"070701",6) && memcmp(buf+sizeof(cpio_t),"TRAILER!!",9)) {
         uart_puts("\n");
         cpio_t *header = (cpio_t*)buf;
@@ -75,12 +75,16 @@ void cat_list () {
     }
 }
 
-int callback_initramfs(void * addr, int size){
+int callback_initramfs(void * addr){
     uint32_t t = *((uint32_t*)addr);
-    initramfs = (void*)(bswap_32(t));
+    mem = (void*)(bswap_32(t));
     return;
 }
 
 int get_initramfs(){
-    return initramfs;
+    return mem;
+}
+
+void print_initramfs(){
+    uart_hex(mem);
 }

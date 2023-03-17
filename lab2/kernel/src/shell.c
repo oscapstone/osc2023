@@ -1,5 +1,7 @@
 #include "mini_uart.h"
 #include "peripherals/mailbox.h"
+#include "cpio.h"
+#include "dtb.h"
 #define MAX_CMD 64
 
 enum cmd_task {
@@ -40,6 +42,7 @@ unsigned int parse_cmd(char *cmd, void *dtb){
     char *ls = "ls";
     char *cat = "cat";
     char *lshw = "lshw";
+    char *initramfs = "initramfs";
     // DEBUG
     // cmd = "ls";
     if (str_comp(cmd, hello)) {uart_puts("Hello World!\n");}
@@ -66,6 +69,12 @@ unsigned int parse_cmd(char *cmd, void *dtb){
     }
     else if (str_comp(cmd, lshw)){
         dtb_list(dtb);
+        // volatile unsigned char *mem = (unsigned char *)0x0;
+        // callback_initramfs(mem);
+        // find_dtb(dtb, "linux,initrd-end", 18, &callback_initramfs);
+    }
+    else if (str_comp(cmd, initramfs)){
+        print_initramfs();
     }
     else uart_puts("shell: command not found\n");
     buf_clear(cmd);

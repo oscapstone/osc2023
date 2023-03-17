@@ -3,7 +3,8 @@
 
 void initrd_list();
 void cat_list ();
-void callback_initramfs(void * addr, int size);
+void callback_initramfs(void * addr);
 int get_initramfs();
+void print_initramfs();
 
 #endif

@@ -7,7 +7,7 @@ SRC_DIR = src
 CPIO = initramfs.cpio
 DTB = bcm2710-rpi-3-b-plus.dtb
 # This is temporory, CPIO can remove when DTB is done
-ENV_HDR = -initrd initramfs.cpio -dtb bcm2710-rpi-3-b-plus.dtb
+ENV_HDR = -initrd initramfs.cpio -dtb bcm2710-rpi-3-b.dtb
 
 all : kernel8.img
 

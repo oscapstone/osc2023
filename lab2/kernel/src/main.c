@@ -33,20 +33,21 @@ void kernel_main(void *dtb)
 	uart_hex(get_initramfs());
 	uart_puts("\nfind dtb from ");
 	uart_hex(dtb);
-	find_dtb(dtb, "linux,initrd-start", 18, callback_initramfs);
+	find_dtb(dtb, "linux,initrd-start", 18, &callback_initramfs);
 
 	uart_puts("\ninitrd after callback:");
+	// uart_puts("20000000");
 	uart_hex(get_initramfs());
 	uart_puts("\n");
 	Welcome();
 	uart_puts("\n");
-	uart_puts("Parse DTB for resources. Location of 0x");
-	uart_hex(dtb);
-	uart_puts("\n");
 	uart_puts("Please type: \n");
+	// uart_hex(bswap_32(*(uint32_t*)(dtb)));
 
-	
-	
+	// for (int i = 0; i< 100; i++){
+	// 	uart_hex(bswap_32(*(char*)(dtb+i)));
+	// }
+
 	enum stat s = read;
 	char *cmd[MAX_CMD];
 	buf_clear(cmd);
