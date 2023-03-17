@@ -5,7 +5,7 @@
 | -----------| ---- | -------------- | -------------------------- |
 | 311555009  | 呂義信|  Richard-YH    | luyh@cs.nctu.edu.tw        |
 
-## Environment
+## Requirements
 - Operating System : macOS 13.2.1 (22D68)
 - Architecture : Intel x86_64
 - Programming language : C / C++
