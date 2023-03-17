@@ -9,15 +9,14 @@ uint32_t u32_to_little_endian(uint32_t num) {
 
 void fdt_traverse(void (*initramfs_callback)(const char *, const char *, void *)) {
   printf("DTB_ADDR: %#X\n", DTB_ADDR);
-  
-  uint64_t *addr = (uint64_t *)DTB_ADDR;
+
   struct fdt_header *header = (struct fdt_header *)DTB_ADDR;
 
   if (u32_to_little_endian(header->magic) != DTB_MAGIC) {
     printf("The magic number is not equal to %#X\n", DTB_MAGIC);
     return;
   }
-  
+
   uint32_t off_struct = u32_to_little_endian(header->off_dt_struct);
   uint32_t off_string = u32_to_little_endian(header->off_dt_strings);
 
@@ -27,7 +26,7 @@ void fdt_traverse(void (*initramfs_callback)(const char *, const char *, void *)
 
   while (1) {
     uint32_t token = u32_to_little_endian(*((uint32_t *)struct_addr));
-    
+
     if (token == FDT_BEGIN_NODE) {
       struct_addr += sizeof(uint32_t);
       nodename = struct_addr;
@@ -49,9 +48,9 @@ void fdt_traverse(void (*initramfs_callback)(const char *, const char *, void *)
         len_val += 4 - len_val & 3;
 
       void *prop_val = (void *)prop + sizeof(struct fdt_prop);
-      
+
       initramfs_callback(nodename, propname, prop_val);
-      
+
       struct_addr += sizeof(struct fdt_prop) + len_val;
     }
     else if (token == FDT_NOP) {
