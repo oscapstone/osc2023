@@ -2,10 +2,145 @@
 #include "command.h"
 #include "mailbox.h"
 #include "reboot.h"
-#define RECV_LEN 32
+#include "string.h"
+#include "allocate.h"
+#include "fdt.h"
+#define RECV_LEN 100
+char recv_buf[RECV_LEN] = {0};
+
+// total 110 bytes 
+struct cpio_newc_header {
+		   char	   c_magic[6];
+		   char	   c_ino[8];
+		   char	   c_mode[8];
+		   char	   c_uid[8];
+		   char	   c_gid[8];
+		   char	   c_nlink[8];
+		   char	   c_mtime[8];
+		   char	   c_filesize[8];
+		   char	   c_devmajor[8];
+		   char	   c_devminor[8];
+		   char	   c_rdevmajor[8];
+		   char	   c_rdevminor[8];
+		   char	   c_namesize[8];
+		   char	   c_check[8];
+	   };
+
+int _8byte_hexadecimal_to_int(char* msb){
+  int ret = 0;
+  for(int i = 0; i < 8; i++){
+    int temp = *(msb + i);
+    if(temp >= 'a'){
+      temp = temp - 'a' + 10;
+    }
+    else{
+      temp -= '0';
+    }
+    ret *= 16;
+    ret += temp;
+  }
+  return ret;
+}
+
+void ls_cmd(){
+  struct cpio_newc_header *pos = (struct cpio_newc_header*)CPIO_BASE;
+  char *current = (char*) CPIO_BASE;
+  while(1){
+    pos = (struct cpio_newc_header*)current;
+    int namesize = _8byte_hexadecimal_to_int(pos->c_namesize);
+    int filesize = _8byte_hexadecimal_to_int(pos->c_filesize);
+    current += sizeof(struct cpio_newc_header);
+    if(strcmp(current, "TRAILER!!!") == 0) break;
+    uart_puts(current);
+    uart_puts("\r\n");
+    // total size of the fixed header plus pathname is a multiple	of four
+    current += namesize;
+    int total_size = current - (char*) pos;
+    int reminder = total_size % 4;
+    if(reminder != 0){
+      current  += (4 - reminder);
+    }
+    current += filesize;
+    total_size = current - (char*) pos;
+    reminder = total_size % 4;
+    if(reminder != 0){
+      current += (4 - reminder);
+    }
+  }
+}
+
+void cat_cmd(){
+  uart_puts("Filename: ");
+  uart_getline(recv_buf, RECV_LEN);
+  struct cpio_newc_header *pos = (struct cpio_newc_header*)CPIO_BASE;
+  char *current = (char*) CPIO_BASE;
+  while(1){
+    pos = (struct cpio_newc_header*)current;
+    int namesize = _8byte_hexadecimal_to_int(pos->c_namesize);
+    int filesize = _8byte_hexadecimal_to_int(pos->c_filesize);
+    current += sizeof(struct cpio_newc_header);
+    if(strcmp(current, "TRAILER!!!") == 0) {
+      uart_puts("\r");
+      uart_puts("File Not Found\n\r");
+      break;
+    }
+    int output_flag = 0;
+    if(strcmp(current, recv_buf) == 0){
+      output_flag = 1;
+    }
+    current += namesize;
+    int total_size = current - (char*) pos;
+    int reminder = total_size % 4;
+    if(reminder != 0){
+      current  += (4 - reminder);
+    }
+    if(output_flag == 1){
+      uart_puts("\r");
+      uart_puts(current);
+      break;
+    }
+    current += filesize;
+    total_size = current - (char*) pos;
+    reminder = total_size % 4;
+    if(reminder != 0){
+      current += (4 - reminder);
+    }
+  }
+}
+
+void shell(){
+  while(1){
+    uart_getline(recv_buf, RECV_LEN);
+    if(strcmp(recv_buf, "ls") == 0){
+      uart_puts("\r");
+      ls_cmd();
+    }
+    else if(strcmp(recv_buf, "cat") == 0){
+      uart_puts("\r");
+      cat_cmd();
+    }
+    else if(strcmp(recv_buf, "hello") == 0){
+      uart_puts("\rHELLO WORLD\n\r");
+    }
+    else {
+      uart_puts("\rUknown cmd\n\r");
+    }
+  }
+}
+
+
 void main(){
+  unsigned long DTB_BASE;
+  asm volatile("mov %0, x20"
+              :"=r"(DTB_BASE)
+              );
   // set up serial console
     uart_init();
+    
+    fdt_traverse((fdt_header*)DTB_BASE, initramfs_callback);
+    uart_puts("CPIO_BASE: ");
+    uart_hex(CPIO_BASE);
+    uart_puts("\n\r");
     
     // say hello
     uart_puts("\r\n\t\tWelcome NYCU OSC 2023!\r\n");
@@ -20,69 +155,8 @@ void main(){
     uart_puts("\r\n\tARM MEMORY SIZE: ");
     uart_hex(size);
     uart_puts("\r\n");
-    char recv[32];
-    int pos = 0;
-    char recv_char;
+    char* string = simple_malloc(8);
     while(1) {
-        recv_char = uart_getc();
-        uart_send(recv_char);
-        if(recv_char == '\n'){
-          
-
-          int cmd = CMD_HELP;
-          char* str_help = "help";
-          char* str_hello = "hello";
-          char* str_reboot = "reboot";
-
-          // parse the command 
-          for(int i = 0; i <= pos; i++){
-            if(*(recv + i) != *(str_help + i)){
-              cmd = CMD_INVAILD;
-              break;
-            }
-          }
-          if(cmd == CMD_HELP){
-            uart_puts("\r\n>>> help\nhelp   : print this help menu\r\nhello   : print Hellp World!\nreboot    : reboot the device\r\n");
-          }
-          else{
-            cmd = CMD_HELLO;
-            for(int i = 0; i <= pos; i++){
-              if(*(recv + i) != *(str_hello + i)){
-                cmd = CMD_INVAILD;
-                break;
-              }
-            }
-            if(cmd == CMD_HELLO){
-              uart_puts("\r\n>>> HELLO WORLD!\r\n");
-            }
-            else{
-              cmd = CMD_REBOOT;
-              for(int i = 0; i <= pos; i++){
-                if(*(recv + i) != *(str_reboot + i)){
-                  cmd = CMD_INVAILD;
-                  break;
-                }
-              }
-              if(cmd == CMD_REBOOT){
-                reset(10);
-              }
-              else{
-                uart_puts("\r\n>>> INVALID COMMAND\r\n");
-              }
-            }
-          }
-        
-          // reset the position of the revb buffer
-          pos = 0;
-          // clean the contetn in the recv buffer
-          for(int i = 0; i < RECV_LEN; i++){
-            recv[i] = 0;
-          }
-        }
-        else{
-          recv[pos] = recv_char;
-          if(pos == 31) pos = 0;
-          else pos++;
-        }
+      shell();
     }
 }
