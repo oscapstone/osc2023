@@ -18,3 +18,7 @@ void* malloc(unsigned int size) {
     htop_ptr += size;
     return r;
 }
+
+void free(void* ptr) {
+    // TBD
+}

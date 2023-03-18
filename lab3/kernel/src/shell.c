@@ -8,7 +8,8 @@
 #include "dtb.h"
 #include "heap.h"
 
-#define CLI_MAX_CMD 8
+#define CLI_MAX_CMD 9
+#define USTACK_SIZE 0x10000
 
 extern char* dtb_ptr;
 void* CPIO_DEFAULT_PLACE;
@@ -17,6 +18,7 @@ struct CLI_CMDS cmd_list[CLI_MAX_CMD]=
 {
     {.command="cat", .help="concatenate files and print on the standard output"},
     {.command="dtb", .help="show device tree"},
+    {.command="exec", .help="execute a command, replacing current image with a new image"},
     {.command="hello", .help="print Hello World!"},
     {.command="help", .help="print all available commands"},
     {.command="malloc", .help="simple allocator in heap session"},
@@ -78,6 +80,8 @@ void cli_cmd_exec(char* buffer)
         do_cmd_cat(argvs);
     } else if (strcmp(cmd, "dtb") == 0){
         do_cmd_dtb();
+    } else if (strcmp(cmd, "exec") == 0){
+        do_cmd_exec(argvs);
     } else if (strcmp(cmd, "hello") == 0) {
         do_cmd_hello();
     } else if (strcmp(cmd, "help") == 0) {
@@ -143,6 +147,44 @@ void do_cmd_help()
         uart_puts(cmd_list[i].help);
         uart_puts("\r\n");
     }
+}
+
+void do_cmd_exec(char* filepath)
+{
+    char* c_filepath;
+    char* c_filedata;
+    unsigned int c_filesize;
+    struct cpio_newc_header *header_ptr = CPIO_DEFAULT_PLACE;
+
+    while(header_ptr!=0)
+    {
+        int error = cpio_newc_parse_header(header_ptr, &c_filepath, &c_filesize, &c_filedata, &header_ptr);
+        //if parse header error
+        if(error)
+        {
+            uart_puts("cpio parse error");
+            break;
+        }
+
+        if(strcmp(c_filepath, filepath)==0)
+        {
+            //exec c_filedata
+            char* ustack = malloc(USTACK_SIZE);
+            asm("msr elr_el1, %0\n\t"
+                "mov x1, 0x3c0\n\t"
+                "msr spsr_el1, xzr\n\t"
+                "msr sp_el0, %1\n\t"    // enable interrupt in EL0. You can do it by setting spsr_el1 to 0 before returning to EL0.
+                "eret\n\t"
+                :: "r" (c_filedata),
+                   "r" (ustack+USTACK_SIZE));
+            free(ustack);
+            break;
+        }
+
+        //if this is TRAILER!!! (last of file)
+        if(header_ptr==0) uart_puts("cat: %s: No such file or directory\n", filepath);
+    }
+
 }
 
 void do_cmd_hello()

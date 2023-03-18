@@ -18,6 +18,7 @@ void cli_print_banner();
 
 void do_cmd_cat(char*);
 void do_cmd_dtb();
+void do_cmd_exec(char*);
 void do_cmd_help();
 void do_cmd_hello();
 void do_cmd_info();
