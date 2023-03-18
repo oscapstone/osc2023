@@ -4,7 +4,9 @@ SECTIONS
   PROVIDE(_code = .);
   .text.boot : { *(.text.boot) }
   .text : { *(.text) }
-  .=ALIGN(16);
+  .rodata : { *(.rodata .gnu.linkonce.d*) }
+  .data : { *(.data .gnu.linkonce.d*) }
+  . = ALIGN(16);
   __bss_start = .;
   .bss : { *(.bss) }
   __bss_end = .;

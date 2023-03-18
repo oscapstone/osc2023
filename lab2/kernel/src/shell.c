@@ -69,9 +69,6 @@ unsigned int parse_cmd(char *cmd, void *dtb){
     }
     else if (str_comp(cmd, lshw)){
         dtb_list(dtb);
-        // volatile unsigned char *mem = (unsigned char *)0x0;
-        // callback_initramfs(mem);
-        // find_dtb(dtb, "linux,initrd-end", 18, &callback_initramfs);
     }
     else if (str_comp(cmd, initramfs)){
         print_initramfs();

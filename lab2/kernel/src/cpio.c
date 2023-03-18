@@ -3,7 +3,7 @@
 #include "dtb.h"
 #include <stdint.h>
 
-volatile unsigned char *mem = (unsigned char *)0x0;
+static void *mem = 0x0;
 
 typedef struct {
     char	   c_magic[6];
@@ -27,10 +27,12 @@ typedef struct {
  */
 void initrd_list()
 {
-    volatile unsigned char *buf = mem;
+    char *buf = (char *)mem;
     uart_puts("Type     Position   Size     NameLen\tFilename\n");
     // uart_puts("Filename\n");
-
+    uart_puts_l(buf, 6);
+    uart_int(!memcmp(buf,"070701",6));
+    uart_int(memcmp(buf+sizeof(cpio_t),"TRAILER!!",9));
     // if it's a cpio archive. Cpio also has a trailer entry
     while(!memcmp(buf,"070701",6) && memcmp(buf+sizeof(cpio_t),"TRAILER!!",9)) {
         cpio_t *header = (cpio_t*)buf;
@@ -56,7 +58,7 @@ void initrd_list()
 }
 
 void cat_list () {
-    volatile unsigned char *buf = mem;
+    char *buf = (char *)mem;
     while(!memcmp(buf,"070701",6) && memcmp(buf+sizeof(cpio_t),"TRAILER!!",9)) {
         uart_puts("\n");
         cpio_t *header = (cpio_t*)buf;
@@ -77,6 +79,7 @@ void cat_list () {
 
 int callback_initramfs(void * addr){
     uint32_t t = *((uint32_t*)addr);
+    uart_hex(t);
     mem = (void*)(bswap_32(t));
     return;
 }

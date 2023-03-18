@@ -36,6 +36,8 @@ kernel8.img : $(SRC_DIR)/linker.ld  $(OBJ_FILES)
 run: kernel8.img
 	qemu-system-aarch64 -M raspi3b -kernel kernel8.img -display none -serial null -serial stdio
 
+pty: kernel8.img
+	qemu-system-aarch64 -M raspi3b -kernel kernel8.img -display none -serial null -serial pty
 # aarch64-linux-gnu-gcc -c a.S
 # aarch64-linux-gnu-ld -T linker.ld -o kernel8.elf a.o
 # aarch64-linux-gnu-objcopy -O binary kernel8.elf kernel8.img
