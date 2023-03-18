@@ -14,11 +14,19 @@ CPU := cortex-a53
 CFLAGS := --target=$(ARC) -mcpu=$(CPU) -fno-builtin
 CINCLD := -I ./include
 
+BTLDER := bootloader.img
 INITRD := initramfs.cpio
 
-.PHONY: clean run bootloader bootloader-run tools clean-all
+TOOLS := $(patsubst tools/%.c,tool-%,$(wildcard tools/*.c))
+LDER_HELPER := tool-loader
 
-all: clean $(IMG) $(INITRD)
+RUN_ESSENTIAL := $(BTLDER) $(INITRD) $(IMG) $(LDER_HELPER)
+
+.PHONY: kernel run-kernel run clean-kernel clean-tools clean
+
+all: clean $(RUN_ESSENTIAL)
+
+kernel: clean-kernel $(IMG)
 
 $(IMG): $(ELF)
 	llvm-objcopy -I $(ARC) -O binary $< $@
@@ -32,25 +40,27 @@ head.o: head.S
 %.o: %.c
 	clang $(CFLAGS) $(CINCLD) -c $< -o $@
 
-clean:
-	rm -rf $(ELF) $(IMG) $(OBJ)
-
-run:
-	@qemu-system-aarch64 -M raspi3b -kernel $(IMG) -display none -serial null -serial stdio -initrd $(INITRD)
-
-bootloader:
-	$(MAKE) -C bootloader
-
-bootloader-run:
-	$(MAKE) -C bootloader run
+$(BTLDER):
+	@$(MAKE) -C bootloader
 
 $(INITRD):
-	$(MAKE) -C rootfs
+	@$(MAKE) -C rootfs
 
-tools:
-	$(MAKE) -C tools
+$(TOOLS): tool-%: tools/%.c
+	@$(MAKE) -C tools $@
 
-clean-all: clean
-	$(MAKE) -C bootloader clean
-	$(MAKE) -C rootfs clean
-	$(MAKE) -C tools clean
+run-kernel: $(INITRD)
+	@qemu-system-aarch64 -M raspi3b -kernel $(IMG) -display none -serial null -serial stdio -initrd initramfs.cpio
+
+run: $(RUN_ESSENTIAL)
+	@./run.sh $(BTLDER) $(LDER_HELPER) $(INITRD)
+
+clean-kernel:
+	rm -rf $(OBJ) $(ELF) $(IMG)
+
+clean-tools:
+	rm -rf $(TOOLS)
+
+clean: clean-kernel clean-tools
+	@$(MAKE) -C bootloader clean
+	@$(MAKE) -C rootfs clean

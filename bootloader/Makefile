@@ -5,7 +5,7 @@ BCM := ../src/bcm2835
 SRC := $(wildcard *.c) $(BCM)/uart.c
 OBJ := $(SRC:.c=.o) head.o
 
-IMG := bootloader.img
+IMG := ../bootloader.img
 ELF := $(IMG:.img=.elf)
 
 ARC := aarch64-elf
@@ -32,6 +32,3 @@ head.o: head.S
 
 clean:
 	rm -rf $(ELF) $(IMG) $(OBJ)
-
-run:
-	@qemu-system-aarch64 -M raspi3b -kernel $(IMG) -display none -serial null -serial pty -initrd ../initramfs.cpio

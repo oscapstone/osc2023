@@ -11,12 +11,13 @@
     - Clang
     - LLD
     - llvm-objcopy
+- (optional) tmux >= 3.3a
 - (optional) qemu-system-arm
 
 You can get them on macOS with Homebrew:
 
 ```sh
-brew install make llvm qemu
+brew install make llvm tmux qemu
 ```
 
 ## Build 
