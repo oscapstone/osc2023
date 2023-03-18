@@ -8,15 +8,6 @@ void init_note()
     note_head = NULL;
 }
 
-static _list_note(struct note *cur)
-{
-    if (cur == NULL) return;
-    uart_write_string("-------------------------------------\n");
-    uart_write_string(cur->content);
-    uart_write_string("\n");
-    _list_note(cur->next);
-}
-
 static void print_note_node(struct note *node)
 {
     uart_write_string("-------------------------------------\n");
@@ -46,9 +37,9 @@ void make_note()
     }
     struct note *new_note = (struct note *)simple_malloc(sizeof(struct note));
     new_note->content = (char *)simple_malloc((unsigned long long)(note_len+1));
+    new_note->buffer_size = note_len+1;
     uart_write_string("input note content: ");
     uart_read_input(new_note->content, note_len+1);
     new_note->next = note_head;
     note_head = new_note;
 }
-

@@ -6,6 +6,8 @@
 #include "initramfs.h"
 #include "note.h"
 extern char *_dtb_ptr;
+extern char _stext;
+extern char _etext;
 int main(void)
 {
     uart_init();
@@ -29,7 +31,12 @@ int main(void)
     init_initramfs(&_initramfs);
     init_note();
     print_hw_info();
-
+    uart_write_string("text section starts at: ");
+    uart_write_no_hex((unsigned long long)&_stext);
+    uart_write_string("\n");
+    uart_write_string("text section ends at: ");
+    uart_write_no_hex((unsigned long long)&_etext);
+    uart_write_string("\n");
     shell_main();
     return 0;
 }

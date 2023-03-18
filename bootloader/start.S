@@ -17,19 +17,12 @@ moving_relo:
     add x10, x10, #8
     b moving_relo
 end_relo:
-    ldr x20, =_dtb 
-    str x0, [x20]  
     ldr x14, =_bl_entry    //jump to boot part 
     br x14
 
 
 .section ".text.boot"
 .globl _start_bl
-    //A bootloader loads a dtb into memory and passes the loading address specified at register x0 to the kernel. 
-    //loads the address of a variable named _dtb into register x20 
-    //ldr x20, =_dtb 
-    //stores the contents of register x0 into the memory location pointed to by x20
-    //str x0, [x20]  
     mrs    x20, mpidr_el1        
     and    x20, x20,#0xFF // Check processor id
     cbz    x20, master   // Hang for all non-primary CPU
@@ -38,6 +31,8 @@ hang:
     b hang
 
 master:
+    ldr x20, =_dtb 
+    str x0, [x20]
     adr    x0, _sbss
     adr    x1, _ebss
     sub    x1, x1, x0
@@ -50,4 +45,5 @@ master:
     
 .global _dtb
 .section .data
+//The ".dc.a" directive stands for "define constant, absolute address" and is typically used to allocate space for a constant value at a specific memory address.
 _dtb: .dc.a 0x0
