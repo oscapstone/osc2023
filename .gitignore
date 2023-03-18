@@ -12,7 +12,7 @@
 .vscode
 
 # Tools
-load
+tool-*
 
 #initrd
 *.cpio
