@@ -10,6 +10,8 @@ static inline int chr2hex(char c) {
         return c - '0';
     case 'a' ... 'f':
         return c - 'a' + 10;
+    case 'A' ... 'F':
+        return c - 'A' + 10;
     default:
         return CPIO_EHEX;
     }
