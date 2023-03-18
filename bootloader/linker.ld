@@ -2,7 +2,7 @@ __bootloader = 0x60000;
 __kernel = 0x80000;
 SECTIONS
 {
-  . = __bootloader;
+  . = __kernel;
   .text : {
     *(.text.boot)
     *(.text)
@@ -14,4 +14,3 @@ SECTIONS
     __ebss = .;
   }
 }
-__bss_size = (__ebss - __sbss) >> 3;

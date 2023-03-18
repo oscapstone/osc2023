@@ -1,7 +1,7 @@
 export PATH := /usr/local/opt/llvm/bin:$(PATH)
 
 SRC := $(wildcard src/*/*.c) $(wildcard src/*.c)
-OBJ := $(SRC:.c=.o) a.o
+OBJ := $(SRC:.c=.o) head.o
 
 IMG := kernel8.img
 ELF := $(IMG:.img=.elf)
@@ -14,9 +14,11 @@ CPU := cortex-a53
 CFLAGS := --target=$(ARC) -mcpu=$(CPU) -fno-builtin
 CINCLD := -I ./include
 
-.PHONY: clean run bootloader bootloader-run rootfs tools clean-all
+INITRD := initramfs.cpio
 
-all: clean $(IMG)
+.PHONY: clean run bootloader bootloader-run tools clean-all
+
+all: clean $(IMG) $(INITRD)
 
 $(IMG): $(ELF)
 	llvm-objcopy -I $(ARC) -O binary $< $@
@@ -24,8 +26,8 @@ $(IMG): $(ELF)
 $(ELF): $(OBJ)
 	ld.lld $(LDF) -o $@ $^
 
-a.o: a.S
-	clang $(CFLAGS) -c a.S
+head.o: head.S
+	clang $(CFLAGS) -c $<
 
 %.o: %.c
 	clang $(CFLAGS) $(CINCLD) -c $< -o $@
@@ -34,7 +36,7 @@ clean:
 	rm -rf $(ELF) $(IMG) $(OBJ)
 
 run:
-	@qemu-system-aarch64 -M raspi3b -kernel $(IMG) -display none -serial null -serial stdio -initrd initramfs.cpio
+	@qemu-system-aarch64 -M raspi3b -kernel $(IMG) -display none -serial null -serial stdio -initrd $(INITRD)
 
 bootloader:
 	$(MAKE) -C bootloader
@@ -42,7 +44,7 @@ bootloader:
 bootloader-run:
 	$(MAKE) -C bootloader run
 
-rootfs:
+$(INITRD):
 	$(MAKE) -C rootfs
 
 tools:

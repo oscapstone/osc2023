@@ -1,7 +1,5 @@
 #include "bcm2835/uart.h"
 
-extern char __kernel[];
-
 static inline unsigned int read_kernel_size() {
     unsigned int size = 0;
     for (int i = 0; i < 4; ++i) {
@@ -11,7 +9,8 @@ static inline unsigned int read_kernel_size() {
 }
 
 static inline void _load_kernel(unsigned int size) {
-    char * addr = __kernel;
+    // load __kernel as an absolute address
+    char * addr; asm("LDR %0, =__kernel":"=r"(addr));
     while (size--) {
         *(addr++) = uart_recvraw();
     }
@@ -32,6 +31,7 @@ void load_kernel() {
     uart_puts("[*] loading kernel ...\n");
     _load_kernel(size);
     uart_puts("[*] kernel is loaded at ");
-    uart_pu32h((unsigned int)(long long int)(__kernel));
+    char * __kernel; asm("LDR %0, =__kernel":"=r"(__kernel));
+    uart_pu32h((unsigned int)(unsigned long long int)(__kernel));
     uart_send('\n');
 }

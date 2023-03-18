@@ -25,7 +25,7 @@ $(ELF): $(OBJ)
 	ld.lld $(LDF) -o $@ $^
 
 head.o: head.S
-	clang $(CFLAGS) -c head.S
+	clang $(CFLAGS) -c $<
 
 %.o: %.c
 	clang $(CFLAGS) $(CINCLD) -c $< -o $@
@@ -34,4 +34,4 @@ clean:
 	rm -rf $(ELF) $(IMG) $(OBJ)
 
 run:
-	@qemu-system-aarch64 -M raspi3b -kernel $(ELF) -display none -serial null -serial pty
+	@qemu-system-aarch64 -M raspi3b -kernel $(IMG) -display none -serial null -serial pty -initrd ../initramfs.cpio
