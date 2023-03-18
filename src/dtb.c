@@ -35,7 +35,7 @@ void initramfs_fdt_cb(struct fdt *self, dtb_node_t *node, dtb_property_t *prop, 
 {
     if (prop) {
         char *prop_name = (char *)self->strings_start + fdt2hou(&(prop->nameoff));
-        uart_write_string(prop_name);
+        // uart_write_string(prop_name);
         //https://www.kernel.org/doc/Documentation/devicetree/bindings/chosen.txt
         if (strcmp(prop_name, "linux,initrd-start") == 0) {
             uart_write_string(prop_name);

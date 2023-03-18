@@ -70,16 +70,6 @@ unsigned long long uart_read_hex_ull() {
     return res;
 }
 
-unsigned long long str2hex_ull(char *s) {
-    unsigned long long res = 0;
-    //receive 8 byte
-    int idx = 0;
-    for (int i = 60; i >= 0; i -= 4) {
-        res |= ((s[idx++] - '0') << i);
-    }
-    return res;
-}
-
 static void _uart_write(char c)
 {
     while (!(*AUX_MU_LSR & 0x20));
@@ -96,8 +86,6 @@ void uart_write(char c)
     if (c == '\n') _uart_write('\r');
     _uart_write(c);
 }
-
-
 
 void uart_flush() {
     while (*AUX_MU_LSR & 0x01) {
