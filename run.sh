@@ -1,6 +1,6 @@
 #!/bin/bash
 read QEMU_PTY \
-    < <(qemu-system-aarch64 -M raspi3b -kernel $1 -daemonize -display none -serial null -serial pty -initrd $3 \
+    < <(qemu-system-aarch64 -M raspi3b -kernel $1 -daemonize -display none -serial null -serial pty -initrd $3 -dtb $4 \
     | awk '{print $5}')
 echo "QEMU serial port is attached to $QEMU_PTY"
 

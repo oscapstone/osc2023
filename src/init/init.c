@@ -1,5 +1,6 @@
 #include "bcm2835/mailbox.h"
 #include "bcm2835/uart.h"
+#include "init/fdt.h"
 #include "init/shell.h"
 
 static void print_hwinfo() {
@@ -43,12 +44,13 @@ static void print_hwinfo() {
     }
 }
 
-static void kernel_init() {
+static void kernel_init(char * dt) {
     uart_init();
+    fdt_init(dt);
 }
 
-void start_kernel() {
-    kernel_init();
+void start_kernel(char * dt) {
+    kernel_init(dt);
     print_hwinfo();
     shell_start();
 }

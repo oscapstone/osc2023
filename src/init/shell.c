@@ -1,4 +1,5 @@
 #include "bcm2835/uart.h"
+#include "init/fdt.h"
 #include "init/ramfs.h"
 #include "init/shell.h"
 #include "string.h"
@@ -49,11 +50,25 @@ static inline void sbuf_getline(struct sbuf * buf, char * line) {
     line[i] = '\0';
 }
 
+static void print_dt_callback(struct fdt_node * node) {
+    for (unsigned int i = 0; i < node->level; ++i) {
+        uart_puts("  ");
+    }
+    uart_puts("- ");
+    uart_puts(node->name);
+    uart_send('\n');
+}
+
+static unsigned int print_dt_cmp(struct fdt_node * node) {
+    return 1;
+}
+
 static inline unsigned int shell_exec(char * cmd) {
     if (!strcmp(cmd, "")) {
         return SHELL_ST_NORMAL;
     } else if (!strcmp(cmd, "help")) {
         uart_puts("cat:     print a ramdisk file's content\n");
+        uart_puts("dt:      print device tree\n");
         uart_puts("help:    print this help menu\n");
         uart_puts("hello:   print Hello World!\n");
         uart_puts("ls:      list files in the ramdisk\n");
@@ -61,6 +76,8 @@ static inline unsigned int shell_exec(char * cmd) {
     } else if (!strcmp(cmd, "cat")) {
         uart_puts("filename: ");
         return SHELL_ST_CAT;
+    } else if (!strcmp(cmd, "dt")) {
+        fdt_traverse(print_dt_callback, print_dt_cmp);
     } else if (!strcmp(cmd, "hello")) {
         uart_puts("Hello World!\n");
     } else if (!strcmp(cmd, "ls")) {

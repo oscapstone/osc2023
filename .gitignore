@@ -14,5 +14,8 @@
 # Tools
 tool-*
 
-#initrd
+# initrd
 *.cpio
+
+# device tree
+*.dtb

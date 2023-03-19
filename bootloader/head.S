@@ -45,8 +45,12 @@ _after_relocate:
     ADR     x1, _start
     MOV     sp, x1
 
+    // save device tree address
+    STR     x0, [sp]
     // load kernel
     BL      load_kernel
+    // retrieve device tree address
+    LDR     x0, [sp]
     // jump to kernel, this call should not return
     // absolute branch
     LDR     x1, =__kernel

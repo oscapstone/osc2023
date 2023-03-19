@@ -6,6 +6,7 @@ SECTIONS
     *(.text)
   }
   .rodata : { *(.rodata.*) }
+  .data : { *(.data) }
   .bss : {
     __sbss = .;
     *(.bss)

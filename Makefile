@@ -16,6 +16,7 @@ CINCLD := -I ./include
 
 BTLDER := bootloader.img
 INITRD := initramfs.cpio
+DTB := bcm2710-rpi-3-b-plus.dtb
 
 TOOLS := $(patsubst tools/%.c,tool-%,$(wildcard tools/*.c))
 LDER_HELPER := tool-loader
@@ -50,10 +51,10 @@ $(TOOLS): tool-%: tools/%.c
 	@$(MAKE) -C tools $@
 
 run-kernel: $(INITRD)
-	@qemu-system-aarch64 -M raspi3b -kernel $(IMG) -display none -serial null -serial stdio -initrd initramfs.cpio
+	@qemu-system-aarch64 -M raspi3b -kernel $(IMG) -display none -serial null -serial stdio -initrd $(INITRD) -dtb $(DTB)
 
 run: $(RUN_ESSENTIAL)
-	@./run.sh $(BTLDER) $(LDER_HELPER) $(INITRD)
+	@./run.sh $(BTLDER) $(LDER_HELPER) $(INITRD) $(DTB)
 
 clean-kernel:
 	rm -rf $(OBJ) $(ELF) $(IMG)
