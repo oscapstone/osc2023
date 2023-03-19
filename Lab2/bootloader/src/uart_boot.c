@@ -4,7 +4,7 @@ extern char __start[];
 extern char __end[];
 
 
-void loading(){
+void load_img(){
 
 	uart_puts("Copy bootloader to 0x60000\r\n");
     char *current_addr = __start;

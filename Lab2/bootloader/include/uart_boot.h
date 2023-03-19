@@ -5,7 +5,7 @@
 #define KERNEL_ADDR ((char*)0x80000)
 #define TEMP_ADDR ((char*)0x60000)
 
-void loading();
+void load_img();
 void load_new_kernel();
 
 #endif /*_UART_BOOT_H */

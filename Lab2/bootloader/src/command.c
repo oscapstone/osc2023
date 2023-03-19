@@ -22,7 +22,7 @@ void command_help ()
 {
     uart_puts("help\t:  Print this help menu.\n");
     uart_puts("reboot\t:  Reboot the device.\n");
-    uart_puts("loading\t:  Loading the new loader.\n");
+    uart_puts("loadimg\t:  Load the new kernel img.\n");
     uart_puts("clear\t:  Clear screen.\n");
     // uart_puts("timestamp:\tGet current timestamp.\n");
 
@@ -49,6 +49,6 @@ void command_clear (){
 
 
 
-void command_loading (){
-    loading();
+void command_loadimg (){
+    load_img();
 }
