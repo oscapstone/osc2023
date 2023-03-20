@@ -57,6 +57,18 @@ static void print_dt_callback(struct fdt_node * node) {
     uart_puts("- ");
     uart_puts(node->name);
     uart_send('\n');
+    struct fdt_prop * prop = node->prpty;
+    if (prop) {
+        for (unsigned int i = 0; prop && i < node->level + 1; ++i) {
+            uart_puts("  ");
+        }
+        uart_puts(prop->name);
+        for (prop = node->prpty; prop; prop = prop->next) {
+            uart_puts(", ");
+            uart_puts(prop->name);
+        }
+        uart_send('\n');
+    }
 }
 
 static unsigned int print_dt_cmp(struct fdt_node * node) {

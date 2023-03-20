@@ -2,9 +2,10 @@
 #include "init/fdt.h"
 #include "init/salloc.h"
 #include "string.h"
+#include "utils.h"
 
 #define align4(x) (((unsigned int)(x) + 3U) & (~3U))
-#define peek(x)   (get_big32u(x))
+#define peek(x)   (load_big32u(x))
 
 #define FDT_MAGIC       0xd00dfeedU
 
@@ -29,25 +30,6 @@ struct _fdt_header {
     char size_dt_struct[4];
 } __attribute__((packed));
 
-static inline void exchg_char(char * c, char * d) {
-    *c ^= *d;
-    *d ^= *c;
-    *c ^= *d;
-}
-
-static inline unsigned int big2little32u(unsigned int n) {
-    char * c = (char *)&n;
-    exchg_char(c + 0, c + 3);
-    exchg_char(c + 1, c + 2);
-    return n;
-}
-
-static inline unsigned int get_big32u(char * addr) {
-    unsigned int big = *(unsigned int *)addr;
-    unsigned int little = big2little32u(big);
-    return little;
-}
-
 static inline struct fdt_node * new_node() {
     struct fdt_node * node = (struct fdt_node *)simple_malloc(sizeof(struct fdt_node));
     node->name = "";
@@ -59,7 +41,7 @@ static inline struct fdt_node * new_node() {
 }
 
 static inline char * skip_nop(char * addr) {
-    while (get_big32u(addr) == FDT_NOP) {
+    while (load_big32u(addr) == FDT_NOP) {
         addr += 4;
     }
     return addr;
@@ -71,7 +53,7 @@ static inline char * skip_str(char * addr) {
 }
 
 static inline char * consume(char * addr, unsigned int token) {
-    while (get_big32u(addr) != token) {
+    while (load_big32u(addr) != token) {
         addr += 4;
         uart_puts("[*] FDT PARSING ERROR: ARRD = ");
         uart_pu32h((unsigned int)(unsigned long long int)addr);
@@ -86,8 +68,8 @@ static char * fdt_append_prop(struct fdt_node * node, char * addr) {
     struct fdt_prop * prop = (struct fdt_prop *)simple_malloc(sizeof(struct fdt_prop));
     prop->next = node->prpty;
     node->prpty = prop;
-    prop->name = fdt->addr + get_big32u(addr + 4);
-    prop->len = get_big32u(addr);
+    prop->name = fdt->dt_string + load_big32u(addr + 4);
+    prop->len = load_big32u(addr);
     prop->val = addr + 8;
     return addr + 8 + align4(prop->len);
 }
@@ -122,14 +104,14 @@ static char * _fdt_init(struct fdt_node * node, char * addr) {
 
 void fdt_init(char * addr) {
     struct _fdt_header * header = (struct _fdt_header *)addr;
-    if (fdt || get_big32u(header->magic) != FDT_MAGIC) {
+    if (fdt || load_big32u(header->magic) != FDT_MAGIC) {
         uart_puts("[*] BAD FDT ADDRESS !!!");
         return;
     }
     fdt = (struct fdt *)simple_malloc(sizeof(struct fdt));
     fdt->addr = addr;
-    fdt->dt_struct = addr + get_big32u(header->off_dt_struct);
-    fdt->dt_string = addr + get_big32u(header->off_dt_strings);
+    fdt->dt_struct = addr + load_big32u(header->off_dt_struct);
+    fdt->dt_string = addr + load_big32u(header->off_dt_strings);
 
     addr = skip_nop(fdt->dt_struct);
     addr = consume(addr, FDT_BEGIN_NODE);
