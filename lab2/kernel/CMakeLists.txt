@@ -7,9 +7,9 @@ set(CMAKE_SHARED_LINKER_FLAGS "-nostdlib")
 
 file(GLOB KERNEL_SOURCES "*.c" "*.S")
 
-add_executable(kernel ${KERNEL_SOURCES})
+add_executable(kernel.elf ${KERNEL_SOURCES})
 
-target_link_libraries(kernel mylib)
-target_include_directories(kernel PRIVATE ./)
+target_link_libraries(kernel.elf mylib)
+target_include_directories(kernel.elf PRIVATE ./)
 
-set_target_properties(kernel PROPERTIES LINK_FLAGS "-T ${CMAKE_CURRENT_SOURCE_DIR}/${LINKER_SCRIPT}")
+set_target_properties(kernel.elf PROPERTIES LINK_FLAGS "-T ${CMAKE_CURRENT_SOURCE_DIR}/${LINKER_SCRIPT}")

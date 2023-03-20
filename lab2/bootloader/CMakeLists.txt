@@ -8,10 +8,9 @@ set(CMAKE_SHARED_LINKER_FLAGS "-nostdlib")
 
 file(GLOB BOOTLOADER_SOURCES "*.c" "*.S")
 
-add_executable(bootloader ${BOOTLOADER_SOURCES})
+add_executable(bootloader.elf ${BOOTLOADER_SOURCES})
 
-target_link_libraries(bootloader mylib)
-target_include_directories(bootloader PRIVATE ./)
+target_link_libraries(bootloader.elf mylib)
+target_include_directories(bootloader.elf PRIVATE ./)
 
-# set_target_properties(bootloader PROPERTIES LINK_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${LINKER_SCRIPT})
-set_target_properties(bootloader PROPERTIES LINK_FLAGS "-T ${CMAKE_CURRENT_SOURCE_DIR}/${LINKER_SCRIPT}")
+set_target_properties(bootloader.elf PROPERTIES LINK_FLAGS "-T ${CMAKE_CURRENT_SOURCE_DIR}/${LINKER_SCRIPT}")

@@ -4,17 +4,17 @@ CFLAGS+=-Wall -O2 -ffreestanding -nostdinc -nostdlib -I../include
 ASMFLAGS=-I../include -I.
 
 LIB_DIR=../lib
-BUILD_DIR=../build2
+BUILD_DIR=../build
 
 .PHONY: all clean run run-dbg dump-asm
 
 all: kernel8.img
 
-$(BUILD_DIR)/%.o: %.c
+$(BUILD_DIR)/%_kernel.o: %.c
 	mkdir -p $(@D)
 	$(CC) $(CFLAGS) -MMD -c $< -o $@
 
-$(BUILD_DIR)/%.o: %.S
+$(BUILD_DIR)/%_kernel.o: %.S
 	$(CC) $(CFLAGS) -MMD -c $< -o $@
 
 $(BUILD_DIR)/%.o: $(LIB_DIR)/%.c
@@ -24,8 +24,8 @@ SRC=$(wildcard *.c)
 ASM=$(wildcard *.S)
 LIB:=$(wildcard $(LIB_DIR)/*.c)
 LIB:=$(LIB:$(LIB_DIR)/%.c=$(BUILD_DIR)/%.o)
-OBJS=$(SRC:%.c=$(BUILD_DIR)/%.o)
-OBJS+=$(ASM:%.S=$(BUILD_DIR)/%.o)
+OBJS=$(SRC:%.c=$(BUILD_DIR)/%_kernel.o)
+OBJS+=$(ASM:%.S=$(BUILD_DIR)/%_kernel.o)
 
 DEPS=$(OBJS:%.o=%.d)
 -include $(DEPS)

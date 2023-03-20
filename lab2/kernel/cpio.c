@@ -6,6 +6,8 @@
 
 #define CPIO_HEADER_MAGIC "070701"
 
+static void *INITRD_ADDR = 0;
+
 void initramfs_callback(const char *nodename, const char *propname, void *prop_val) {
   if (streq(nodename, "chosen") == 0 &&
       streq(propname, "linux,initrd-start") == 0) {

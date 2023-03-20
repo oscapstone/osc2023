@@ -22,8 +22,6 @@ struct cpio_newc_header {
 
 typedef struct cpio_newc_header cpio_newc_header_t;
 
-static void *INITRD_ADDR = 0;
-
 void initramfs_callback(const char *, const char *, void *);
 
 void cpio_ls();

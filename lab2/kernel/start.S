@@ -29,9 +29,9 @@ _one:
 
     adr     x0, __bss_begin
     adr     x1, __bss_end
-    sub    x1, x1, x0
+    sub     x1, x1, x0
 _clean_bss:
-    cbz    x1, _kernel
+    cbz     x1, _kernel
     str     xzr, [x0], #8
     subs    x1, x1, #8
     cbnz    x1, _clean_bss
