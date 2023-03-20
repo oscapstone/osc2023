@@ -3,7 +3,6 @@
 .global _start
 
 _start:
-	mov 	x27, x0			// DTB base
         
         ldr     x1, =__bss_start	// clear bss
         ldr     w2, =__bss_size
