@@ -63,6 +63,7 @@ struct fdt_property{
 #define fdtp_len(fdtp)           (fdtp_get_header(fdtp, len))
 #define fdtp_nameoff(fdtp)       (fdtp_get_header(fdtp, nameoff))
 
+// little endian to big endian
 static inline fdt32_t fdt32_ld(const fdt32_t *p)
 {
 	const uint8_t *bp = (const uint8_t *)p;

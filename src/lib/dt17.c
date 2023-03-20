@@ -110,7 +110,7 @@ static int dtb_traverse_parser(int level, char* cur, char* dt_strings){
         case FDT_BEGIN_NODE:
             print_tab(level);
             cur += sizeof(fdt32_t);
-            uart_printf("[*] Node: %s\n", cur);
+            uart_printf("[*] Node: %s\r\n", cur);
             break;
         case FDT_END_NODE:
             print_tab(level);
