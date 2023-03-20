@@ -163,6 +163,7 @@ void shell_process_cmd(char *input_buffer, unsigned int input_size)
 int run_if_builtin(char *first_arg, char *other_args)
 {
     char input_buffer[MAX_SHELL_INPUT];
+    char *argv[MAX_ARGS+1];
     if (strcmp(first_arg, "help") == 0)
     {
         uart_write_string("ls        : list files in initramfs\n");
@@ -221,7 +222,26 @@ int run_if_builtin(char *first_arg, char *other_args)
         _fdt.fdt_print(&_fdt);
         return 1;
     }
+    else if (strcmp(first_arg, "ldprog") == 0)
+    {
+        uart_write_string("args: ");
+        uart_read_input(input_buffer, MAX_SHELL_INPUT);
+        shell_parse_argv(input_buffer, argv, MAX_ARGS);
+        _initramfs.exec(&_initramfs, argv);
+    }
     return 0;
+}
+
+int shell_parse_argv(char *s, char *argv[], unsigned max_args)
+{
+    char *token = strtok(s, " \n");
+    int argc = 0;
+    while (token != NULL && argc < max_args) {
+        argv[argc++] = token;
+        token = strtok(NULL, " \n");
+    }
+    argv[argc] = NULL;
+    return argc;
 }
 
 void shell_main(void)

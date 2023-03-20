@@ -3,11 +3,15 @@
 #include "utils.h"
 char *cpio_addr;
 struct initramfs _initramfs;
+#define STACK_ADDR 0x200000
+#define STACK_SIZE 0x2000
+extern void run_user_program(void *prog_addr, void *stack_addr);
 void init_initramfs(struct initramfs *fs) 
 {
     fs->addr = cpio_addr;
     fs->ls = _cpio_ls;
     fs->cat = _cpio_cat;
+    fs->exec = _cpio_exec;
 }
 
 void _cpio_ls(struct initramfs *self, char *path) 
@@ -111,4 +115,34 @@ void _cpio_cat(struct initramfs *self, char *path)
         uart_write(*content_ptr);
     }
     // uart_write_string("\n");
+}
+
+int _cpio_exec(struct initramfs *self, char *argv[])
+{
+    char *ptr = self->addr;
+
+    if (strncmp(ptr, "070701", 6) != 0) {
+        uart_write_string("Not a valid New ASCII Format Cpio archive file\n");
+        return;
+    }
+
+    char *path = argv[0];
+    struct cpio_newc_header *header = _cpio_find_file(self, path);
+    if (header == NULL) {
+        uart_write_string("File Not Found!\n");
+        return;
+    }
+
+    unsigned file_size, path_size, header_path_size;
+    file_size = hex2unsigned(&(header->c_filesize));
+    path_size = hex2unsigned(&(header->c_namesize));
+    header_path_size = sizeof(struct cpio_newc_header) + path_size;
+    header_path_size = ALIGN(header_path_size, 4);
+    char *content_ptr = (char *)header + header_path_size;
+
+    int argc;
+    for (argc = 0; argv[argc]; argc++);
+    // return ((int (*)(int argc, char *argv[]))content_ptr)(argc, argv);
+    //should run in el0
+    run_user_program((void *)content_ptr, (void *)(STACK_ADDR + STACK_SIZE));
 }
