@@ -21,7 +21,7 @@ DTB := bcm2710-rpi-3-b-plus.dtb
 TOOLS := $(patsubst tools/%.c,tool-%,$(wildcard tools/*.c))
 LDER_HELPER := tool-loader
 
-RUN_ESSENTIAL := $(BTLDER) $(INITRD) $(IMG) $(LDER_HELPER)
+RUN_ESSENTIAL := $(BTLDER) $(INITRD) $(DTB) $(IMG) $(LDER_HELPER)
 
 .PHONY: kernel run-kernel run clean-kernel clean-tools clean
 
@@ -47,10 +47,13 @@ $(BTLDER):
 $(INITRD):
 	@$(MAKE) -C rootfs
 
+$(DTB):
+	wget https://github.com/raspberrypi/firmware/raw/master/boot/bcm2710-rpi-3-b-plus.dtb
+
 $(TOOLS): tool-%: tools/%.c
 	@$(MAKE) -C tools $@
 
-run-kernel: $(INITRD)
+run-kernel: $(IMG) $(INITRD) $(DTB)
 	@qemu-system-aarch64 -M raspi3b -kernel $(IMG) -display none -serial null -serial stdio -initrd $(INITRD) -dtb $(DTB)
 
 run: $(RUN_ESSENTIAL)
