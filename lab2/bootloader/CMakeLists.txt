@@ -14,3 +14,10 @@ target_link_libraries(bootloader.elf mylib)
 target_include_directories(bootloader.elf PRIVATE ./)
 
 set_target_properties(bootloader.elf PROPERTIES LINK_FLAGS "-T ${CMAKE_CURRENT_SOURCE_DIR}/${LINKER_SCRIPT}")
+
+add_custom_target(bootloader.img ALL
+    COMMAND llvm-objcopy --output-target=aarch64-rpi3-elf
+    		${CMAKE_BINARY_DIR}/bootloader.elf -O binary ${CMAKE_BINARY_DIR}/bootloader.img
+    DEPENDS bootloader.elf
+    COMMENT "Generating bootloader.img"
+)
