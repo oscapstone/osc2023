@@ -40,6 +40,12 @@ void shell_interact(void){
     }
     else if (!strcmp("parsedtb",shell_buf))
         _parsedtb(fdt_base);
+    else if (!strncmp("exec",shell_buf,4)){
+        if(cnt >= 6 && shell_buf[4]==' ')
+            _exec(_initramfs_addr,&shell_buf[5]);
+        else
+            uart_printf("usage: exec <filename>\r\n");
+    }
     else {
         _echo(shell_buf);
         if(cnt)

@@ -20,5 +20,6 @@ struct cpio_newc_header {
 
 void cpio_ls(char* cpio);
 void cpio_cat(char* cpio, char* filename);
+char* cpio_load_prog(char* cpio, char* filename);
 
 #endif

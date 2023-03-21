@@ -73,7 +73,7 @@ static void uart_send_num(int32 num, int base, int type)
     char tmp[66];
     int i;
 
-    if (type | 1) {
+    if (type & 1) {
         if (num < 0) {
             uart_send('-');
         }
@@ -100,7 +100,8 @@ void uart_printf(char *fmt, ...){
 
     const char *s;
     char c;
-    uint32 num;   
+    uint32 num;
+    char width;   
 
     va_list args;
     va_start(args, fmt);
@@ -112,13 +113,23 @@ void uart_printf(char *fmt, ...){
         }
 
         ++fmt;
+
+        width = 0;
+        if (fmt[0] == 'l' && fmt[1] == 'l') {
+            width = 1;
+            fmt += 2;
+        }
+
         switch (*fmt) {
         case 'c':
             c = va_arg(args, uint32) & 0xff;
             uart_send(c);
             continue;
         case 'd':
-            num = va_arg(args, int32);
+            if(width)
+                num = va_arg(args, int64);
+            else
+                num = va_arg(args, int32);
             uart_send_num(num, 10, 1);
             continue;
         case 's':
@@ -126,7 +137,10 @@ void uart_printf(char *fmt, ...){
             uart_send_string((char*)s);
             continue;
         case 'x':
-            num = va_arg(args, uint32);
+            if (width) 
+                num = va_arg(args, uint64);
+            else
+                num = va_arg(args, uint32);
             uart_send_num(num, 16, 0);
             continue;
         }

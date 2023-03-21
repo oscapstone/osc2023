@@ -8,6 +8,7 @@
 #include <dt17.h>
 #include <string.h>
 #include <mem.h>
+#include <exec.h>
 
 void _help(int mode){
     uart_printf(
@@ -24,6 +25,7 @@ void _help(int mode){
             "cat <filename>\t: " "get file content"  "\r\n"
             "parsedtb\t: " "parse device tree" "\r\n"
             "malloc <size>\t: " "allocate a block of memory with size" "\r\n"
+            "exec <filename>\t: " "execute user program" "\r\n"
         );
     }
 }
@@ -75,4 +77,16 @@ void* _malloc(char* size){
     }
     uart_printf("Ready to allocate %d size of memory!\r\n",int_size);
     return simple_malloc(int_size);
+}
+
+void _exec(uint64 _initramfs_addr,char* filename){
+    char* mem;
+    char* user_sp;
+
+    mem = cpio_load_prog((char*)_initramfs_addr, filename);
+    if(mem == NULL)
+        return;
+    
+    user_sp = (char *)0x10000000;
+    exec_user_proc(user_sp, mem);
 }
