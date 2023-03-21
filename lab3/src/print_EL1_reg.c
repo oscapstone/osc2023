@@ -20,6 +20,5 @@ int exception_entry()
 	uart_send_string("ESR_EL1 : ");
 	uart_hex(esr_el1);
 	uart_send_string("\r\n");
-	asm volatile("ret");
 	return 0;
 }
