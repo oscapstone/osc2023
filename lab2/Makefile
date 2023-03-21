@@ -1,6 +1,6 @@
 CC=clang
 CFLAGS=-mcpu=cortex-a53+nosimd --target=aarch64-rpi3-elf
-CFLAGS+=-Wall -O2 -ffreestanding -nostdinc -nostdlib -Iinclude -Ibootloader
+CFLAGS+=-Wall -ffreestanding -nostdinc -nostdlib -Iinclude -Ibootloader
 ASMFLAGS=-Iinclude
 
 SRC_DIR=bootloader
@@ -11,11 +11,11 @@ BUILD_DIR=build
 
 all: bootloader.img
 
-$(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
+$(BUILD_DIR)/%_bootloader.o: $(SRC_DIR)/%.c
 	mkdir -p $(@D)
 	$(CC) $(CFLAGS) -MMD -c $< -o $@
 
-$(BUILD_DIR)/%.o: $(SRC_DIR)/%.S
+$(BUILD_DIR)/%_bootloader.o: $(SRC_DIR)/%.S
 	$(CC) $(CFLAGS) -MMD -c $< -o $@
 
 $(BUILD_DIR)/%.o: $(LIB_DIR)/%.c
@@ -25,8 +25,8 @@ SRC=$(wildcard $(SRC_DIR)/*.c)
 ASM=$(wildcard $(SRC_DIR)/*.S)
 LIB:=$(wildcard $(LIB_DIR)/*.c)
 LIB:=$(LIB:$(LIB_DIR)/%.c=$(BUILD_DIR)/%.o)
-OBJS=$(SRC:$(SRC_DIR)/%.c=$(BUILD_DIR)/%.o)
-OBJS+=$(ASM:$(SRC_DIR)/%.S=$(BUILD_DIR)/%.o)
+OBJS=$(SRC:$(SRC_DIR)/%.c=$(BUILD_DIR)/%_bootloader.o)
+OBJS+=$(ASM:$(SRC_DIR)/%.S=$(BUILD_DIR)/%_bootloader.o)
 
 DEPS=$(OBJS:%.o=%.d)
 -include $(DEPS)

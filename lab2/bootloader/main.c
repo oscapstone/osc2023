@@ -7,33 +7,45 @@
 #define BUF_SIZE 64
 #define KERNEL_ADDRESS 0x80000
 
-extern void store_kernel_image(char, unsigned long);
-extern void jump_to(unsigned long);
-
-
 void bootloader_main() {
   uart_init();
   print("Welcome to Bootloader!!\n");
   print("Please send kernel image from UART...\n");
-  
+
   char buf[BUF_SIZE];
-  if (readline(buf, BUF_SIZE, false) <= 0 || streq(buf, "kernel_image") != 0) {
-    return;
+
+  while (1) {
+    if (readline(buf, BUF_SIZE, false) >= 0 || streq(buf, "kernel_image") == 0) {
+      break;
+    }
   }
-  printf("kernel image's identifier: %s\n", buf);
-  
+
+  printf("Bootloader recieves the identifier: %s\n", buf);
+
   readline(buf, BUF_SIZE, false);
   int kernel_size = strtoi(buf, 10);
-  printf("kernel image's size: %d\n", kernel_size);
+  printf("Bootloader recieves the kernel image's size: %d\n", kernel_size);
 
   char ch;
-  unsigned long addr = KERNEL_ADDRESS;
+  char *kernel_addr = (char *) KERNEL_ADDRESS;
   for (int i = 0; i < kernel_size; i++) {
     ch = uart_recv();
-    store_kernel_image(ch, addr);
-    addr += 1;
+    uart_send_int(ch);
+    *(kernel_addr + i) = ch;
   }
   print("received the kernel image and ready to branch\n");
-  jump_to(KERNEL_ADDRESS);
+
+  while (1) {
+    asm volatile("nop");
+    ch = uart_recv();
+    if (ch == 'j') {
+      printf("%c", ch);
+      break;
+    }
+  }
+
+  void (*jump_to_kernel)() = (void *)KERNEL_ADDRESS;
+  jump_to_kernel();
+
   print("should not print this message\n");
 }

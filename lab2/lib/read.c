@@ -6,16 +6,20 @@
 int readline(char *buf, int len, bool interact) {
   char ch;
   int i = 0;
-  for (i = 0; i < len; i++) {
+  char *ptr = buf;
+
+  for (i = 0; i < len - 1; i++) {
     ch = uart_recv();
     if (interact == true)
       putc(ch);
     if (ch == '\n' || ch == '\r') {
-      *buf++ = '\0';
-      return i;
+      break;
+    } else if (ch < 31 || ch > 128) {
+      --i;
+      continue;
     }
-    *buf++ = ch;
+    *ptr++ = ch;
   }
-  *(--buf) = '\0';
+  *ptr = '\0';
   return i;
 }

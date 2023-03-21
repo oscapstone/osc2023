@@ -16,6 +16,13 @@ int puti(int i) {
   return 0;
 }
 
+void uart_send_int(int number) {
+  uart_send((char) ((number >> 24) & 0xFF));
+  uart_send((char) ((number >> 16) & 0xFF));
+  uart_send((char) ((number >> 8) & 0xFF));
+  uart_send((char) (number & 0xFF));
+}
+
 void printi(unsigned long num) {
   if (num == 0)
     puti(0);
