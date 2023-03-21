@@ -2,6 +2,7 @@
 #include "dtb.h"
 #include "str.h"
 #include "uart.h"
+#include <stddef.h>
 
 static void *lo_ramfs = 0x0;
 
@@ -112,10 +113,7 @@ void initrd_cat(const char *name) {
 }
 
 /*********************************************************
- * This is callback function for getting the start
- * address of the initrd. Please use this function 
- * with `fdt_find_do()`.
- *******************************************************/
+ * This is callback function for getting the start * address of the initrd. Please use this function * with `fdt_find_do()`.  *******************************************************/
 int initrd_fdt_callback(void *start, int size) {
   if (size != 4) {
     uart_puti(size);
@@ -131,3 +129,34 @@ int initrd_fdt_callback(void *start, int size) {
  * Function return the location (address) of the initrd.
  *******************************************************/
 int initrd_getLo() { return lo_ramfs; }
+
+/********************************************************
+ * Return the start address of the content.
+ * Called by lodaer to run the program.
+ * *****************************************************/
+void* initrd_content_getLo(const char* name) {
+  char *buf = (char *)lo_ramfs;
+  int ns = 0;
+  int fs = 0;
+  int pad_n = 0;
+  int pad_f = 0;
+  //uart_puts(name);
+  while (!(memcmp(buf, "070701", 6)) &&
+         memcmp(buf + sizeof(cpio_t), "TRAILER!!",
+                9)) { // test magic number of new ascii
+    cpio_t *header = (cpio_t *)buf;
+    ns = hex2bin(header->namesize, 8); // Get the size of name
+    fs = hex2bin(header->filesize, 8); // Get teh size of file content
+    pad_n = (4 - ((sizeof(cpio_t) + ns) % 4)) % 4; // Padding size
+    pad_f = (4 - (fs % 4)) % 4;
+    // Find the target file
+    if (!(strncmp(buf + sizeof(cpio_t), name, ns - 1)))
+      break;
+    buf += (sizeof(cpio_t) + ns + fs + pad_n + pad_f); // Jump to next record
+  }
+  if (fs > 0) {
+	  return (void*) (buf + sizeof(cpio_t) + ns + pad_n);
+  }
+  return NULL;
+}
+

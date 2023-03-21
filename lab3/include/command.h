@@ -13,6 +13,7 @@ int invalid_command(const char *);
 int lshw(void);
 int ls(void);
 int cat(void);
+int run_loader(void);
 
 struct command {
   const char *name;

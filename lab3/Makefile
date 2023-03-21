@@ -2,7 +2,9 @@ SRC_DIR :=	src
 OBJ_DIR :=	obj
 
 SRCS = 		$(wildcard $(SRC_DIR)/*.c)
+SRCSS = 	$(wildcard $(SRC_DIR)/*.S)
 OBJS = 		$(SRCS:$(SRC_DIR)/%.c=$(OBJ_DIR)/%.o)
+OBJSS =		$(SRCSS:$(SRC_DIR)/%.S=$(OBJ_DIR)/%.o)
 CPPFLAGS := 	-Iinclude -MMD -MP -static 
 CFLAGS = 	-Wall -O3 -mgeneral-regs-only -fno-lto -fno-builtin
 LDFLAGS = 	-nostdlib 
@@ -15,13 +17,16 @@ QEMU = qemu-system-aarch64
 
 all: clean kernel.img kernel8.img initramfs.cpio
 
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.S
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c -o $@ $<
+
 start.o: start.S 
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 boot.o: boot.S | $(OBJ_DIR)
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-user.o: user.c
+user.o: user.S
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c -o $@ $<
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c | $(OBJ_DIR)
@@ -30,11 +35,11 @@ $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c | $(OBJ_DIR)
 kernel8.elf: boot.o $(OBJ_DIR)/uart.o
 	$(LD) $(LDFLAGS) $^ -T linker.ld -o $@
 
-kernel.elf:  start.o $(OBJS)
+kernel.elf:  start.o $(OBJS) $(OBJSS)
 	$(LD) $(LDFLAGS) $^ -T linker.ld -o $@
 
-user.elf: $(OBJ_DIR)/uart.o user.o
-	$(LD) $(LDFLAGS) $^ -T user_program.ld -o $@
+user.elf: user.o
+	$(LD) $(LDFLAGS) $< -T user_program.ld -o $@
 
 %.img: %.elf
 	$(OBJCOPY) -O binary $< $@ 
@@ -61,7 +66,7 @@ $(OBJ_DIR):
 	mkdir -p $@
 
 clean:
-	@rm *.img *.o *.elf *.cpio>/dev/null 2>/dev/null || true
+	@rm *.img *.o *.d *.elf *.cpio>/dev/null 2>/dev/null || true
 	@rm -r $(OBJ_DIR) >/dev/null 2>/dev/null || true
 
 -include $(OBJS:.o=.d)	

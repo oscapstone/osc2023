@@ -2,6 +2,7 @@
 #include "initrd.h"
 #include "mailbox.h"
 #include "terminal.h"
+#include "loader.h"
 #include "uart.h"
 #include "str.h"
 //static char buf[256];
@@ -36,12 +37,52 @@ struct command commands[] = {{
                                  .help = "Show the content of target file.\n",
                                  .func = cat,
                              },
+                             {
+                                 .name = "run",
+                                 .help = "Run the specific user program",
+                                 .func = run_loader,
+                             },
 
                              // ALWAYS The last item of the array!!!
                              {
                                  .name = "NULL", // The end of the array
                              }};
 
+int run_loader() {
+  char buf[256];
+  memset(buf, 0, 256);
+  char *tmp = buf;
+  void *start = 0;
+  uart_puts("Name:\n");
+  for (int i = 0; i < 255; i++) {
+    *tmp = uart_getc();
+    uart_putc(*tmp);
+    if (*tmp == 127) {
+      *tmp = 0;
+      tmp--;
+      *tmp = 0;
+      tmp--;
+      uart_send('\b');
+      uart_send(' ');
+      uart_send('\b');
+    }
+    if (*tmp == '\n') {
+      *(tmp) = '\0';
+      break;
+    }
+    tmp++;
+  }
+  start = initrd_content_getLo(buf);
+  if(start != 0){
+	  //uart_puth(start);
+	  //uart_puth(*(int*)start);
+	  run_program(start);
+	  return 0;
+  }
+  return 1;
+}
+
+	
 int help() {
   int i = 0;
   while (1) {
