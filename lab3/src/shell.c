@@ -3,6 +3,7 @@
 #include "mbox.h"
 #include "reboot.h"
 #include "ramdisk.h"
+#include "to_EL0.h"
 
 void shell_input(char* command)
 {
@@ -19,7 +20,7 @@ void shell_input(char* command)
 	uart_send_string("\r\n");
 }
 
-void shell_option(char* command)
+void shell_option(char* command,char* ramdisk)
 {
 	if(!strcmp(command,""))
 	{
@@ -33,6 +34,8 @@ void shell_option(char* command)
 		uart_send_string("board\t\t: show board revision\r\n");
 		uart_send_string("ls\t\t: show file name\r\n");
 		uart_send_string("cat\t\t: show file content\r\n");
+		uart_send_string("alloc\t\t: show allocate example\r\n");
+		uart_send_string("run\t\t: run an function in EL0\r\n");
 	}
 	else if(!strcmp(command,"hello"))
 	{
@@ -65,6 +68,11 @@ void shell_option(char* command)
 		char* string2 = memalloc(5);
 		uart_hex(string2);
 		uart_send_string("\r\n");
+	}
+	else if(!strcmp(command,"run"))
+	{
+		char* prog_start = find_prog(ramdisk,"program.img");
+		exec_in_EL0(prog_start);
 	}
 	else
 	{

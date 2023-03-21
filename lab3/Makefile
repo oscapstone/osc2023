@@ -7,19 +7,20 @@ LD = $(ARMGNU)ld
 OBJCPY = $(ARMGNU)objcopy
 
 LINKER = $(SRC_DIR)/linker.ld
-START = $(SRC_DIR)/boot.s
-START_OBJ = $(OBJ_DIR)/boot.o
 SRC = $(wildcard $(SRC_DIR)/*.c)
+ASM = $(wildcard $(SRC_DIR)/*.s)
 OBJ = $(patsubst %.c, $(OBJ_DIR)/%.o, $(notdir $(SRC)))
+OBJ += $(patsubst %.s, $(OBJ_DIR)/%.o, $(notdir $(ASM)))
+
 
 FLAG = -Wall -nostdlib -I include -c
 
 .PHONY: all
 
-$(START_OBJ): $(START)
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
 	$(CC) $(FLAG) $< -o $@
 
-$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.s
 	$(CC) $(FLAG) $< -o $@
 
 all: dir kernel8.img
@@ -28,10 +29,10 @@ dir:
 	mkdir -p $(OBJ_DIR)
 
 cpio:
-	ls *.txt | cpio -H newc -o > initramfs.cpio
+	ls program.img | cpio -H newc -o > initramfs.cpio
 
-kernel8.img: $(OBJ) $(START_OBJ)
-	$(LD) $(START_OBJ) $(OBJ) -T $(LINKER) -o kernel8.elf
+kernel8.img: $(OBJ)
+	$(LD) $(OBJ) -T $(LINKER) -o kernel8.elf
 	$(OBJCPY) -O binary kernel8.elf kernel8.img
 
 run: all

@@ -2,6 +2,7 @@
 
 .global _start
 _start:
+		mov 	x27,x0;
 		mrs		x0,mpidr_el1	//mrs: move processorID to ARM register from mpidr_el1 register
 		and		x0,x0,#0x3		//check processor ID
 		cbz		x0,cleanbss		//if processor ID = 0(we want only one core) , branch to cleanbss

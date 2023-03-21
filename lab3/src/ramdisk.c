@@ -113,3 +113,29 @@ void cat()
 	}
 	return;
 }
+
+char* find_prog(char* buffer,char* target)
+{
+	while(!bufcmp(buffer,"070701",6) && bufcmp(buffer+sizeof(cpio),"TRAILER!!!",10))		//start by "070701" , and not yet end by "TRAILER!!!"
+	{
+		cpio *header = (cpio*)buffer;
+		int ns = hex_to_int(header->namesize,8);
+		int ns_offset = (4-((ns+sizeof(cpio))%4)+4)%4;
+		int fs = hex_to_int(header->filesize,8);
+		int fs_offset = (4-(fs%4)+4)%4;
+		char prog_name[100];
+		int i;
+		for(i=0;i<ns;i++)
+		{
+			prog_name[i] = *(buffer+sizeof(cpio)+i);		//store program name
+		}
+		prog_name[i] = '\0';
+		if(!bufcmp(&prog_name,target,ns))					//compare target program name
+		{
+			uart_send_string("find program !!!\r\n");
+			return buffer+sizeof(cpio)+ns+ns_offset;			//return file's content
+		}
+		buffer += (sizeof(cpio)+ns+ns_offset+fs+fs_offset);		//jump to next file
+	}
+	return 0;
+}
