@@ -16,14 +16,7 @@ start.o: start.S
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c | $(OBJ_DIR)
 	$(AARCH)-gcc $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
-cpio:
-	ls *.md *.c *.h | cpio -H hpodc -o  >ramdisk
-
-rd.o: ramdisk
-	$(AARCH)-ld -r -b binary -o $@ $<
-
-
-kernel.elf: start.o rd.o $(OBJS)
+kernel.elf: start.o $(OBJS)
 	$(AARCH)-ld $^ -T link.ld -o $@
 
 
@@ -34,5 +27,5 @@ clean:
 	rm kernel.elf kernel.img *.o $(OBJ_DIR)/* >/dev/null 2>/dev/null || true
 
 run:
-	qemu-system-aarch64 -M raspi3b -kernel kernel.img -serial null -serial stdio -display none -initrd initramfs.cpio -dtb bcm2710-rpi-3-b-plus.dtb
+	qemu-system-aarch64 -M raspi3b -kernel kernel.img -serial null -serial stdio -display none -initrd initramfs.cpio
 
