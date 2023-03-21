@@ -28,7 +28,7 @@ exception_vector_table:
 	
 	b	exception_handler
 	.align 7
-	b	exception_handler
+	b	core_timer_handler
 	.align 7
 	b	exception_handler
 	.align 7

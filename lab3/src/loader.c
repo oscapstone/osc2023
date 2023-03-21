@@ -9,7 +9,7 @@
  * ***********************************************************************/
 int run_program(void* loc){
 	asm volatile(
-		"mov x1,	0x3c0;\r\n"
+		"mov x1,	0x0;\r\n"	// Enable CPU interrupt
 		"msr spsr_el1, 	x1;\r\n"
 		"mov x1,	0x40000;\r\n"	// Set user stack to 0x60000
 		"msr sp_el0,	x1;\r\n"

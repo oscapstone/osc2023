@@ -1,7 +1,8 @@
 #include "dtb.h"
 #include "exception.h"
-#include "heap.h"
 #include "initrd.h"
+#include "interrupt.h"
+#include "heap.h"
 #include "terminal.h"
 #include "uart.h"
 #include <stdint.h>
@@ -12,6 +13,7 @@ int main(void *dtb_location) {
   uart_setup();
   heap_init();
   set_exception_vector_table();
+  core_timer_enable();
   fdt_find_do(dtb_location, "linux,initrd-start", initrd_fdt_callback);
   terminal_run();
 
