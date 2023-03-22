@@ -186,3 +186,9 @@ char* memcpy(void *dest, const void *src, unsigned long long len)
         *d++ = *s++;
     return dest;
 }
+
+void msleep(unsigned int t)
+{
+    register unsigned int r;
+    r=t; while(r--) { asm volatile("nop"); }
+}
