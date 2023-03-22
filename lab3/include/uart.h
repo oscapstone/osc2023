@@ -57,5 +57,10 @@ void uart_puthl(uint64_t); // For 64-bit hex
 void uart_gets(char *s);
 void uart_putsn(char *s, int n); // only print n chars ignore '\0'
 void read_kernel();
+int uart_transmit_handler();
+int uart_receive_handler();
+int uart_a_puts(const char*, int);
+int uart_a_gets(char*, int);
+
 
 #endif // UART_H

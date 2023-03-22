@@ -14,6 +14,7 @@ int main(void *dtb_location) {
   heap_init();
   set_exception_vector_table();
   core_timer_enable();
+  mini_uart_interrupt_enable();
   fdt_find_do(dtb_location, "linux,initrd-start", initrd_fdt_callback);
   terminal_run();
 

@@ -52,12 +52,12 @@ int print_spsr_el1(void){
 
 
 int exception_entry(){
+
+	uart_puts("Other exceptions\n");
 	print_spsr_el1();
 	print_elr_el1();
 	print_esr_el1();
 
-
-	// TODO: Should return to the user program.
 	return 0;
 }
 
