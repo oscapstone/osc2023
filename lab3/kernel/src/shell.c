@@ -7,6 +7,7 @@
 #include "utils.h"
 #include "dtb.h"
 #include "heap.h"
+#include "timer.h"
 
 #define CLI_MAX_CMD 9
 #define USTACK_SIZE 0x10000
@@ -101,7 +102,7 @@ void cli_print_banner()
 {
     uart_puts("\r\n");
     uart_puts("=======================================\r\n");
-    uart_puts("  Welcome to NYCU-OSC 2023 Lab2 Shell  \r\n");
+    uart_puts("  Welcome to NYCU-OSC 2023 Lab3 Shell  \r\n");
     uart_puts("=======================================\r\n");
 }
 
@@ -170,6 +171,7 @@ void do_cmd_exec(char* filepath)
         {
             //exec c_filedata
             char* ustack = malloc(USTACK_SIZE);
+            core_timer_enable(2);
             asm("msr elr_el1, %0\n\t"
                 "mov x1, 0x3c0\n\t"
                 "msr spsr_el1, xzr\n\t"
