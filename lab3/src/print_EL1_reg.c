@@ -1,6 +1,6 @@
 #include "mini_uart.h"
 
-int exception_entry()
+void exception_entry()
 {
 	char* spsr_el1;
 	char* elr_el1;
@@ -20,5 +20,5 @@ int exception_entry()
 	uart_send_string("ESR_EL1 : ");
 	uart_hex(esr_el1);
 	uart_send_string("\r\n");
-	return 0;
+	return;
 }

@@ -111,6 +111,27 @@ void uart_int(unsigned int d)
 	}
 }
 
+int hex_to_int(char *str,int n) //n : number of digits
+{
+    int sum = 0;
+    while(n > 0)
+    {
+        n--;
+        sum <<= 4;
+        if(*str>='A' && *str<='F')
+        {
+            sum += (10 + *str - 'A');
+        }
+        else
+        {
+            sum += (*str - '0');
+        }
+        str++;
+    }
+    return sum;
+}
+
+
 void uart_init()
 {
 	*AUX_ENABLES |= 1;			//enable mini uart , can access to its registers

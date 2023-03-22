@@ -18,26 +18,6 @@ typedef struct
 	char check[8];		//always set to zero by writer and ignored by reader
 }cpio;					//hardlinked files are handled by setting the file size to zero for each entry except for first one
 
-int hex_to_int(char *str,int n)	//n : number of digits
-{
-	int sum = 0;
-	while(n > 0)
-	{
-		n--;
-		sum <<= 4;
-		if(*str>='A' && *str<='F')
-		{
-			sum += (10 + *str - 'A');
-		}
-		else
-		{
-			sum += (*str - '0');
-		}
-		str++;
-	}
-	return sum;
-}
-
 int bufcmp(void *str1,void *str2,int n)
 {
 	unsigned char *a = str1;

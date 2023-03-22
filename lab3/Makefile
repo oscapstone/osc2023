@@ -8,9 +8,9 @@ OBJCPY = $(ARMGNU)objcopy
 
 LINKER = $(SRC_DIR)/linker.ld
 SRC = $(wildcard $(SRC_DIR)/*.c)
-ASM = $(wildcard $(SRC_DIR)/*.s)
+ASM = $(wildcard $(SRC_DIR)/*.S)
 OBJ = $(patsubst %.c, $(OBJ_DIR)/%.o, $(notdir $(SRC)))
-OBJ += $(patsubst %.s, $(OBJ_DIR)/%.o, $(notdir $(ASM)))
+OBJ += $(patsubst %.S, $(OBJ_DIR)/%.o, $(notdir $(ASM)))
 
 
 FLAG = -Wall -nostdlib -I include -c
@@ -20,7 +20,7 @@ FLAG = -Wall -nostdlib -I include -c
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
 	$(CC) $(FLAG) $< -o $@
 
-$(OBJ_DIR)/%.o: $(SRC_DIR)/%.s
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.S
 	$(CC) $(FLAG) $< -o $@
 
 all: dir kernel8.img

@@ -1,4 +1,3 @@
-#include "to_EL0.h"
 
 void exec_in_EL0(char* program_start)
 {
