@@ -27,15 +27,37 @@ int core_timer_enable(void){
  *************************************************************************/
 int mini_uart_interrupt_enable(void){
 	*IRQS1 |= (1<<29);	// Encble aux int
-	*AUX_MU_IER = 0x1;	// Enable aux rx interrupt
+	//*AUX_MU_IER = 0x1;	// Enable aux rx interrupt
 	//*GPU_INT_ROUT = 0;	// GPU FIQ&IRQ -> CORE0 FIQ&IRQ
 	return 0;
 }
 
 /**************************************************************************
- * Timer handler
+ * Timer handler which handle the timer interrupt from current EL.
  *************************************************************************/
 int core_timer_handler(void){
+	//uart_puts(" Timer handler!\n");
+	//uint64_t time, freq;
+	//asm volatile(
+	//	"mrs	%[time], cntpct_el0;"
+	//	"mrs	%[freq], cntfrq_el0;"
+	//	: [time] "=r" (time), [freq] "=r" (freq)
+	//);
+	//uart_puts("Current second: ");
+	//uart_puthl(time / freq);
+	//uart_puts("\n");
+	timer_walk(1);
+	asm volatile(
+		"mrs	x0,	cntfrq_el0;" // Get the clock frequency
+		"msr	cntp_tval_el0,	x0;"	// set tval = cval + x0
+	);
+	return 0;
+}
+
+/**************************************************************************
+ * Timer handler which handle the timer interrupt from lower EL
+ *************************************************************************/
+int low_core_timer_handler(void){
 	uart_puts(" Timer handler!\n");
 	uint64_t time, freq;
 	asm volatile(
@@ -43,10 +65,10 @@ int core_timer_handler(void){
 		"mrs	%[freq], cntfrq_el0;"
 		: [time] "=r" (time), [freq] "=r" (freq)
 	);
-	//uart_puts("Current second: ");
-	//uart_puthl(time / freq);
-	//uart_puts("\n");
-	timer_walk(2);
+	uart_puts("Current second: ");
+	uart_puthl(time / freq);
+	uart_puts("\n");
+	//timer_walk(2);
 	asm volatile(
 		"mrs	x0,	cntfrq_el0;" // Get the clock frequency
 		"mov	x1,	2;"
@@ -95,6 +117,9 @@ static int uart_handler(void){
 	return 0;
 }
 
+/**************************************************************************
+ * Disable interrupt in current EL
+ *************************************************************************/
 int disable_int(void) {
 	asm volatile(
 		"msr	DAIFSet, 0xF;"
@@ -102,14 +127,20 @@ int disable_int(void) {
 	return 0;
 }
 
+/**************************************************************************
+ * Enable interrupt in current EL
+ *************************************************************************/
 int enable_int(void) {
 	asm volatile(
 		"msr	DAIFClr, 0xf;"
 	);
+	mini_uart_interrupt_enable();
 	return 0;
 }
 
-
+/**************************************************************************
+ * IRQ handler which from current EL
+ *************************************************************************/
 int irq_handler(void){
 	disable_int();
 	//uint32_t source = get_core0_irq_source();
@@ -129,8 +160,34 @@ int irq_handler(void){
 	else
 		exception_entry();
 
-	uart_puts("IRQ_HANDLER END\n");
+	//uart_puts("IRQ_HANDLER END\n");
 	enable_int();
 	return 0;
 }
 
+/**************************************************************************
+ * IRQ handler which handles the interrupts from lower EL
+ *************************************************************************/
+int low_irq_handler(void){
+	disable_int();
+	//uint32_t source = get_core0_irq_source();
+	//uart_puts("IRQ_HANDLER\n");
+	//uart_puts("IRQ source: ");
+	//uart_puth(get_core0_irq_source());
+	//uart_puts("\n");
+	//print_spsr_el1();
+	//print_elr_el1();
+	//print_esr_el1();
+
+	//if(*IRQ_PEND_1 & (1<<29) && *AUX_MU_IIR & 0x1)
+	if(*IRQ_PEND_1 & (1 << 29))
+		uart_handler();
+	else if(*CORE0_IRQ_SOURCE & 0x2)
+		low_core_timer_handler();
+	else
+		exception_entry();
+
+	//uart_puts("IRQ_HANDLER END\n");
+	enable_int();
+	return 0;
+}

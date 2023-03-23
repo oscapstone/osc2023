@@ -21,11 +21,26 @@ int add_timer(int (*fn)(void*), int second, void* arg){
 
 static int warp_uart_puts(void* s){
 	uart_puts((char*) s);
+	uart_puts("\n");
+	return 0;
+}
+
+static int warp_uart_a_gets(void* s) {
+	char tmp[100] = {0};
+	uart_a_gets(tmp, 100);
+	uart_puts("Async get: ");
+	uart_puts(tmp);
+	uart_puts("\n");
 	return 0;
 }
 
 int set_timeout(char* message, int second){
 	add_timer(warp_uart_puts, second, (void*)message);
+	return 0;
+}
+
+int set_timer_read(char* message){
+	add_timer(warp_uart_a_gets, 8, 0);
 	return 0;
 }
 

@@ -28,7 +28,7 @@ exception_vector_table:
 	
 	b	exception_handler
 	.align 7
-	b	__irq_handler
+	b	__low_irq_handler
 	.align 7
 	b	exception_handler
 	.align 7
@@ -37,7 +37,7 @@ exception_vector_table:
 
 	b	exception_handler
 	.align 7
-	b	__irq_handler
+	b	__low_irq_handler
 	.align 7
 	b	exception_handler
 	.align 7
@@ -107,3 +107,8 @@ __irq_handler:
 	load_all
 	eret
 
+__low_irq_handler:
+	save_all
+	bl	low_irq_handler
+	load_all
+	eret

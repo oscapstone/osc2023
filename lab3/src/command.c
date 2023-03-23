@@ -49,12 +49,23 @@ struct command commands[] = {{
                                  .help = "set a timer and show the message.\n",
                                  .func = time_out,
                              },
+                             {
+                                 .name = "async_read",
+                                 .help = "Read by interrupt handler.\n",
+                                 .func = async_read,
+                             },
 
                              // ALWAYS The last item of the array!!!
                              {
                                  .name = "NULL", // The end of the array
                              }};
+int async_read(){
 
+	uart_puts("Async Read start...\n");
+	enable_uart_receive_int();
+	set_timer_read();
+	return 0;
+}
 int time_out(){
 	char* buf = (char*)malloc(sizeof(char) * 256);
   char integer[10];

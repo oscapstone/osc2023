@@ -10,12 +10,21 @@ static int rx_point = 0;
 static int tx_point = 0;
 
 /**************************************************************************
+ * Enable Recieve interrupt
+ *************************************************************************/
+int enable_uart_receive_int(void){
+	rx_point = 0;		// Initialize the pivot
+	*AUX_MU_IER |= 0x01;    // Enable Rx interrupt
+	return 0;
+}
+
+/**************************************************************************
  * The interrupt handler of mini Uart Receive.
  *
  * Read all input into the rx_buf.
  *************************************************************************/
 int uart_receive_handler(){
-	uart_puts("receive\n");
+	//uart_puts("receive\n");
 	if(rx_point >= uart_buf_len - 1)
 		rx_point %= uart_buf_len;
   	rx_buf[rx_point++] = (char)(*AUX_MU_IO);
@@ -28,9 +37,9 @@ int uart_receive_handler(){
  * Put all contents into uart and disable the TX interupt.
  *************************************************************************/
 int uart_transmit_handler(){
-	uart_puts("transmit\n");
-	if(tx_point >= 0)
-		*AUX_MU_IO = tx_buf[tx_point --];                  // Write to buffer
+	//uart_puts("transmit\n");
+	if(tx_point < uart_buf_len && tx_buf[tx_point] != 0)
+		*AUX_MU_IO = tx_buf[tx_point ++];                  // Write to buffer
 	else
   		*AUX_MU_IER &= 0x01;    // Transmition done disable interrupt.
 	return 0;
@@ -40,20 +49,24 @@ int uart_transmit_handler(){
  * Interrupt version of sending string through UART
  *************************************************************************/
 int uart_a_puts(const char* str, int len){
+	uart_puts("async\n");
 	if(len <= 0)
 		return 1;
-	tx_point = len;
+	tx_point = 0;
 	for(int i = 0; i < len; i ++){
 		tx_buf[i] = str[i];
 	}
-	*AUX_MU_IER |= 0x03;		// Enable Tx interrupt.
+	tx_buf[len] = 0;
+	*AUX_MU_IER |= 0x02;		// Enable Tx interrupt.
 	return 0;
 }
 
 /**************************************************************************
  * Interrupt version of geting string
+ * Should close the Rx interrupt after this function called.
  *************************************************************************/
 int uart_a_gets(char* str, int len) {
+	*AUX_MU_IER &= 0x02;		// Disable Rx interrupt.
 	if(len <= 0)
 		return 1;
 	for(int i = 0; i < rx_point && i < len; i ++){
@@ -116,6 +129,9 @@ void uart_setup() {
   return;
 }
 
+/**************************************************************************
+ * Send char to uart. RAW version.
+ *************************************************************************/
 void uart_send(unsigned int c) {
   do {
     asm volatile("nop");

@@ -20,5 +20,6 @@ int set_timeout(char* message, int second);
 int timer_walk(int sec);
 
 int init_timer_Q(void);
+int set_timer_read();
 
 #endif // TIMER_H

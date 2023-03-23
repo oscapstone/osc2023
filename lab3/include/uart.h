@@ -61,6 +61,14 @@ int uart_transmit_handler();
 int uart_receive_handler();
 int uart_a_puts(const char*, int);
 int uart_a_gets(char*, int);
+// Enable uart recieve handler
+int enable_uart_receive_int(void);
+
+/// For async read
+typedef struct{
+	char* str;
+	int len;
+}a_string;
 
 
 #endif // UART_H

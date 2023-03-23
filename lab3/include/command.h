@@ -15,6 +15,7 @@ int ls(void);
 int cat(void);
 int run_loader(void);
 int time_out(void);
+int async_read(void);
 
 struct command {
   const char *name;
