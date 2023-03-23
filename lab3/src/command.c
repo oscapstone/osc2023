@@ -1,10 +1,12 @@
 #include "command.h"
 #include "initrd.h"
 #include "mailbox.h"
+#include "timer.h"
 #include "terminal.h"
 #include "loader.h"
 #include "uart.h"
 #include "str.h"
+#include "heap.h"
 //static char buf[256];
 
 struct command commands[] = {{
@@ -39,14 +41,80 @@ struct command commands[] = {{
                              },
                              {
                                  .name = "run",
-                                 .help = "Run the specific user program",
+                                 .help = "Run the specific user program.\n",
                                  .func = run_loader,
+                             },
+                             {
+                                 .name = "set timer",
+                                 .help = "set a timer and show the message.\n",
+                                 .func = time_out,
                              },
 
                              // ALWAYS The last item of the array!!!
                              {
                                  .name = "NULL", // The end of the array
                              }};
+
+int time_out(){
+	char* buf = (char*)malloc(sizeof(char) * 256);
+  char integer[10];
+  int second = 0;
+  memset(buf, 0, 256);
+  memset(integer, 0, 10);
+  char *tmp = buf;
+  void *start = 0;
+  uart_puts("Message:\n");
+  for (int i = 0; i < 255; i++) {
+    *tmp = uart_getc();
+    uart_putc(*tmp);
+    if (*tmp == 127) {
+      *tmp = 0;
+      tmp--;
+      *tmp = 0;
+      tmp--;
+      uart_send('\b');
+      uart_send(' ');
+      uart_send('\b');
+    }
+    if (*tmp == '\n') {
+      *(tmp) = '\0';
+      break;
+    }
+    tmp++;
+  }
+  uart_puts("Seconds:\n");
+  tmp = integer;
+  for (int i = 0; i < 10; i++) {
+    *tmp = uart_getc();
+    uart_putc(*tmp);
+    if (*tmp == 127) {
+      *tmp = 0;
+      tmp--;
+      *tmp = 0;
+      tmp--;
+      uart_send('\b');
+      uart_send(' ');
+      uart_send('\b');
+    }
+    if (*tmp == '\n') {
+      *(tmp) = '\0';
+      break;
+    }
+    tmp++;
+  }
+  for(int i = 0; i < 10; i ++){
+	  if(integer[i] >= '0' && integer[i] <= '9'){
+		  second += integer[i] - '0';
+		  second *= 10;
+	  }
+  }
+  second /= 10;
+  set_timeout(buf, second);
+  uart_puts("done\n");
+
+
+  return 1;
+}
 
 int run_loader() {
   char buf[256];

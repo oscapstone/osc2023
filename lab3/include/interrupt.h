@@ -13,4 +13,8 @@
 int core_timer_enable(void);
 int core_timer_handler(void);
 int mini_uart_interrupt_enable(void);
+
+/// Interrupt enable/disable functions.
+int enable_int(void);
+int disable_int(void);
 #endif	// INTERRUPT_H

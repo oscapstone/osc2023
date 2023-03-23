@@ -1,4 +1,6 @@
-#include <loader.h>
+#include "loader.h"
+#include "interrupt.h"
+
 
 /**************************************************************************
  * This function will run the program at the specific location.
@@ -8,6 +10,8 @@
  * 3. Start user program.
  * ***********************************************************************/
 int run_program(void* loc){
+	core_timer_enable();
+	mini_uart_interrupt_enable();
 	asm volatile(
 		"mov x1,	0x0;\r\n"	// Enable CPU interrupt
 		"msr spsr_el1, 	x1;\r\n"

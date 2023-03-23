@@ -35,8 +35,10 @@ _start:
 
 el2_to_el1:
 	mov 	x4, (1 << 31)	// EL1 uses aarch64, Not using x0-3
+	//mov	x4, 0x80000200	// Enable UMA bit for msr in el0
 	msr 	hcr_el2, x4
 	mov	x4, 0x3c5	// EL1h with interrupt disable.
+	//mov 	x4, 0x305
 	msr	spsr_el2, x4
 	msr	elr_el2, lr
 	eret

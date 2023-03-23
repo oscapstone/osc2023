@@ -10,7 +10,7 @@
 exception_vector_table:
 	b	exception_handler
 	.align 7
-	b	exception_handler
+	b	__irq_handler
 	.align 7
 	b	exception_handler
 	.align 7
@@ -19,7 +19,7 @@ exception_vector_table:
 
 	b	exception_handler
 	.align 7
-	b	exception_handler
+	b	__irq_handler
 	.align 7
 	b	exception_handler
 	.align 7
@@ -37,7 +37,7 @@ exception_vector_table:
 
 	b	exception_handler
 	.align 7
-	b	exception_handler
+	b	__irq_handler
 	.align 7
 	b	exception_handler
 	.align 7

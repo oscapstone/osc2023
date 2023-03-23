@@ -1,8 +1,10 @@
 #include "interrupt.h"
 #include "exception.h"
 #include "uart.h"
+#include "timer.h"
 
 int core_timer_enable(void){
+	init_timer_Q();
 	asm volatile(
 		"mov	x0, 	1;"
 		"msr	cntp_ctl_el0, x0;"	// Enable timer
@@ -25,6 +27,7 @@ int core_timer_enable(void){
  *************************************************************************/
 int mini_uart_interrupt_enable(void){
 	*IRQS1 |= (1<<29);	// Encble aux int
+	*AUX_MU_IER = 0x1;	// Enable aux rx interrupt
 	//*GPU_INT_ROUT = 0;	// GPU FIQ&IRQ -> CORE0 FIQ&IRQ
 	return 0;
 }
@@ -40,9 +43,10 @@ int core_timer_handler(void){
 		"mrs	%[freq], cntfrq_el0;"
 		: [time] "=r" (time), [freq] "=r" (freq)
 	);
-	uart_puts("Current second: ");
-	uart_puthl(time / freq);
-	uart_puts("\n");
+	//uart_puts("Current second: ");
+	//uart_puthl(time / freq);
+	//uart_puts("\n");
+	timer_walk(2);
 	asm volatile(
 		"mrs	x0,	cntfrq_el0;" // Get the clock frequency
 		"mov	x1,	2;"
@@ -91,23 +95,23 @@ static int uart_handler(void){
 	return 0;
 }
 
- int disable_int(void) {
+int disable_int(void) {
 	asm volatile(
-		"msr	DAIFClr, 0xF;"
+		"msr	DAIFSet, 0xF;"
 	);
 	return 0;
 }
 
- int enable_int(void) {
+int enable_int(void) {
 	asm volatile(
-		"msr	DAIFSet, 0xf;"
+		"msr	DAIFClr, 0xf;"
 	);
 	return 0;
 }
 
 
 int irq_handler(void){
-	//disable_int();
+	disable_int();
 	//uint32_t source = get_core0_irq_source();
 	//uart_puts("IRQ_HANDLER\n");
 	//uart_puts("IRQ source: ");
@@ -120,11 +124,13 @@ int irq_handler(void){
 	//if(*IRQ_PEND_1 & (1<<29) && *AUX_MU_IIR & 0x1)
 	if(*IRQ_PEND_1 & (1 << 29))
 		uart_handler();
-	else 
+	else if(*CORE0_IRQ_SOURCE & 0x2)
 		core_timer_handler();
+	else
+		exception_entry();
 
 	uart_puts("IRQ_HANDLER END\n");
-	//enable_int();
+	enable_int();
 	return 0;
 }
 

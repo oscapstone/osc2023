@@ -108,7 +108,7 @@ void uart_setup() {
   *AUX_MU_CNTL = 0;   // Disable Tx/Rx
   *AUX_MU_LCR = 3;    // Set data to 8-bit mode
   *AUX_MU_MCR = 0;    // Ignore
-  *AUX_MU_IER = 0x3;    // Enable both T/R interrupts(bit1/0).
+  *AUX_MU_IER = 0x0;    // Enable both T/R interrupts(bit1/0).
   *AUX_MU_IIR = 0xc6; // No timeout + clear FIFO
   *AUX_MU_BAUD = 270; // 115200
 

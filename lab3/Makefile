@@ -48,10 +48,13 @@ initramfs.cpio: write.sh boot.S start.S user.img
 	ls $^ | cpio -H newc -o > $@
 
 run_asm: kernel8.img
-	$(QEMU) -M raspi3 -display none -serial none -serial stdio -d in_asm -dtb bcm2710-rpi-3-b-plus.dtb -kernel $<
+	$(QEMU) -M raspi3 -display none -serial null -serial stdio -d in_asm -initrd initramfs.cpio -dtb bcm2710-rpi-3-b-plus.dtb -kernel $<
+
+run_int: kernel8.img
+	$(QEMU) -M raspi3 -display none -serial null -serial stdio -d int -initrd initramfs.cpio -dtb bcm2710-rpi-3-b-plus.dtb -kernel $<
 
 run_dbg: kernel8.img
-	$(QEMU) -M raspi3 -display none -serial none -serial stdio -S -s -initrd initramfs.cpio -dtb bcm2710-rpi-3-b-plus.dtb -kernel $<
+	$(QEMU) -M raspi3 -display none -serial null -serial stdio -S -s -initrd initramfs.cpio -dtb bcm2710-rpi-3-b-plus.dtb -kernel $<
 
 run: kernel8.img
 	$(QEMU) -M raspi3 -display none -serial null -serial stdio -initrd initramfs.cpio -dtb bcm2710-rpi-3-b-plus.dtb -kernel $<
