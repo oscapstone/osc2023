@@ -46,21 +46,21 @@ void timer_event_callback(timer_event_t * timer_event){
     }
     else
     {
-        set_core_timer_interrupt(1<<29);  // disable timer interrupt (set a very big value)
+        set_core_timer_interrupt(10000);  // disable timer interrupt (set a very big value)
     }
 }
 
 void two_second_alert(char* str)
 {
-    unsigned int cntpct_el0;
+    unsigned long long cntpct_el0;
     __asm__ __volatile__("mrs %0, cntpct_el0\n\t": "=r"(cntpct_el0)); //tick now
 
-    unsigned int cntfrq_el0;
+    unsigned long long cntfrq_el0;
     __asm__ __volatile__("mrs %0, cntfrq_el0\n\t": "=r"(cntfrq_el0)); //tick frequency
 
     uart_puts("\n## Interrupt - el1_irq ## [%s] %d seconds after booting\n", str, cntpct_el0/cntfrq_el0);
 
-    add_timer(two_second_alert,2,"two_second_alert");
+    add_timer(two_second_alert,2,"time_2s_irq");
 }
 
 
@@ -108,7 +108,7 @@ unsigned long long get_tick_plus_s(unsigned long long second){
 }
 
 // set timer interrupt time to [expired_time] seconds after now (relatively)
-void set_core_timer_interrupt(unsigned int expired_time){
+void set_core_timer_interrupt(unsigned long long expired_time){
     __asm__ __volatile__(
         "mrs x1, cntfrq_el0\n\t"   //cntfrq_el0 -> relative time
         "mul x1, x1, %0\n\t"

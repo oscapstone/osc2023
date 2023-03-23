@@ -9,7 +9,7 @@
 #include "heap.h"
 #include "timer.h"
 
-#define CLI_MAX_CMD 10
+#define CLI_MAX_CMD 11
 #define USTACK_SIZE 0x10000
 
 extern char* dtb_ptr;
@@ -26,6 +26,7 @@ struct CLI_CMDS cmd_list[CLI_MAX_CMD]=
     {.command="info", .help="get device information via mailbox"},
     {.command="ls", .help="list directory contents"},
     {.command="setTimeout", .help="setTimeout [MESSAGE] [SECONDS]"},
+    {.command="time_2s_irq", .help="set core timer interrupt every 2 second"},
     {.command="reboot", .help="reboot the device"}
 };
 
@@ -73,9 +74,11 @@ void cli_cmd_exec(char* buffer)
         do_cmd_kmalloc();
     } else if (strcmp(cmd, "ls") == 0) {
         do_cmd_ls(argvs);
-    } else if (strcmp(cmd, "setTimeout") ==0) {
+    } else if (strcmp(cmd, "setTimeout") == 0) {
         char* sec = str_SepbySpace(argvs);
         do_cmd_setTimeout(argvs, sec);
+    } else if (strcmp(cmd, "time_2s_irq") == 0) {
+        do_cmd_time_2s_irq();
     } else if (strcmp(cmd, "reboot") == 0) {
         do_cmd_reboot();
     }
@@ -255,6 +258,11 @@ void do_cmd_ls(char* workdir)
 void do_cmd_setTimeout(char* msg, char* sec)
 {
     add_timer(uart_puts,atoi(sec),msg);
+}
+
+void do_cmd_time_2s_irq()
+{
+    add_timer(two_second_alert,2,"time_2s_irq");
 }
 
 void do_cmd_reboot()

@@ -19,7 +19,6 @@ void main(char* arg){
     el1_interrupt_enable();  // enable interrupt in EL1 -> EL1
     core_timer_enable();
     timer_list_init();
-    add_timer(two_second_alert,2,"two_second_alert");
 
     //uart_puts("loading dtb from: 0x%x\n", arg);
     cli_print_banner();

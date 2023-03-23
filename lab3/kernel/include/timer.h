@@ -19,7 +19,7 @@ typedef struct timer_event {
 void timer_event_callback(timer_event_t * timer_event);
 void add_timer(void *callback, unsigned long long timeout, char* args);
 unsigned long long get_tick_plus_s(unsigned long long second);
-void set_core_timer_interrupt(unsigned int expired_time);
+void set_core_timer_interrupt(unsigned long long expired_time);
 void set_core_timer_interrupt_by_tick(unsigned long long tick);
 void two_second_alert(char* str);
 void timer_list_init();
