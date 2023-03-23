@@ -1,12 +1,6 @@
 .section ".text._start"
 
 _start:
-    // Park the non-boot cores.
-
-    mrs x1, MPIDR_EL1
-    tst x1, 0x3
-    bne .Lpark_loop
-
     // Clear the .bss section.
 
     ldr x1, =_sbss
@@ -20,13 +14,12 @@ _start:
 
 .Lclear_bss_loop_test:
     cmp x1, x2
-    bne .Lclear_bss_loop_body
+    b.ne .Lclear_bss_loop_body
 
     // Set the stack pointer.
 
     ldr x1, =_estack
     mov sp, x1
-    mov fp, x1
 
     // Call the main function.
 
