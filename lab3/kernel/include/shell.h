@@ -24,6 +24,7 @@ void do_cmd_hello();
 void do_cmd_info();
 void do_cmd_kmalloc();
 void do_cmd_ls(char*);
+void do_cmd_setTimeout(char* msg, char* sec);
 void do_cmd_reboot();
 
 #endif /* _SHELL_H_ */

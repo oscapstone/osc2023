@@ -187,6 +187,11 @@ char* memcpy(void *dest, const void *src, unsigned long long len)
     return dest;
 }
 
+char* strcpy (char *dest, const char *src)
+{
+    return memcpy (dest, src, strlen (src) + 1);
+}
+
 char* str_SepbySpace(char* head)
 {
     char* end;

@@ -75,8 +75,7 @@ void cli_cmd_exec(char* buffer)
         do_cmd_ls(argvs);
     } else if (strcmp(cmd, "setTimeout") ==0) {
         char* sec = str_SepbySpace(argvs);
-        uart_puts("setTimeout: %s , %s , %s\n", cmd, argvs, sec);
-        //do_cmd_setTimeout();
+        do_cmd_setTimeout(argvs, sec);
     } else if (strcmp(cmd, "reboot") == 0) {
         do_cmd_reboot();
     }
@@ -128,7 +127,7 @@ void do_cmd_help()
     for(int i = 0; i < CLI_MAX_CMD; i++)
     {
         uart_puts(cmd_list[i].command);
-        uart_puts("\t\t: ");
+        uart_puts("\t\t\t: ");
         uart_puts(cmd_list[i].help);
         uart_puts("\r\n");
     }
@@ -155,7 +154,6 @@ void do_cmd_exec(char* filepath)
         {
             //exec c_filedata
             char* ustack = kmalloc(USTACK_SIZE);
-            core_timer_enable(2);
             asm("msr elr_el1, %0\n\t"
                 "mov x1, 0x3c0\n\t"
                 "msr spsr_el1, xzr\n\t"
@@ -254,6 +252,10 @@ void do_cmd_ls(char* workdir)
     }
 }
 
+void do_cmd_setTimeout(char* msg, char* sec)
+{
+    add_timer(uart_puts,atoi(sec),msg);
+}
 
 void do_cmd_reboot()
 {

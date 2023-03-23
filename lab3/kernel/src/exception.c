@@ -13,10 +13,15 @@ void el1_interrupt_disable(){
 
 void el1h_irq_router(){
     // Kernel is running in el1. CLI requires this irq to do async I/O
-    if(*IRQ_PENDING_1 & IRQ_PENDING_1_AUX_INT && *CORE0_INTERRUPT_SOURCE & INTERRUPT_SOURCE_GPU) // from aux && from GPU0 -> uart exception  
+    if(*IRQ_PENDING_1 & IRQ_PENDING_1_AUX_INT && *CORE0_INTERRUPT_SOURCE & INTERRUPT_SOURCE_GPU) // from aux && from GPU0 -> uart exception
     {
         uart_interrupt_handler();
     }
+    else if(*CORE0_INTERRUPT_SOURCE & INTERRUPT_SOURCE_CNTPNSIRQ)  //from CNTPNS (core_timer) // A1 - setTimeout run in el1
+    {
+        core_timer_handler();
+    }
+
 }
 
 void el0_sync_router(){
