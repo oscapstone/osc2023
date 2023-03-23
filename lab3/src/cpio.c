@@ -3,7 +3,7 @@
 #include "dtb.h"
 #include <stdint.h>
 
-static void *mem = 0x0;
+static void *mem = 0x8000000;
 
 typedef struct {
     char	   c_magic[6];
@@ -29,7 +29,6 @@ void initrd_list()
 {
     char *buf = (char *)mem;
     uart_puts("Type     Position   Size     NameLen\tFilename\n");
-    // uart_puts("Filename\n");
     // if it's a cpio archive. Cpio also has a trailer entry
     while(!memcmp(buf,"070701",6) && memcmp(buf+sizeof(cpio_t),"TRAILER!!",9)) {
         cpio_t *header = (cpio_t*)buf;
@@ -57,7 +56,7 @@ void initrd_list()
 void cat_list () {
     char *buf = (char *)mem;
     while(!memcmp(buf,"070701",6) && memcmp(buf+sizeof(cpio_t),"TRAILER!!",9)) {
-        uart_puts("\n");
+        // uart_puts("\n");
         cpio_t *header = (cpio_t*)buf;
         int ns=hex2bin(header->c_namesize,8);
         int fs=hex2bin(header->c_filesize,8);
@@ -72,6 +71,30 @@ void cat_list () {
             off = 4-off;
         buf+=(sizeof(cpio_t)+ns+fs+off);
     }
+}
+
+unsigned int * load_prog (void * prog) {
+    char *buf = (char *)mem;
+    char *load;
+    unsigned int ret = 0;
+    
+    while(!memcmp(buf,"070701",6) && memcmp(buf+sizeof(cpio_t),"TRAILER!!",9)) {
+        cpio_t *header = (cpio_t*)buf;
+        int ns=hex2bin(header->c_namesize,8);
+        int fs=hex2bin(header->c_filesize,8);
+        if(!memcmp(buf+sizeof(cpio_t), (char *)prog, ns-1)){
+            uart_puts("HIT\n");
+            // Only one user program, hard writing return address to 0x90000000 for further more applications
+            ret = buf+sizeof(cpio_t)+ns;
+            return ret + (8-(ret%8));
+        }
+        // jump to the next file
+        int off = ((ns+fs+sizeof(cpio_t))%4);
+        if (off!=0) 
+            off = 4-off;
+        buf+=(sizeof(cpio_t)+ns+fs+off);
+    }
+    return 0;
 }
 
 int callback_initramfs(void * addr){
