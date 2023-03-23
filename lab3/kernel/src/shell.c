@@ -257,7 +257,7 @@ void do_cmd_ls(char* workdir)
 
 void do_cmd_setTimeout(char* msg, char* sec)
 {
-    add_timer(uart_puts,atoi(sec),msg);
+    add_timer(uart_sendline,atoi(sec),msg);
 }
 
 void do_cmd_time_2s_irq()

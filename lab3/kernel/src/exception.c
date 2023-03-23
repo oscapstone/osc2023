@@ -34,15 +34,10 @@ void el0_sync_router(){
     unsigned long long esr_el1;
     __asm__ __volatile__("mrs %0, ESR_EL1\n\t" : "=r" (esr_el1) :  : "memory");
 
-    uart_puts("## Exception - el0_sync ## spsr_el1 : 0x%x, elr_el1 : 0x%x, esr_el1 : 0x%x\n", spsr_el1, elr_el1, esr_el1);
+    uart_sendline("## Exception - el0_sync ## spsr_el1 : 0x%x, elr_el1 : 0x%x, esr_el1 : 0x%x\n", spsr_el1, elr_el1, esr_el1);
 }
 
 void el0_irq_64_router(){
-    /*uart_sendline("irq_basic_pending: %x\n",*IRQ_BASIC_PENDING);
-    uart_sendline("irq_pending_1: %x\n",*IRQ_PENDING_1);
-    uart_sendline("irq_pending_2: %x\n",*IRQ_PENDING_2);
-    uart_sendline("source : %x\n\n\n",*CORE0_INTERRUPT_SOURCE);*/
-
     if(*IRQ_PENDING_1 & IRQ_PENDING_1_AUX_INT && *CORE0_INTERRUPT_SOURCE & INTERRUPT_SOURCE_GPU) // from aux && from GPU0 -> uart exception  
     {
         uart_interrupt_handler();

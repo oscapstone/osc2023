@@ -28,6 +28,15 @@ void core_timer_enable(){
     );
 }
 
+void core_timer_disable()
+{
+    __asm__ __volatile__(
+        "mov x2, 0\n\t"
+        "ldr x1, =" XSTR(CORE0_TIMER_IRQ_CTRL) "\n\t"
+        "str w2, [x1]\n\t" // unmask timer interrupt
+    );
+}
+
 void core_timer_handler(){
     timer_event_callback((timer_event_t *)timer_event_list->next); // do callback and set new interrupt
 }
@@ -58,7 +67,7 @@ void two_second_alert(char* str)
     unsigned long long cntfrq_el0;
     __asm__ __volatile__("mrs %0, cntfrq_el0\n\t": "=r"(cntfrq_el0)); //tick frequency
 
-    uart_puts("\n## Interrupt - el1_irq ## [%s] %d seconds after booting\n", str, cntpct_el0/cntfrq_el0);
+    uart_sendline("\n## Interrupt - el1_irq ## [%s] %d seconds after booting\n", str, cntpct_el0/cntfrq_el0);
 
     add_timer(two_second_alert,2,"time_2s_irq");
 }

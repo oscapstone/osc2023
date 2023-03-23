@@ -1,6 +1,7 @@
 #include "bcm2837/rpi_gpio.h"
 #include "bcm2837/rpi_uart1.h"
 #include "uart1.h"
+#include "exception.h"
 #include "u_string.h"
 
 #define IRQS1  ((volatile unsigned int*)(0x3f00b210))
@@ -86,22 +87,25 @@ int  uart_sendline(char* fmt, ...) {
 }
 
 char uart_async_getc() {
+    *AUX_MU_IER_REG |=1; // enable read interrupt
     // while buffer empty
     // enable read interrupt to get some input into buffer
     while (uart_rx_buffer_ridx == uart_rx_buffer_widx) *AUX_MU_IER_REG |=1; // enable read interrupt
+    el1_interrupt_disable();
     char r = uart_rx_buffer[uart_rx_buffer_ridx++];
+    if (uart_rx_buffer_ridx >= VSPRINT_MAX_BUF_SIZE) uart_rx_buffer_ridx = 0;
+    el1_interrupt_enable();
     return r;
 }
 
 void uart_async_putc(char c) {
-    while( (uart_tx_buffer_widx + 1) % VSPRINT_MAX_BUF_SIZE == uart_tx_buffer_ridx ) // full buffer wait
-    {
-        // start asynchronous transfer 
-        *AUX_MU_IER_REG |=2;  // enable write interrupt
-    }
+    // full buffer then wait
+    while( (uart_tx_buffer_widx + 1) % VSPRINT_MAX_BUF_SIZE == uart_tx_buffer_ridx )  *AUX_MU_IER_REG |=2;  // enable write interrupt
+    el1_interrupt_disable();
     uart_tx_buffer[uart_tx_buffer_widx++] = c;
-    if(uart_tx_buffer_widx >= VSPRINT_MAX_BUF_SIZE)uart_tx_buffer_widx=0;  // cycle pointer
+    if(uart_tx_buffer_widx >= VSPRINT_MAX_BUF_SIZE) uart_tx_buffer_widx=0;  // cycle pointer
     // start asynchronous transfer
+    el1_interrupt_enable();
     *AUX_MU_IER_REG |=2;  // enable write interrupt
 }
 
