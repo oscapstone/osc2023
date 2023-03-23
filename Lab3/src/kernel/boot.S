@@ -26,6 +26,23 @@ proc_hang:
 	b 	proc_hang
 
 master:
+	ldr x1, =_start
+
+	// set up EL1
+    mrs x0, CurrentEL
+    and x0, x0, #12 // clear reserved bits
+
+	// running at EL3? branch if in EL3
+    cmp x0, #12
+    beq from_el3_to_el2
+    
+	// running at EL1? branch if in EL1
+	cmp x0, #4
+	beq bss
+
+    bl from_el2_to_el1
+
+bss:
 	adr	x0, __bss_start
 	adr	x1, __bss_end
 	sub	x1, x1, x0
@@ -34,3 +51,74 @@ master:
 	mov	sp, #LOW_MEMORY // 4MB
 	bl	kernel_main
 	b 	proc_hang		// should never come here
+
+from_el3_to_el2:
+	mov x2, #0x5b1
+	msr scr_el3, x2
+	mov x2, #0x3c9
+	msr spsr_el3, x2
+	adr x2, from_el2_to_el1
+	msr elr_el3, x2
+	eret
+
+from_el2_to_el1:
+	msr	sp_el1, x1
+	// enable CNTP for EL1
+	mrs x0, cnthctl_el2
+	orr x0, x0, #3
+	msr cnthctl_el2, x0
+	msr cntvoff_el2, xzr
+	// enable AArch64 in EL1
+	mov x0, #(1 << 31)		// AArch64
+	orr x0, x0, #(1 << 1)	// SWIO hardwired on Pi3
+	msr hcr_el2, x0
+	mrs x0, hcr_el2
+	// change execution level to EL1
+	mov x2, #0x3c5
+	msr spsr_el2, x2
+	adr x2, bss
+	msr elr_el2, x2
+	eret
+
+.align 11 // vector table should be aligned to 0x800
+.global exception_vector_table
+exception_vector_table:
+	b exception_handler // branch to a handler function.
+  	.align 7 // entry size is 0x80, .align will pad 0
+  	b exception_handler
+  	.align 7
+  	b exception_handler
+  	.align 7
+  	b exception_handler
+  	.align 7
+
+  	b exception_handler
+  	.align 7
+  	b exception_handler
+  	.align 7
+  	b exception_handler
+  	.align 7
+  	b exception_handler
+  	.align 7
+
+  	b exception_handler
+  	.align 7
+  	b exception_handler
+  	.align 7
+  	b exception_handler
+  	.align 7
+  	b exception_handler
+  	.align 7
+
+  	b exception_handler
+  	.align 7
+  	b exception_handler
+  	.align 7
+  	b exception_handler
+  	.align 7
+  	b exception_handler
+  	.align 7
+
+set_exception_vector_table:
+  	adr x0, exception_vector_table
+  	msr vbar_el1, x0
