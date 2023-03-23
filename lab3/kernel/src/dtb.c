@@ -1,6 +1,6 @@
 #include "dtb.h"
 #include "uart1.h"
-#include "utils.h"
+#include "u_string.h"
 #include "cpio.h"
 
 extern void* CPIO_DEFAULT_PLACE;

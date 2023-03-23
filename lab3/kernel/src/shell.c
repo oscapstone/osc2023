@@ -4,12 +4,12 @@
 #include "mbox.h"
 #include "power.h"
 #include "cpio.h"
-#include "utils.h"
+#include "u_string.h"
 #include "dtb.h"
 #include "heap.h"
 #include "timer.h"
 
-#define CLI_MAX_CMD 9
+#define CLI_MAX_CMD 10
 #define USTACK_SIZE 0x10000
 
 extern char* dtb_ptr;
@@ -25,6 +25,7 @@ struct CLI_CMDS cmd_list[CLI_MAX_CMD]=
     {.command="kmalloc", .help="simple allocator in heap session"},
     {.command="info", .help="get device information via mailbox"},
     {.command="ls", .help="list directory contents"},
+    {.command="setTimeout", .help="setTimeout [MESSAGE] [SECONDS]"},
     {.command="reboot", .help="reboot the device"}
 };
 
@@ -54,22 +55,7 @@ void cli_cmd_exec(char* buffer)
     if (!buffer) return;
 
     char* cmd = buffer;
-    char* argvs;
-
-    while(1){
-        if(*buffer == '\0')
-        {
-            argvs = buffer;
-            break;
-        }
-        if(*buffer == ' ')
-        {
-            *buffer = '\0';
-            argvs = buffer + 1;
-            break;
-        }
-        buffer++;
-    }
+    char* argvs = str_SepbySpace(buffer);
 
     if (strcmp(cmd, "cat") == 0) {
         do_cmd_cat(argvs);
@@ -87,6 +73,10 @@ void cli_cmd_exec(char* buffer)
         do_cmd_kmalloc();
     } else if (strcmp(cmd, "ls") == 0) {
         do_cmd_ls(argvs);
+    } else if (strcmp(cmd, "setTimeout") ==0) {
+        char* sec = str_SepbySpace(argvs);
+        uart_puts("setTimeout: %s , %s , %s\n", cmd, argvs, sec);
+        //do_cmd_setTimeout();
     } else if (strcmp(cmd, "reboot") == 0) {
         do_cmd_reboot();
     }

@@ -1,5 +1,5 @@
-#ifndef _UTILS_H_
-#define _UTILS_H_
+#ifndef _U_STRING_H_
+#define _U_STRING_H_
 
 #define VSPRINT_MAX_BUF_SIZE 0x100
 
@@ -11,6 +11,7 @@ int                strcmp(const char*, const char*);
 int                strncmp(const char*, const char*, unsigned long long);
 char*              memcpy(void *dest, const void *src, unsigned long long len);
 
-void msleep(unsigned int t);
+char* str_SepbySpace(char* head);
+int   atoi(char* str);
 
-#endif /* _UTILS_H_ */
+#endif /* _U_STRING_H_ */

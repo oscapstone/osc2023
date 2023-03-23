@@ -1,7 +1,7 @@
 #include "uart1.h"
 #include "shell.h"
 #include "heap.h"
-#include "utils.h"
+#include "u_string.h"
 #include "dtb.h"
 #include "exception.h"
 
