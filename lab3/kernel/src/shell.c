@@ -22,7 +22,7 @@ struct CLI_CMDS cmd_list[CLI_MAX_CMD]=
     {.command="exec", .help="execute a command, replacing current image with a new image"},
     {.command="hello", .help="print Hello World!"},
     {.command="help", .help="print all available commands"},
-    {.command="malloc", .help="simple allocator in heap session"},
+    {.command="kmalloc", .help="simple allocator in heap session"},
     {.command="info", .help="get device information via mailbox"},
     {.command="ls", .help="list directory contents"},
     {.command="reboot", .help="reboot the device"}
@@ -83,8 +83,8 @@ void cli_cmd_exec(char* buffer)
         do_cmd_help();
     } else if (strcmp(cmd, "info") == 0) {
         do_cmd_info();
-    } else if (strcmp(cmd, "malloc") == 0) {
-        do_cmd_malloc();
+    } else if (strcmp(cmd, "kmalloc") == 0) {
+        do_cmd_kmalloc();
     } else if (strcmp(cmd, "ls") == 0) {
         do_cmd_ls(argvs);
     } else if (strcmp(cmd, "reboot") == 0) {
@@ -164,7 +164,7 @@ void do_cmd_exec(char* filepath)
         if(strcmp(c_filepath, filepath)==0)
         {
             //exec c_filedata
-            char* ustack = malloc(USTACK_SIZE);
+            char* ustack = kmalloc(USTACK_SIZE);
             core_timer_enable(2);
             asm("msr elr_el1, %0\n\t"
                 "mov x1, 0x3c0\n\t"
@@ -226,18 +226,18 @@ void do_cmd_info()
     }
 }
 
-void do_cmd_malloc()
+void do_cmd_kmalloc()
 {
     //test malloc
-    char* test1 = malloc(0x18);
+    char* test1 = kmalloc(0x18);
     memcpy(test1,"test malloc1",sizeof("test malloc1"));
     uart_puts("%s\n",test1);
 
-    char* test2 = malloc(0x20);
+    char* test2 = kmalloc(0x20);
     memcpy(test2,"test malloc2",sizeof("test malloc2"));
     uart_puts("%s\n",test2);
 
-    char* test3 = malloc(0x28);
+    char* test3 = kmalloc(0x28);
     memcpy(test3,"test malloc3",sizeof("test malloc3"));
     uart_puts("%s\n",test3);
 }
