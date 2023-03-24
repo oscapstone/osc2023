@@ -1,5 +1,3 @@
-#ifndef __UART__
-#define __UART__
 void uart_init();
 void uart_send(unsigned int c);
 char uart_getc();
@@ -9,4 +7,3 @@ void uart_getline(char* buf, int maxlen);
 int uart_get_int();
 void uart_send_int(int number);
 char uart_recv();
-#endif

@@ -1,8 +1,7 @@
-.section ".text.boot" 
-.global _start
-
+.section ".text.boot"
+.globl _start
+__relocate_addr = 0x60000     
 _start:
-    mov x20, x0
     // read cpu id, stop slave cores
     mrs     x1, mpidr_el1
     // # means constant 11(binary) = 3
@@ -14,6 +13,7 @@ _start:
     wfe
     b       1b
 2:  // cpu id == 0
+    mov x20, x0
     // stack operation is "Full Descending" mode. Need set the top of the stack to the top of the stack space
     ldr x1, =_start
     mov sp, x1

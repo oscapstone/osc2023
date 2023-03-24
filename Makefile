@@ -1,4 +1,6 @@
+# MAC 
 ARMPATH  = /Users/stafen/Documents/osc/toolchain/arm-gnu-toolchain-12.2.rel1-darwin-x86_64-aarch64-none-elf/bin
+# ARMPATH = /home/hscc/Documents/shun/osc/toolchain/gcc-arm-10.3-2021.07-x86_64-aarch64-none-elf/bin
 ARMGCC ?= $(ARMPATH)/aarch64-none-elf-gcc
 ARMLD ?= $(ARMPATH)/aarch64-none-elf-ld
 ARMOBJCOPY ?= $(ARMPATH)/aarch64-none-elf-objcopy
@@ -28,8 +30,11 @@ kernel8.img: $(SRC_DIR)/linker.ld $(OBJ_FILES)
 	$(ARMLD) -T $(SRC_DIR)/linker.ld -o $(BUILD_DIR)/kernel8.elf $(OBJ_FILES)
 	$(ARMOBJCOPY) $(BUILD_DIR)/kernel8.elf -O binary kernel8.img
 
-run:
-	qemu-system-aarch64 -M raspi3b -kernel kernel8.img -serial null -serial stdio
+run_stdio: all
+	qemu-system-aarch64 -M raspi3b -kernel kernel8.img -display none -initrd initramfs.cpio -serial null -serial stdio -dtb bcm2710-rpi-3-b-plus.dtb
+
+run: all
+	qemu-system-aarch64 -M raspi3b -kernel kernel8.img -serial null  -initrd initramfs.cpio -serial pty -dtb bcm2710-rpi-3-b-plus.dtb
 
 deploy:
 	rm /Volumes/NO\ NAME/kernel8.img
