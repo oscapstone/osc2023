@@ -21,9 +21,7 @@ LDFLAGS_RELEASE = -flto -Xlinker --gc-sections
 
 LDLIBS_BASE = -lgcc
 
-OBJS      = start main delay devicetree el initrd mailbox mailbox_info reset \
-            serial shell simple_malloc user_program vector_table xcpt \
-			xcpt_handler libc/string
+OBJS      = start
 LD_SCRIPT = $(SRC_DIR)/linker.ld
 
 # ------------------------------------------------------------------------------
@@ -41,17 +39,18 @@ OBJ_PATHS = $(addprefix $(OUT_DIR)/,$(addsuffix .o,$(OBJS)))
 
 # ------------------------------------------------------------------------------
 
-.PHONY: all qemu qemu-debug gdb clean-profile clean
+.PHONY: all clean-profile clean
 
-all: $(OUT_DIR)/kernel8.img
+all: $(OUT_DIR)/xcpt_test.img
 
-$(OUT_DIR)/kernel8.img: $(OUT_DIR)/kernel8.elf
+$(OUT_DIR)/xcpt_test.img: $(OUT_DIR)/xcpt_test.elf
 	@mkdir -p $(@D)
 	$(OBJCOPY) -O binary $^ $@
 
-$(OUT_DIR)/kernel8.elf: $(OBJ_PATHS) $(LD_SCRIPT)
+$(OUT_DIR)/xcpt_test.elf: $(OBJ_PATHS) $(LD_SCRIPT)
 	@mkdir -p $(@D)
-	$(CC) -T $(LD_SCRIPT) $(LDFLAGS) $(filter-out $(LD_SCRIPT),$^) $(LDLIBS) -o $@
+	$(CC) -T $(LD_SCRIPT) $(LDFLAGS) $(filter-out $(LD_SCRIPT),$^) $(LDLIBS) \
+		-o $@
 
 $(OUT_DIR)/%.o: $(SRC_DIR)/%.c
 	@mkdir -p $(@D)
@@ -64,19 +63,6 @@ $(OUT_DIR)/%.o: $(OUT_DIR)/%.s
 $(OUT_DIR)/%.s: $(SRC_DIR)/%.S
 	@mkdir -p $(@D)
 	$(CPP) $(CPPFLAGS) $^ -o $@
-
-qemu: $(OUT_DIR)/kernel8.img
-	qemu-system-aarch64 -M raspi3b -kernel $< -initrd ../tests/initramfs.cpio \
-		-dtb ../tests/bcm2710-rpi-3-b-plus.dtb -display none -serial null \
-		-serial stdio
-
-qemu-debug: $(OUT_DIR)/kernel8.img
-	qemu-system-aarch64 -M raspi3b -kernel $< -initrd ../tests/initramfs.cpio \
-		-dtb ../tests/bcm2710-rpi-3-b-plus.dtb -display none -serial null \
-		-serial stdio -S -s
-
-gdb: $(OUT_DIR)/kernel8.elf
-	gdb -s $< -ex 'target remote :1234'
 
 clean-profile:
 	$(RM) -r $(OUT_DIR)

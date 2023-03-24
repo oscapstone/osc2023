@@ -428,3 +428,22 @@ FN_DEFN_COMPOSED(PUTS_SPEC, PUTS_IMPL)
   }
 
 FN_DEFN_COMPOSED(PRINT_HEX_SPEC, PRINT_HEX_IMPL)
+
+// void serial_print_hex_u64(uint64_t x)
+
+#define PRINT_HEX_U64_RET_TY(X, V) V
+#define PRINT_HEX_U64_ARGS(X, D) X(const uint64_t, x)
+#define PRINT_HEX_U64_SPEC(X)                                                  \
+  X(PRINT_HEX_U64_RET_TY, print_hex_u64, PRINT_HEX_U64_ARGS)
+
+#define PRINT_HEX_U64_IMPL(MODE)                                               \
+  {                                                                            \
+    static const char HEX_DIGITS[16] = "0123456789abcdef";                     \
+                                                                               \
+    for (int shamt = 60; shamt >= 0; shamt -= 4) {                             \
+      const uint32_t digit = (x >> shamt) & 0xf;                               \
+      _serial_putc_##MODE(HEX_DIGITS[digit]);                                  \
+    }                                                                          \
+  }
+
+FN_DEFN_COMPOSED(PRINT_HEX_U64_SPEC, PRINT_HEX_U64_IMPL)

@@ -117,4 +117,11 @@ void serial_puts(const char *s);
 /// the serial console.
 void serial_print_hex(uint32_t x);
 
+/// \brief Writes a `uint64_t` to the serial console in hexadecimal.
+///
+/// When calling this function, the serial console must be initialized. Also, in
+/// a multi-threaded context, the current thread must have acquired the lock of
+/// the serial console.
+void serial_print_hex_u64(uint64_t x);
+
 #endif

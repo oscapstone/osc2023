@@ -10,10 +10,12 @@ Memory map: (End addresses are exclusive)
 
 _skernel = 0x80000;
 _max_ekernel = 0x4000000;
+_suser = 64M;
+_max_euser = 128M;
 
 MEMORY
 {
-    RAM_KERNEL : ORIGIN = _skernel, LENGTH = _max_ekernel - _skernel
+    RAM_USER : ORIGIN = _suser, LENGTH = _max_euser - _suser
 }
 
 /* Must be 16-byte aligned.
@@ -22,9 +24,6 @@ MEMORY
 _estack = 1024M - 76M;
 /* Again, must be 16-byte aligned. */
 _euserstack = _estack - 8M;
-
-_suser = 64M;
-_max_euser = 128M;
 
 ENTRY(_start)
 
@@ -43,7 +42,7 @@ SECTIONS
         *(.eh_frame_hdr)
 
         _etext = .;
-    } >RAM_KERNEL
+    } >RAM_USER
 
     .rodata :
     {
@@ -52,7 +51,7 @@ SECTIONS
         *(.rodata .rodata.*)
 
         _erodata = .;
-    } >RAM_KERNEL
+    } >RAM_USER
 
     .data :
     {
@@ -61,7 +60,7 @@ SECTIONS
         *(.data .data.*)
 
         _edata = .;
-    } >RAM_KERNEL
+    } >RAM_USER
 
     /* The .bss section is 16-byte aligned to allow the section to be
        zero-initialized with the `stp` instruction without using unaligned
@@ -75,7 +74,7 @@ SECTIONS
 
         . = ALIGN(16);
         _ebss = .;
-    } >RAM_KERNEL
+    } >RAM_USER
 
     _ekernel = .;
 }

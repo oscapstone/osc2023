@@ -7,6 +7,7 @@
 #include "oscos/libc/string.h"
 #include "oscos/reset.h"
 #include "oscos/serial.h"
+#include "oscos/user_program.h"
 
 #define MAX_CMD_LEN 78
 
@@ -57,7 +58,8 @@ static void _shell_do_cmd_help(void) {
               "hello  : print Hello World!\n"
               "reboot : reboot the device\n"
               "ls     : list all files in the initial ramdisk\n"
-              "cat    : print the content of a file in the initial ramdisk");
+              "cat    : print the content of a file in the initial ramdisk\n"
+              "exec   : run a user program in the initial ramdisk");
 }
 
 static void _shell_do_cmd_hello(void) { serial_puts("Hello World!"); }
@@ -106,6 +108,53 @@ static void _shell_do_cmd_cat(void) {
   }
 }
 
+static void _shell_do_cmd_exec(void) {
+  if (!_shell_is_initrd_valid) {
+    serial_puts("oscsh: exec: initrd is invalid");
+    return;
+  }
+
+  serial_fputs("Filename: ");
+
+  char filename_buf[MAX_CMD_LEN + 1];
+  _shell_read_cmd(filename_buf, MAX_CMD_LEN + 1);
+
+  const cpio_newc_entry_t *const entry =
+      initrd_find_entry_by_pathname(filename_buf);
+  if (!entry) {
+    serial_puts("oscsh: exec: no such file or directory");
+    return;
+  }
+
+  const void *user_program_start;
+  size_t user_program_len;
+
+  const uint32_t mode = CPIO_NEWC_HEADER_VALUE(entry, mode);
+  const uint32_t file_type = mode & CPIO_NEWC_MODE_FILE_TYPE_MASK;
+  if (file_type == CPIO_NEWC_MODE_FILE_TYPE_REG) {
+    user_program_start = CPIO_NEWC_FILE_DATA(entry);
+    user_program_len = CPIO_NEWC_FILESIZE(entry);
+  } else if (file_type == CPIO_NEWC_MODE_FILE_TYPE_DIR) {
+    serial_puts("oscsh: exec: is a directory");
+    return;
+  } else if (file_type == CPIO_NEWC_MODE_FILE_TYPE_LNK) {
+    serial_fputs("oscos: exec: is a symbolic link to: ");
+    serial_write(CPIO_NEWC_FILE_DATA(entry), CPIO_NEWC_FILESIZE(entry));
+    serial_putc('\n');
+    return;
+  } else {
+    serial_puts("oscsh: exec: unknown file type");
+    return;
+  }
+
+  if (!load_user_program(user_program_start, user_program_len)) {
+    serial_puts("oscsh: exec: user program too long");
+    return;
+  }
+
+  run_user_program();
+}
+
 static void _shell_cmd_not_found(const char *const cmd) {
   serial_fputs("oscsh: ");
   serial_fputs(cmd);
@@ -133,6 +182,8 @@ void run_shell(void) {
       _shell_do_cmd_ls();
     } else if (strcmp(cmd_buf, "cat") == 0) {
       _shell_do_cmd_cat();
+    } else if (strcmp(cmd_buf, "exec") == 0) {
+      _shell_do_cmd_exec();
     } else {
       _shell_cmd_not_found(cmd_buf);
     }

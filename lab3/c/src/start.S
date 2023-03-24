@@ -1,6 +1,35 @@
 .section ".text._start"
 
 _start:
+    // Enable FP/SIMD.
+    mov x1, 0x300000
+    msr cptr_el2, x1
+
+    // Switch to EL1.
+
+    // - Use AArch64 in EL1.
+    // - Trap nothing to EL2.
+    // - Disable interrupt routing to EL2.
+    // - Disable stage 2 address translation.
+    mov x1, 0x80000000
+    msr hcr_el2, x1
+
+    // - Mask all interrupts.
+    // - AArch64 execution state.
+    // - EL1h. (Uses SP_EL1).
+    mov x1, 0x3c5
+    msr spsr_el2, x1
+
+    adr x1, .Lin_el1
+    msr elr_el2, x1
+    eret
+
+.Lin_el1:
+
+    // Enable FP/SIMD.
+    mov x1, 0x300000
+    msr cpacr_el1, x1
+
     // Clear the .bss section.
 
     ldr x1, =_sbss

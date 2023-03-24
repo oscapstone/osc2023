@@ -44,3 +44,14 @@ size_t strlen(const char *const s) {
   }
   return result;
 }
+
+void *memcpy(void *const restrict dest, const void *const restrict src,
+             const size_t n) {
+  char *restrict dc = dest;
+  const char *restrict sc = src;
+  for (size_t i = 0; i < n; i++) {
+    *dc++ = *sc++;
+  }
+
+  return dest;
+}
