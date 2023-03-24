@@ -45,7 +45,7 @@ void get_board_revision(void)
 
         if (mailbox_call(mailbox) == 0) {
                 uart_send_string("Board Revision:\t\t");
-                uart_send_hex(mailbox[5]);
+                uart_send_hex_32(mailbox[5]);
                 uart_send_string("\r\n");
         }
 }
@@ -64,10 +64,10 @@ void get_arm_memory(void)
 
         if (mailbox_call(mailbox) == 0) {
                 uart_send_string("Memory Base Address:\t");
-                uart_send_hex(mailbox[5]);
+                uart_send_hex_32(mailbox[5]);
                 uart_send_string("\r\n");
                 uart_send_string("Memory Size:\t\t");
-                uart_send_hex(mailbox[6]);
+                uart_send_hex_32(mailbox[6]);
                 uart_send_string("\r\n");
         }
 }
