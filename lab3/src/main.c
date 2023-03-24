@@ -1,8 +1,8 @@
 #include "dtb.h"
 #include "exception.h"
+#include "heap.h"
 #include "initrd.h"
 #include "interrupt.h"
-#include "heap.h"
 #include "terminal.h"
 #include "uart.h"
 #include <stdint.h>

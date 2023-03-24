@@ -1,13 +1,13 @@
 #include "command.h"
-#include "initrd.h"
-#include "mailbox.h"
-#include "timer.h"
-#include "terminal.h"
-#include "loader.h"
-#include "uart.h"
-#include "str.h"
 #include "heap.h"
-//static char buf[256];
+#include "initrd.h"
+#include "loader.h"
+#include "mailbox.h"
+#include "str.h"
+#include "terminal.h"
+#include "timer.h"
+#include "uart.h"
+// static char buf[256];
 
 struct command commands[] = {{
                                  .name = "help",
@@ -59,15 +59,15 @@ struct command commands[] = {{
                              {
                                  .name = "NULL", // The end of the array
                              }};
-int async_read(){
+int async_read() {
 
-	uart_puts("Async Read start...\n");
-	enable_uart_receive_int();
-	set_timer_read();
-	return 0;
+  uart_puts("Async Read start...\n");
+  enable_uart_receive_int();
+  set_timer_read();
+  return 0;
 }
-int time_out(){
-	char* buf = (char*)malloc(sizeof(char) * 256);
+int time_out() {
+  char *buf = (char *)malloc(sizeof(char) * 256);
   char integer[10];
   int second = 0;
   memset(buf, 0, 256);
@@ -113,16 +113,15 @@ int time_out(){
     }
     tmp++;
   }
-  for(int i = 0; i < 10; i ++){
-	  if(integer[i] >= '0' && integer[i] <= '9'){
-		  second += integer[i] - '0';
-		  second *= 10;
-	  }
+  for (int i = 0; i < 10; i++) {
+    if (integer[i] >= '0' && integer[i] <= '9') {
+      second += integer[i] - '0';
+      second *= 10;
+    }
   }
   second /= 10;
   set_timeout(buf, second);
   uart_puts("done\n");
-
 
   return 1;
 }
@@ -152,16 +151,15 @@ int run_loader() {
     tmp++;
   }
   start = initrd_content_getLo(buf);
-  if(start != 0){
-	  //uart_puth(start);
-	  //uart_puth(*(int*)start);
-	  run_program(start);
-	  return 0;
+  if (start != 0) {
+    // uart_puth(start);
+    // uart_puth(*(int*)start);
+    run_program(start);
+    return 0;
   }
   return 1;
 }
 
-	
 int help() {
   int i = 0;
   while (1) {
@@ -200,7 +198,7 @@ int cat() {
     tmp++;
   }
   initrd_cat(buf);
-  //initrd_cat("boot.S");
+  // initrd_cat("boot.S");
   return 0;
 }
 

@@ -24,7 +24,7 @@ int heap_init() {
 
 // Note: Padding
 void *malloc(int t) {
-	int pad = (4 - (t % 4)) % 4;
+  int pad = (4 - (t % 4)) % 4;
   void *tmp = (void *)head;
   if (t <= 0)
     return 0;

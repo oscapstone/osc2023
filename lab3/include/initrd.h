@@ -25,5 +25,5 @@ int initrd_fdt_callback(void *, int);
 int initrd_getLo(void);
 
 // Loading program
-void* initrd_content_getLo(const char*);
+void *initrd_content_getLo(const char *);
 #endif // INITRD_H

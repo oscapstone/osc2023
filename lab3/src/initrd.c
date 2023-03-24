@@ -113,7 +113,9 @@ void initrd_cat(const char *name) {
 }
 
 /*********************************************************
- * This is callback function for getting the start * address of the initrd. Please use this function * with `fdt_find_do()`.  *******************************************************/
+ * This is callback function for getting the start * address of the initrd.
+ * Please use this function * with `fdt_find_do()`.
+ * *******************************************************/
 int initrd_fdt_callback(void *start, int size) {
   if (size != 4) {
     uart_puti(size);
@@ -134,13 +136,13 @@ int initrd_getLo() { return lo_ramfs; }
  * Return the start address of the content.
  * Called by lodaer to run the program.
  * *****************************************************/
-void* initrd_content_getLo(const char* name) {
+void *initrd_content_getLo(const char *name) {
   char *buf = (char *)lo_ramfs;
   int ns = 0;
   int fs = 0;
   int pad_n = 0;
   int pad_f = 0;
-  //uart_puts(name);
+  // uart_puts(name);
   while (!(memcmp(buf, "070701", 6)) &&
          memcmp(buf + sizeof(cpio_t), "TRAILER!!",
                 9)) { // test magic number of new ascii
@@ -155,8 +157,7 @@ void* initrd_content_getLo(const char* name) {
     buf += (sizeof(cpio_t) + ns + fs + pad_n + pad_f); // Jump to next record
   }
   if (fs > 0) {
-	  return (void*) (buf + sizeof(cpio_t) + ns + pad_n);
+    return (void *)(buf + sizeof(cpio_t) + ns + pad_n);
   }
   return NULL;
 }
-
