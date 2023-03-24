@@ -1,3 +1,5 @@
+__heap_size = 0x1000000;
+
 SECTIONS
 {
     . = 0x80000;
@@ -26,6 +28,13 @@ SECTIONS
         *(COMMON)
         __bss_end = .;
     }
+
+    .heap : {
+        . = ALIGN(16);
+        __heap_start = .;
+    }
+    . = . + __heap_size;
+    __heap_end = .;
 }
 
 __bss_size = (__bss_end - __bss_start) >> 3;

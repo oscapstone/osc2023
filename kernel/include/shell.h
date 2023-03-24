@@ -4,6 +4,8 @@
 #define REBOOT "reboot"
 #define REVISION "revision"
 #define MEMORY "memory"
+#define LS "ls"
+#define CAT "cat "
 
 #define PM_PASSWORD 0x5a000000
 #define PM_RSTC 0x3F10001c

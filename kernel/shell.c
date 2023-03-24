@@ -11,6 +11,8 @@ void print_help_menu()
     uart_puts("reboot   : reboot the device.\n");
     uart_puts("revision : print board revision.\n");
     uart_puts("memory   : print memory information.\n");
+    uart_puts("ls       : list files in current directory.\n");
+    uart_puts("cat      : print file.\n");
 }
 
 void print_hello_world()
@@ -52,6 +54,14 @@ void operate_command(char *command)
     else if (string_compare(MEMORY, command))
     {
         print_arm_memory();
+    }
+    else if (string_compare(LS, command))
+    {
+        list_files();
+    }
+    else if (string_start_with(command, CAT))
+    {
+        print_file(command);
     }
     else if (string_length(command) == 0)
     {
