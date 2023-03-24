@@ -48,9 +48,9 @@ void _hwinfo(void){
 
 void _reboot(void){
     uart_printf("Rebooting...\r\n\r\n");
-    delay(10000);
+    // delay(10000);
     reset(10);
-    while(1);
+    // while(1);
 }
 
 void _echo(char* shell_buf){

@@ -1,6 +1,11 @@
 #include <mini_uart.h>
 #include <syscall.h>
 
+funcp syscall_table[] = {
+    syscall_test, // 0
+    syscall_exit, // 1
+};
+
 void syscall_handler(uint32 syn)
 {
     esr_el1 *esr = (esr_el1 *)&syn;

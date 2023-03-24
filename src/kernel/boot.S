@@ -5,10 +5,6 @@
 .globl _start
 _start:
 	mov x19, x0
-	bl from_el2_to_el1
-	// the next instruction runs in EL1
-
-	bl set_exception_vector_table
 
 	mrs	x0, mpidr_el1		
 	and	x0, x0,#0xFF		// Check processor id
@@ -19,6 +15,13 @@ proc_hang:
 	b 	proc_hang
 
 master:
+	bl from_el2_to_el1
+	// the next instruction runs in EL1
+
+	bl set_exception_vector_table
+
+	bl core_timer_enable
+	
 	// Initialize bss
 	adr	x0, bss_begin
 	adr	x1, bss_end
@@ -92,7 +95,8 @@ set_exception_vector_table:
 
 exception_handler:
     save_all
-    // bl exception_entry
+	mov x0, 0
+    bl default_exception_handler
 	// Do nothing
     load_all
     eret
@@ -114,7 +118,15 @@ l64_syn_eh_end:
   	load_all
  	eret
 
-.align 11				// vector table should 
+l64_irq_eh:
+	save_all
+
+	bl timer_irq_handler
+
+	load_all
+	eret
+
+.align 11				// vector table should be aligned to 0x800
 .global exception_vector_table
 exception_vector_table:
 	// Exception from the current EL while using SP_EL0 
@@ -130,7 +142,7 @@ exception_vector_table:
 	// Exception from the current EL while using SP_ELx 
 	b exception_handler
   	.align 7
-	b exception_handler
+	b l64_irq_eh
 	.align 7
 	b exception_handler
 	.align 7
@@ -140,7 +152,7 @@ exception_vector_table:
 	// Exception from the a lower EL and at least one lower EL is AArch64
 	b l64_syn_eh
 	.align 7
-	b exception_handler
+	b l64_irq_eh
 	.align 7
 	b exception_handler
 	.align 7

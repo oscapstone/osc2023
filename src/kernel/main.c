@@ -3,6 +3,9 @@
 #include <builtin.h>
 #include <cpio.h>
 #include <dt17.h>
+#include <utils.h>
+#include <timer.h>
+#include <irq.h>
 
 #define BUFSIZE 0x100
 char shell_buf[BUFSIZE];
@@ -55,13 +58,16 @@ void shell_interact(void){
 
 void kernel_main(char *fdt){
 
+    timer_init();
+
     fdt_base = fdt;
     uart_init();
     uart_printf("[*] Kernel start running!\r\n");
     uart_printf("[*] fdt base: %x\r\n", fdt);
 
     initramfs_init(fdt);
-
+    // enable_irq1();
+    enable_interrupt();
     while(1)
         shell_interact();
 }

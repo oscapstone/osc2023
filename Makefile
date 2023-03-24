@@ -11,7 +11,7 @@ KERNEL_DIR = kernel
 LIB_DIR = lib
 ECHO = echo
 
-CFLAGS  = -Wall -nostdlib -nostartfiles -ffreestanding -mgeneral-regs-only \
+CFLAGS  = -Wall -nostdlib -nostartfiles -ffreestanding -mgeneral-regs-only -g3\
 				-I$(INC_DIR)
 LDFLAGS = -I$(INC_DIR)
 

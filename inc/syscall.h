@@ -9,6 +9,12 @@
     __val;                                      \
 })
 
+#define write_sysreg(r, v) {                \
+    uint64 __val = (uint64)(v);             \
+    asm volatile("msr " #r ", %x0"          \
+             : : "rZ" (__val));             \
+}
+
 typedef struct {
     unsigned int iss:25, // Instruction specific syndrome
                  il:1,   // Instruction length bit
@@ -21,9 +27,6 @@ void syscall_handler(uint32 syn);
 void *syscall_exit();
 void *syscall_test();
 
-funcp syscall_table[] = {
-    syscall_test, // 0
-    syscall_exit, // 1
-};
+
 
 #endif
