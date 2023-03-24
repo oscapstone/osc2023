@@ -15,14 +15,14 @@ void main(char* arg){
     traverse_device_tree(dtb_ptr, dtb_callback_initramfs);
 
     uart_init();
+    irqtask_list_init();
+    timer_list_init();
+
     uart_interrupt_enable();
     el1_interrupt_enable();  // enable interrupt in EL1 -> EL1
     core_timer_enable();
-    timer_list_init();
 
-    //uart_puts("loading dtb from: 0x%x\n", arg);
     cli_print_banner();
-
     while(1){
         cli_cmd_clear(input_buffer, CMD_MAX_LEN);
         uart_puts("# ");

@@ -22,9 +22,9 @@ void add_timer(void *callback, unsigned long long timeout, char* args);
 unsigned long long get_tick_plus_s(unsigned long long second);
 void set_core_timer_interrupt(unsigned long long expired_time);
 void set_core_timer_interrupt_by_tick(unsigned long long tick);
-void two_second_alert(char* str);
+void timer_set2sAlert(char* str);
 void timer_list_init();
-int timer_list_get_size();
+int  timer_list_get_size();
 
 
 #endif /* _TIMER_H_ */

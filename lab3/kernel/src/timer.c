@@ -17,11 +17,6 @@ void core_timer_enable(){
         "mov x1, 1\n\t"
         "msr cntp_ctl_el0, x1\n\t" // enable
 
-        "mrs x1, cntfrq_el0\n\t"
-        "mov x2, 0x100000\n\t"
-        "mul x1, x1, x2\n\t"    //set a big value prevent interrupt immediately
-        "msr cntp_tval_el0, x1\n\t" // set expired time
-
         "mov x2, 2\n\t"
         "ldr x1, =" XSTR(CORE0_TIMER_IRQ_CTRL) "\n\t"
         "str w2, [x1]\n\t" // unmask timer interrupt
@@ -38,6 +33,11 @@ void core_timer_disable()
 }
 
 void core_timer_handler(){
+    if (list_empty(timer_event_list))
+    {
+        set_core_timer_interrupt(10000); // disable timer interrupt (set a very big value)
+        return;
+    }
     timer_event_callback((timer_event_t *)timer_event_list->next); // do callback and set new interrupt
 }
 
@@ -59,17 +59,15 @@ void timer_event_callback(timer_event_t * timer_event){
     }
 }
 
-void two_second_alert(char* str)
+void timer_set2sAlert(char* str)
 {
     unsigned long long cntpct_el0;
     __asm__ __volatile__("mrs %0, cntpct_el0\n\t": "=r"(cntpct_el0)); //tick now
-
     unsigned long long cntfrq_el0;
     __asm__ __volatile__("mrs %0, cntfrq_el0\n\t": "=r"(cntfrq_el0)); //tick frequency
 
-    uart_sendline("\n## Interrupt - el1_irq ## [%s] %d seconds after booting\n", str, cntpct_el0/cntfrq_el0);
-
-    add_timer(two_second_alert,2,"time_2s_irq");
+    uart_sendline("## Interrupt - el1_irq ## [%s] %d seconds after booting\n", str, cntpct_el0/cntfrq_el0);
+    add_timer(timer_set2sAlert,2,"2sAlert");
 }
 
 

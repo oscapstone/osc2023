@@ -27,7 +27,7 @@ void uart_init()
     *AUX_MU_LCR_REG   = 3;       // 8 bit data size
     *AUX_MU_MCR_REG   = 0;       // disable flow control
     *AUX_MU_BAUD_REG  = 270;     // 115200 baud rate
-    *AUX_MU_IIR_REG   = 6;       // disable FIFO
+    *AUX_MU_IIR_REG   = 0xC6;    // disable FIFO
 
     /* map UART1 to GPIO pins */
     r = *GPFSEL1;
@@ -126,44 +126,6 @@ int  uart_puts(char* fmt, ...) {
     return count;
 }
 
-//https://cs140e.sergio.bz/docs/BCM2837-ARM-Peripherals.pdf p13
-/*
- AUX_MU_IIR
- on read bits[2:1] :
- 00 : No interrupts
- 01 : Transmit holding register empty
- 10 : Receiver holds valid byte
- 11: <Not possible> 
-*/
-
-// buffer read, write
-void uart_interrupt_handler(){
-    if(*AUX_MU_IIR_REG & (1<<1)) //on write
-    {
-        if(uart_tx_buffer_ridx == uart_tx_buffer_widx)
-        {
-            *AUX_MU_IER_REG &= ~(2);  // disable write interrupt
-            return;  // buffer empty
-        }
-        uart_send(uart_tx_buffer[uart_tx_buffer_ridx++]);
-        if(uart_tx_buffer_ridx>=VSPRINT_MAX_BUF_SIZE) uart_tx_buffer_ridx=0;
-    }
-    else if(*AUX_MU_IIR_REG & (2<<1)) //on read
-    {
-        if((uart_rx_buffer_widx + 1) % VSPRINT_MAX_BUF_SIZE == uart_rx_buffer_ridx)
-        {
-            *AUX_MU_IER_REG &= ~(1);  // disable read interrupt
-            return;
-        }
-        uart_rx_buffer[uart_rx_buffer_widx++] = uart_recv();
-        uart_send(uart_rx_buffer[uart_rx_buffer_widx-1]);
-        if(uart_rx_buffer_widx>=VSPRINT_MAX_BUF_SIZE) uart_rx_buffer_widx=0;
-    }else
-    {
-        uart_puts("uart_interrupt_handler error!!\n");
-    }
-
-}
 
 void uart_interrupt_enable(){
     *AUX_MU_IER_REG |=1;  // enable read interrupt
@@ -174,5 +136,29 @@ void uart_interrupt_enable(){
 void uart_interrupt_disable(){
     *AUX_MU_IER_REG &= ~(1);  // disable read interrupt
     *AUX_MU_IER_REG &= ~(2);  // disable write interrupt
+}
+
+
+void uart_r_irq_handler(){
+    if((uart_rx_buffer_widx + 1) % VSPRINT_MAX_BUF_SIZE == uart_rx_buffer_ridx)
+    {
+        *AUX_MU_IER_REG &= ~(1);  // disable read interrupt
+        return;
+    }
+    uart_rx_buffer[uart_rx_buffer_widx++] = uart_recv();
+    uart_send(uart_rx_buffer[uart_rx_buffer_widx-1]);
+    if(uart_rx_buffer_widx>=VSPRINT_MAX_BUF_SIZE) uart_rx_buffer_widx=0;
+    *AUX_MU_IER_REG |=1;
+}
+
+void uart_w_irq_handler(){
+    if(uart_tx_buffer_ridx == uart_tx_buffer_widx)
+    {
+        *AUX_MU_IER_REG &= ~(2);  // disable write interrupt
+        return;  // buffer empty
+    }
+    uart_send(uart_tx_buffer[uart_tx_buffer_ridx++]);
+    if(uart_tx_buffer_ridx>=VSPRINT_MAX_BUF_SIZE) uart_tx_buffer_ridx=0;
+    *AUX_MU_IER_REG |=2;  // enable write interrupt
 }
 

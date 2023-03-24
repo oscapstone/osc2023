@@ -26,7 +26,7 @@ struct CLI_CMDS cmd_list[CLI_MAX_CMD]=
     {.command="info", .help="get device information via mailbox"},
     {.command="ls", .help="list directory contents"},
     {.command="setTimeout", .help="setTimeout [MESSAGE] [SECONDS]"},
-    {.command="time_2s_irq", .help="set core timer interrupt every 2 second"},
+    {.command="set2sAlert", .help="set core timer interrupt every 2 second"},
     {.command="reboot", .help="reboot the device"}
 };
 
@@ -77,8 +77,8 @@ void cli_cmd_exec(char* buffer)
     } else if (strcmp(cmd, "setTimeout") == 0) {
         char* sec = str_SepbySpace(argvs);
         do_cmd_setTimeout(argvs, sec);
-    } else if (strcmp(cmd, "time_2s_irq") == 0) {
-        do_cmd_time_2s_irq();
+    } else if (strcmp(cmd, "set2sAlert") == 0) {
+        do_cmd_set2sAlert();
     } else if (strcmp(cmd, "reboot") == 0) {
         do_cmd_reboot();
     }
@@ -260,9 +260,9 @@ void do_cmd_setTimeout(char* msg, char* sec)
     add_timer(uart_sendline,atoi(sec),msg);
 }
 
-void do_cmd_time_2s_irq()
+void do_cmd_set2sAlert()
 {
-    add_timer(two_second_alert,2,"time_2s_irq");
+    add_timer(timer_set2sAlert,2,"2sAlert");
 }
 
 void do_cmd_reboot()
