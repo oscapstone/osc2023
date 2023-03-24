@@ -102,27 +102,34 @@ void buf_clear(char *buf){
 }
 
 void exception_entry() {
-    // unsigned long spsrel1, elrel1, esrel1;
-    // asm volatile ("mrs %0, SPSR_EL1" : "=r" (spsrel1));
-    // uart_puts("SPSR_EL1: 0x");
-    // uart_hexlong(spsrel1);
-    // uart_puts("\n");
-    // asm volatile ("mrs %0, ELR_EL1" : "=r" (elrel1));
-    // uart_puts("ELR_EL1: 0x");
-    // uart_hexlong(elrel1);
-    // uart_puts("\n");
-    // asm volatile ("mrs %0, ESR_EL1" : "=r" (esrel1));
-    // uart_puts("ESR_EL1: 0x");
-    // uart_hexlong(esrel1);
+    unsigned long spsrel1, elrel1, esrel1;
+    asm volatile ("mrs %0, SPSR_EL1" : "=r" (spsrel1));
+    uart_puts("SPSR_EL1: 0x");
+    uart_hexlong(spsrel1);
     uart_puts("\n");
+    asm volatile ("mrs %0, ELR_EL1" : "=r" (elrel1));
+    uart_puts("ELR_EL1: 0x");
+    uart_hexlong(elrel1);
+    uart_puts("\n");
+    asm volatile ("mrs %0, ESR_EL1" : "=r" (esrel1));
+    uart_puts("ESR_EL1: 0x");
+    uart_hexlong(esrel1);
+    uart_puts("\n");
+}
+
+void print_core_timer(unsigned long frq, unsigned long cnt) {
+	uart_puts("Core timer: ");
+	uart_ulong(cnt/frq);
+	uart_puts("\n");
 }
 
 void exec_prog(char * addr){
     uart_hex(addr);
-    asm volatile ("mov x0, 0x3c0");
+	uart_puts("\n");
+    asm volatile ("mov x0, 0");
     asm volatile ("msr spsr_el1, x0"); //Holds the saved process state when an exception is taken to EL1
     asm volatile ("msr elr_el1, %0": :"r" (addr));
-    asm volatile ("mov x0, 0x100000");
+    asm volatile ("mov x0, 0x60000");
     asm volatile ("msr sp_el0, x0");
     asm volatile ("eret");
 }

@@ -40,7 +40,7 @@ kernel8.img : $(SRC_DIR)/linker.ld  $(OBJ_FILES)
 	$(OBJCOPY) -O binary $(BUILD_DIR)/kernel8.elf kernel8.img
 
 run: kernel8.img
-	qemu-system-aarch64 -M raspi3b -kernel kernel8.img -display none -serial null -serial stdio ${ENV_HDR} -kernel $< -d int
+	qemu-system-aarch64 -M raspi3b -kernel kernel8.img -display none -serial null -serial stdio ${ENV_HDR} -kernel $<
 
 asm: kernel8.img
 	qemu-system-aarch64 -M raspi3b -kernel kernel8.img -display none -serial null -serial stdio ${ENV_HDR} -d in_asm -d int -kernel $<

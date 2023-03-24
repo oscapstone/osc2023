@@ -116,6 +116,22 @@ void uart_hexdump(unsigned int d) {
     }
 }
 
+void uart_ulong(unsigned long i) {
+	    char c[20];
+	    if (i == 0) {
+			uart_send('0');
+			return;
+		}
+		int digits = -1;
+		while (i != 0) {
+			c[++digits] = '0' + i % 10;
+			i /= 10;
+		}
+		for (; digits >= 0; --digits) {
+			uart_send(c[digits]);
+		}
+}
+
 void set(long addr, unsigned int value) {
     volatile unsigned int* point = (unsigned int*)addr;
     *point = value;

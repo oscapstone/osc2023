@@ -13,6 +13,7 @@ void uart_puts_l(char *s, int l);
 void uart_hex(unsigned int d);
 void uart_hexlong(unsigned long d);
 void uart_hexdump(unsigned int d);
+void uart_ulong(unsigned long i);
 void set(long addr, unsigned int value);
 void reset(int tick);
 void cancel_reset();

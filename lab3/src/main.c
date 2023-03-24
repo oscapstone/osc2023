@@ -26,7 +26,6 @@ void kernel_main(void *dtb)
 	// initrd_list();
 	dest = load_prog("usr.img");
 	// uart_puts("\nProgram is loaded into address: ");
-	uart_hex(dest);
 	exec_prog(dest);
 
 	// buf_clear(cmd);

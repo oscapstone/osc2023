@@ -5,6 +5,7 @@
 _start:
     bl from_el2_to_el1
     bl set_exception_vector_table
+	bl core_timer_enable
     // set top of stack just before our code (stack grows to a lower address per AAPCS64)
     adr     x1, _start
     mov     sp, x1
@@ -79,9 +80,18 @@ exception_handler:
     load_all
     eret
 
+timer_handler:
+    save_all
+    bl core_timer_handler
+    load_all
+	eret
+
 .align 11 // vector table should be aligned to 0x800, which 11 is the exp(2, 11), and 8*256 is 1024
 .global exception_vector_table
 exception_vector_table:
+// SERROR -> FIQ -> IRQ -> Synchronous
+
+// Exception from a lower EL and lower ELs are AARCH32
     b exception_handler // branch to a handler function.
     .align 7 // entry size is 0x80, .align will pad 0
     b exception_handler
@@ -90,7 +100,7 @@ exception_vector_table:
     .align 7
     b exception_handler
     .align 7
-
+// Exception from a lower EL and at least one lower EL is AARCH64
     b exception_handler
     .align 7
     b exception_handler
@@ -99,16 +109,16 @@ exception_vector_table:
     .align 7
     b exception_handler
     .align 7
-
+// Exception from the current EL while using SP_ELx
     b exception_handler
+    .align 7
+    b timer_handler
     .align 7
     b exception_handler
     .align 7
     b exception_handler
     .align 7
-    b exception_handler
-    .align 7
-
+// Exception from the current EL while using SP_EL0
     b exception_handler
     .align 7
     b exception_handler
@@ -124,3 +134,25 @@ set_exception_vector_table:
 // move the address of exception_vector_table to the status register
     msr vbar_el1, x0
     ret
+
+.equ CORE0_TIMER_IRQ_CTRL, 0x40000040
+
+core_timer_enable:
+    mov x0, 1
+    msr cntp_ctl_el0, x0 // enable
+    mrs x0, cntfrq_el0
+    msr cntp_tval_el0, x0 // set expired time
+    mov x0, 2
+    ldr x1, =CORE0_TIMER_IRQ_CTRL
+    str w0, [x1] // unmask timer interrupt
+	ret
+
+core_timer_handler:
+    mrs x0, cntfrq_el0
+	mrs x1, cntpct_el0
+	stp lr, x0, [sp, #-16]!
+	bl print_core_timer
+	ldp lr, x0, [sp], #16
+	lsl x0, x0, #1
+	msr cntp_tval_el0, x0
+	ret
