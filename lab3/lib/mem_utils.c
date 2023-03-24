@@ -25,3 +25,11 @@ void show_heap_size(void)
         uart_send_int(heap_current_size);
         uart_endl();
 }
+
+void* memcpy(void *dest, const void *src, int len)
+{
+        char *d = dest;
+        const char *s = src;
+        while (len--) *d++ = *s++;
+        return dest;
+}
