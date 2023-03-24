@@ -1,6 +1,7 @@
 #include "mini_uart.h"
 #include "string_utils.h"
 #include "device_tree.h"
+#include "mem_utils.h"
 
 #define MAX_NUM_FILE  10
 #define CPIO_HEADER_SIZE 110
@@ -51,7 +52,11 @@ int set_ramdisk_adr(char* node_name, char* prop_name,
 
 void parse(void)
 {
+#ifdef QEMU_DEBUG
+        header_ptr = (struct cpio_newc_header*)0x8000000;
+#else
         fdt_traverse(set_ramdisk_adr);
+#endif /* QEMU_DEBUG */
 
         char *ptr = (char*)header_ptr + CPIO_HEADER_SIZE;
         /*
@@ -125,4 +130,45 @@ void ramdisk_cat(void)
                 uart_send_string(filename);
                 uart_send_string(": No such file or directory\r\n");
         }
+}
+
+/*
+ * Return 1 on success, 0 on failure.
+ */
+int ramdisk_load_file_to_adr(char* target_adr)
+{
+        if (!parsed) parse();
+
+        char filename[100];
+        uart_send_string("Filename: ");
+        uart_readline(filename, 100);
+
+        int found = 0;
+        int i;
+        for (i = 0; i < file_count; i++) {
+                if (!strcmp(filename, file_list[i].name_ptr)) {
+                        if (file_list[i].type == 'd') {
+                                uart_send_string(filename);
+                                uart_send_string(": Is a directory\r\n");
+                                return 0;
+                        }
+                        found = 1;
+                        break;
+                }
+        }
+        if (!found) {
+                uart_send_string(filename);
+                uart_send_string(": No such file or directory\r\n");
+                return 0;
+        }
+
+        int len = string_hex_to_int((file_list[i].header_ptr)->c_filesize, 8);
+        char *src_adr = file_list[i].content_ptr;
+        uart_send_string("File size: ");
+        uart_send_int(len);
+        uart_send_string(" bytes\r\n");
+
+        memcpy(target_adr, src_adr, len);
+        uart_send_string("Finished loading...\r\n");
+        return 1;
 }

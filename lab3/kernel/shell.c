@@ -5,6 +5,8 @@
 #include "reboot.h"
 #include "ramdisk.h"
 #include "string_utils.h"
+#include "exception.h"
+#include "mm.h"
 
 #define MAX_BUFFER_SIZE 256u
 static char buffer[MAX_BUFFER_SIZE];
@@ -17,6 +19,7 @@ void send_help_message(void)
         uart_send_string("hw-info:\tprint hardware information\r\n");
         uart_send_string("ls:\t\tlist files in ramdisk\r\n");
         uart_send_string("cat:\t\tprint file\r\n");
+        uart_send_string("exec:\t\texecute file in ramdisk\r\n");
 }
 
 void parse_cmd(void)
@@ -37,6 +40,9 @@ void parse_cmd(void)
                 ramdisk_ls();
         } else if (!strcmp(buffer, "cat")) {
                 ramdisk_cat();
+        } else if (!strcmp(buffer, "exec")) {
+                if (!ramdisk_load_file_to_adr(USER_PROGRAM_START)) return;
+                branch_to_address_el0(USER_PROGRAM_START, USER_STACK_POINTER);
         } else {
                 uart_send_string("Command not found, ");
                 uart_send_string("type 'help' for commands.\r\n");
