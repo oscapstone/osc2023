@@ -21,6 +21,8 @@ img/
 *.o
 *.d
 *.img
+*.elf
+*.bin
 
 # Application specific files
 venv
