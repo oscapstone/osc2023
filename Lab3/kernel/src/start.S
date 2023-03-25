@@ -25,12 +25,12 @@ proc_hang:
 switch:
     /* cpu id == 0 */
     /* Switch from EL2 to EL1 */
-    bl from_el2_to_el1
+    bl          from_el2_to_el1
 
 
 set_exception_vector_table:
-    adr x1, exception_vector_table
-    msr vbar_el1, x1
+    adr         x1, exception_vector_table // entry.S
+    msr         vbar_el1, x1
 
 
 set_stack:

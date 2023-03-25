@@ -4,15 +4,15 @@
 #include "dtb.h"
 #include "cpio.h"
 #include "mailbox.h"
-#include "time.h"
 #include "uart_boot.h"
 #include "malloc.h"
 #include "vt.h"
-#include "time.h"
+#include "timer.h"
 
 
 
 void welcome_msg() {
+
         uart_puts(
         "                      /|      __\n"
         "*             +      / |   ,-~ /             +\n"
@@ -34,7 +34,9 @@ void welcome_msg() {
         " Hey, welcome to Richard's OS! Hope you like it here.\n\n"
         "-------------------------------------------------------\n"
         "=                      kernel                         =\n"
-        "-------------------------------------------------------\n");    
+        "-------------------------------------------------------\n"); 
+
+        
 }
 
 
@@ -157,6 +159,7 @@ void command_controller ( enum SPECIAL_CHARACTER input_parse, char c, char buffe
             else if ( !strcmp(buffer, "cat"         ) ) command_cat(args);     
             else if ( !strcmp(buffer, "exec"        ) ) command_exec(args);    
             else if ( !strcmp(buffer, "el"          ) ) command_el();
+            else if ( !strcmp(buffer, "async"       ) ) uart_async_puts("async puts test success!!!\n");  
         
                                     
             else                                        command_not_found(buffer);
