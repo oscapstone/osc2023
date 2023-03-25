@@ -26,11 +26,11 @@ int atoi(const char *s, unsigned int size) {
 
     for (unsigned int i = 0; i < size && s[i] != '\0'; i++) {
         if ('0' <= s[i] && s[i] <= '9') {
-            num += s[i] - '0';
+            num = (num * 16) + (s[i] - '0');
         } else if ('A' <= s[i] && s[i] <= 'F') {
-            num += s[i] - 'A' + 10;
+            num = (num * 16) + (s[i] - 'A' + 10);
         } else if ('a' <= s[i] && s[i] <= 'f') {
-            num += s[i] - 'a' + 10;
+            num = (num * 16) + (s[i] - 'a' + 10);
         }
     }
 
