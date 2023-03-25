@@ -1,5 +1,6 @@
 #include "oscos/user_program.h"
 
+#include "oscos/interrupt_handlers/core_timer.h"
 #include "oscos/libc/string.h"
 
 // Symbols defined in the linker script.
@@ -20,10 +21,12 @@ void run_user_program(void) {
   // the fetched instruction stream using the `isb` instruction.
   __asm__ __volatile__("isb");
 
-  // - Mask all interrupts.
+  // - Unask all interrupts.
   // - AArch64 execution state.
   // - EL0t.
-  __asm__ __volatile__("msr spsr_el1, %0" : : "r"(0x3c0));
+  __asm__ __volatile__("msr spsr_el1, xzr");
+
+  core_timer_interrupt_enable();
 
   __asm__ __volatile__("msr elr_el1, %0" : : "r"(_suser));
   __asm__ __volatile__("msr sp_el0, %0" : : "r"(_euserstack));

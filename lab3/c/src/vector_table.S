@@ -47,7 +47,11 @@ vector_table:
     vt_entry 0x8
 
     // IRQ.
-    vt_entry 0x9
+    save_aapcs
+    bl irq_handler
+    load_aapcs
+    eret
+    .align 7
 
     // FIQ.
     vt_entry 0xa

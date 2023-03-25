@@ -23,7 +23,8 @@ LDLIBS_BASE = -lgcc
 
 OBJS      = start main delay devicetree el initrd mailbox mailbox_info reset \
             serial shell simple_malloc user_program vector_table xcpt \
-			xcpt_handler libc/string
+			xcpt_handler interrupt_handlers/core_timer interrupt_handlers/irq \
+			libc/string
 LD_SCRIPT = $(SRC_DIR)/linker.ld
 
 # ------------------------------------------------------------------------------
