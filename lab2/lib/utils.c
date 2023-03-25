@@ -47,9 +47,6 @@ int strcmp(const char *l, const char *r) {
 
 int strncmp(const char *l, const char *r, unsigned int size) {
     for (unsigned int i = 0; i < size; i++) {
-        if (l[i] == '\0') {
-            return 0;
-        }
         if (l[i] != r[i]) {
             return (const char) l[i] - (const char) r[i];
         }
