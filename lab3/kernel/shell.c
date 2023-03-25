@@ -7,6 +7,7 @@
 #include "string_utils.h"
 #include "exception.h"
 #include "mm.h"
+#include "timer.h"
 
 #define MAX_BUFFER_SIZE 256u
 static char buffer[MAX_BUFFER_SIZE];
@@ -42,6 +43,7 @@ void parse_cmd(void)
                 ramdisk_cat();
         } else if (!strcmp(buffer, "exec")) {
                 if (!ramdisk_load_file_to_adr(USER_PROGRAM_START)) return;
+                reset_core_timer_in_second(2);
                 branch_to_address_el0(USER_PROGRAM_START, USER_STACK_POINTER);
         } else {
                 uart_send_string("Command not found, ");

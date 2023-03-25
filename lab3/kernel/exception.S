@@ -42,7 +42,8 @@
 
 .globl branch_to_address_el0
 branch_to_address_el0:
-        mov     x2, 0x3c0
+        // TODO: why not 3c0 and why 340
+        mov     x2, 0x340
         msr     spsr_el1, x2
         msr     elr_el1, x0
         msr     sp_el0, x1
@@ -54,6 +55,12 @@ exception_handler_system_call:
         load_all
         eret
 
+exception_handler_irq_64_el0:
+        save_all
+        bl irq_64_el0
+        load_all
+        eret
+
 exception_handler_nothing:
         // do nothing
         eret
@@ -61,40 +68,52 @@ exception_handler_nothing:
 .align 11 // vector table should be aligned to 0x800
 .global exception_vector_table
 exception_vector_table:
-        b       exception_handler_nothing // branch to a handler function.
-        .align 7 // entry size is 0x80, .align will pad 0
-        b       exception_handler_nothing
+        /*
+         * el not change, using sp_el0
+         */
+        b       exception_handler_nothing       // synchronos exception
         .align 7
-        b       exception_handler_nothing
+        b       exception_handler_nothing       // IRQ and vIRQ exception
         .align 7
-        b       exception_handler_nothing
+        b       exception_handler_nothing       // FIQ and vFIQ exception
         .align 7
-
-        b       exception_handler_nothing
-        .align 7
-        b       exception_handler_nothing // TODO: 
-        .align 7
-        b       exception_handler_nothing
-        .align 7
-        b       exception_handler_nothing
+        b       exception_handler_nothing       // SError and vSError
         .align 7
 
-        b       exception_handler_system_call // TODO: why
+        /*
+         * el not change, using sp_elx
+         */
+        b       exception_handler_nothing       // synchronos exception
         .align 7
-        b       exception_handler_nothing // TODO: 
+        b       exception_handler_nothing       // IRQ and vIRQ exception (TODO)
         .align 7
-        b       exception_handler_nothing
+        b       exception_handler_nothing       // FIQ and vFIQ exception
         .align 7
-        b       exception_handler_nothing
+        b       exception_handler_nothing       // SError and vSError
         .align 7
 
-        b       exception_handler_nothing
+        /*
+         * Moves to a higher el, from aarch64
+         */
+        b       exception_handler_system_call   // synchronos exception
         .align 7
-        b       exception_handler_nothing
+        b       exception_handler_irq_64_el0    // IRQ and vIRQ exception (TODO)
         .align 7
-        b       exception_handler_nothing
+        b       exception_handler_nothing       // FIQ and vFIQ exception
         .align 7
-        b       exception_handler_nothing
+        b       exception_handler_nothing       // SError and vSError
+        .align 7
+
+        /*
+         * Moves to a higher el, from aarch32
+         */
+        b       exception_handler_nothing       // synchronos exception
+        .align 7
+        b       exception_handler_nothing       // IRQ and vIRQ exception
+        .align 7
+        b       exception_handler_nothing       // FIQ and vFIQ exception
+        .align 7
+        b       exception_handler_nothing       // SError and vSError
         .align 7
 
 .global set_exception_vector_table
