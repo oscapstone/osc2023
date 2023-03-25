@@ -1,7 +1,8 @@
 #include "uart.h"
 #include "exception.h"
+#include "time.h"
 
-void sync_64_router(){
+void el0_sync_router(){
     unsigned long long spsr_el1;
 	__asm__ __volatile__("mrs %0, SPSR_EL1\n\t" : "=r" (spsr_el1));
 
@@ -15,7 +16,19 @@ void sync_64_router(){
 
 }
 
+void el0_irq_64_router(){
+    //uart_puts("source : %x\n", *CORE0_INTERRUPT_SOURCE);
+
+    if(*CORE0_INTERRUPT_SOURCE & INTERRUPT_SOURCE_CNTPNSIRQ)  //from CNTPNS (core_timer)
+    {
+        core_timer_handler();
+    }
+}
+
 
 void invalid_exception_router(){
     uart_printf("invalid exception\n ");
 }
+
+
+

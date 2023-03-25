@@ -42,7 +42,7 @@
 
 exception_handler:
     save_all
-    bl sync_64_router
+    bl el0_irq_64_router
     load_all
     eret
 

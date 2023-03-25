@@ -8,6 +8,7 @@
 #include "uart_boot.h"
 #include "malloc.h"
 #include "vt.h"
+#include "time.h"
 
 
 
@@ -388,6 +389,7 @@ void command_exec(char *filepath){
         {
             //exec c_filedata
             char* ustack = malloc(USTACK_SIZE);
+            core_timer_enable(2);
             asm("msr elr_el1, %0\n\t"
                 "mov x1, 0x3c0\n\t"
                 "msr spsr_el1, xzr\n\t"
