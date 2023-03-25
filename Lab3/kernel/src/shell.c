@@ -6,6 +6,8 @@
 #include "mailbox.h"
 #include "time.h"
 #include "uart_boot.h"
+#include "malloc.h"
+#include "vt.h"
 
 
 
@@ -151,7 +153,11 @@ void command_controller ( enum SPECIAL_CHARACTER input_parse, char c, char buffe
             else if ( !strcmp(buffer, "clear"       ) ) command_clear();
             else if ( !strcmp(buffer, "dtb"         ) ) command_dtb();
             else if ( !strcmp(buffer, "ls"          ) ) command_ls();                        
-            else if ( !strcmp(buffer, "cat"         ) ) command_cat(args);                              
+            else if ( !strcmp(buffer, "cat"         ) ) command_cat(args);     
+            else if ( !strcmp(buffer, "exec"        ) ) command_exec(args);    
+            else if ( !strcmp(buffer, "el"          ) ) command_el();
+        
+                                    
             else                                        command_not_found(buffer);
 
         }
@@ -207,6 +213,9 @@ void command_help (){
     uart_puts("cat\t:  Cat the file.\n");
     uart_puts("dtb\t:  Show device tree.\n");
 
+    /* Lab3 Feature */
+    uart_puts("exec\t: Execute a command, replacing current image with a new image.\n");
+    uart_puts("el\t:  Show the exception level.\n");
 
 }
 
@@ -356,4 +365,46 @@ void command_cat(char *args){
 void *base = (void *) DT_ADDR;
 void command_dtb(){
     traverse_device_tree( base, dtb_callback_show_tree);
+}
+
+#define USTACK_SIZE 0x10000
+void command_exec(char *filepath){
+    char* c_filepath;
+    char* c_filedata;
+    unsigned int c_filesize;
+    struct cpio_newc_header *header_ptr = CPIO_DEFAULT_PLACE;
+
+    while(header_ptr!=0)
+    {
+        int error = cpio_newc_parse_header(header_ptr, &c_filepath, &c_filesize, &c_filedata, &header_ptr);
+        //if parse header error
+        if(error)
+        {
+            uart_puts("cpio parse error");
+            break;
+        }
+
+        if(strcmp(c_filepath, filepath)==0)
+        {
+            //exec c_filedata
+            char* ustack = malloc(USTACK_SIZE);
+            asm("msr elr_el1, %0\n\t"
+                "mov x1, 0x3c0\n\t"
+                "msr spsr_el1, xzr\n\t"
+                "msr sp_el0, %1\n\t"    // enable interrupt in EL0. You can do it by setting spsr_el1 to 0 before returning to EL0.
+                "eret\n\t"
+                :: "r" (c_filedata),
+                   "r" (ustack+USTACK_SIZE));
+            free(ustack);
+            break;
+        }
+
+        //if this is TRAILER!!! (last of file)
+        if(header_ptr==0) uart_printf("cat: %s: No such file or directory\n", filepath);
+    }
+}
+
+
+void command_el(){
+    print_el();
 }

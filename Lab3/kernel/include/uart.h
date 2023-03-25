@@ -37,7 +37,7 @@ char uart_getc();
  */
 void uart_puts(char *s);
 
-
+int  uart_printf(char* fmt, ...);
 
 int uart_get_int();
 void uart_puts_bySize(char *s, int size);

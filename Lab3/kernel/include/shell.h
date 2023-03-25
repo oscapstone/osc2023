@@ -36,5 +36,7 @@ void command_loading();
 void command_ls();
 void command_cat(char *args);
 void command_dtb();
+void command_exec(char *args);
+void command_el();
 
 #endif

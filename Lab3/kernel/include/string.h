@@ -2,6 +2,13 @@
 #define STRING_H
 #include "type.h"
 
+
+#define VSPRINT_MAX_BUF_SIZE 0x100
+
+unsigned int sprintf(char *dst, char* fmt, ...);
+unsigned int vsprintf(char *dst,char* fmt, __builtin_va_list args);
+
+
 int  strcmp     ( char * s1, char * s2 );
 void strset     ( char * s1, int c, int size );
 int  strlen     ( char * s );

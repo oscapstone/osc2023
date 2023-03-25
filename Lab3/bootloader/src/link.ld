@@ -7,22 +7,22 @@ SECTIONS
 
     .text : { 
         KEEP(*(.text.boot)) 
-        . = ALIGN(128);
+        . = ALIGN(0x1000);
         }
 
     .rodata : { 
         *(.rodata .rodata.* .gnu.linkonce.r*) 
-        . = ALIGN(128);
+         . = ALIGN(16);
         }
 
     .data : { 
         *(.data) 
-        . = ALIGN(128);
+         . = ALIGN(16);
         }
     
 
     .bss (NOLOAD) : {
-        . = ALIGN(8);
+        . = ALIGN(16);
         __bss_start = .;
         *(.bss)
         __bss_end = .;

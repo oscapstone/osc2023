@@ -1,44 +1,20 @@
-/* ARMv8 Assembly Instruction */
-/**
-mov x0, x1
-    sets: x0 = x1
-ldr x0, <addr>
-    load 32bits from <addr> to x0
-ldr w0, <addr>
-    load 64bits from <addr> to w0
-cbz x0, <label>
-    if x0 == 0, jump to <label>
-cbnz x0, <label>
-    if x0 != 0, jump to <label>
-str x0 [x1] #8
-    store x0 in addr<x1> then x1=x1+8
-b   <label>
-    jump to <label>
-bl  <label>
-    jump to <label> and copies bl's next instruction into link register
-wfe
-    Wait for event, core in low-power state (power on, clk off)
-
-beq x0, zero, L1
-    If x0 = o, jump L1. 
-
-**/
+#include "../include/registers.h"
 
 /* x0 is used for dtb physical address */
 
 .section ".text.boot"
 .global _start
 
-
 _start:
     /* store dt loading address to 0x200000 */
     /* if the kernel is loaded directly */
     /* ldr     	x1, =0x200000 */
-    /* str     	x0, [x1] */   
+    /* str     	x0, [x1] */
+
     /* read cpu id, stop slave cores */
     mrs         x1, mpidr_el1
     and         x1, x1, #3
-    cbz         x1, set_stack 
+    cbz         x1, switch
     /* cpu id > 0, stop */
 
 proc_hang:
@@ -46,8 +22,18 @@ proc_hang:
     wfe
 	b 		    proc_hang 
 
-set_stack:
+switch:
     /* cpu id == 0 */
+    /* Switch from EL2 to EL1 */
+    bl from_el2_to_el1
+
+
+set_exception_vector_table:
+    adr x1, exception_vector_table
+    msr vbar_el1, x1
+
+
+set_stack:
     /* set stack before our code */
     ldr         x1, =_start
     mov         sp, x1
@@ -71,3 +57,13 @@ memzero:
     subs 		x1, x1, #8
     b.gt 		memzero
     ret
+
+from_el2_to_el1:
+    ldr     x1, =CPACR_EL1_VALUE     // Make el0, el1 can use Floating point and Advanced SIMD
+    msr     CPACR_EL1, x1
+    mov x1, (1 << 31) // EL1 uses aarch64
+    msr hcr_el2, x1
+    mov x1, 0x3c5 // EL1h (SPSel = 1) with interrupt disabled
+    msr spsr_el2, x1
+    msr elr_el2, lr
+    eret // return to EL1

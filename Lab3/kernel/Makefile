@@ -29,14 +29,17 @@ vpath %.c %.S $(SRC_DIR)
 
 
 
-kernel8.img: start.o $(OBJS)
-	$(LD) -m aarch64elf -nostdlib $(OUT_DIR)/start.o $(addprefix $(OUT_DIR)/,$(notdir $(OBJS))) -T $(SRC_DIR)/$(LINK_SCRIPT) -o kernel8.elf
+kernel8.img: start.o entry.o $(OBJS)
+	$(LD) -m aarch64elf -nostdlib $(OUT_DIR)/start.o $(OUT_DIR)/entry.o $(addprefix $(OUT_DIR)/,$(notdir $(OBJS))) -T $(SRC_DIR)/$(LINK_SCRIPT) -o kernel8.elf
 	$(OBJ_CPY) -O binary kernel8.elf $@
 
 all: kernel8.img
 
 start.o: start.S
 	$(CC) $(CFLAGS) -c $< -o $(OUT_DIR)/start.o
+
+entry.o: entry.S
+	$(CC) $(CFLAGS) -c $< -o $(OUT_DIR)/entry.o
 
 %.o: %.c
 	$(CC) $(CFLAGS) -I $(INCLUDE_DIR) -c $< -o $(OUT_DIR)/$@

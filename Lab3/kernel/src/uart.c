@@ -1,6 +1,7 @@
 
 #include "gpio.h"
 #include "uart.h"
+#include "string.h"
 
 /**
  * Set baud rate and characteristics (115200 8N1) and map to GPIO
@@ -101,13 +102,7 @@ void uart_puts(char *s)
 {
     while( *s )
     {
-        /* convert newline to carrige return + newline */
-    
-        //if(*s=='\n')
-        //    uart_send('\r');
-
         uart_send(*s++);
-
     }
 }
 
@@ -140,4 +135,24 @@ void uart_put_int(unsigned long num){
         if(num > 10) uart_put_int(num / 10);
         uart_send(num % 10 + '0');
     }
+}
+
+
+
+
+int  uart_printf(char* fmt, ...) {
+    __builtin_va_list args;
+    __builtin_va_start(args, fmt);
+    char buf[VSPRINT_MAX_BUF_SIZE];
+
+    char *str = (char*)buf;
+    int count = vsprintf(str,fmt,args);
+
+    while(*str) {
+        if(*str=='\n')
+            uart_send('\r');
+        uart_send(*str++);
+    }
+    __builtin_va_end(args);
+    return count;
 }
