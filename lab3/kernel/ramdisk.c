@@ -77,6 +77,7 @@ void parse(void)
 
                 file_list[file_count].name_ptr = ptr;
                 int name_size = string_hex_to_int(header_ptr->c_namesize, 8);
+                while (name_size % 4 != 2) name_size++;
                 ptr += name_size;
 
                 file_list[file_count].content_ptr = ptr;
