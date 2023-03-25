@@ -15,11 +15,6 @@ enable_core_timer:
         str     w0, [x1] // unmask timer interrupt
         ret
 
-core_timer_handler:
-        mrs     x0, cntfrq_el0
-        msr     cntp_tval_el0, x0
-        ret
-
 .globl reset_core_timer_in_cycle
 reset_core_timer_in_cycle:
         msr     cntp_tval_el0, x0
