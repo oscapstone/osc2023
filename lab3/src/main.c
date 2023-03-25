@@ -17,6 +17,7 @@ int main(void *dtb_location) {
   fdt_find_do(dtb_location, "linux,initrd-start", initrd_fdt_callback);
   enable_int();
   uart_a_puts("testuart_async\n", 16);
+  asm volatile("svc 0;");
   terminal_run();
 
   return 0;

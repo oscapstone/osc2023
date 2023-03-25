@@ -4,9 +4,9 @@
 #include "timer.h"
 #include "uart.h"
 
-#include <stddef.h>
 
-task_q *head = NULL;
+#if 0
+task_q *head = 0;
 
 /************************************************************************
  * Add item to the queue
@@ -15,11 +15,17 @@ int task_queue_add(int (*fn)(void *), void *arg, int priority) {
   disable_int(); // Disable intererupt
   uart_puts("task_queue_add\n");
   task_q *cur = (task_q *)malloc(sizeof(task_q));
+  uart_puts("transfer start\n");
   cur->fn = fn;
+  uart_puts("fn\n");
   cur->arg = arg;
+  uart_puts("arg\n");
   cur->priority = priority;
+  uart_puts("prio\n");
   cur->next = head;
+  uart_puts("head\n");
   head = cur;
+  uart_puts("trans end\n");
   task_queue_preempt(); // Preemption
   enable_int();         // Enable interrupt.
   return 0;
@@ -34,7 +40,7 @@ int task_queue_add(int (*fn)(void *), void *arg, int priority) {
 int task_queue_preempt(void) {
   task_q *cur = head; // The new task.
   task_q *tmp;
-  while (cur->next != NULL && cur->priority > cur->next->priority) {
+  while (cur->next != 0 && cur->priority > cur->next->priority) {
     if (head == cur) {
       head = cur->next;
     }
@@ -52,13 +58,68 @@ int task_queue_preempt(void) {
  * Note: If possible, need to implement free()
  *************************************************************************/
 int task_queue_run(void) {
-  while (head != NULL) {
+  while (head != 0) {
     uart_puts("queue running!\n");
     head->fn(head->arg); // Execute the service function.
     head = head->next;   // Goto next task
   }
   return 0;
 }
+#else // Array version
+task_q Q[100];
+
+/************************************************************************
+ * Add item to the queue
+ ***********************************************************************/
+int task_queue_add(int (*fn)(void), int priority) {
+  int tmp = 0;
+  task_q swap;
+  int i = 0;
+  disable_int(); // Disable intererupt
+  for(i = 0; i < 100; i++){
+	  if(!Q[i].used){
+		  break;
+	  }
+  }
+  Q[i].fn = fn;
+  Q[i].priority = priority;
+  Q[i].used = 1;
+  tmp = i;
+  // Preemption
+  for(i = 0; i < 100; i++){
+	  if(i == tmp || Q[i].priority <= Q[tmp].priority)
+		  break;
+	  // SWAP
+	  if(Q[i].used && Q[i].priority > Q[tmp].priority){
+		  swap.fn = Q[i].fn;
+		  swap.priority = Q[i].priority;
+		  Q[i].fn = Q[tmp].fn;
+		  Q[i].priority = Q[tmp].priority;
+		  Q[tmp].fn = swap.fn;
+		  Q[tmp].priority = swap.priority;
+	  }
+  }
+  enable_int();         // Enable interrupt.
+  return 0;
+}
+
+
+/**************************************************************************
+ * Run tasks in the task queue.
+ *
+ * Note: If possible, need to implement free()
+ *************************************************************************/
+int task_queue_run(void) {
+  for(int i = 0; i < 100; i++){
+	  if(!Q[i].used)
+		  break;
+	  Q[i].fn();
+	  Q[i].used = 0;
+  }
+  return 0;
+}
+
+#endif
 
 /*************************************************************************
  * Enable core timer and set the expired time to 2 seconds.
@@ -95,16 +156,6 @@ int mini_uart_interrupt_enable(void) {
  * Timer handler which handle the timer interrupt from current EL.
  *************************************************************************/
 int core_timer_handler(void) {
-  // uart_puts(" Timer handler!\n");
-  // uint64_t time, freq;
-  // asm volatile(
-  //	"mrs	%[time], cntpct_el0;"
-  //	"mrs	%[freq], cntfrq_el0;"
-  //	: [time] "=r" (time), [freq] "=r" (freq)
-  //);
-  // uart_puts("Current second: ");
-  // uart_puthl(time / freq);
-  // uart_puts("\n");
   timer_walk(1);
   asm volatile("mrs	x0,	cntfrq_el0;" // Get the clock frequency
                "msr	cntp_tval_el0,	x0;" // set tval = cval + x0
@@ -157,9 +208,12 @@ static int uart_handler(void) {
   //  Only care the 2:1 bit in this register.
   switch (*AUX_MU_IIR & 0x6) {
   case 2:
-    uart_transmit_handler();
+    disable_uart_transmit_int();
+    task_queue_add(uart_transmit_handler, 9);
+    // NOTE: Don't enable interupt here, let handler decide.
     break;
   case 4:
+    // Recieve should response immediately.
     uart_receive_handler();
     break;
   case 0:
@@ -191,18 +245,20 @@ int enable_int(void) {
  * IRQ handler which from current EL
  *************************************************************************/
 int irq_handler(void) {
-  disable_int();
-
+	disable_int();
   if (*IRQ_PEND_1 & (1 << 29)) // Uart interrupt
     uart_handler();
-  else if (*CORE0_IRQ_SOURCE & 0x2) // Timer interrupt
-    core_timer_handler();           // Put core timer into queue.
+  else if (*CORE0_IRQ_SOURCE & 0x2) {// Timer interrupt
+    disable_timer_int();
+    task_queue_add(core_timer_handler, 10);           // Put core timer into queue.
+    enable_timer_int();
+  }
   else
-    task_queue_add(exception_entry, NULL, 10);
+    task_queue_add(exception_entry, 10);
 
-  // uart_puts("IRQ_HANDLER END\n");
-  enable_int();
   task_queue_run(); // Run the interrupt handler with INT enable.
+  //uart_puts("IRQ_HANDLER END\n");
+  enable_int();
   return 0;
 }
 

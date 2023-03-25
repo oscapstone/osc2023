@@ -9,13 +9,47 @@ static char tx_buf[uart_buf_len];
 static int rx_point = 0;
 static int tx_point = 0;
 
+/*=======================================================================+
+ | Enable or Disable mini uart interrupt                                 |
+ +======================================================================*/
+
+/*************************************************************************
+ * Disable Recieve interrupt without reset the rx_point
+ ************************************************************************/
+int disable_uart_receive_int(void) {
+	*AUX_MU_IER &= 0x02;
+	return 0;
+}
+
 /**************************************************************************
  * Enable Recieve interrupt
  *************************************************************************/
 int enable_uart_receive_int(void) {
-  rx_point = 0;        // Initialize the pivot
+  //rx_point = 0;        // Initialize the pivot
   *AUX_MU_IER |= 0x01; // Enable Rx interrupt
   return 0;
+}
+
+/*************************************************************************
+ * Disable Transmit interrupt without reset the rx_point
+ ************************************************************************/
+int disable_uart_transmit_int(void) {
+	*AUX_MU_IER &= 0x01;	// Disalbe bit 2.
+	return 0;
+}
+
+/**************************************************************************
+ * Enable Transmit interrupt
+ *************************************************************************/
+int enable_uart_transmit_int(void) {
+  *AUX_MU_IER |= 0x02; 	// Enable Tx interrupt
+  return 0;
+}
+/*=======================================================================*/
+
+int reset_rx(void){
+	rx_point = 0;
+	return 0;
 }
 
 /**************************************************************************
@@ -38,8 +72,10 @@ int uart_receive_handler() {
  *************************************************************************/
 int uart_transmit_handler() {
   // uart_puts("transmit\n");
-  if (tx_point < uart_buf_len && tx_buf[tx_point] != 0)
+  if (tx_point < uart_buf_len && tx_buf[tx_point] != 0){
     *AUX_MU_IO = tx_buf[tx_point++]; // Write to buffer
+    enable_uart_transmit_int();	// Still have chars in the buffer.
+  }
   else
     *AUX_MU_IER &= 0x01; // Transmition done disable interrupt.
   return 0;
@@ -49,7 +85,7 @@ int uart_transmit_handler() {
  * Interrupt version of sending string through UART
  *************************************************************************/
 int uart_a_puts(const char *str, int len) {
-  uart_puts("async\n");
+  uart_puts("async write:\n");
   if (len <= 0)
     return 1;
   tx_point = 0;

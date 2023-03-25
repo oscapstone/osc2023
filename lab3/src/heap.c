@@ -18,6 +18,8 @@ static char *head;
  */
 int heap_init() {
   head = (char *)&_end;
+  int pad = (4 - ((int)&_end % 4)) % 4;
+  head += pad;
   head += 4;
   return 0;
 }

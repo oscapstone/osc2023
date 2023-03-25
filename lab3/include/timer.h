@@ -22,4 +22,8 @@ int timer_walk(int sec);
 int init_timer_Q(void);
 int set_timer_read();
 
+// Timer control functions
+int enable_timer_int(void);
+int disable_timer_int(void);
+
 #endif // TIMER_H

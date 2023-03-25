@@ -12,7 +12,6 @@ void terminal_run() {
   uart_puts("=======Terminal start!!======\n");
 
   while (1) {
-    asm volatile("svc	0;");
     tmp = input_buf;
     tmp[0] = 0;
     uart_putc('>');
