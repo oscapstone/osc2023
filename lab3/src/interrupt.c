@@ -4,28 +4,20 @@
 #include "timer.h"
 #include "uart.h"
 
-
 #if 0
 task_q *head = 0;
 
 /************************************************************************
  * Add item to the queue
  ***********************************************************************/
-int task_queue_add(int (*fn)(void *), void *arg, int priority) {
+int task_queue_add(int (*fn)(void), int priority) {
   disable_int(); // Disable intererupt
-  uart_puts("task_queue_add\n");
   task_q *cur = (task_q *)malloc(sizeof(task_q));
-  uart_puts("transfer start\n");
+  uart_puth(cur);
   cur->fn = fn;
-  uart_puts("fn\n");
-  cur->arg = arg;
-  uart_puts("arg\n");
   cur->priority = priority;
-  uart_puts("prio\n");
   cur->next = head;
-  uart_puts("head\n");
   head = cur;
-  uart_puts("trans end\n");
   task_queue_preempt(); // Preemption
   enable_int();         // Enable interrupt.
   return 0;
@@ -48,7 +40,6 @@ int task_queue_preempt(void) {
     cur->next->next = cur;
     cur->next = tmp;
   }
-  uart_puts("Preempted\n");
   return 0;
 }
 
@@ -58,10 +49,13 @@ int task_queue_preempt(void) {
  * Note: If possible, need to implement free()
  *************************************************************************/
 int task_queue_run(void) {
-  while (head != 0) {
-    uart_puts("queue running!\n");
-    head->fn(head->arg); // Execute the service function.
-    head = head->next;   // Goto next task
+	disable_int();
+	task_q* tmp = head;
+	head = 0;
+	enable_int();
+  while (tmp != 0) {
+    tmp->fn(); // Execute the service function.
+    tmp = tmp->next;   // Goto next task
   }
   return 0;
 }
@@ -76,33 +70,32 @@ int task_queue_add(int (*fn)(void), int priority) {
   task_q swap;
   int i = 0;
   disable_int(); // Disable intererupt
-  for(i = 0; i < 100; i++){
-	  if(!Q[i].used){
-		  break;
-	  }
+  for (i = 0; i < 100; i++) {
+    if (!Q[i].used) {
+      break;
+    }
   }
   Q[i].fn = fn;
   Q[i].priority = priority;
   Q[i].used = 1;
   tmp = i;
   // Preemption
-  for(i = 0; i < 100; i++){
-	  if(i == tmp || Q[i].priority <= Q[tmp].priority)
-		  break;
-	  // SWAP
-	  if(Q[i].used && Q[i].priority > Q[tmp].priority){
-		  swap.fn = Q[i].fn;
-		  swap.priority = Q[i].priority;
-		  Q[i].fn = Q[tmp].fn;
-		  Q[i].priority = Q[tmp].priority;
-		  Q[tmp].fn = swap.fn;
-		  Q[tmp].priority = swap.priority;
-	  }
+  for (i = 0; i < 100; i++) {
+    if (i == tmp || Q[i].priority <= Q[tmp].priority)
+      break;
+    // SWAP
+    if (Q[i].used && Q[i].priority > Q[tmp].priority) {
+      swap.fn = Q[i].fn;
+      swap.priority = Q[i].priority;
+      Q[i].fn = Q[tmp].fn;
+      Q[i].priority = Q[tmp].priority;
+      Q[tmp].fn = swap.fn;
+      Q[tmp].priority = swap.priority;
+    }
   }
-  enable_int();         // Enable interrupt.
+  enable_int(); // Enable interrupt.
   return 0;
 }
-
 
 /**************************************************************************
  * Run tasks in the task queue.
@@ -110,11 +103,11 @@ int task_queue_add(int (*fn)(void), int priority) {
  * Note: If possible, need to implement free()
  *************************************************************************/
 int task_queue_run(void) {
-  for(int i = 0; i < 100; i++){
-	  if(!Q[i].used)
-		  break;
-	  Q[i].fn();
-	  Q[i].used = 0;
+  for (int i = 0; i < 100; i++) {
+    if (!Q[i].used)
+      break;
+    Q[i].fn();
+    Q[i].used = 0;
   }
   return 0;
 }
@@ -245,20 +238,19 @@ int enable_int(void) {
  * IRQ handler which from current EL
  *************************************************************************/
 int irq_handler(void) {
-	disable_int();
+  disable_int();
   if (*IRQ_PEND_1 & (1 << 29)) // Uart interrupt
     uart_handler();
-  else if (*CORE0_IRQ_SOURCE & 0x2) {// Timer interrupt
+  else if (*CORE0_IRQ_SOURCE & 0x2) { // Timer interrupt
     disable_timer_int();
-    task_queue_add(core_timer_handler, 10);           // Put core timer into queue.
+    task_queue_add(core_timer_handler, 10); // Put core timer into queue.
     enable_timer_int();
-  }
-  else
+  } else
     task_queue_add(exception_entry, 10);
 
-  task_queue_run(); // Run the interrupt handler with INT enable.
-  //uart_puts("IRQ_HANDLER END\n");
   enable_int();
+  task_queue_run(); // Run the interrupt handler with INT enable.
+  // uart_puts("IRQ_HANDLER END\n");
   return 0;
 }
 

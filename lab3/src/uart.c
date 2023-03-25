@@ -17,15 +17,15 @@ static int tx_point = 0;
  * Disable Recieve interrupt without reset the rx_point
  ************************************************************************/
 int disable_uart_receive_int(void) {
-	*AUX_MU_IER &= 0x02;
-	return 0;
+  *AUX_MU_IER &= 0x02;
+  return 0;
 }
 
 /**************************************************************************
  * Enable Recieve interrupt
  *************************************************************************/
 int enable_uart_receive_int(void) {
-  //rx_point = 0;        // Initialize the pivot
+  // rx_point = 0;        // Initialize the pivot
   *AUX_MU_IER |= 0x01; // Enable Rx interrupt
   return 0;
 }
@@ -34,22 +34,22 @@ int enable_uart_receive_int(void) {
  * Disable Transmit interrupt without reset the rx_point
  ************************************************************************/
 int disable_uart_transmit_int(void) {
-	*AUX_MU_IER &= 0x01;	// Disalbe bit 2.
-	return 0;
+  *AUX_MU_IER &= 0x01; // Disalbe bit 2.
+  return 0;
 }
 
 /**************************************************************************
  * Enable Transmit interrupt
  *************************************************************************/
 int enable_uart_transmit_int(void) {
-  *AUX_MU_IER |= 0x02; 	// Enable Tx interrupt
+  *AUX_MU_IER |= 0x02; // Enable Tx interrupt
   return 0;
 }
 /*=======================================================================*/
 
-int reset_rx(void){
-	rx_point = 0;
-	return 0;
+int reset_rx(void) {
+  rx_point = 0;
+  return 0;
 }
 
 /**************************************************************************
@@ -72,11 +72,10 @@ int uart_receive_handler() {
  *************************************************************************/
 int uart_transmit_handler() {
   // uart_puts("transmit\n");
-  if (tx_point < uart_buf_len && tx_buf[tx_point] != 0){
+  if (tx_point < uart_buf_len && tx_buf[tx_point] != 0) {
     *AUX_MU_IO = tx_buf[tx_point++]; // Write to buffer
-    enable_uart_transmit_int();	// Still have chars in the buffer.
-  }
-  else
+    enable_uart_transmit_int();      // Still have chars in the buffer.
+  } else
     *AUX_MU_IER &= 0x01; // Transmition done disable interrupt.
   return 0;
 }
