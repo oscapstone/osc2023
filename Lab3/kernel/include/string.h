@@ -19,4 +19,12 @@ void itohex_str ( uint64_t d, int size, char * s );
 unsigned long hextoint(char* addr, const int size);
 int strncmp     (const char *s1, const char *s2, unsigned long long n);
 
+
+char* memcpy(void *dest, const void *src, unsigned long long len);
+char* strcpy (char *dest, char *src);
+
+char* str_SepbySpace(char* head);
+int   atoi(char* str);
+
+
 #endif

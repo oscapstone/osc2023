@@ -391,7 +391,7 @@ void command_exec(char *filepath){
         if(strcmp(c_filepath, filepath)==0)
         {
             //exec c_filedata
-            char* ustack = malloc(USTACK_SIZE);
+            char* ustack = kmalloc(USTACK_SIZE);
             core_timer_enable(2);
             asm("msr elr_el1, %0\n\t"
                 "mov x1, 0x3c0\n\t"
