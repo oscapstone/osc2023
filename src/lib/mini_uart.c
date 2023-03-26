@@ -4,7 +4,68 @@
 #include <type.h>
 #include <stdarg.h>
 
-void uart_send (char c){
+#define BUFSIZE 0x100
+
+static int uart_sync_mode;
+
+typedef char (*recvfp)(void);
+typedef void (*sendfp)(char);
+
+recvfp uart_recv_fp;
+sendfp uart_send_fp;
+
+static char w_buffer[BUFSIZE];
+static char r_buffer[BUFSIZE];
+static int w_head, w_tail, r_head, r_tail;
+
+
+char uart_recv(void){
+    return (uart_recv_fp)();
+}
+
+void uart_send(char c){
+    (uart_send_fp)(c);
+}
+
+static char uart_async_recv(void){
+    while(1){
+        if(r_head != r_tail)
+            break;
+    }
+
+    char tmp = r_buffer[r_head];
+    r_head = (r_head + 1) % BUFSIZE;
+
+    return tmp;
+}
+
+static void uart_async_send(char c)
+{
+    while(1){
+        if(w_head != (w_tail + 1) % BUFSIZE)
+            break;
+    }
+
+    w_buffer[w_tail] = c;
+    w_tail = (w_tail + 1) % BUFSIZE;
+
+    // Enable transmit interrupt
+    uint32 ier = get32(AUX_MU_IER_REG);
+    ier = ier | 0x02;
+    put32(AUX_MU_IER_REG, ier);
+
+    enable_interrupt();
+}
+
+static char uart_sync_recv (void){
+	while(1) {
+		if(get32(AUX_MU_LSR_REG)&0x01) 
+			break;
+	}
+	return(get32(AUX_MU_IO_REG)&0xFF);
+}
+
+static void uart_sync_send (char c){
 	while(1) {
 		if(get32(AUX_MU_LSR_REG)&0x20) // hang until can read
 			break;
@@ -14,7 +75,7 @@ void uart_send (char c){
 
 void uart_send_string(char* str){
 	for (int i = 0; str[i] != '\0'; i ++)
-		uart_send((char)str[i]);
+		uart_send(str[i]);
 }
 
 void uart_send_hex(unsigned int d) {
@@ -28,14 +89,6 @@ void uart_send_hex(unsigned int d) {
         n+=n>9?0x37:0x30;
         uart_send(n);
     }
-}
-
-char uart_recv (void){
-	while(1) {
-		if(get32(AUX_MU_LSR_REG)&0x01) 
-			break;
-	}
-	return(get32(AUX_MU_IO_REG)&0xFF);
 }
 
 int uart_recv_line(char* buf, int maxline){
@@ -177,4 +230,74 @@ void uart_init (void)
 	put32(AUX_MU_BAUD_REG,270);             //Set baud rate to 115200
 	put32(AUX_MU_IIR_REG, 6);               //Clear the Rx/Tx FIFO
 	put32(AUX_MU_CNTL_REG,3);               //Finally, enable transmitter and receiver
+
+    // UART start from synchronous mode
+    uart_sync_mode = 0;
+    uart_recv_fp = uart_sync_recv;
+    uart_send_fp = uart_sync_send;
+}
+
+void uart_irq_handler(void){
+    uint32 iir = get32(AUX_MU_IIR_REG);
+    
+    // No interrupt
+    if(iir & 0x01)
+        return;
+
+    // Transmit holding register empty
+    if(iir & 0x02){
+        /* if head equals to tail ==> means the write buffer is empty.
+           Then we need to disable transmit interrupt*/
+        if(w_head == w_tail){
+            uint32 ier = get32(AUX_MU_IER_REG);
+            ier &= ~(0x02);
+            put32(AUX_MU_IER_REG, ier);
+        }
+        /* if head not equals to tail ==> means write buffer is not empty
+           Then we need to write the buffer to IO register and move the buffer pointer backward*/
+        else{
+            put32(AUX_MU_IO_REG, w_buffer[w_head]);
+            w_head = (w_head+1)%BUFSIZE;
+        }
+    }
+
+    // Receiver holds valid byte
+    else if(iir & 0x04){
+        // if head not equals to tail+1 ==> means read buffer still have some place
+        if(r_head != (r_tail+1)%BUFSIZE){
+            r_buffer[r_tail] = get32(AUX_MU_IO_REG) & 0xff;
+            r_tail = (r_tail+1)%BUFSIZE;
+        }
+    }
+}
+
+int uart_switch_mode(void){
+    uart_sync_mode = !uart_sync_mode;
+    uint32 ier = get32(AUX_MU_IER_REG);
+    // set bit 0 and bit 1 to zero
+    ier &= ~(0x03);
+
+    if(uart_sync_mode == 0){
+        // synchronous mode
+        uart_recv_fp = uart_sync_recv;
+        uart_send_fp = uart_sync_send;
+
+        // disable interrupt;
+        put32(AUX_MU_IER_REG, ier);
+    }
+    else{
+        // asynchronous mode
+        uart_recv_fp = uart_async_recv;
+        uart_send_fp = uart_async_send;
+
+        // clear Rx/Tx FIFO
+        put32(AUX_MU_IIR_REG, 6);
+
+
+        // enable receive interrupt
+        ier |= 0x01;
+        put32(AUX_MU_IER_REG, ier);
+    }
+
+    return uart_sync_mode;
 }

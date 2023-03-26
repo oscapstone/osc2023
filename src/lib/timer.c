@@ -4,7 +4,9 @@
 #include <syscall.h>
 
 #define CORE0_IRQ_SOURCE 0x40000060
+uint64 timer_boot_cnt;
 static int timer_dump = 0;
+
 static void timer_set_boot_cnt(){
     timer_boot_cnt = read_sysreg(cntpct_el0);
 }
@@ -30,8 +32,3 @@ void timer_irq_handler()
             disable_interrupt();
     }
 }
-
-// void timer_switch_info()
-// {
-//     timer_show_enable = !timer_show_enable;
-// }

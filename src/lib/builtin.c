@@ -26,6 +26,7 @@ void _help(int mode){
             "parsedtb\t: " "parse device tree" "\r\n"
             "malloc <size>\t: " "allocate a block of memory with size" "\r\n"
             "exec <filename>\t: " "execute user program" "\r\n"
+            "chmod_uart\t: " "change uart async/sync mode" "\r\n"
         );
     }
 }
@@ -89,4 +90,12 @@ void _exec(uint64 _initramfs_addr,char* filename){
     
     user_sp = (char *)0x10000000;
     exec_user_proc(user_sp, mem);
+}
+
+void _chmod_uart(){
+    int mode = uart_switch_mode();
+    if(mode==0)
+        uart_printf("[*]Use synchronous uart now!\r\n");
+    else
+        uart_printf("[*]Use asynchronous uart now!\r\n");
 }

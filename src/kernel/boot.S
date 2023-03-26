@@ -23,8 +23,8 @@ master:
 	bl core_timer_enable
 	
 	// Initialize bss
-	adr	x0, bss_begin
-	adr	x1, bss_end
+	ldr	x0, =bss_begin
+	ldr	x1, =bss_end
 	sub	x1, x1, x0
 	bl 	memzero
 
@@ -96,7 +96,7 @@ set_exception_vector_table:
 exception_handler:
     save_all
 	mov x0, 0
-    bl default_exception_handler
+    // bl default_exception_handler
 	// Do nothing
     load_all
     eret
@@ -121,7 +121,7 @@ l64_syn_eh_end:
 l64_irq_eh:
 	save_all
 
-	bl timer_irq_handler
+	bl irq_handler
 
 	load_all
 	eret

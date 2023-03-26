@@ -11,5 +11,6 @@ void _cat(uint64 _initramfs_addr, char* filename);
 void _parsedtb(char* fdt_base);
 void* _malloc(char* size);
 void _exec(uint64 _initramfs_addr, char* filename);
+void _chmod_uart();
 
 #endif

@@ -49,6 +49,8 @@ void shell_interact(void){
         else
             uart_printf("usage: exec <filename>\r\n");
     }
+    else if (!strcmp("chmod_uart",shell_buf))
+        _chmod_uart();
     else {
         _echo(shell_buf);
         if(cnt)
@@ -66,7 +68,7 @@ void kernel_main(char *fdt){
     uart_printf("[*] fdt base: %x\r\n", fdt);
 
     initramfs_init(fdt);
-    // enable_irq1();
+    enable_irqs1();
     enable_interrupt();
     while(1)
         shell_interact();
