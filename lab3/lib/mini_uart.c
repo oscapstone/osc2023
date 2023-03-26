@@ -212,9 +212,9 @@ void uart_init(void)
 	 */
 	put32(AUX_MU_CNTL_REG, 0);
 	/*
-	 * Enables receive and transmit interrupts
+	 * Disables receive and transmit interrupts
 	 */
-	put32(AUX_MU_IER_REG, 1);
+	put32(AUX_MU_IER_REG, 0);
 	/*
 	 * Mini UART can support either 7- or 8-bit operations.
 	 * Enables 8 bit mode here.
