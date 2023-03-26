@@ -1,4 +1,4 @@
-lab1/*.o
-lab1/*.S
+**/*.o
+**/*.dtb
 .DS_Store
 ..DS_Store/*
