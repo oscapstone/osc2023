@@ -10,7 +10,8 @@ void kernel_main(void)
 	uart_init();
 	get_device_tree_adr();
 	enable_core_timer();
-	reset_core_timer_in_cycle((unsigned int)0xffffffff);
+	reset_core_timer_in_second(600);
+	enable_2nd_level_interrupt_ctrl();
 	uart_send_string("Kernel Starts...\r\n");
 	shell_loop();
 }
