@@ -19,13 +19,14 @@ void info(void) {
 }
 
 void usage(void) {
-    mini_uart_puts("ls:\tlist the filenames in initramfs file\r\n");
-    mini_uart_puts("cat:\tprint the contents in initramfs\r\n");
-    mini_uart_puts("help:\tprint this help memu\r\n");
-    mini_uart_puts("info:\tprint hardware's information\r\n");
-    mini_uart_puts("hello:\tprint Hello World!\r\n");
-    mini_uart_puts("alloc:\ttest for the simple_alloc function\r\n");
-    mini_uart_puts("reboot:\treboot the device\r\n");
+    mini_uart_puts("ls:      list the filenames in initramfs file\r\n");
+    mini_uart_puts("cat:     print the contents in initramfs\r\n");
+    mini_uart_puts("help:    print this help memu\r\n");
+    mini_uart_puts("info:    print hardware's information\r\n");
+    mini_uart_puts("hello:   print Hello World!\r\n");
+    mini_uart_puts("alloc:   test for the simple_alloc function\r\n");
+    mini_uart_puts("reboot:  reboot the device\r\n");
+    mini_uart_puts("execute: run user program from initramfs\r\n");
 }
 
 void alloc(void) {

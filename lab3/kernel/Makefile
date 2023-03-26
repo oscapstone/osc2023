@@ -44,7 +44,7 @@ run: $(PROGS)
 cpio: $(PROGS)
 	$(QEMU) -M raspi3 -kernel $< -display none -serial null -serial stdio -initrd $(CPIO)
 
-debug: $(PROGS)
+debug: $(BUILD_DIR)/$(ELF)
 	$(QEMU) -M raspi3 -kernel $< -display none -S -s -serial null -serial stdio
 
 clean:
