@@ -1,7 +1,7 @@
 // save general registers to stack
 .macro save_all
     sub sp, sp, 32 * 9
-    stp x0, x1, [sp ,16 * 0]
+    stp x0, x1, [sp ,16 * 0]  // store pair of registers
     stp x2, x3, [sp ,16 * 1]
     stp x4, x5, [sp ,16 * 2]
     stp x6, x7, [sp ,16 * 3]
@@ -17,12 +17,12 @@
     stp x26, x27, [sp ,16 * 13]
     stp x28, x29, [sp ,16 * 14]
     str x30, [sp, 16 * 15]
-    //using for nested interrupt
-    mrs x0,spsr_el1
+    // information for nested interrupt
+    mrs x0, spsr_el1
     str x0, [sp, 16 * 16]
-    mrs x0,elr_el1
-    str x0,  [sp, 16 * 17]
-    ldp x0, x1, [sp ,16 * 0]  // restore x0
+    mrs x0, elr_el1
+    str x0, [sp, 16 * 17]
+    ldp x0, x1, [sp ,16 * 0]  // restore x0 instead of elr_el1
 .endm
 
 // load general registers from stack
@@ -43,26 +43,22 @@
     ldp x26, x27, [sp ,16 * 13]
     ldp x28, x29, [sp ,16 * 14]
     ldr x30, [sp, 16 * 15]
-    //using for nested interrupt
+    // information for nested interrupt
     ldr x0, [sp, 16 * 16]
     msr spsr_el1,x0
-    ldr x0,  [sp, 16 * 17]
+    ldr x0, [sp, 16 * 17]
     msr elr_el1, x0
-    ldp x0, x1, [sp ,16 * 0]  // restore x0
+    ldp x0, x1, [sp ,16 * 0]  // restore x0 instead of elr_el1
     add sp, sp, 32 * 9
 .endm
 
 .macro    ventry    label
-    .align    7
+    .align    7   // entry should be aligned to 0x80 (2^7)
     b    \label
 .endm
 
-
-
-.align 11 // vector table should be aligned to 0x800
-
+.align 11         // vector table should be aligned to 0x800 (2^11)
 .global exception_vector_table
-
 
 // exception_vector_table definition
 // https://github.com/torvalds/linux/blob/v4.14/arch/arm64/kernel/entry.S#L367

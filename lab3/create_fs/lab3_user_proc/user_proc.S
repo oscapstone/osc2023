@@ -1,3 +1,4 @@
+// Run `svc 0` 5 times; svc (el0 -> el1) system calls
 .section ".text"
 .global _start
 _start:

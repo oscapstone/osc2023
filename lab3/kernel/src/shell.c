@@ -157,11 +157,10 @@ void do_cmd_exec(char* filepath)
         {
             //exec c_filedata
             char* ustack = kmalloc(USTACK_SIZE);
-            asm("msr elr_el1, %0\n\t"
-                "mov x1, 0x3c0\n\t"
-                "msr spsr_el1, xzr\n\t"
-                "msr sp_el0, %1\n\t"    // enable interrupt in EL0. You can do it by setting spsr_el1 to 0 before returning to EL0.
-                "eret\n\t"
+            asm("msr elr_el1, %0\n\t"   // elr_el1: Set the address to return to: c_filedata
+                "msr spsr_el1, xzr\n\t" // enable interrupt (PSTATE.DAIF) -> spsr_el1[9:6]=4b0. In Basic#1 sample, EL1 interrupt is disabled.
+                "msr sp_el0, %1\n\t"    // user program stack pointer set to new stack.
+                "eret\n\t"              // Perform exception return. EL1 -> EL0
                 :: "r" (c_filedata),
                    "r" (ustack+USTACK_SIZE));
             free(ustack);

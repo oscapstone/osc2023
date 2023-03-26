@@ -4,6 +4,7 @@
 #include "exception.h"
 #include "u_string.h"
 
+
 #define IRQS1  ((volatile unsigned int*)(0x3f00b210))
 
 //implement first in first out buffer with a read index and a write index
@@ -86,10 +87,12 @@ int  uart_sendline(char* fmt, ...) {
     return count;
 }
 
+
+// uart_async_getc read from buffer
+// uart_r_irq_handler write to buffer then output
 char uart_async_getc() {
     *AUX_MU_IER_REG |=1; // enable read interrupt
-    // while buffer empty
-    // enable read interrupt to get some input into buffer
+    // do while if buffer empty
     while (uart_rx_buffer_ridx == uart_rx_buffer_widx) *AUX_MU_IER_REG |=1; // enable read interrupt
     el1_interrupt_disable();
     char r = uart_rx_buffer[uart_rx_buffer_ridx++];
@@ -98,13 +101,15 @@ char uart_async_getc() {
     return r;
 }
 
+
+// uart_async_putc writes to buffer
+// uart_w_irq_handler read from buffer then output
 void uart_async_putc(char c) {
-    // full buffer then wait
+    // if buffer full, wait for uart_w_irq_handler
     while( (uart_tx_buffer_widx + 1) % VSPRINT_MAX_BUF_SIZE == uart_tx_buffer_ridx )  *AUX_MU_IER_REG |=2;  // enable write interrupt
     el1_interrupt_disable();
     uart_tx_buffer[uart_tx_buffer_widx++] = c;
     if(uart_tx_buffer_widx >= VSPRINT_MAX_BUF_SIZE) uart_tx_buffer_widx=0;  // cycle pointer
-    // start asynchronous transfer
     el1_interrupt_enable();
     *AUX_MU_IER_REG |=2;  // enable write interrupt
 }
@@ -127,10 +132,11 @@ int  uart_puts(char* fmt, ...) {
 }
 
 
+// AUX_MU_IER_REG -> BCM2837-ARM-Peripherals.pdf - Pg.12
 void uart_interrupt_enable(){
     *AUX_MU_IER_REG |=1;  // enable read interrupt
     *AUX_MU_IER_REG |=2;  // enable write interrupt
-    *IRQS1 |= 1 << 29;
+    *IRQS1 |= 1 << 29;    // Pg.112
 }
 
 void uart_interrupt_disable(){
