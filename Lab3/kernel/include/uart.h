@@ -49,9 +49,9 @@ char uart_recv();
 int  uart_async_puts(char* fmt, ...);
 int uart_async_printf(char *fmt, ...);
 
-
-void uart_interrupt_handler();
 void uart_interrupt_enable();
 void uart_interrupt_disable();
+void uart_r_irq_handler();
+void uart_w_irq_handler();
 
 #endif

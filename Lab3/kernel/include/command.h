@@ -17,7 +17,6 @@ void command_cat(char *args);
 void command_dtb();
 void command_exec(char *args);
 void command_el();
-void command_setTimeout();
-
+void command_setTimeout(char *args);
 
 #endif

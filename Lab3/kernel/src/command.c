@@ -210,7 +210,7 @@ void command_exec(char *filepath){
         {
             //exec c_filedata
             char* ustack = kmalloc(USTACK_SIZE);
-            core_timer_enable(2);
+            core_timer_enable();
             asm("msr elr_el1, %0\n\t"
                 "mov x1, 0x3c0\n\t"
                 "msr spsr_el1, xzr\n\t"
@@ -232,6 +232,8 @@ void command_el(){
     print_el();
 }
 
-void command_setTimeout(){
-    uart_puts("setTimout TEST\n");
+void command_setTimeout(char *args){
+    char* sec = str_SepbySpace(args);
+    uart_printf("setTimeout: %s , %s\n", args, sec);
+    add_timer(timer_set2sAlert,2,"2sAlert");
 }

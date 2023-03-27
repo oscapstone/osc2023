@@ -249,49 +249,11 @@ int uart_async_printf(char *fmt, ...)
 
 
 
-//https://cs140e.sergio.bz/docs/BCM2837-ARM-Peripherals.pdf p13
-/*
-AUX_MU_IIR
-on read bits[2:1] :
-00 : No interrupts
-01 : Transmit holding register empty
-10 : Receiver holds valid byte
-11: <Not possible> 
-*/
-
-// buffer read, write
-void uart_interrupt_handler(){
-    if(*AUX_MU_IIR & (1<<1)) //on write
-    {
-        if(uart_tx_buffer_ridx == uart_tx_buffer_widx)
-        {
-            *AUX_MU_IER &= ~(2);  // disable write interrupt
-            return;  // buffer empty
-        }
-        uart_send(uart_tx_buffer[uart_tx_buffer_ridx++]);
-        if(uart_tx_buffer_ridx>=VSPRINT_MAX_BUF_SIZE) uart_tx_buffer_ridx=0;
-    }
-    else if(*AUX_MU_IIR & (2<<1)) //on read
-    {
-        if((uart_rx_buffer_widx + 1) % VSPRINT_MAX_BUF_SIZE == uart_rx_buffer_ridx)
-        {
-            *AUX_MU_IER &= ~(1);  // disable read interrupt
-            return;
-        }
-        uart_rx_buffer[uart_rx_buffer_widx++] = uart_recv();
-        uart_send(uart_rx_buffer[uart_rx_buffer_widx-1]);
-        if(uart_rx_buffer_widx>=VSPRINT_MAX_BUF_SIZE) uart_rx_buffer_widx=0;
-    }else
-    {
-        uart_puts("uart_interrupt_handler error!!\n");
-    }
-
-}
-
+// AUX_MU_IER -> BCM2837-ARM-Peripherals.pdf - Pg.12
 void uart_interrupt_enable(){
     *AUX_MU_IER |=1;  // enable read interrupt
     *AUX_MU_IER |=2;  // enable write interrupt
-    *IRQS1 |= 1 << 29;
+    *IRQS1 |= 1 << 29;    // Pg.112
 }
 
 void uart_interrupt_disable(){
@@ -300,3 +262,25 @@ void uart_interrupt_disable(){
 }
 
 
+void uart_r_irq_handler(){
+    if((uart_rx_buffer_widx + 1) % VSPRINT_MAX_BUF_SIZE == uart_rx_buffer_ridx)
+    {
+        *AUX_MU_IER &= ~(1);  // disable read interrupt
+        return;
+    }
+    uart_rx_buffer[uart_rx_buffer_widx++] = uart_recv();
+    uart_send(uart_rx_buffer[uart_rx_buffer_widx-1]);
+    if(uart_rx_buffer_widx>=VSPRINT_MAX_BUF_SIZE) uart_rx_buffer_widx=0;
+    *AUX_MU_IER |=1;
+}
+
+void uart_w_irq_handler(){
+    if(uart_tx_buffer_ridx == uart_tx_buffer_widx)
+    {
+        *AUX_MU_IER &= ~(2);  // disable write interrupt
+        return;  // buffer empty
+    }
+    uart_send(uart_tx_buffer[uart_tx_buffer_ridx++]);
+    if(uart_tx_buffer_ridx>=VSPRINT_MAX_BUF_SIZE) uart_tx_buffer_ridx=0;
+    *AUX_MU_IER |=2;  // enable write interrupt
+}
