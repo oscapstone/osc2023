@@ -4,36 +4,16 @@
 #include "str.h"
 #include "uart.h"
 
-#define BUF_LEN 256
+//#define BUF_LEN 256
 
 void terminal_run() {
   char input_buf[BUF_LEN + 1];
-  char *tmp;
   uart_puts("=======Terminal start!!======\n");
 
   while (1) {
-    tmp = input_buf;
-    tmp[0] = 0;
     uart_putc('>');
-    for (int i = 0; i < BUF_LEN; i++) {
-      *tmp = uart_getc();
-      uart_putc(*tmp);
 
-      if (*tmp == 127) {
-        *tmp = 0;
-        tmp--;
-        *tmp = 0;
-        tmp--;
-        uart_send('\b');
-        uart_send(' ');
-        uart_send('\b');
-      }
-      if (*tmp == '\n') {
-        *(tmp) = '\0';
-        break;
-      }
-      tmp++;
-    }
+    uart_gets(input_buf);
 
     command_exec(input_buf);
   }

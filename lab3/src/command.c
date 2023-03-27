@@ -59,6 +59,7 @@ struct command commands[] = {{
                              {
                                  .name = "NULL", // The end of the array
                              }};
+
 int async_read() {
 
   uart_puts("Async Read start...\n");
@@ -72,47 +73,11 @@ int time_out() {
   int second = 0;
   memset(buf, 0, 256);
   memset(integer, 0, 10);
-  char *tmp = buf;
-  void *start = 0;
   uart_puts("Message:\n");
-  for (int i = 0; i < 255; i++) {
-    *tmp = uart_getc();
-    uart_putc(*tmp);
-    if (*tmp == 127) {
-      *tmp = 0;
-      tmp--;
-      *tmp = 0;
-      tmp--;
-      uart_send('\b');
-      uart_send(' ');
-      uart_send('\b');
-    }
-    if (*tmp == '\n') {
-      *(tmp) = '\0';
-      break;
-    }
-    tmp++;
-  }
+  uart_gets(buf);
   uart_puts("Seconds:\n");
-  tmp = integer;
-  for (int i = 0; i < 10; i++) {
-    *tmp = uart_getc();
-    uart_putc(*tmp);
-    if (*tmp == 127) {
-      *tmp = 0;
-      tmp--;
-      *tmp = 0;
-      tmp--;
-      uart_send('\b');
-      uart_send(' ');
-      uart_send('\b');
-    }
-    if (*tmp == '\n') {
-      *(tmp) = '\0';
-      break;
-    }
-    tmp++;
-  }
+  uart_gets(integer);
+  // char array -> int
   for (int i = 0; i < 10; i++) {
     if (integer[i] >= '0' && integer[i] <= '9') {
       second += integer[i] - '0';
@@ -129,27 +94,9 @@ int time_out() {
 int run_loader() {
   char buf[256];
   memset(buf, 0, 256);
-  char *tmp = buf;
   void *start = 0;
   uart_puts("Name:\n");
-  for (int i = 0; i < 255; i++) {
-    *tmp = uart_getc();
-    uart_putc(*tmp);
-    if (*tmp == 127) {
-      *tmp = 0;
-      tmp--;
-      *tmp = 0;
-      tmp--;
-      uart_send('\b');
-      uart_send(' ');
-      uart_send('\b');
-    }
-    if (*tmp == '\n') {
-      *(tmp) = '\0';
-      break;
-    }
-    tmp++;
-  }
+  uart_gets(buf);
   start = initrd_content_getLo(buf);
   if (start != 0) {
     // uart_puth(start);
@@ -177,26 +124,8 @@ int help() {
 int cat() {
   char buf[256];
   memset(buf, 0, 256);
-  char *tmp = buf;
   uart_puts("Name:\n");
-  for (int i = 0; i < 255; i++) {
-    *tmp = uart_getc();
-    uart_putc(*tmp);
-    if (*tmp == 127) {
-      *tmp = 0;
-      tmp--;
-      *tmp = 0;
-      tmp--;
-      uart_send('\b');
-      uart_send(' ');
-      uart_send('\b');
-    }
-    if (*tmp == '\n') {
-      *(tmp) = '\0';
-      break;
-    }
-    tmp++;
-  }
+  uart_gets(buf);
   initrd_cat(buf);
   // initrd_cat("boot.S");
   return 0;

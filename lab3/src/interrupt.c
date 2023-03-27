@@ -13,7 +13,7 @@ task_q *head = 0;
 int task_queue_add(int (*fn)(void), int priority) {
   disable_int(); // Disable intererupt
   task_q *cur = (task_q *)malloc(sizeof(task_q));
-  uart_puth(cur);
+  //uart_puth(cur);
   cur->fn = fn;
   cur->priority = priority;
   cur->next = head;
@@ -51,10 +51,13 @@ int task_queue_preempt(void) {
 int task_queue_run(void) {
 	disable_int();
 	task_q* tmp = head;
+	task_q* t;
 	head = 0;
 	enable_int();
   while (tmp != 0) {
     tmp->fn(); // Execute the service function.
+    t = tmp;
+    t->next = 0;
     tmp = tmp->next;   // Goto next task
   }
   return 0;

@@ -191,7 +191,38 @@ char uart_getc() {
   return c == '\r' ? '\n' : c;
 }
 
-void uart_puts(char *s) {
+/************************************************************************
+ * Uart get string function
+ *
+ * @buf: The input buffer store the string.
+ ***********************************************************************/
+int uart_gets(char* buf) {
+	char* tmp = buf;
+	for(int i = 0; i < BUF_LEN; i++) {
+		*tmp = uart_getc();
+		uart_putc(*tmp);
+		// Handle backspace
+		if (*tmp == 127) {
+			*tmp = 0;
+			tmp--;
+			*tmp = 0;
+			tmp--;
+			uart_send('\b');
+			uart_send(' ');
+			uart_send('\b');
+		}
+		if(*tmp == '\n') {
+			*tmp = '\0';
+			break;
+		}
+		tmp++;
+	}
+	return 0;
+}
+
+
+
+void uart_puts(const char *s) {
   while (*s) {
     if (*s == '\n') {
       uart_send('\r');

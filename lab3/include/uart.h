@@ -45,16 +45,22 @@
 #define AUX_MU_BAUD                                                            \
   (volatile unsigned int *)((PHY_AUX_MU_BAUD) - (BUS_BASE) + (MMIO_BASE))
 
+// The default BUF_LEN of the uart.
+#ifndef BUF_LEN
+#define BUF_LEN 256
+#endif
+
+// Uart R/W functions
 void uart_setup(void);
 void uart_send(unsigned int);
 char uart_get(void);
-char uart_getc(void);         // get() + '\r' -> '\n'
-void uart_putc(char);         // send() + '\n' -> '\r'
-void uart_puts(char *s);      // Print string to '\0'
-void uart_puti(unsigned int); // For dec output
+char uart_getc(void);         	// get() + '\r' -> '\n'
+int uart_gets(char *);		// getline
+void uart_putc(char);         	// send() + '\n' -> '\r'
+void uart_puts(const char *s);      	// Print string to '\0'
+void uart_puti(unsigned int); 	// For dec output
 void uart_puth(unsigned int);
-void uart_puthl(uint64_t); // For 64-bit hex
-void uart_gets(char *s);
+void uart_puthl(uint64_t); 	// For 64-bit hex
 void uart_putsn(char *s, int n); // only print n chars ignore '\0'
 void read_kernel();
 int uart_transmit_handler();
