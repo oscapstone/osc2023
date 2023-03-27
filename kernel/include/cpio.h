@@ -5,3 +5,5 @@
 
 #define MAGIC_NUMBER_STRING "070701"
 #define END_IDENTIFIER "TRAILER!!!"
+#define NOW_DIRECTORY "."
+#define PREVIOUS_DIRECTORY ".."

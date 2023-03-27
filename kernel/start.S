@@ -3,20 +3,20 @@
 .global _start
 
 _start:
-    ldr     x1, =_start
-    mov     sp, x1
+    ldr     x28, =_start
+    mov     sp, x28
 
-    ldr     x1, =__bss_start
-    ldr     w2, =__bss_size
-    cbz     w2, run_main
+    ldr     x4, =__bss_start
+    ldr     x5, =__bss_size
+    cbz     x5, run_main
 
-clear_bss:
-    str     xzr, [x1], #8
-    sub     w2, w2, #1
-    cbnz    w2, clear_bss
+clear_bss_loop:
+    str     xzr, [x4], #8
+    sub     x5, x5, #1
+    cbnz    x5, clear_bss_loop
 
 run_main:
-    bl      main
+    b      main
 
 hang:
     b       hang

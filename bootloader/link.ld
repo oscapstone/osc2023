@@ -1,6 +1,11 @@
+__bootloader_start = 0x60000;
+__default_start = 0x80000;
+
+__heap_size = 0x1000000;
+
 SECTIONS
 {
-    . = 0x80000;
+    . = __default_start;
 
     __prog_start = .;
 
@@ -26,7 +31,14 @@ SECTIONS
         *(COMMON)
         __bss_end = .;
     }
+
+    .heap : {
+        . = ALIGN(16);
+        __heap_start = .;
+    }
+    . = . + __heap_size;
+    __heap_end = .;
 }
 
 __bss_size = (__bss_end - __bss_start) >> 3;
-__prog_size = (__prog_end - __prog_start) >> 3;
+__prog_size = (__bss_end - __prog_start) >> 3;

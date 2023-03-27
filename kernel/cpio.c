@@ -91,6 +91,13 @@ void print_file(char *command)
     char *filename;
     string_split(command, ' ', filename);
 
+    if (string_compare(NOW_DIRECTORY, filename) || string_compare(PREVIOUS_DIRECTORY, filename))
+    {
+        uart_puts("Could not print directory!\n");
+
+        return;
+    }
+
     char *base = (char *)(CPIO_BASE);
 
     while (check_magic_number(base))

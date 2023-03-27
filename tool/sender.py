@@ -23,7 +23,7 @@ def send_by_block(orig_file, dest_file):
     """
 
     size = get_file_size(FILENAME)
-    dest_file.write(size.to_bytes(4))
+    dest_file.write(size.to_bytes(4, "big"))
 
     write_by_block(orig_file, dest_file, int(BUD_RATE / 10), 1)
 
@@ -36,7 +36,7 @@ def send_by_byte(orig_file, dest_file):
     raw = orig_file.read()
 
     size = len(raw)
-    dest_file.write(size.to_bytes(4))
+    dest_file.write(size.to_bytes(4, "big"))
 
     for i in range(size):
         dest_file.write(raw[i:i+1])

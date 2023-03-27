@@ -22,7 +22,7 @@ void string_append(string *s, char c)
     }
 
     // don't append new line
-    if (c == '\n')
+    if (c == '\n' || c == '\r')
     {
         return;
     }

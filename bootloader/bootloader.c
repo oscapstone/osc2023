@@ -16,7 +16,7 @@ unsigned int get_kernel_size()
     return size;
 }
 
-void load_kernel()
+void load_kernel(char *argv)
 {
     uart_puts("Start loading kernel...\n");
     uart_puts("Waiting for a kernel...\n");
@@ -33,5 +33,5 @@ void load_kernel()
     uart_puts("Kernel loaded!\n");
     uart_puts("Booting...\n");
 
-    ((void (*)(void))kernel)();
+    ((void (*)(char))kernel)(argv);
 }
