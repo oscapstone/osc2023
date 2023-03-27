@@ -2,6 +2,7 @@
 #include "muart.h"
 #include "utils.h"
 #include "shell.h"
+#include "timer.h"
 #include "devicetree.h"
 
 int main(void) {
@@ -9,6 +10,8 @@ int main(void) {
 
     devicetree_get_address();
     fdt_traverse(initramfs_callback);
+
+    core_timer_enable();
 
     mini_uart_puts("\r\nBasic Shell\r\n");
 

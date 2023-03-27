@@ -66,14 +66,12 @@ void cpio_execute(void) {
         if (strncmp(buffer, filename, namesize) == 0) {
             char *location = ((void*) current) + offset;
             char *sp = location + STACKSIZE;
-            unsigned int spsr = 0x3c0;
             asm volatile(
-                "msr     spsr_el1, %0\r\n\t"
-                "msr     elr_el1, %1\r\n\t"
-                "msr     sp_el0, %2\r\n\t"
+                "msr     spsr_el1, xzr\r\n\t"
+                "msr     elr_el1, %0\r\n\t"
+                "msr     sp_el0, %1\r\n\t"
                 "eret    \r\n\t"
                 ::
-                "r" (spsr),
                 "r" (location),
                 "r" (sp)
             );

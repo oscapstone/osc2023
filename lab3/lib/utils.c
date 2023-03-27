@@ -1,7 +1,21 @@
 #include "utils.h"
 #include "muart.h"
 
-void printhex(int value) {
+void printdec(unsigned long value) {
+    char nums[20]; unsigned int len = 0;
+
+    while (value) {
+        unsigned int x = value % 10;
+        nums[len++] = '0' + x;
+        value /= 10;
+    }
+
+    for (int i = len - 1; i >= 0; i--) {
+        mini_uart_putc(nums[i]);
+    }
+}
+
+void printhex(unsigned long value) {
     char nums[9]; nums[8] = '\0';
 
     for (int i = 7; i >= 0; i--) {

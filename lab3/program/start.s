@@ -11,5 +11,5 @@ _increase:
     cmp    x0, 5
     blt    _increase
 
-_back:
-    b      _increase
+_halt:
+    b      _halt

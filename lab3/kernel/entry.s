@@ -1,6 +1,5 @@
 .section ".text"
 
-.global _exception_vector_table
 .global _set_exception_vector_table
 .global _from_el2_to_el1
 
@@ -46,49 +45,56 @@
     add sp, sp, 32 * 8
 .endm
 
+.macro vt_entry handler
+    .align 7                             /* entry size is 0x80, .align will pad 0 */
+    b \handler                           /* branch to a handler function */
+.endm
+
 _exception_handler:
     save_all
     bl exception_entry
     load_all
     eret
 
-.align 11                 /* vector table should be aligned to 0x800 */
+_invalid_exception_handler:
+    save_all
+    bl invalid_exception_entry
+    load_all
+    eret
+
+_el1h_irq_handler:
+    save_all
+    bl el1h_irq_entry
+    load_all
+    eret
+
+_el0_irq_handler:
+    save_all
+    bl el0_irq_entry
+    load_all
+    eret
+
+.align 11                                /* vector table should be aligned to 0x800 */
 _exception_vector_table:
-    b _exception_handler  /* branch to a handler function */
-    .align 7              /* entry size is 0x80, .align will pad 0 */
-    b _exception_handler
-    .align 7
-    b _exception_handler
-    .align 7
-    b _exception_handler
-    .align 7
+    vt_entry _invalid_exception_handler  /* Synchronous EL1t */
+    vt_entry _invalid_exception_handler  /* IRQ EL1t */
+    vt_entry _invalid_exception_handler  /* FIQ EL1t */
+    vt_entry _invalid_exception_handler  /* Error EL1t */
 
-    b _exception_handler
-    .align 7
-    b _exception_handler
-    .align 7
-    b _exception_handler
-    .align 7
-    b _exception_handler
-    .align 7
+    vt_entry _invalid_exception_handler  /* Synchronous EL1h */
+    vt_entry _el1h_irq_handler           /* IRQ EL1h */
+    vt_entry _invalid_exception_handler  /* FIQ EL1h */
+    vt_entry _invalid_exception_handler  /* Error EL1h */
 
-    b _exception_handler
-    .align 7
-    b _exception_handler
-    .align 7
-    b _exception_handler
-    .align 7
-    b _exception_handler
-    .align 7
+    vt_entry _exception_handler          /* Synchronous 64-bit EL0 */
+    vt_entry _el0_irq_handler            /* IRQ 64-bit EL0 */
+    vt_entry _invalid_exception_handler  /* FIQ 64-bit EL0 */
+    vt_entry _invalid_exception_handler  /* Error 64-bit EL0 */
 
-    b _exception_handler
-    .align 7
-    b _exception_handler
-    .align 7
-    b _exception_handler
-    .align 7
-    b _exception_handler
-    .align 7
+    vt_entry _invalid_exception_handler  /* Synchronous 32-bit EL0 */
+    vt_entry _invalid_exception_handler  /* IRQ 32-bit EL0 */
+    vt_entry _invalid_exception_handler  /* FIQ 32-bit EL0 */
+    vt_entry _invalid_exception_handler  /* Error 32-bit EL0 */
 
 _set_exception_vector_table:
     adr    x0, _exception_vector_table
@@ -96,9 +102,9 @@ _set_exception_vector_table:
     ret
 
 _from_el2_to_el1:
-    mov    x0, (1 << 31)  /* EL1 uses aarch64 */
+    mov    x0, (1 << 31)                 /* EL1 uses aarch64 */
     msr    hcr_el2, x0
-    mov    x0, 0x3c5      /* EL1h (SPSel = 1) with interrupt disabled */
-    msr    spsr_el2, x0   /* save the current processor's state in spsr_el2 */
-    msr    elr_el2, lr    /* save the exception return address in elr_el2 */
-    eret                  /* return to EL1 */
+    mov    x0, 0x3c5                     /* EL1h (SPSel = 1) with interrupt disabled */
+    msr    spsr_el2, x0                  /* save the current processor's state in spsr_el2 */
+    msr    elr_el2, lr                   /* save the exception return address in elr_el2 */
+    eret                                 /* return to EL1 */

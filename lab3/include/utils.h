@@ -3,7 +3,8 @@
 
 #define BUFSIZE 64
 
-void printhex(int value);
+void printdec(unsigned long value);
+void printhex(unsigned long value);
 int  atoi(const char *s, unsigned int size);
 int  strcmp(const char *l, const char *r);
 int  strncmp(const char *l, const char *r, unsigned int size);
