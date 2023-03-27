@@ -26,6 +26,8 @@ init_bss:
     cbnz    w2, init_bss           // branch if w2 != 0
 
 run_main:
+    ldr     x1, =dtb_ptr
+    str     x0, [x1], #8
     bl      main                   // branch and update lr with "main"
 
 proc_hang:

@@ -52,6 +52,8 @@ char uart_recv() {
     char r;
     while(!(*AUX_MU_LSR_REG & 0x01)){};
     r = (char)(*AUX_MU_IO_REG);
+    uart_send(r);
+    if(r =='\r') {uart_send('\r');uart_send('\n');}
     return r=='\r'?'\n':r;
 }
 
@@ -152,7 +154,6 @@ void uart_r_irq_handler(){
         return;
     }
     uart_rx_buffer[uart_rx_buffer_widx++] = uart_recv();
-    uart_send(uart_rx_buffer[uart_rx_buffer_widx-1]);
     if(uart_rx_buffer_widx>=VSPRINT_MAX_BUF_SIZE) uart_rx_buffer_widx=0;
     *AUX_MU_IER_REG |=1;
 }

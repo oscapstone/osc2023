@@ -6,7 +6,7 @@
 #include "exception.h"
 #include "timer.h"
 
-extern char* dtb_ptr;
+char* dtb_ptr;
 
 void main(char* arg){
     char input_buffer[CMD_MAX_LEN];

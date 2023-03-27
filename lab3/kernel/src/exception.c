@@ -82,8 +82,8 @@ void el0_irq_64_router(){
 
 
 void invalid_exception_router(unsigned long long x0){
-    uart_sendline("invalid exception : 0x%x\r\n",x0);
-    while(1);
+    //uart_sendline("invalid exception : 0x%x\r\n",x0);
+    //while(1);
 }
 
 // ------------------------------------------------------------------------------------------
