@@ -78,7 +78,7 @@ void list_files()
 
         // print pathname
         uart_puts(base);
-        uart_puts("\n");
+        uart_newline();
 
         base += nameSize;
         base += fileSize;
@@ -126,7 +126,7 @@ void print_file(char *command)
             {
                 uart_puts("Could not find file: ");
                 uart_puts(filename);
-                uart_puts("\n");
+                uart_newline();
             }
             break;
         }
@@ -139,14 +139,14 @@ void print_file(char *command)
         }
 
         found = 1;
-        // print pathname
+
         uart_puts("Filename: ");
         uart_puts(base);
-        uart_puts("\n");
+        uart_newline();
         base += nameSize;
 
         uart_puts(base);
-        uart_puts("\n");
+        uart_newline();
         base += fileSize;
     }
 }

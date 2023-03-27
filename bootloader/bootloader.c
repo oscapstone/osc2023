@@ -11,7 +11,7 @@ unsigned int get_kernel_size()
 
     uart_puts("Size: ");
     uart_hex(size);
-    uart_puts("\n");
+    uart_newline();
 
     return size;
 }

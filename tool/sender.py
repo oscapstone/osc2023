@@ -3,7 +3,7 @@ import os
 
 BUD_RATE = 115200
 FILENAME = '../kernel/kernel8.img'
-SERIAL = '/dev/pts/4'
+SERIAL = '/dev/ttyUSB0'
 
 
 def get_file_size(filename):

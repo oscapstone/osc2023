@@ -62,7 +62,7 @@ char uart_read()
 
 void uart_puts(char *string)
 {
-    while (*string)
+    while (*string != '\0')
     {
         // convert newline
         if (*string == '\n')
@@ -70,8 +70,11 @@ void uart_puts(char *string)
             uart_write('\r');
             uart_write('\n');
         }
-
-        uart_write(*string++);
+        else
+        {
+            uart_write(*string);
+        }
+        string++;
     }
 }
 
@@ -87,4 +90,10 @@ void uart_hex(unsigned int d)
         n += n > 9 ? 0x37 : 0x30;
         uart_write(n);
     }
+}
+
+void uart_newline()
+{
+    uart_write('\r');
+    uart_write('\n');
 }

@@ -3,16 +3,16 @@
 .global _start
 
 _start:
-    // save x0~x3
-    mov x20, x0
-    mov x21, x1
-    mov x22, x2
-    mov x23, x3
-
     // only use core 0
-    mrs x1, mpidr_el1
-    and x1, x1, #3
-    cbnz x1, hang
+    mrs     x1, mpidr_el1
+    and     x1, x1, #3
+    cbnz    x1, hang
+
+    // save x0~x3
+    mov     x20, x0
+    mov     x21, x1
+    mov     x22, x2
+    mov     x23, x3
 
     // set x1 = address of relocated main()
     ldr     x1, =main

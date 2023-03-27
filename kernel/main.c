@@ -1,7 +1,7 @@
 #include "uart.h"
 #include "shell.h"
 
-void main()
+void main(char *argv)
 {
     uart_init();
 

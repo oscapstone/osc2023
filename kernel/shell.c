@@ -65,7 +65,7 @@ void operate_command(char *command)
     }
     else if (string_length(command) == 0)
     {
-        uart_puts("\n");
+        uart_newline();
     }
     else
     {

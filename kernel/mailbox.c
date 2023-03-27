@@ -20,7 +20,7 @@ void print_board_revision()
 
     uart_puts("Board Revision: 0x");
     uart_hex(mailbox[5]);
-    uart_puts("\n");
+    uart_newline();
 }
 
 void print_arm_memory()
@@ -44,7 +44,7 @@ void print_arm_memory()
     uart_hex(mailbox[5]);
     uart_puts("\nMemory Size: 0x");
     uart_hex(mailbox[6]);
-    uart_puts("\n");
+    uart_newline();
 }
 
 void mailbox_call(unsigned int *mailbox, unsigned char channel)
