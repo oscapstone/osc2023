@@ -76,10 +76,10 @@ void irq_64_el0(void)
 
 void irq_64_el1(void)
 {
-        // disable_interrupts_in_el1();
+        disable_interrupts_in_el1();
         unsigned int interrupt_source = get32(CORE0_IRQ_SOURCE);
         if (interrupt_source & (1 << 1)) {
                 el1_timer_handler();
         }
-        // enable_interrupts_in_el1();
+        enable_interrupts_in_el1();
 }
