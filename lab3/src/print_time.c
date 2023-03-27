@@ -10,7 +10,7 @@ void print_time()
 		"mrs %1,CNTFRQ_EL0;" : "=r" (time) , "=r" (freq)
 	);
 	uart_send_string("core timeout interrupt : ");
-	uart_hex((unsigned int)time / (unsigned int)freq);
+	uart_hex((unsigned int)time / (unsigned int)freq);		//second : time/freq
 	uart_send_string(" s\r\n");
 	return;
 }

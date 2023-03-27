@@ -2,11 +2,15 @@
 #include "gpio.h"
 #include <stdint.h>
 
+char buffer[1000];
+int front = 0;
+int back = 0;
+
 void uart_send(unsigned int c)
 {
 	while(1)
 	{
-		if(*AUX_MU_LSR_REG & 0x20)	//bit18 i don't known
+		if(*AUX_MU_LSR_REG & 0x20)	//bit5 : This bit is set if the transmit FIFO can accept at least one byte 
 		{
 			break;
 		}

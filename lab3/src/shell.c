@@ -4,6 +4,8 @@
 #include "reboot.h"
 #include "ramdisk.h"
 #include "to_EL0.h"
+#include "check_interrupt.h"
+#include "timer.h"
 
 void shell_input(char* command)
 {
@@ -18,6 +20,7 @@ void shell_input(char* command)
 		uart_send(c);
 	}
 	uart_send_string("\r\n");
+	return;
 }
 
 void shell_option(char* command,char* ramdisk)
@@ -74,8 +77,29 @@ void shell_option(char* command,char* ramdisk)
 		char* prog_start = find_prog(ramdisk,"program.img");
 		exec_in_EL0(prog_start);
 	}
+	else if(!strcmp(command,"async_io"))
+	{
+		enable_interrupt();
+		mini_uart_enable();
+		send_async_string("this is async_ioop\r\n");
+		recv_async_string();
+		disable_interrupt();
+	}
+	else if(!strcmp(command,"sleep"))
+	{
+		enable_interrupt();
+		extern void core_timer_enable();
+		extern void core_timer_disable();
+		core_timer_enable();
+		init_t_queue();
+		setTimeout("this will print after 6 second\r\n",6);
+		setTimeout("this will print after 4 second\r\n",4);
+		core_timer_disable();
+		disable_interrupt();
+	}
 	else
 	{
 		uart_send_string("unvalid command! try <help>\r\n");
 	}
+	return;
 }

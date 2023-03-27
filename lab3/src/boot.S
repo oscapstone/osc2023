@@ -25,7 +25,7 @@ setup_EL1:
 		bl		from_EL2_to_EL1
 
 El1_start:
-		mov		sp,#0x70000		//put EL1 stack start from 0x70000	
+		mov		sp,#0x40000		//put EL1 stack start from 0x40000	
 
 master:
 		mov		x0,x27

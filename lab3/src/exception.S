@@ -1,7 +1,7 @@
 .section ".text"
 
 .macro save_all						// save general registers to stack
-    sub sp, sp, 32 * 8				//32*8 = 16*16
+    sub sp, sp, 16 * 16
     stp x0, x1, [sp ,16 * 0]		//store pair of registers to sp+16*0
     stp x2, x3, [sp ,16 * 1]
     stp x4, x5, [sp ,16 * 2]
@@ -37,81 +37,114 @@
     ldp x26, x27, [sp ,16 * 13]
     ldp x28, x29, [sp ,16 * 14]
     ldr x30, [sp, 16 * 15]
-    add sp, sp, 32 * 8
+    add sp, sp, 16 * 16
 .endm
 
 exception_handler:
     save_all
-    bl	 	exception_entry
+    bl	 	exception_entry			//for now , just print register info
 	mov		x2,0x0
 	msr		SPSR_EL1,x2
-	bl		core_timer_enable	
+	bl		core_timer_enable
     load_all
     eret
 
 /******************vector table********************/
 .align 11							//0x800 : 2^11
-.global exception_vector_table
+.global	exception_vector_table
 exception_vector_table:
-	b exception_handler				// branch to a handler function.
+	b 	exception_handler			// branch to a handler function.
 	.align 7 						// entry size is 0x80 : 2^7
-	b exception_handler
+	b 	exception_handler
 	.align 7
-	b exception_handler
+	b 	exception_handler
 	.align 7
-	b exception_handler
-	.align 7
-
-	b exception_handler
-	.align 7
-	b exception_handler
-	.align 7
-	b exception_handler
-	.align 7
-	b exception_handler
+	b 	exception_handler
 	.align 7
 
-	b exception_handler
+	b 	exception_handler
 	.align 7
-	b core_timer_handler
+	b 	EL1_check_interrupt
 	.align 7
-	b exception_handler
+	b 	exception_handler
 	.align 7
-	b exception_handler
-	.align 7
-
-	b exception_handler
-	.align 7
-	b exception_handler
-	.align 7
-	b exception_handler
-	.align 7
-	b exception_handler
+	b 	exception_handler
 	.align 7
 
-.global set_exception_vector_table		//use as function
+	b 	exception_handler
+	.align 7
+	b 	EL0_check_interrupt
+	.align 7
+	b 	exception_handler
+	.align 7
+	b 	exception_handler
+	.align 7
+
+	b 	exception_handler
+	.align 7
+	b 	exception_handler
+	.align 7
+	b 	exception_handler
+	.align 7
+	b 	exception_handler
+	.align 7
+
+.global set_exception_vector_table			//use as function
 set_exception_vector_table:
-	adr x0,exception_vector_table		//adr : load address to a register
-	msr vbar_el1,x0						//vbar_el1 : Vector Base Address Register (EL1)
+	adr 	x0,exception_vector_table		//adr : load address to a register
+	msr 	vbar_el1,x0						//vbar_el1 : Vector Base Address Register (EL1)
 	ret
 
+EL0_check_interrupt:
+	save_all
+	bl		EL0_check_interrupt_source
+	load_all
+	eret
+
+EL1_check_interrupt:
+	save_all
+	bl		EL1_check_interrupt_source
+	load_all
+	eret
+
+.global core_timer_enable
 core_timer_enable:
     mov     x0,1
-    msr     CNTP_CTL_EL0,x0     //bit0 : timer enabled , bit1 : IMASK(1: won't trigger interrupt)
+    msr     CNTP_CTL_EL0,x0		//bit0 : timer enabled , bit1 : IMASK(1: won't trigger interrupt)
     mrs     x0,CNTFRQ_EL0       //frequency of the system
     msr     CNTP_TVAL_EL0,x0    //on a write of this register , CNTP_CVAL_EL0 is set to (CNTPCT_EL0 + timer value)
                                 //timer value for thr EL1 physical timer , if(CNTP_CTL_EL0.enable is 1)->timer met when (CNTPCT_EL0-CNTP_CVAL_EL0) >= 0
     ldr     x1,=0x40000040		//core0 timers interrupt control address : 0x40000040
    	mov     x0,2   				//bit1 : IRQ enable
-    str     w0,[x1]             //unmask timer interrupt
+    str     w0,[x1]
 	ret
 
-core_timer_handler:
-    save_all
+.global core_timer_disable
+core_timer_disable:
+    mov     x0,0
+    msr     CNTP_CTL_EL0,x0		//bit0 : timer output signal enabled
+    ldr     x1,=0x40000040		//core0 timers interrupt control address : 0x40000040
+   	mov     x0,0   				//bit1 : IRQ disable
+    str     w0,[x1]
+	ret
+
+.global EL0_core_timer_handler
+EL0_core_timer_handler:
+	save_all					//without this -> timer interrupt will do only one time 
 	mrs     x0,CNTFRQ_EL0
 	mov		x1,2
-	mul		x0,x0,x1
-    msr     CNTP_TVAL_EL0,x0
+	mul		x0,x0,x1			//set time = 2 sec
+    msr     CNTP_TVAL_EL0,x0	//set new timeout
     bl      print_time
 	load_all
-    eret
+    ret
+
+.global EL1_core_timer_handler
+EL1_core_timer_handler:
+	save_all					//without this -> timer interrupt will do only one time
+	mrs     x0,CNTFRQ_EL0
+    msr     CNTP_TVAL_EL0,x0	//set new timeout , plus 1 sec
+    bl      print_time
+	bl		one_sec_pass
+	load_all
+    ret
