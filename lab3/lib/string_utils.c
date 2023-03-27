@@ -9,6 +9,20 @@ int strcmp(const char *s1, const char *s2)
         return (*(unsigned char *)s1 - *(unsigned char *)--s2);
 }
 
+int strncmp(const char *s1, const char *s2, unsigned int n)
+{
+        unsigned char u1, u2;
+
+        while (n-- > 0)
+        {
+                u1 = (unsigned char) *s1++;
+                u2 = (unsigned char) *s2++;
+                if (u1 != u2) return u1 - u2;
+                if (u1 == '\0') return 0;
+        }
+        return 0;
+}
+
 int string_hex_to_int(char *str, int len)
 {
         int out = 0;
@@ -38,6 +52,16 @@ int string_hex_to_int(char *str, int len)
                                 break;
                         }
                 }
+        }
+        return out;
+}
+
+int string_to_int(char *str, int len)
+{
+        int out = 0;
+        for (int i = 0 ; i < len; i++) {
+                out *= 10;
+                out += str[i] - '0';
         }
         return out;
 }
