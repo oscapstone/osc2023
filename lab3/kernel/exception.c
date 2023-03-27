@@ -5,8 +5,23 @@
 #include "peripherals/exception.h"
 #include "peripherals/mini_uart.h"
 
+void enable_interrupts_in_el1(void)
+{
+        asm volatile("msr DAIFClr, 0xf");
+}
+
+void disable_interrupts_in_el1(void)
+{
+        asm volatile("msr DAIFSet, 0xf");
+}
+
+// TODO: what?
+// void disable_uart_interrupt() { put32(DISABLE_IRQS_1, (1<<29)); }
+
 void print_exception_info(void)
 {
+        disable_interrupts_in_el1();
+
         uart_send_string("Exception info -------------------\r\n");
         unsigned long tmp;
 
@@ -26,6 +41,8 @@ void print_exception_info(void)
         uart_endl();
 
         uart_send_string("----------------------------------\r\n");
+
+        enable_interrupts_in_el1();
 }
 
 void el0_timer_interrupt()
@@ -46,20 +63,23 @@ void gpu_interrupt(void)
 
 void irq_64_el0(void)
 {
+        disable_interrupts_in_el1();
+
         unsigned int interrupt_source = get32(CORE0_IRQ_SOURCE);
         if (interrupt_source & (1 << 8)) {
                 gpu_interrupt();
-        } else {
+        } else if (interrupt_source & (1 << 1)) {
                 el0_timer_interrupt();
+                enable_interrupts_in_el1();
         }
 }
 
-void enable_2nd_level_interrupt_ctrl(void)
+void irq_64_el1(void)
 {
-        unsigned int tmp = get32(ENABLE_IRQs1);
-        tmp |= (1 << 29);
-        put32(ENABLE_IRQs1, tmp);
+        // disable_interrupts_in_el1();
+        unsigned int interrupt_source = get32(CORE0_IRQ_SOURCE);
+        if (interrupt_source & (1 << 1)) {
+                el1_timer_handler();
+        }
+        // enable_interrupts_in_el1();
 }
-
-// TODO
-// void disable_uart_interrupt() { put32(DISABLE_IRQS_1, (1<<29)); }

@@ -7,5 +7,8 @@ unsigned long get_current_time(void);
 unsigned long get_cpu_frequency(void);
 void reset_core_timer_in_second(unsigned int sec);
 void print_current_time(void);
+void el1_timer_handler(void);
+void add_timer(void (*callback)(void*), void *arg, int sec);
+void cmd_add_timer(char* cmd);
 
 #endif /* TIMER_H */

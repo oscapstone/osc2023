@@ -2,6 +2,7 @@
 #include "mini_uart.h"
 #include "string_utils.h"
 #include "peripherals/mini_uart.h"
+#include "peripherals/exception.h"
 
 #define BUFFER_SIZE 256
 
@@ -9,6 +10,13 @@ char read_buffer[BUFFER_SIZE];  // circular queue TODO: comment
 int read_st = 0, read_ed = 0;
 char write_buffer[BUFFER_SIZE];
 int write_st = 0, write_ed = 0;
+
+void enable_receive_interrupt(void)
+{
+	unsigned int tmp = get32(AUX_MU_IER_REG);
+	tmp |= 0x1;
+	put32(AUX_MU_IER_REG, tmp);
+}
 
 void enable_transmit_interrupt(void)
 {
@@ -22,6 +30,20 @@ void disable_transmit_interrupt(void)
 	unsigned int tmp = get32(AUX_MU_IER_REG);
 	tmp &= ~(0x2);
 	put32(AUX_MU_IER_REG, tmp);
+}
+
+void enable_2nd_level_interrupt_ctrl(void)
+{
+        unsigned int tmp = get32(ENABLE_IRQs1);
+        tmp |= (1 << 29);
+        put32(ENABLE_IRQs1, tmp);
+}
+
+void disable_2nd_level_interrupt_ctrl(void)
+{
+        unsigned int tmp = get32(ENABLE_IRQs1);
+        tmp &= ~(1 << 29);
+        put32(ENABLE_IRQs1, tmp);
 }
 
 /*
@@ -88,8 +110,8 @@ int uart_async_readline(char* target, int len)
 
 void demo_uart_async(void)
 {
-	enable_transmit_interrupt();
-	delay(1000);
+	enable_receive_interrupt();
+	enable_2nd_level_interrupt_ctrl();
 
 	char buffer[BUFFER_SIZE];
 	uart_async_send_string("Type something > ");
@@ -98,7 +120,7 @@ void demo_uart_async(void)
 	uart_async_send_string(buffer);
 	uart_async_send_string("\r\n");
 
-	delay(1000);
+	disable_2nd_level_interrupt_ctrl();
 	while(1) { asm volatile("nop"); }
 }
 

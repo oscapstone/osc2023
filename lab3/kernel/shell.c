@@ -23,6 +23,8 @@ void send_help_message(void)
         uart_send_string("cat:\t\tprint file\r\n");
         uart_send_string("exec:\t\texecute file in ramdisk\r\n");
         uart_send_string("demo-async:\tshow uart async send and receive\r\n");
+        uart_send_string("set-timeout [msg] [sec]:\r\n");
+        uart_send_string("\tprint [msg] after [sec] seconds\r\n");
 }
 
 void parse_cmd(void)
@@ -50,6 +52,8 @@ void parse_cmd(void)
         } else if (!strcmp(buffer, "demo-async")) {
                 reset_core_timer_in_second(600);
                 branch_to_address_el0(demo_uart_async, USER_STACK_POINTER);
+        } else if (!strncmp(buffer, "set-timeout ", strlen("set-timeout "))) {
+                cmd_add_timer(buffer);
         } else {
                 uart_send_string("Command not found, ");
                 uart_send_string("type 'help' for commands.\r\n");

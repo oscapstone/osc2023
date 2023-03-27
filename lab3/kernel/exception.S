@@ -61,8 +61,16 @@ exception_handler_irq_64_el0:
         load_all
         eret
 
+exception_handler_irq_64_el1:
+        save_all
+        bl irq_64_el1
+        load_all
+        eret
+
 exception_handler_nothing:
+        save_all
         // do nothing
+        load_all
         eret
 
 .align 11 // vector table should be aligned to 0x800
@@ -85,7 +93,7 @@ exception_vector_table:
          */
         b       exception_handler_nothing       // synchronos exception
         .align 7
-        b       exception_handler_nothing       // IRQ and vIRQ exception (TODO)
+        b       exception_handler_irq_64_el1    // IRQ and vIRQ exception
         .align 7
         b       exception_handler_nothing       // FIQ and vFIQ exception
         .align 7
@@ -97,7 +105,7 @@ exception_vector_table:
          */
         b       exception_handler_system_call   // synchronos exception
         .align 7
-        b       exception_handler_irq_64_el0    // IRQ and vIRQ exception (TODO)
+        b       exception_handler_irq_64_el0    // IRQ and vIRQ exception
         .align 7
         b       exception_handler_nothing       // FIQ and vFIQ exception
         .align 7

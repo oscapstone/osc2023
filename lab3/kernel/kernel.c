@@ -9,9 +9,12 @@ void kernel_main(void)
 	set_exception_vector_table();
 	uart_init();
 	get_device_tree_adr();
+
 	enable_core_timer();
-	reset_core_timer_in_second(600);
-	enable_2nd_level_interrupt_ctrl();
+	// reset_core_timer_in_second(600);
+
+	enable_interrupts_in_el1();
+
 	uart_send_string("Kernel Starts...\r\n");
 	shell_loop();
 }
