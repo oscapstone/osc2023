@@ -13,7 +13,7 @@
 
 void welcome_msg() {
 
-        uart_puts(
+        uart_async_puts(
         "                      /|      __\n"
         "*             +      / |   ,-~ /             +\n"
         "     .              Y :|  //  /                .         *\n"
@@ -51,16 +51,16 @@ void shell_start () {
     strset (buffer, 0, MAX_BUFFER_LEN);   
 
     // new line head
-    // uart_puts("# ");
-    uart_puts("richard");
-    uart_puts("@");
-    uart_puts("raspberry");
-	uart_puts(" $ ");
+    // uart_async_puts("# ");
+    uart_async_puts("richard");
+    uart_async_puts("@");
+    uart_async_puts("raspberry");
+	uart_async_puts(" $ ");
 
     // read input
     while(1){
 
-        input_char = uart_getc();
+        input_char = uart_async_getc();
         input_parse = parse ( input_char );
         command_controller ( input_parse, input_char, buffer, &buffer_counter);
 
@@ -109,9 +109,9 @@ void command_controller ( enum SPECIAL_CHARACTER input_parse, char c, char buffe
   
         if (  (*counter) > 0 ){
 
-            uart_send('\b');
-            uart_send(' ');
-            uart_send('\b');
+            uart_async_putc('\b');
+            uart_async_putc(' ');
+            uart_async_putc('\b');
             (*counter) --;
         }
     }
@@ -119,9 +119,9 @@ void command_controller ( enum SPECIAL_CHARACTER input_parse, char c, char buffe
 
         if (  (*counter) > 0 ){
 
-            uart_send('\b');
-            uart_send(' ');
-            uart_send('\b');
+            uart_async_putc('\b');
+            uart_async_putc(' ');
+            uart_async_putc('\b');
             (*counter) --;
         }
         
@@ -130,7 +130,7 @@ void command_controller ( enum SPECIAL_CHARACTER input_parse, char c, char buffe
     }
     else if ( input_parse == NEW_LINE ){
 
-        uart_send(c);
+        //uart_async_putc(c);
         if ( (*counter) == MAX_BUFFER_LEN ) {
 
             input_buffer_overflow_message(buffer);
@@ -140,13 +140,13 @@ void command_controller ( enum SPECIAL_CHARACTER input_parse, char c, char buffe
             buffer[(*counter)] = '\0';
             /* debug print*/
             /*
-            uart_puts("\n");
-            uart_puts("buffer is ");
-            uart_puts(buffer);
-            uart_puts("\n");
-            uart_puts("args is ");
-            uart_puts(args);
-            uart_puts("\n");
+            uart_async_puts("\n");
+            uart_async_puts("buffer is ");
+            uart_async_puts(buffer);
+            uart_async_puts("\n");
+            uart_async_puts("args is ");
+            uart_async_puts(args);
+            uart_async_puts("\n");
             */
 
             if      ( !strcmp(buffer, "help"        ) ) command_help();
@@ -170,14 +170,14 @@ void command_controller ( enum SPECIAL_CHARACTER input_parse, char c, char buffe
         strset (buffer, 0, MAX_BUFFER_LEN); 
 
         // new line head;
-        uart_puts("richard");
-        uart_puts("@");
-        uart_puts("raspberry");
-	    uart_puts(" $ ");
+        uart_async_puts("richard");
+        uart_async_puts("@");
+        uart_async_puts("raspberry");
+	    uart_async_puts(" $ ");
     }
     else if ( input_parse == REGULAR_INPUT ){
 
-        uart_send(c);
+        //uart_async_putc(c);
         if ( *counter < MAX_BUFFER_LEN){
 
             buffer[*counter] = c;
@@ -189,9 +189,9 @@ void command_controller ( enum SPECIAL_CHARACTER input_parse, char c, char buffe
 
 void input_buffer_overflow_message ( char cmd[] ){
 
-    uart_puts("Follow command: \"");
-    uart_puts(cmd);
-    uart_puts("\"... is too long to process.\n");
-    uart_puts("The maximum length of input is 64.");
+    uart_async_puts("Follow command: \"");
+    uart_async_puts(cmd);
+    uart_async_puts("\"... is too long to process.\n");
+    uart_async_puts("The maximum length of input is 64.");
 
 }

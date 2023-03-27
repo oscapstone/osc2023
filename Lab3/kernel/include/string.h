@@ -3,7 +3,7 @@
 #include "type.h"
 
 
-#define VSPRINT_MAX_BUF_SIZE 0x100
+#define VSPRINT_MAX_BUF_SIZE 0x1000
 
 unsigned int sprintf(char *dst, char* fmt, ...);
 unsigned int vsprintf(char *dst,char* fmt, __builtin_va_list args);
