@@ -2,12 +2,17 @@
 #include "uart.h"
 #include "helper.h"
 
+void init_cpio(char *address)
+{
+    cpio_base = address;
+}
+
 char check_magic_number(char *address)
 {
-    int size = string_length(MAGIC_NUMBER_STRING);
+    int size = string_length(CPIO_MAGIC_NUMBER_STRING);
     for (int i = 0; i < size; i++)
     {
-        if (address[i] != MAGIC_NUMBER_STRING[i])
+        if (address[i] != CPIO_MAGIC_NUMBER_STRING[i])
         {
             return 0;
         }
@@ -29,6 +34,10 @@ unsigned int get_number_from_ascii(char *address)
         {
             value = address[i] - 'A' + 10;
         }
+        else // should not happen but for safety
+        {
+            value = address[i];
+        }
 
         filesize |= value << ((7 - i) * 16);
     }
@@ -49,7 +58,7 @@ unsigned int get_remaining_padding(unsigned int size, unsigned int paddingSize)
 
 void list_files()
 {
-    char *base = (char *)(CPIO_BASE);
+    char *base = cpio_base;
 
     while (check_magic_number(base))
     {
@@ -88,7 +97,7 @@ void list_files()
 void print_file(char *command)
 {
     char found = 0;
-    char *filename;
+    char *filename = 0x0;
     string_split(command, ' ', filename);
 
     if (string_compare(NOW_DIRECTORY, filename) || string_compare(PREVIOUS_DIRECTORY, filename))
@@ -98,7 +107,7 @@ void print_file(char *command)
         return;
     }
 
-    char *base = (char *)(CPIO_BASE);
+    char *base = cpio_base;
 
     while (check_magic_number(base))
     {

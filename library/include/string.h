@@ -8,6 +8,7 @@ typedef struct string
 
 void string_init(string *s);
 void string_append(string *s, char c);
+void string_backspace(string *s);
 void string_clear(string *s);
 char *string_get_string(string s);
 int string_length(char *s);

@@ -84,10 +84,14 @@ void get_command(string *command)
         if (input == '\n')
         {
             uart_write('\r');
+            uart_write('\n');
         }
-        uart_write(input);
-
+        else
+        {
+            uart_write(input);
+        }
         string_append(command, input);
+
     } while (input != '\n');
 }
 

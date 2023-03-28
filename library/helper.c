@@ -88,3 +88,32 @@ void nop()
 {
     asm volatile("nop");
 }
+
+unsigned int get_int(char *address)
+{
+    unsigned int sum = 0;
+    for (int i = 0; i < 4; i++)
+    {
+        sum += address[i] << (3 - i) * 8;
+    }
+    return sum;
+}
+
+void debug(char *address)
+{
+    uart_puts("-----\n");
+    for (int i = -15; i < 15; i++)
+    {
+        if (i == 0)
+        {
+            uart_newline();
+        }
+        uart_hex(*(address + i));
+        if (i == 0)
+        {
+            uart_newline();
+        }
+        uart_write(' ');
+    }
+    uart_puts("-----\n");
+}

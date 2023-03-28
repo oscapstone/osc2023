@@ -12,7 +12,7 @@ void *malloc(unsigned int size)
     if (heap_top + size > &__heap_end)
     {
         uart_puts("heap overflow!\n");
-        return;
+        return 0;
     }
 
     heap_top += size;

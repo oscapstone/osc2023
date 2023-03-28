@@ -1,9 +1,9 @@
 import time
 import os
+import sys
 
 BUD_RATE = 115200
 FILENAME = '../kernel/kernel8.img'
-SERIAL = '/dev/ttyUSB0'
 
 
 def get_file_size(filename):
@@ -43,7 +43,7 @@ def send_by_byte(orig_file, dest_file):
 
 
 def main():
-    with open(SERIAL, 'wb', buffering=0) as tty:
+    with open(sys.argv[1], 'wb', buffering=0) as tty:
         with open(FILENAME, 'rb') as file:
             # send by block by default
             send_by_block(file, tty)

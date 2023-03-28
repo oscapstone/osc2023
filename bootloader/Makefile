@@ -1,6 +1,8 @@
 SRCS = $(wildcard *.c)
 OBJS = $(SRCS:.c=.o)
 CFLAGS = -Wall -O2 -ffreestanding -nostdinc -nostdlib -nostartfiles
+DTB = "../shares/bcm2710-rpi-3-b-plus.dtb"
+CPIO = "../shares/initramfs.cpio"
 
 LIBRARY_PATH = ../library
 INCLUDES = -I ./include \
@@ -26,5 +28,4 @@ clean:
 	rm bootloader.elf bootloader.img *.o 2> /dev/null || true
 
 run:
-	# qemu-system-aarch64 -M raspi3b -kernel bootloader.img -serial null -serial pty -display none -S -s
-	qemu-system-aarch64 -M raspi3b -kernel bootloader.img -serial null -serial pty -display none -initrd initramfs.cpio -dtb bcm2710-rpi-3-b-plus.dtb
+	qemu-system-aarch64 -M raspi3b -kernel bootloader.img -serial null -serial pty -display none -initrd $(CPIO) -dtb $(DTB)

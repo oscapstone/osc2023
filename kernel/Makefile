@@ -1,6 +1,8 @@
 SRCS = $(wildcard *.c)
 OBJS = $(SRCS:.c=.o)
 CFLAGS = -Wall -O2 -ffreestanding -nostdinc -nostdlib -nostartfiles
+DTB = "../shares/bcm2710-rpi-3-b-plus.dtb"
+CPIO = "../shares/initramfs.cpio"
 
 LIBRARY_PATH = ../library
 INCLUDES = -I ./include \
@@ -26,4 +28,4 @@ clean:
 	rm kernel8.elf kernel8.img *.o 2> /dev/null || true
 
 run:
-	qemu-system-aarch64 -M raspi3b -kernel kernel8.img -serial null -serial stdio -display none -initrd initramfs.cpio
+	qemu-system-aarch64 -M raspi3b -kernel kernel8.img -serial null -serial stdio -display none -initrd $(CPIO) -dtb $(DTB)
