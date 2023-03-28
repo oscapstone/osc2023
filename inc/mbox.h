@@ -26,7 +26,7 @@ struct arm_info{
 }typedef arm_info;
 
 int mbox_call(unsigned char ch);
-void get_board_revision(unsigned int* revision);
-void get_arm_memory(arm_info* arm_mem);
+void get_board_revision(unsigned int *revision);
+void get_arm_memory(arm_info *arm_mem);
 
 #endif

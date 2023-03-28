@@ -5,7 +5,7 @@
 
 #define BUFSIZE 0x100
 char shell_buf[BUFSIZE];
-char* dtp_pass;
+char *dtp_pass;
 extern char _kernel[];
 
 void _load(void){
@@ -54,7 +54,7 @@ void shell_interact(void){
     }
 }
 
-void bootloader_main(char* dtp){
+void bootloader_main(char *dtp){
     uart_init();
     uart_send_string("[*] Running the bootloader...\r\n");
     dtp_pass = dtp;

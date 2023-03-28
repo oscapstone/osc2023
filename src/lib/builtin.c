@@ -9,6 +9,8 @@
 #include <string.h>
 #include <mem.h>
 #include <exec.h>
+#include <mm.h>
+#include <timer.h>
 
 void _help(int mode){
     uart_printf(
@@ -27,6 +29,7 @@ void _help(int mode){
             "malloc <size>\t: " "allocate a block of memory with size" "\r\n"
             "exec <filename>\t: " "execute user program" "\r\n"
             "chmod_uart\t: " "change uart async/sync mode" "\r\n"
+            "setTimeout <msg> <sec>\t: " "print @msg after @sec seconds" "\r\n"
         );
     }
 }
@@ -54,7 +57,7 @@ void _reboot(void){
     // while(1);
 }
 
-void _echo(char* shell_buf){
+void _echo(char *shell_buf){
     uart_printf(shell_buf);
 }
 
@@ -62,15 +65,15 @@ void _ls(uint64 _initramfs_addr){
     cpio_ls((char*)_initramfs_addr);
 }
 
-void _cat(uint64 _initramfs_addr, char* filename){
+void _cat(uint64 _initramfs_addr, char *filename){
     cpio_cat((char*)_initramfs_addr, filename);
 }
 
-void _parsedtb(char* fdt_base){
+void _parsedtb(char *fdt_base){
     dtb_traverse(fdt_base);
 }
 
-void* _malloc(char* size){
+void *_malloc(char *size){
     int int_size = atoi(size);
     if(int_size==-1){
         uart_printf("[x] malloc size type is wrong or too large!\r\n");
@@ -80,9 +83,9 @@ void* _malloc(char* size){
     return simple_malloc(int_size);
 }
 
-void _exec(uint64 _initramfs_addr,char* filename){
-    char* mem;
-    char* user_sp;
+void _exec(uint64 _initramfs_addr,char *filename){
+    char *mem;
+    char *user_sp;
 
     mem = cpio_load_prog((char*)_initramfs_addr, filename);
     if(mem == NULL)
@@ -95,7 +98,39 @@ void _exec(uint64 _initramfs_addr,char* filename){
 void _chmod_uart(){
     int mode = uart_switch_mode();
     if(mode==0)
-        uart_printf("[*]Use synchronous uart now!\r\n");
+        uart_printf("[*] Use synchronous uart now!\r\n");
     else
-        uart_printf("[*]Use asynchronous uart now!\r\n");
+        uart_printf("[*] Use asynchronous uart now!\r\n");
+}
+
+int _setTimeout(char *shell_buf){
+    char *msg, *tsec;
+    msg = shell_buf;
+    if(*msg != ' ')
+        return -1;
+    
+    msg++;
+    if(!*msg)
+        return -1;
+    
+    tsec = msg;
+    while(*(++tsec)){
+        if(*tsec==' ')
+            break;
+    }
+    if(*tsec != ' ')
+        return -1;
+    *tsec = 0;
+    tsec++;
+    if(!*tsec)
+        return -1;
+    
+    int len;
+    char *mem;
+
+    len = strlen(msg) + 1;
+    mem = simple_malloc(len);
+    memncpy(mem ,msg, len);
+    add_timer((void(*)(void *))uart_printf, mem, atoi(tsec));
+    return 0;
 }

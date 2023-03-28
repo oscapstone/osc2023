@@ -11,7 +11,7 @@ typedef int int32;
 typedef short int16;
 typedef char int8;
 
-typedef uint32 size_t;
+// typedef uint32 size_t;
 typedef uint8 uint8_t;
 typedef uint32 fdt32_t;
 typedef uint64 fdt64_t;

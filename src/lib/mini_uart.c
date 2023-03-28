@@ -73,7 +73,7 @@ static void uart_sync_send (char c){
 	put32(AUX_MU_IO_REG,c);
 }
 
-void uart_send_string(char* str){
+void uart_send_string(char *str){
 	for (int i = 0; str[i] != '\0'; i ++)
 		uart_send(str[i]);
 }
@@ -91,7 +91,7 @@ void uart_send_hex(unsigned int d) {
     }
 }
 
-int uart_recv_line(char* buf, int maxline){
+int uart_recv_line(char *buf, int maxline){
 	int cnt = 0;
 	maxline--;
 

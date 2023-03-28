@@ -4,12 +4,12 @@
 
 #include <type.h>
 
-typedef int (*fdt_parser)(int level, char* cur, char* dt_string);
+typedef int (*fdt_parser)(int level, char *cur, char *dt_string);
 
-void parse_dtb(char* fdt, fdt_parser parser);
-int initramfs_parse_fdt(int level, char* cur, char* dt_strings);
-void initramfs_init(char* fdt_base);
-void dtb_traverse(char* fdt_base);
+void parse_dtb(char *fdt, fdt_parser parser);
+int initramfs_parse_fdt(int level, char *cur, char *dt_strings);
+void initramfs_init(char *fdt_base);
+void dtb_traverse(char *fdt_base);
 
 uint64 _initramfs_addr;
 

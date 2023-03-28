@@ -2,8 +2,33 @@
 #define _TIMER_H
 
 #include <type.h>
+#include <list.h>
+
+typedef struct {
+    void (*callback)(void *);
+    void *data;
+    uint32 time_left;
+    struct list_head lh;
+} timer_node;
+
+/* t_status has 32 bits, n-th bit stands for the status of t_procs[n].
+ * If n-th bit is 1, it means t_procs[n] is available.
+ * If n-th bit is 0, it means t_procs[n] is unavailable.
+ */
+
+ /* When setting a timer, t_interval will store the interval.
+ * It is 0 when timer is not set.
+ */
+typedef struct{
+    struct list_head lh;
+    int lh_size;
+    uint32 t_status;
+    uint32 t_interval;
+} timer_meta;
 
 void timer_init();
+void boot_time_callback();
+void add_timer(void (*callback)(void *), void *data, uint32 after);
+int timer_irq_check();
 void timer_irq_handler();
-
 #endif

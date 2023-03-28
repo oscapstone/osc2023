@@ -3,6 +3,6 @@
 
 #include <type.h>
 
-void* simple_malloc(size_t size);
+void *simple_malloc(uint32 size);
 
 #endif

@@ -19,13 +19,13 @@ static void dump(char *start, int len)
     }
 }
 
-static void parse_dt_struct(char* dt_struct, char* dt_strings, fdt_parser parser){
-    char* cur = dt_struct;
+static void parse_dt_struct(char *dt_struct, char *dt_strings, fdt_parser parser){
+    char *cur = dt_struct;
     int level = 0;
 
     while(1){
         cur = (char*)ALIGN((fdt64_t)cur, 4);
-        struct fdt_property* prop;
+        struct fdt_property *prop;
 
         fdt32_t tag = fdt32_ld((fdt32_t*)cur);
         switch(tag){
@@ -65,7 +65,7 @@ static void parse_dt_struct(char* dt_struct, char* dt_strings, fdt_parser parser
     }
 }
 
-void parse_dtb(char* fdt, fdt_parser parser){
+void parse_dtb(char *fdt, fdt_parser parser){
 
     struct fdt_header *fhdr = (struct fdt_header *)fdt;
     if(fdt_magic(fhdr)!=FDT_MAGIC_NUM)
@@ -80,12 +80,12 @@ void parse_dtb(char* fdt, fdt_parser parser){
     parse_dt_struct(dt_struct, dt_strings, parser);
 }
 
-int initramfs_parse_fdt(int level, char* cur, char* dt_strings){
+int initramfs_parse_fdt(int level, char *cur, char *dt_strings){
     fdt32_t tag = fdt32_ld((fdt32_t*)cur);
     cur += sizeof(fdt32_t);
 
     if(tag == FDT_PROP){
-        struct fdt_property* prop =(struct fdt_property* ) cur;
+        struct fdt_property *prop =(struct fdt_property *) cur;
         cur += sizeof(struct fdt_property);
         if(!strcmp("linux,initrd-start", dt_strings + fdtp_nameoff(prop))){
             _initramfs_addr = fdt32_ld((fdt32_t*)cur);
@@ -96,14 +96,14 @@ int initramfs_parse_fdt(int level, char* cur, char* dt_strings){
     return 0;
 }
 
-void initramfs_init(char* fdt_base){
+void initramfs_init(char *fdt_base){
     _initramfs_addr = 0;
     parse_dtb(fdt_base, initramfs_parse_fdt);
     if(!_initramfs_addr)
         uart_printf("[x] Cannot find initrd address in dtb!\r\n");
 }
 
-static int dtb_traverse_parser(int level, char* cur, char* dt_strings){
+static int dtb_traverse_parser(int level, char *cur, char *dt_strings){
     fdt32_t tag = fdt32_ld((fdt32_t*)cur);
 
     switch(tag){
@@ -119,7 +119,7 @@ static int dtb_traverse_parser(int level, char* cur, char* dt_strings){
         case FDT_PROP:
             print_tab(level);
             cur += sizeof(fdt32_t);
-            struct fdt_property* prop = (struct fdt_property*)cur;
+            struct fdt_property *prop = (struct fdt_property*)cur;
             cur += sizeof(struct fdt_property);
             uart_printf("[*] %s:", dt_strings + fdtp_nameoff(prop));
             dump(cur, fdtp_len(prop));
@@ -133,6 +133,6 @@ static int dtb_traverse_parser(int level, char* cur, char* dt_strings){
     return 0;
 }
 
-void dtb_traverse(char* fdt_base){
+void dtb_traverse(char *fdt_base){
     parse_dtb(fdt_base, dtb_traverse_parser);
 }

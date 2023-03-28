@@ -4,7 +4,7 @@
 #include <mem.h>
 #include <mm.h>
 
-static uint32 cpio_read_hex(char* p){
+static uint32 cpio_read_hex(char *p){
     uint32 result = 0;
 
     for(int i = 0 ; i < 8 ; i++){
@@ -22,8 +22,8 @@ static uint32 cpio_read_hex(char* p){
     return result;
 }
 
-void cpio_ls(char* cpio){
-    char* cur = cpio;
+void cpio_ls(char *cpio){
+    char *cur = cpio;
 
     while(1){
         struct cpio_newc_header *pheader = (struct cpio_newc_header *)cur;
@@ -39,7 +39,7 @@ void cpio_ls(char* cpio){
         // The pathname is followed by NUL bytes so that the total size of the 
         // fixed header plus pathname is a multiple of four. Likewise, the file
         // data is padded to a multiple of four bytes
-        char* filename = cur;
+        char *filename = cur;
         uint32 aligned_namesize = ALIGN(sizeof(struct cpio_newc_header) + namesize, 4) - sizeof(struct cpio_newc_header);
         uint32 aligned_filesize = ALIGN(filesize, 4);
 
@@ -53,8 +53,8 @@ void cpio_ls(char* cpio){
     }
 }
 
-void cpio_cat(char* cpio, char* filename){
-    char* cur = cpio;
+void cpio_cat(char *cpio, char *filename){
+    char *cur = cpio;
 
     while(1){
         struct cpio_newc_header *pheader = (struct cpio_newc_header *) cur;
@@ -73,9 +73,9 @@ void cpio_cat(char* cpio, char* filename){
         uint32 aligned_namesize = ALIGN(sizeof(struct cpio_newc_header) + namesize, 4) - sizeof(struct cpio_newc_header);
         uint32 aligned_filesize = ALIGN(filesize, 4);
 
-        char* curfilename = cur;
+        char *curfilename = cur;
         cur += aligned_namesize;
-        char* curfilecontent = cur;
+        char *curfilecontent = cur;
         cur += aligned_filesize;
 
         if(!strcmp(curfilename, filename)){
@@ -91,8 +91,8 @@ void cpio_cat(char* cpio, char* filename){
     }
 }
 
-char* cpio_load_prog(char* cpio, char* filename){
-    char* cur = cpio;
+char *cpio_load_prog(char *cpio, char *filename){
+    char *cur = cpio;
 
     while(1){
         struct cpio_newc_header *pheader = (struct cpio_newc_header *) cur;
@@ -111,14 +111,14 @@ char* cpio_load_prog(char* cpio, char* filename){
         uint32 aligned_namesize = ALIGN(sizeof(struct cpio_newc_header) + namesize, 4) - sizeof(struct cpio_newc_header);
         uint32 aligned_filesize = ALIGN(filesize, 4);
 
-        char* curfilename = cur;
+        char *curfilename = cur;
         cur += aligned_namesize;
-        char* curfilecontent = cur;
+        char *curfilecontent = cur;
         cur += aligned_filesize;
 
         if(!strcmp(curfilename, filename)){
-            char* mem = (char*)simple_malloc(filesize);
-            memncpy((unsigned long)mem, (unsigned long)curfilecontent, (unsigned long)filesize);
+            char *mem = (char*)simple_malloc(filesize);
+            memncpy(mem, curfilecontent, (unsigned long)filesize);
             return mem;
         }
 

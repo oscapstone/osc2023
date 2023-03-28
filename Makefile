@@ -93,7 +93,7 @@ qemuk: all $(INITRAMFS_CPIO) $(RPI3_DTB)
 		qemu-system-aarch64 -M raspi3 -kernel $(KERNEL_IMG) -display none \
 											-dtb $(RPI3_DTB) \
 											-initrd $(INITRAMFS_CPIO) \
-											-serial null -serial stdio
+											-serial null -serial stdio -s -S
 
 qemutty: $(KERNEL_IMG)
 		qemu-system-aarch64 -M raspi3 -kernel $(KERNEL_IMG) -display none \

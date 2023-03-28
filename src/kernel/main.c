@@ -34,7 +34,7 @@ void shell_interact(void){
     }
     else if (!strncmp("malloc", shell_buf, 6)){
         if(cnt >= 7){
-            char* string = _malloc(&shell_buf[7]);
+            char *string = _malloc(&shell_buf[7]);
             if(string)
                 uart_printf("[*] malloc address: %x\r\n", string);
         }
@@ -51,6 +51,10 @@ void shell_interact(void){
     }
     else if (!strcmp("chmod_uart",shell_buf))
         _chmod_uart();
+    else if (!strncmp("setTimeout",shell_buf,10)){
+        if(_setTimeout(&shell_buf[10])==-1)
+            uart_printf("usage: setTimeout <msg> <sec>\r\n");
+    }
     else {
         _echo(shell_buf);
         if(cnt)
@@ -67,6 +71,7 @@ void kernel_main(char *fdt){
     uart_printf("[*] Kernel start running!\r\n");
     uart_printf("[*] fdt base: %x\r\n", fdt);
 
+    timer_init();
     initramfs_init(fdt);
     enable_irqs1();
     enable_interrupt();

@@ -1,6 +1,6 @@
 #include <string.h>
 
-int strcmp(const char* X,const char* Y){
+int strcmp(const char *X,const char *Y){
     while(*X){
         if(*X != *Y)break;
         X++;
