@@ -1,4 +1,4 @@
-.section ".text"
+.section ".text.boot"
 .global _start
 _start:
     mov x0, 0

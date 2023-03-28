@@ -20,6 +20,7 @@ void shell_main(char *command)
         uart_send_string("ls\t:\n");
         uart_send_string("cat\t:\n");
         uart_send_string("dts\t:\n");
+        uart_send_string("svc\t:\n");
     }
     else if (!strcmp(command, "hello"))
     {
@@ -105,6 +106,31 @@ void shell_main(char *command)
     else if (!strcmp(command, "dts"))
     {
         fdt_traverse(dtb_parser, _dtb_ptr);
+    }
+    else if (!strcmp(command, "svc"))
+    {
+        // char *cpioDest = (char *)0x8000000;
+        char *userDest = (char *)0x200000;
+        char *cpioUserPgmDest = find_content_addr(cpioDest, "userprogram.img");
+        if (cpioUserPgmDest == NULL)
+        {
+            uart_send_string("FAIL to find userprogram.img\n");
+            return;
+        }
+        if (load_userprogram(cpioUserPgmDest, userDest) != 0)
+        {
+            uart_send_string("FAIL to load user program.\n");
+            return;
+        }
+
+        asm volatile(
+            "mov x0, 0x3c0;" // EL0t
+            "msr spsr_el1, x0;"
+            "mov x0, 0x200000;"
+            "msr elr_el1, x0;"
+            "mov x0, 0x300000;"
+            "msr sp_el0, x0;"
+            "eret;");
     }
 }
 

@@ -6,6 +6,8 @@
         "utility": "c",
         "typeinfo": "c",
         "stdlib.h": "c",
-        "mini_uart.h": "c"
+        "mini_uart.h": "c",
+        "gpio.h": "c",
+        "base.h": "c"
     }
 }

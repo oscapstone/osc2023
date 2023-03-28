@@ -48,6 +48,8 @@ bss:
 	sub	x1, x1, x0
 	bl 	memzero
 
+	bl set_exception_vector_table	// set exception vector table base
+
 	mov	sp, #LOW_MEMORY // 4MB
 	bl	kernel_main
 	b 	proc_hang		// should never come here
@@ -76,49 +78,5 @@ from_el2_to_el1:
 	// change execution level to EL1
 	mov x2, #0x3c5
 	msr spsr_el2, x2
-	adr x2, bss
-	msr elr_el2, x2
+	msr elr_el2, lr
 	eret
-
-.align 11 // vector table should be aligned to 0x800
-.global exception_vector_table
-exception_vector_table:
-	b exception_handler // branch to a handler function.
-  	.align 7 // entry size is 0x80, .align will pad 0
-  	b exception_handler
-  	.align 7
-  	b exception_handler
-  	.align 7
-  	b exception_handler
-  	.align 7
-
-  	b exception_handler
-  	.align 7
-  	b exception_handler
-  	.align 7
-  	b exception_handler
-  	.align 7
-  	b exception_handler
-  	.align 7
-
-  	b exception_handler
-  	.align 7
-  	b exception_handler
-  	.align 7
-  	b exception_handler
-  	.align 7
-  	b exception_handler
-  	.align 7
-
-  	b exception_handler
-  	.align 7
-  	b exception_handler
-  	.align 7
-  	b exception_handler
-  	.align 7
-  	b exception_handler
-  	.align 7
-
-set_exception_vector_table:
-  	adr x0, exception_vector_table
-  	msr vbar_el1, x0

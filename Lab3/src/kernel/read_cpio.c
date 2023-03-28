@@ -75,7 +75,10 @@ void read_content(char *cpioDest, char *filename)
     }
     // No hit
     if (flag == 0)
+    {
         printf("cat: %s: No such file\n", filename);
+        return;
+    }
     // Found target file
     cpio_t *header = (cpio_t *)cpioDest;
     int ns = hex2int(header->c_namesize, 8);
@@ -89,7 +92,7 @@ void read_content(char *cpioDest, char *filename)
     uart_send_string_of_size((char *)cpioDest, fs);
 }
 
-void load_content(char *cpioDest, char *filename)
+char *find_content_addr(char *cpioDest, char *filename)
 {
     int flag = 0;
     while (!memcmp(cpioDest, "070701", 6) && memcmp(cpioDest + sizeof(cpio_t), "TRAILER!!!", 10))
@@ -113,7 +116,16 @@ void load_content(char *cpioDest, char *filename)
     }
     // No hit
     if (flag == 0)
-        printf("cat: %s: No such file\n", filename);
+    {
+        printf("find_content_addr: %s: No such file\n", filename);
+        return NULL;
+    }
+
+    return cpioDest;
+}
+
+int load_userprogram(char *cpioDest, char *userDest)
+{
     // Found target file
     cpio_t *header = (cpio_t *)cpioDest;
     int ns = hex2int(header->c_namesize, 8);
@@ -123,6 +135,17 @@ void load_content(char *cpioDest, char *filename)
     else
         cpioDest += (sizeof(cpio_t) + ns + ((sizeof(cpio_t) + ns) % 4));
 
-    // print content
-    uart_send_string_of_size((char *)cpioDest, fs);
+    printf("load %p to %p\n", cpioDest, userDest);
+    printf("size: %d bytes\n", fs);
+
+    // load content
+    while (fs--)
+    {
+        *userDest++ = *cpioDest++;
+    }
+
+    if (fs == -1)
+        return 0;
+
+    return 1;
 }
