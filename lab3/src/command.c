@@ -61,10 +61,10 @@ struct command commands[] = {{
                              }};
 
 int async_read() {
-
   uart_puts("Async Read start...\n");
   enable_uart_receive_int();
   set_timer_read();
+  delay(16000000);
   return 0;
 }
 int time_out() {

@@ -26,4 +26,7 @@ int set_timer_read();
 int enable_timer_int(void);
 int disable_timer_int(void);
 
+// Util functions
+int delay(uint64_t);
+
 #endif // TIMER_H
