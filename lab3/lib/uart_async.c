@@ -6,7 +6,10 @@
 
 #define BUFFER_SIZE 256
 
-char read_buffer[BUFFER_SIZE];  // circular queue TODO: comment
+/*
+ * Ring buffers
+ */
+char read_buffer[BUFFER_SIZE];
 int read_st = 0, read_ed = 0;
 char write_buffer[BUFFER_SIZE];
 int write_st = 0, write_ed = 0;
@@ -34,6 +37,9 @@ void disable_transmit_interrupt(void)
 
 void enable_2nd_level_interrupt_ctrl(void)
 {
+	/*
+	 * bit[29]: aux int
+	 */
         unsigned int tmp = get32(ENABLE_IRQs1);
         tmp |= (1 << 29);
         put32(ENABLE_IRQs1, tmp);
@@ -84,14 +90,18 @@ void uart_receive_to_buffer(void)
 	char c = uart_recv();
 	read_buffer[read_ed++] = c;
 	read_ed %= BUFFER_SIZE;
-	if (c == '\r') uart_send('\n');
+	/*
+	 * Show on screen
+	 */
+	if (c == '\r') uart_send_string("\r\n");
 	else uart_send(c);
 }
 
 int uart_async_readline(char* target, int len)
 {
 	int i;
-	len -= 1; // Reserves space for '\0'
+	len -= 1;
+	target[len] = '\0';
 	for (i = 0; i < len; i++) {
 		while(read_st == read_ed) { asm volatile("nop"); }
 		char c = read_buffer[read_st++];
@@ -114,14 +124,16 @@ void demo_uart_async(void)
 	enable_2nd_level_interrupt_ctrl();
 
 	char buffer[BUFFER_SIZE];
-	uart_async_send_string("Type something > ");
-	uart_async_readline(buffer, BUFFER_SIZE);
-	uart_async_send_string("[Received] ");
-	uart_async_send_string(buffer);
-	uart_async_send_string("\r\n");
+	while (1) {
+		uart_async_send_string("Type something > ");
+		uart_async_readline(buffer, BUFFER_SIZE);
+		uart_async_send_string("[Received] ");
+		uart_async_send_string(buffer);
+		uart_async_send_string("\r\n\r\n");
+	}
 
 	disable_2nd_level_interrupt_ctrl();
-	while(1) { asm volatile("nop"); }
+	while (1) { asm volatile("nop"); }
 }
 
 void uart_async_interrupt_handler(void)

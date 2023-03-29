@@ -42,10 +42,18 @@
 
 .globl branch_to_address_el0
 branch_to_address_el0:
-        // TODO: why not 3c0 and why 340
+        /*
+         * bit[7]: IRQ interrupt mask
+         */
         mov     x2, 0x340
         msr     spsr_el1, x2
+        /*
+         * address of user program
+         */
         msr     elr_el1, x0
+        /*
+         * sp of user program
+         */
         msr     sp_el0, x1
         eret
 

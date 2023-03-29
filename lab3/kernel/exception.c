@@ -15,9 +15,6 @@ void disable_interrupts_in_el1(void)
         asm volatile("msr DAIFSet, 0xf");
 }
 
-// TODO: what?
-// void disable_uart_interrupt() { put32(DISABLE_IRQS_1, (1<<29)); }
-
 void print_exception_info(void)
 {
         disable_interrupts_in_el1();
@@ -55,7 +52,9 @@ void el0_timer_interrupt()
 
 void gpu_interrupt(void)
 {
-        // TODO: comment Aux int
+        /*
+         * AUX INT (keyboard, mouse, or other user interactions.)
+         */
         if (get32(IRQ_PENDING_1) & (1 << 29)) {
                 uart_async_interrupt_handler();
         }
@@ -69,6 +68,9 @@ void irq_64_el0(void)
         if (interrupt_source & (1 << 8)) {
                 gpu_interrupt();
         } else if (interrupt_source & (1 << 1)) {
+                /*
+                 * CNTPNSIRQ interrupt
+                 */
                 el0_timer_interrupt();
                 enable_interrupts_in_el1();
         }
@@ -79,7 +81,12 @@ void irq_64_el1(void)
         disable_interrupts_in_el1();
         unsigned int interrupt_source = get32(CORE0_IRQ_SOURCE);
         if (interrupt_source & (1 << 1)) {
+                /*
+                 * CNTPNSIRQ interrupt
+                 */
                 el1_timer_handler();
+        } else if (interrupt_source & (1 << 8)) {
+                gpu_interrupt();
         }
         enable_interrupts_in_el1();
 }
