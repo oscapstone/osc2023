@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include "printf.h"
+#include "mini_uart.h"
 
 int strcmp(const char *str1, const char *str2);
 int strlen(const char *str);

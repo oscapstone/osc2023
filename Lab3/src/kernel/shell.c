@@ -3,12 +3,15 @@
 #include "reboot.h"
 #include "read_cpio.h"
 #include "device_tree.h"
+#include "timer.h"
 
 extern void *_dtb_ptr;
 extern char *cpioDest;
 
 #define COMMAND_BUFFER 20
 #define FILENAME_BUFFER 20
+
+void shell_start();
 
 void shell_main(char *command)
 {
@@ -21,6 +24,7 @@ void shell_main(char *command)
         uart_send_string("cat\t:\n");
         uart_send_string("dts\t:\n");
         uart_send_string("svc\t:\n");
+        uart_send_string("time\t:\n");
     }
     else if (!strcmp(command, "hello"))
     {
@@ -128,21 +132,41 @@ void shell_main(char *command)
             "msr spsr_el1, x0;"
             "mov x0, 0x200000;"
             "msr elr_el1, x0;"
-            "mov x0, 0x300000;"
+            "mov x0, 0x200000;"
             "msr sp_el0, x0;"
             "eret;");
+    }
+    else if (!strcmp(command, "time"))
+    {
+        get_current_time();
+        asm volatile(
+            "mov x3, 0x0;" // use x3 instead of x0 because x0 is reserved automatically to store the address of "handling_info"
+            "msr spsr_el1, x3;"
+            "mov x0, %0;"
+            "add x0, x0, 12;"
+            "msr elr_el1, x0;"
+            "mov x0, 0x1000000;"
+            "msr sp_el0, x0;"
+            "mrs x0, cntfrq_el0;"
+            "add x0, x0, x0;"
+            "msr cntp_tval_el0, x0;"
+            "bl core_timer_enable;"
+            "eret;"
+            :
+            : "r"(shell_start)
+            :);
     }
 }
 
 void shell_start()
 {
+    uart_send_string("Starting shell...\n");
     char c;
     int i = 0;
-    char command[COMMAND_BUFFER];
 
+    char command[COMMAND_BUFFER];
     memset(command, '\0', COMMAND_BUFFER);
 
-    uart_send_string("Starting shell...\n");
     uart_send_string("# ");
 
     while (1)

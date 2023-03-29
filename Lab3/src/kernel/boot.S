@@ -28,7 +28,7 @@ proc_hang:
 master:
 	ldr x1, =_start
 
-	// set up EL1
+	// get CurrentEL
     mrs x0, CurrentEL
     and x0, x0, #12 // clear reserved bits
 
@@ -48,7 +48,7 @@ bss:
 	sub	x1, x1, x0
 	bl 	memzero
 
-	bl set_exception_vector_table	// set exception vector table base
+	bl set_el1_exception_vector_table	// set el1 exception vector table base
 
 	mov	sp, #LOW_MEMORY // 4MB
 	bl	kernel_main

@@ -1,7 +1,5 @@
-.global set_exception_vector_table
+.global set_el1_exception_vector_table
 .global exception_vector_table
-
-#define CORE0_TIMER_IRQ_CTRL 0x40000040
 
 // save general registers to stack
 .macro save_all
@@ -56,8 +54,22 @@ exception_handler:
     load_all
     eret
 
+exception_handler_sync_sp_elx_lower_el:
+    save_all
+    mov x0, #0
+    mrs x1, esr_el1
+    mrs x2, elr_el1
+    mrs x3, spsr_el1
+    mrs x4, far_el1
+    bl exc_handler
+    load_all
+    eret
+
+exception_handler_irq_sp_elx_lower_el:
+    bl el0_core_timer_handler
+
 .align 11 // vector table should be aligned to 0x800
-exception_vector_table:
+el1_exception_vector_table:
     b exception_handler // branch to a handler function.
     .align 7 // entry size is 0x80, .align will pad 0
     b exception_handler
@@ -76,6 +88,15 @@ exception_vector_table:
     b exception_handler
     .align 7
 
+    b exception_handler_sync_sp_elx_lower_el
+    .align 7
+    b exception_handler_irq_sp_elx_lower_el
+    .align 7
+    b exception_handler
+    .align 7
+    b exception_handler
+    .align 7
+
     b exception_handler
     .align 7
     b exception_handler
@@ -85,35 +106,15 @@ exception_vector_table:
     b exception_handler
     .align 7
 
-    b exception_handler
-    .align 7
-    b exception_handler
-    .align 7
-    b exception_handler
-    .align 7
-    b exception_handler
-    .align 7
-
-set_exception_vector_table:
-    adr x0, exception_vector_table
+set_el1_exception_vector_table:
+    adr x0, el1_exception_vector_table
     msr vbar_el1, x0
     ret lr
 
-core_timer_enable:
-    mov x0, 1
-    msr cntp_ctl_el0, x0 // enable
-    mrs x0, cntfrq_el0
-    msr cntp_tval_el0, x0 // set expired time
-    mov x0, 2
-    ldr x1, =CORE0_TIMER_IRQ_CTRL
-    str w0, [x1] // unmask timer interrupt
-
-core_timer_handler:
-    mrs x0, cntfrq_el0
-    msr cntp_tval_el0, x0
-
-/*
-cntpct_el0: The timer’s current count.
-cntp_cval_el0: A compared timer count. If cntpct_el0 >= cntp_cval_el0, interrupt the CPU core.
-cntp_tval_el0: (cntp_cval_el0 - cntpct_el0). You can use it to set an expired timer after the current timer count.
-*/
+el0_core_timer_handler:
+    save_all
+    mrs x0, cntpct_el0
+    mrs x1, cntfrq_el0    
+    bl el0_timer_handler
+    load_all
+    eret

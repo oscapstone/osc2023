@@ -1,4 +1,4 @@
-#include "mini_uart.h"
+#include "stdlib.h"
 
 /**
  * common exception handler
@@ -107,5 +107,10 @@ void exc_handler(unsigned long type, unsigned long esr, unsigned long elr, unsig
     uart_send_string(" ; ESR_EL1 ");
     uart_hex(esr >> 32);
     uart_hex(esr);
+    uart_send_string(" ; FAR_EL1 ");
+    uart_hex(far >> 32);
+    uart_hex(far);
     uart_send_string("\n");
+
+    return;
 }

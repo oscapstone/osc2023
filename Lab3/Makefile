@@ -35,7 +35,7 @@ run:
 	qemu-system-aarch64 -M raspi3 -kernel kernel8.img -serial null -serial stdio -display none -initrd initramfs.cpio -dtb bcm2710-rpi-3-b-plus.dtb -d int
 
 debug:
-	qemu-system-aarch64 -M raspi3 -kernel kernel8.img -serial null -serial stdio -display none -s -S -initrd initramfs.cpio -dtb bcm2710-rpi-3-b-plus.dtb
+	qemu-system-aarch64 -M raspi3 -kernel kernel8.img -serial null -serial stdio -display none -s -S -initrd initramfs.cpio -dtb bcm2710-rpi-3-b-plus.dtb -d int
 
 bootloader.img: $(SRC_DIR)/bootloader/link.ld $(OBJ_FILES)
 	$(ARMGNU)-ld -T $(SRC_DIR)/bootloader/link.ld -o $(BUILD_DIR)/bootloader/bootloader.elf  $(filter $(BUILD_DIR)/bootloader/%_c.o $(BUILD_DIR)/bootloader/%_s.o $(BUILD_DIR)/lib/%_c.o $(BUILD_DIR)/lib/%_s.o, $(OBJ_FILES))
