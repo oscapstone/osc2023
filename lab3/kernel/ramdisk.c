@@ -6,6 +6,9 @@
 #define MAX_NUM_FILE  10
 #define CPIO_HEADER_SIZE 110
 
+// TODO: remove this line when not using qemu
+// #define QEMU_DEBUG
+
 struct cpio_newc_header {
         char c_magic[6];
         char c_ino[8];
