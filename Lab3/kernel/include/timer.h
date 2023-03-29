@@ -25,6 +25,6 @@ void set_core_timer_interrupt_by_tick(unsigned long long tick);
 void timer_set2sAlert(char* str);
 void timer_list_init();
 int  timer_list_get_size();
-
+void two_second_alert(char *str);
 
 #endif /* _TIMER_H_ */

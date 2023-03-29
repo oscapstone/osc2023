@@ -14,6 +14,7 @@ void el1_interrupt_disable(){
 }
 
 void el1h_irq_router(){
+    
     // decouple the handler into irqtask queue
     // (1) https://datasheets.raspberrypi.com/bcm2835/bcm2835-peripherals.pdf - Pg.113
     // (2) https://datasheets.raspberrypi.com/bcm2836/bcm2836-peripherals.pdf - Pg.16

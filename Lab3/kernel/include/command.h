@@ -18,5 +18,5 @@ void command_dtb();
 void command_exec(char *args);
 void command_el();
 void command_setTimeout(char *args);
-
+void command_set2sAlert();
 #endif

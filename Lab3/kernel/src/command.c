@@ -36,8 +36,9 @@ void command_help (){
 
     /* Lab3 Feature */
     uart_async_puts("exec\t: Execute a command, replacing current image with a new image.\n");
-    //uart_async_puts("el\t:  Show the exception level.\n");
+    uart_async_puts("el\t:  Show the exception level.\n");
     uart_async_puts("setTimeout\t: setTimeout [MESSAGE] [SECONDS].\n");
+    uart_async_puts("set2s\t: set 2s Alert.\n");
 
 }
 
@@ -235,5 +236,14 @@ void command_el(){
 void command_setTimeout(char *args){
     char* sec = str_SepbySpace(args);
     uart_printf("setTimeout: %s , %s\n", args, sec);
-    add_timer(timer_set2sAlert,2,"2sAlert");
+    
+    add_timer(uart_puts,atoi(sec),args);
+ 
+}
+
+
+
+void command_set2sAlert()
+{
+    add_timer(two_second_alert, 2, "two_second_alert");
 }

@@ -161,7 +161,7 @@ void command_controller ( enum SPECIAL_CHARACTER input_parse, char c, char buffe
             else if ( !strcmp(buffer, "el"          ) ) command_el();
             else if ( !strcmp(buffer, "async"       ) ) uart_async_puts("async puts test success!!!\n");  
             else if ( !strcmp(buffer, "setTimeout"  ) ) command_setTimeout(args);
-                                    
+            else if ( !strcmp(buffer, "set2s"       ) ) command_set2sAlert();
             else                                        command_not_found(buffer);
 
         }

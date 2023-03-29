@@ -58,7 +58,7 @@ clean:
 	rm kernel8.elf boot.img obj/*.o *.o ../*.cpio >/dev/null 2>/dev/null || true
 
 debug:	
-	qemu-system-aarch64 -M raspi3b -kernel kernel8.img
+	qemu-system-aarch64 -M raspi3b -kernel kernel8.img -serial null -serial stdio -initrd ../initramfs.cpio -dtb ../bcm2710-rpi-3-b-plus.dtb -s -S
 
 cpio: 
 	cd ../$(CPIO_DIR) ; find . | cpio -o -H newc > ../initramfs.cpio

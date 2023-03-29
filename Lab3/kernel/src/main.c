@@ -21,13 +21,13 @@ int kernel()
     // set up serial console
     uart_init();
 
-
-    //core_timer_enable();
-    //timer_list_init();
     irqtask_list_init();
+    timer_list_init();
+    core_timer_enable();
+
+
     uart_interrupt_enable();
     el1_interrupt_enable();  // enable interrupt in EL1 -> EL1
-   
 
 
     // Welcome Message
