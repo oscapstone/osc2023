@@ -21,7 +21,6 @@ typedef struct {
  */
 typedef struct{
     struct list_head lh;
-    int lh_size;
     uint32 t_status;
     uint32 t_interval;
 } timer_meta;
@@ -29,6 +28,6 @@ typedef struct{
 void timer_init();
 void boot_time_callback();
 void add_timer(void (*callback)(void *), void *data, uint32 after);
-int timer_irq_check();
+void timer_irq_add();
 void timer_irq_handler();
 #endif

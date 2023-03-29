@@ -3,6 +3,7 @@
 #include <mini_uart.h>
 #include <syscall.h>
 #include <list.h>
+#include <irq.h>
 
 #define CORE0_TIMER_IRQ_CTRL 0x40000040
 #define CORE0_IRQ_SOURCE 0x40000060
@@ -39,7 +40,7 @@ static void tn_free(timer_node *tn){
 }
 
 static void update_remain_time(){
-    if(!t_meta.lh_size)
+    if(list_empty(&t_meta.lh))
         return;
     uint32 cntp_tval_el0 = read_sysreg(cntp_tval_el0);
 
@@ -54,13 +55,10 @@ static void update_remain_time(){
 }
 
 static void timer_set(){
-    if(!t_meta.lh_size){
-        timer_disable();
+    if(list_empty(&t_meta.lh))
         return;
-    }
     uint64 daif = read_sysreg(DAIF);
     disable_interrupt();
-    timer_enable();
     timer_node *tn = list_first_entry(&t_meta.lh, timer_node, lh);
 
     // set timer and metadata
@@ -85,7 +83,6 @@ static int tn_insert(timer_node *tn){
     // insert the t_node to previous of entry
     list_add_tail(&tn->lh,&entry->lh);
 
-    t_meta.lh_size++;
     write_sysreg(DAIF, daif);
     return first;
 }
@@ -115,7 +112,6 @@ static timer_node *tn_alloc(){
 void timer_init(){
     timer_set_boot_cnt();
     INIT_LIST_HEAD(&t_meta.lh);
-    t_meta.lh_size = 0;
     t_meta.t_interval = 0;
     t_meta.t_status = 0xffffffff;
 
@@ -130,9 +126,8 @@ void boot_time_callback()
         // Set next timer before calling any functions which may interrupt
     uint32 cntfrq_el0 = read_sysreg(cntfrq_el0);
     uint64 cntpct_el0 = read_sysreg(cntpct_el0);
-        // write_sysreg(cntp_tval_el0, cntfrq_el0 * 2);
     timer_dump ++;
-        // just dump two times
+    // just dump two times
     if(timer_dump<=2){
         uart_printf("[Boot time: %lld seconds...]\r\n", (cntpct_el0 - timer_boot_cnt) / cntfrq_el0);
         add_timer(boot_time_callback, NULL ,2);
@@ -155,35 +150,32 @@ void add_timer(void (*callback)(void *), void *data, uint32 timeval){
     if(tn_insert(tn)){
         // if new t_node is added in the head of list
         timer_set();
-        // timer_enable();
+        timer_enable();
     }
 }
-int timer_irq_check(){
+void timer_irq_add(){
     uint32 core0_irq_src = get32(CORE0_IRQ_SOURCE);
 
-    if (core0_irq_src & 0x02)
-        return 1;
-    else
-        return 0;
+    if (core0_irq_src & 0x02){
+        timer_disable();
+        if(add_task(timer_irq_handler, NULL, TIMER_PRIO))
+            timer_enable();
+    }
 }
+
 void timer_irq_handler(){
-    if(!timer_irq_check())
-        return;
     timer_node *tn;
-    if(!t_meta.lh_size)
+    if(list_empty(&t_meta.lh))
         return;
     tn = list_first_entry(&t_meta.lh, timer_node, lh);
     list_del(&tn->lh);
-    t_meta.lh_size--;
     update_remain_time();
     timer_set();
 
     // execute callback function
-    disable_interrupt();
     (tn->callback)(tn->data);
-    enable_interrupt();
     // free the entry in the array
     tn_free(tn);
 
-    // timer_enable();
+    timer_enable();
 }

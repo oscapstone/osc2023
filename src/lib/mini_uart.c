@@ -3,6 +3,7 @@
 #include <BCM.h>
 #include <type.h>
 #include <stdarg.h>
+#include <irq.h>
 
 #define BUFSIZE 0x100
 
@@ -25,6 +26,25 @@ char uart_recv(void){
 
 void uart_send(char c){
     (uart_send_fp)(c);
+}
+static inline void enable_R_interrupt(){
+    uint32 ier = get32(AUX_MU_IER_REG);
+    ier |= 0x01;
+    put32(AUX_MU_IER_REG, ier);
+}
+
+static inline void enable_W_interrupt(){
+    uint32 ier = get32(AUX_MU_IER_REG);
+    ier |= 0x02;
+    put32(AUX_MU_IER_REG, ier);
+}
+
+static inline void disable_RW_interrupt(){
+    put32(AUX_MU_IER_REG, 0);
+}
+
+static inline void enable_RW_interrupt(){
+    put32(AUX_MU_IER_REG, 3);
 }
 
 static char uart_async_recv(void){
@@ -236,22 +256,27 @@ void uart_init (void)
     uart_recv_fp = uart_sync_recv;
     uart_send_fp = uart_sync_send;
 }
-
-void uart_irq_handler(void){
+void uart_irq_add(){
     uint32 iir = get32(AUX_MU_IIR_REG);
-    
     // No interrupt
     if(iir & 0x01)
         return;
+
+    disable_RW_interrupt();
+    if(add_task(uart_irq_handler, NULL, UART_PRIO))
+        enable_RW_interrupt();
+}
+void uart_irq_handler(){
+    uint32 iir = get32(AUX_MU_IIR_REG), ier = 0;
 
     // Transmit holding register empty
     if(iir & 0x02){
         /* if head equals to tail ==> means the write buffer is empty.
            Then we need to disable transmit interrupt*/
         if(w_head == w_tail){
-            uint32 ier = get32(AUX_MU_IER_REG);
-            ier &= ~(0x02);
-            put32(AUX_MU_IER_REG, ier);
+            // uint32 ier = get32(AUX_MU_IER_REG);
+            // ier &= ~(0x02);
+            // put32(AUX_MU_IER_REG, ier);
         }
         /* if head not equals to tail ==> means write buffer is not empty
            Then we need to write the buffer to IO register and move the buffer pointer backward*/
@@ -269,6 +294,16 @@ void uart_irq_handler(void){
             r_tail = (r_tail+1)%BUFSIZE;
         }
     }
+
+     if (r_head != (r_tail + 1) % BUFSIZE) {
+        ier = ier | 0x01;
+    }
+
+    if (w_head != w_tail) {
+        ier = ier | 0x02;
+    }
+
+    put32(AUX_MU_IER_REG, ier);
 }
 
 int uart_switch_mode(void){

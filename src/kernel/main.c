@@ -64,7 +64,7 @@ void shell_interact(void){
 
 void kernel_main(char *fdt){
 
-    timer_init();
+    irq_init();
 
     fdt_base = fdt;
     uart_init();
