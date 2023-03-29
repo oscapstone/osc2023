@@ -25,7 +25,7 @@ reset_core_timer_in_cycle:
         msr     cntp_tval_el0, x0
         ret
 
-.globl reset_core_timer_absolute // TODO: use absolute cycle!
+.globl reset_core_timer_absolute
 reset_core_timer_absolute:
         msr     cntp_cval_el0, x0
         ret
