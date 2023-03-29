@@ -8,9 +8,11 @@
 void main(const void *const dtb_start) {
   devicetree_register(dtb_start);
 
+  set_vector_table();
+
   serial_init();
 
-  set_vector_table();
+  XCPT_UNMASK_ALL();
 
   serial_fputs("INFO:Initialization complete, running at EL: 0x");
   serial_print_hex(get_current_el());

@@ -44,13 +44,24 @@
 
 #include "oscos/bcm2837/aux.h"
 #include "oscos/bcm2837/gpio.h"
+#include "oscos/bcm2837/l2ic.h"
 #include "oscos/bcm2837/mini_uart.h"
 #include "oscos/bcm2837/peripheral_memory_barrier.h"
 #include "oscos/delay.h"
 #include "oscos/spinlock.h"
 
+#define READ_BUF_SZ 1024
+#define WRITE_BUF_SZ 1024
+
 static atomic_flag _serial_spinlock = ATOMIC_FLAG_INIT;
 static SerialMode _serial_mode = SM_TEXT;
+static volatile char _serial_read_buf[READ_BUF_SZ];
+static volatile size_t _serial_read_buf_start = 0, _serial_read_buf_len = 0;
+static volatile char _serial_write_buf[WRITE_BUF_SZ];
+static volatile size_t _serial_write_buf_start = 0, _serial_write_buf_len = 0;
+// Whether or not the current execution context is in one of the synchronous I/O
+// functions. This variable is meant to save a few memory barriers.
+static volatile bool _serial_is_in_sync = false;
 
 void serial_init(void) {
   // The initialization procedure is taken from
@@ -116,10 +127,23 @@ void serial_init(void) {
   delay_ns(20 * NS_PER_SEC / 115200);
   AUX_MU->IIR_REG = 6;
 
+  // Enable receive interrupt.
+  AUX_MU->IER_REG |= AUX_MU_IER_REG_ENABLE_RECEIVE_INTERRUPT;
+
+  PERIPHERAL_READ_BARRIER();
+
+  PERIPHERAL_WRITE_BARRIER();
+
+  // Enable AUX interrupt on the L2 interrupt controller.
+  L2IC->enable_irqs[0] |= INT_SRC_L2_AUX;
+
   PERIPHERAL_READ_BARRIER();
 }
 
 static void _serial_flush(void) {
+  while (_serial_write_buf_len != 0) {
+    __asm__ __volatile__("wfi");
+  }
   while (!(AUX_MU->LSR_REG & AUX_MU_LSR_REG_TRANSMITTER_IDLE))
     ;
 }
@@ -178,18 +202,99 @@ void serial_flush(void) {
   PERIPHERAL_READ_BARRIER();
 }
 
+void mini_uart_irq_handler(void) {
+  if (!_serial_is_in_sync) {
+    PERIPHERAL_WRITE_BARRIER();
+  }
+
+  // Read.
+
+  // Read until the read buffer is full or there are nothing to read.
+  while (_serial_read_buf_len != READ_BUF_SZ &&
+         (AUX_MU->LSR_REG & AUX_MU_LSR_REG_DATA_READY)) {
+    _serial_read_buf[(_serial_read_buf_start + _serial_read_buf_len++) %
+                     READ_BUF_SZ] = AUX_MU->IO_REG;
+  }
+
+  // Disable the receive interrupt if the read buffer is full. Otherwise, the
+  // interrupt will fire again and again after exception return, blocking the
+  // main code from executing.
+  if (_serial_read_buf_len == READ_BUF_SZ) {
+    AUX_MU->IER_REG &= ~AUX_MU_IER_REG_ENABLE_RECEIVE_INTERRUPT;
+  }
+
+  // Write.
+
+  while (_serial_write_buf_len != 0 &&
+         (AUX_MU->LSR_REG & AUX_MU_LSR_REG_TRANSMITTER_EMPTY)) {
+    AUX_MU->IO_REG = _serial_write_buf[_serial_write_buf_start];
+    _serial_write_buf_start = (_serial_write_buf_start + 1) % WRITE_BUF_SZ;
+    _serial_write_buf_len--;
+  }
+
+  // Disable the transmit interrupt if the write buffer is full. Otherwise, the
+  // interrupt will fire again and again after exception return, blocking the
+  // main code from executing.
+  if (_serial_write_buf_len == 0) {
+    AUX_MU->IER_REG &= ~AUX_MU_IER_REG_ENABLE_TRANSMIT_INTERRUPT;
+  }
+
+  if (!_serial_is_in_sync) {
+    PERIPHERAL_READ_BARRIER();
+  }
+}
+
 // Raw I/O functions.
 
+static int _serial_read_byte_nonblock(void) {
+  if (_serial_read_buf_len == 0) {
+    return -1;
+  }
+
+  // Enter critical section; disable receive interrupt.
+  AUX_MU->IER_REG &= ~AUX_MU_IER_REG_ENABLE_RECEIVE_INTERRUPT;
+
+  const char result = _serial_read_buf[_serial_read_buf_start];
+  _serial_read_buf_start = (_serial_read_buf_start + 1) % READ_BUF_SZ;
+  _serial_read_buf_len--;
+
+  // Exit critical section; re-enable receive interrupt.
+  // Note that the receive interrupt might already have been disabled before
+  // entering this function due to the read buffer being full. It's safe to
+  // enable the receive interrupt anyway, because there is at least one space in
+  // the read buffer.
+  AUX_MU->IER_REG |= AUX_MU_IER_REG_ENABLE_RECEIVE_INTERRUPT;
+
+  return result;
+}
+
 static char _serial_read_byte(void) {
-  while (!(AUX_MU->LSR_REG & AUX_MU_LSR_REG_DATA_READY))
-    ;
-  return AUX_MU->IO_REG & AUX_MU_IO_REG_RECEIVE_DATA_READ;
+  int result;
+  while ((result = _serial_read_byte_nonblock()) < 0) {
+    __asm__ __volatile__("wfi");
+  }
+
+  return result;
 }
 
 static void _serial_write_byte(const char c) {
-  while (!(AUX_MU->LSR_REG & AUX_MU_LSR_REG_TRANSMITTER_EMPTY))
-    ;
-  AUX_MU->IO_REG = c;
+  // Wait for the write buffer to clear.
+  while (_serial_write_buf_len == WRITE_BUF_SZ) {
+    __asm__ __volatile__("wfi");
+  }
+
+  // Enter critical section; disable transmit interrupt.
+  AUX_MU->IER_REG &= ~AUX_MU_IER_REG_ENABLE_TRANSMIT_INTERRUPT;
+
+  _serial_write_buf[(_serial_write_buf_start + _serial_write_buf_len++) %
+                    WRITE_BUF_SZ] = c;
+
+  // Exit critical section; re-enable transmit interrupt.
+  // Note that the transmit interrupt might already have been disabled before
+  // entering this function due to the write buffer being empty. It's safe to
+  // enable the transmit interrupt anyway, because there is at least one
+  // character in the write buffer.
+  AUX_MU->IER_REG |= AUX_MU_IER_REG_ENABLE_TRANSMIT_INTERRUPT;
 }
 
 // High-level I/O functions.
@@ -311,8 +416,10 @@ static void _serial_write_byte(const char c) {
 #define FN_DEFN_PUBLIC(SPEC)                                                   \
   FN_DECL_PUBLIC(SPEC) {                                                       \
     PERIPHERAL_WRITE_BARRIER();                                                \
+    _serial_is_in_sync = true;                                                 \
     SPEC(DECL_RESULT_IF_NON_VOID) INVOKE_PRIVATE(SPEC);                        \
     PERIPHERAL_READ_BARRIER();                                                 \
+    _serial_is_in_sync = false;                                                \
     SPEC(RETURN_RESULT_IF_NON_VOID)                                            \
   }
 
@@ -342,6 +449,24 @@ FN_DECL_TEXT_MODE(GETC_SPEC) {
 FN_DECL_BINARY_MODE(GETC_SPEC) { return _serial_read_byte(); }
 
 FN_DEFN(GETC_SPEC)
+
+// int getc_nonblock(void)
+
+#define GETC_NONBLOCK_RET_TY(X, V) X(int)
+#define GETC_NONBLOCK_ARGS(X, D) X(void, NOTHING)
+#define GETC_NONBLOCK_SPEC(X)                                                  \
+  X(GETC_NONBLOCK_RET_TY, getc_nonblock, GETC_NONBLOCK_ARGS)
+
+FN_DECL_TEXT_MODE(GETC_NONBLOCK_SPEC) {
+  const int c = _serial_read_byte_nonblock();
+  if (c < 0)
+    return c;
+  return c == '\r' ? '\n' : c;
+}
+
+FN_DECL_BINARY_MODE(GETC_NONBLOCK_SPEC) { return _serial_read_byte_nonblock(); }
+
+FN_DEFN(GETC_NONBLOCK_SPEC)
 
 // char putc(char c)
 

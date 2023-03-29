@@ -25,6 +25,14 @@ typedef struct {
 
 #define AUX_MU_IO_REG_TRANSMIT_DATA_WRITE ((uint32_t)0xff)
 #define AUX_MU_IO_REG_RECEIVE_DATA_READ ((uint32_t)0xff)
+
+// N. B. The interrupt bits specified in the datasheet are incorrect. The values
+// listed here are correct. See [bcm2837-datasheet-errata].
+// [bcm2835-datasheet-errata]: https://elinux.org/BCM2835_datasheet_errata
+
+#define AUX_MU_IER_REG_ENABLE_RECEIVE_INTERRUPT ((uint32_t)0x1)
+#define AUX_MU_IER_REG_ENABLE_TRANSMIT_INTERRUPT ((uint32_t)0x2)
+
 #define AUX_MU_LSR_REG_DATA_READY ((uint32_t)0x1)
 #define AUX_MU_LSR_REG_TRANSMITTER_IDLE ((uint32_t)0x40)
 #define AUX_MU_LSR_REG_TRANSMITTER_EMPTY ((uint32_t)0x20)

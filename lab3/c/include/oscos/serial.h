@@ -82,6 +82,16 @@ void serial_flush(void);
 /// the serial console.
 char serial_getc(void);
 
+/// \brief Reads a character from the serial console without blocking the
+/// current thread.
+///
+/// When calling this function, the serial console must be initialized. Also, in
+/// a multi-threaded context, the current thread must have acquired the lock of
+/// the serial console.
+///
+/// \return The character read or -1 if no data is available at the moment.
+int serial_getc_nonblock(void);
+
 /// \brief Writes a character to the serial console.
 ///
 /// When calling this function, the serial console must be initialized. Also, in
@@ -123,5 +133,8 @@ void serial_print_hex(uint32_t x);
 /// a multi-threaded context, the current thread must have acquired the lock of
 /// the serial console.
 void serial_print_hex_u64(uint64_t x);
+
+/// \brief IRQ handler. Not meant to be called directly.
+void mini_uart_irq_handler(void);
 
 #endif

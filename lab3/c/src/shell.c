@@ -21,7 +21,13 @@ static size_t _shell_read_cmd(char *const buf, const size_t n) {
   size_t cmd_len = 0;
 
   for (;;) {
-    const char c = serial_getc();
+    char c;
+
+    int read_result;
+    while ((read_result = serial_getc_nonblock()) < 0) {
+      __asm__ __volatile__("wfi");
+    }
+    c = read_result;
 
     if (c == '\n') {
       serial_putc('\n');
