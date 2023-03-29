@@ -19,17 +19,17 @@ clean:
 
 $(BUILD_DIR)/kernel_%_c.o: %.c
 	mkdir -p $(@D)
-	$(CC) $(CFLAGS) -MMD -c $< -o $@
+	$(CC) $(CFLAGS) -MMD -c $< -o $@ -g
 
 $(BUILD_DIR)/kernel_%_s.o: %.S
-	$(CC) $(ASMFLAGS) -MMD -c $< -o $@
+	$(CC) $(ASMFLAGS) -MMD -c $< -o $@ -g
 
 C_FILES = $(wildcard *.c)
 ASM_FILES = $(wildcard *.S)
 OBJ_FILES = $(C_FILES:%.c=$(BUILD_DIR)/kernel_%_c.o)
 OBJ_FILES += $(ASM_FILES:%.S=$(BUILD_DIR)/kernel_%_s.o)
 
-LIB_C_FILES = mini_uart.c string_utils.c device_tree.c mem_utils.c
+LIB_C_FILES = mini_uart.c string_utils.c device_tree.c mem_utils.c uart_async.c
 LIB_ASM_FILES = utils.S mm.S
 LIB_OBJ_FILES = $(LIB_C_FILES:%.c=$(BUILD_DIR)/lib_%_c.o)
 LIB_OBJ_FILES += $(LIB_ASM_FILES:%.S=$(BUILD_DIR)/lib_%_s.o)

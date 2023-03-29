@@ -10,10 +10,10 @@ BUILD_DIR = ../build
 
 $(BUILD_DIR)/lib_%_c.o: %.c
 	mkdir -p $(@D)
-	$(CC) $(CFLAGS) -MMD -c $< -o $@
+	$(CC) $(CFLAGS) -MMD -c $< -o $@ -g
 
 $(BUILD_DIR)/lib_%_s.o: %.S
-	$(CC) $(ASMFLAGS) -MMD -c $< -o $@
+	$(CC) $(ASMFLAGS) -MMD -c $< -o $@ -g
 
 C_FILES = $(wildcard *.c)
 ASM_FILES = $(wildcard *.S)
