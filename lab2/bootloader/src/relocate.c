@@ -1,6 +1,7 @@
 extern unsigned char _loader_begin, _loader_end, __relocate_point, main;
 #include "uart.h"
 #include "relocate.h"
+char* _dtb; 
 
 void int_to_str(int n, char *s){
   char tmp[100];
@@ -17,10 +18,12 @@ void int_to_str(int n, char *s){
   s[idx] = '\0'; //string end 
 }
 
-void relocate() {
+void relocate(char* arg) {
+    _dtb = arg;
 	unsigned long loader_size = (&_loader_end - &_loader_begin);
 	unsigned char *new_bl = (unsigned char*)&__relocate_point; //move to 0x60000
 	unsigned char *bl = (unsigned char*)&_loader_begin;
+    unsigned char *loader_begin_ptr = (unsigned char*)&_loader_begin;
 
 	while (loader_size --){
 		*new_bl++ = *bl;
@@ -30,12 +33,20 @@ void relocate() {
 	}
 
 	void (*func_p)(void) = &main; 
-	func_p -= 0x20000; //go to 0x60000 and do.
-	func_p();
+    uart_hex(_dtb);
+    //void (*func_p)(char* ) = &main;
+
+	//func_p -= 0x20000; //go to 0x60000 and do.
+    func_p += 0x2F80000; //move to 0x50000
+	//func_p(_dtb);
+    func_p();
 }
 
 
 void loadimg() {
+    char *dtb = _dtb;
+    uart_hex(dtb);
+    uart_hex(&dtb);
 	long long address = KERNEL_START; //0x80000 
     uart_send_string("Send image via UART now!\n");
     uart_flush();
@@ -73,8 +84,13 @@ void loadimg() {
         int_to_str(i, ii);
         uart_send_string(ii);
         uart_send_string("\n");
+        
+        uart_send_string("locate: ");
+        uart_hex(kernel+i);
+        uart_send_string("_dtb: ");
+        uart_hex(dtb);
+        uart_send_string("\n");
         */
-
     }
 
     if (img_checksum != 0) {
@@ -91,7 +107,13 @@ void loadimg() {
         r = 1000;
         while(r--) { asm volatile("nop"); }
 
-        void (*start_os)(void) = (void *)KERNEL_START; //do 0x80000 kernel start.
-        start_os();
+        //void (*start_os)(void) = (void *)KERNEL_START; //do 0x80000 kernel start.
+        //uart_send_string("print dtb");
+        uart_hex(dtb);
+        uart_send_string("\nprint dtb address\n");
+        uart_hex(&dtb);
+        void (*start_os)(char*) = (void*)KERNEL_START;
+        start_os(dtb);
+
     }	
 }

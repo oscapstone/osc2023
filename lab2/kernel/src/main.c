@@ -1,8 +1,15 @@
 #include "uart.h"
 #include "utils.h"
 
-
-int main() {
+//extern char* dtb;
+int main(char* arg) { 
+	char *dtb = arg; //get dtb from bootloader
+	uart_send_string("print dtb address\n");
+	uart_hex(&arg);
+	uart_send_string("\nprint dtb\n");
+	uart_hex(arg);
+	uart_send_string("print dtbdtb:\n")
+	uart_hex(dtb);
 	shell_init();
 	char cmd[100];
 	int status=0;

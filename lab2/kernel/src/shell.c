@@ -5,7 +5,7 @@
 
 void shell_init(){
 	uart_init();
-	uart_send_string("Hello! Welcome to Chely's system.\n That's demo Lab1.\n");
+	uart_send_string("Hello! Welcome to Chely's system.\n That's demo Lab2.\n");
 	uart_flush();
 }
 

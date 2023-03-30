@@ -41,4 +41,4 @@ pty: kernel8.img
 	qemu-system-aarch64 -M raspi3b -kernel kernel8.img -serial null -serial pty -initrd ./initramfs.cpio
 
 tty: kernel8.img
-	qemu-system-aarch64 -M raspi3b -kernel kernel8.img -serial null -serial pty
+	qemu-system-aarch64 -M raspi3b -kernel kernel8.img -serial null -serial pty -initrd initramfs.cpio -dtb bcm2710-rpi-3-b-plus.dtb

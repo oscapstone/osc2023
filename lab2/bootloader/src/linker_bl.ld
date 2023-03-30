@@ -26,11 +26,12 @@ SECTIONS
 		__bss_end = .;
 	}
 	_loader_end = .;
+	. = . + 1M;
 }
 
 __bss_size = (__bss_end - __bss_start) >> 3;
-__stack_top = 0x60000; 
-__relocate_point = 0x60000;
+__stack_top = 0x3000000;
+__relocate_point = 0x3000000;
 
 
 
