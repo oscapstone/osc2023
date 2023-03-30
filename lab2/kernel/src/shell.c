@@ -2,6 +2,7 @@
 #include "utils.h"
 #include "mbox.h"
 #include "cpio.h"
+#include <stddef.h>
 
 void shell_init(){
 	uart_init();
@@ -99,4 +100,25 @@ int str_cmp(char *s1, char *s2){
 
   if (s2[i] == '\0') return 1;
   return 0;
+}
+
+int strcmp(const char* p1, const char* p2)
+{
+    const unsigned char *s1 = (const unsigned char*) p1;
+    const unsigned char *s2 = (const unsigned char*) p2;
+    unsigned char c1, c2;
+
+    do {
+        c1 = (unsigned char) *s1++;
+        c2 = (unsigned char) *s2++;
+        if ( c1 == '\0' ) return c1 - c2;
+    } while ( c1 == c2 );
+    return c1 - c2;
+}
+
+unsigned long long strlen(const char *str)
+{
+    size_t count = 0;
+    while((unsigned char)*str++)count++;
+    return count;
 }

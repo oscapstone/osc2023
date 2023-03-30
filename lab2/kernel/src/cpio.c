@@ -3,6 +3,7 @@
 #include "shell.h"
 #include "math.h"
 
+extern void* CPIO_DEFAULT_PLACE;
 
 
 /* example cpio file:
@@ -22,7 +23,7 @@ inline unsigned long align4(unsigned long n){
 void list(){
   uart_send_string("List of files:\n");
 
-  cpio_newc_header *blk = INITRAMFS_ADDR; 
+  cpio_newc_header *blk = CPIO_DEFAULT_PLACE; 
 
   char *name = ((char *)blk + sizeof(cpio_newc_header)); //110
   //TRAILER!!! is the end of cpio
@@ -47,7 +48,7 @@ void list(){
 
 void show_cat_file(char *file_name){
 
-  cpio_newc_header *blk = INITRAMFS_ADDR;
+  cpio_newc_header *blk = CPIO_DEFAULT_PLACE;
 
   char *name = ((char *)blk + sizeof(cpio_newc_header));
   while(str_cmp(name, "TRAILER!!!") != 1){

@@ -1,15 +1,12 @@
 #include "uart.h"
 #include "utils.h"
+#include "dtb.h"
+extern char* dtb_ptr;
 
-//extern char* dtb;
-int main(char* arg) { 
-	char *dtb = arg; //get dtb from bootloader
-	uart_send_string("print dtb address\n");
-	uart_hex(&arg);
-	uart_send_string("\nprint dtb\n");
-	uart_hex(arg);
-	uart_send_string("print dtbdtb:\n")
-	uart_hex(dtb);
+
+void main(char* arg) { 
+	dtb_ptr = arg; //get dtb from bootloader
+	traverse_device_tree(dtb_ptr, dtb_callback_initramfs);
 	shell_init();
 	char cmd[100];
 	int status=0;

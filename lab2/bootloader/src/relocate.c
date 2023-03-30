@@ -109,9 +109,6 @@ void loadimg() {
 
         //void (*start_os)(void) = (void *)KERNEL_START; //do 0x80000 kernel start.
         //uart_send_string("print dtb");
-        uart_hex(dtb);
-        uart_send_string("\nprint dtb address\n");
-        uart_hex(&dtb);
         void (*start_os)(char*) = (void*)KERNEL_START;
         start_os(dtb);
 
