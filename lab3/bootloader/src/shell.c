@@ -47,11 +47,11 @@ void cli_cmd_read(char* buffer)
 void cli_cmd_exec(char* buffer)
 {
     if (strcmp(buffer, "loadimg") == 0) {
-        cmd_loadimg();
+        do_cmd_loadimg();
     } else if (strcmp(buffer, "help") == 0) {
-        cmd_help();
+        do_cmd_help();
     } else if (strcmp(buffer, "reboot") == 0) {
-        cmd_reboot();
+        do_cmd_reboot();
     } else if (*buffer){
         uart_puts(buffer);
         uart_puts(": command not found\r\n");
@@ -61,10 +61,12 @@ void cli_cmd_exec(char* buffer)
 void cli_print_banner()
 {
     uart_puts("\r\n");
-    uart_puts("Bootloader\r\n");
+    uart_puts("=======================================\r\n");
+    uart_puts("    NYCU-OSC 2023 Lab2 - Bootloader    \r\n");
+    uart_puts("=======================================\r\n");
 }
 
-void cmd_help()
+void do_cmd_help()
 {
     for(int i = 0; i < CLI_MAX_CMD; i++)
     {
@@ -77,7 +79,7 @@ void cmd_help()
 
 /* Overwrite image file into _start,
    Please make sure this current code has been relocated. */
-void cmd_loadimg()
+void do_cmd_loadimg()
 {
     char* bak_dtb = _dtb;
     char c;
@@ -100,7 +102,7 @@ void cmd_loadimg()
     ((void (*)(char*))kernel_start)(bak_dtb);
 }
 
-void cmd_reboot()
+void do_cmd_reboot()
 {
     uart_puts("Reboot in 5 seconds ...\r\n\r\n");
     volatile unsigned int* rst_addr = (unsigned int*)PM_RSTC;

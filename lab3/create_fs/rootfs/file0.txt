@@ -1,2 +1,2 @@
-[This is file 0]
-[Hello World!]
+This is file 0
+

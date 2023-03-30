@@ -1,8 +1,7 @@
-_heap_stack_size = 1M;
+_heap_stack_size = 8M;
 
 SECTIONS
 {
-    /* bootloader 0x60000, kernel 0x80000 */
     . = 0x80000;
     _start = .;
     .text : { *(.text.boot) *(.text) }

@@ -36,7 +36,6 @@ void uart_init()
     *AUX_MU_CNTL_REG = 3;      // enable TX/RX
 }
 
-// receives a character
 char uart_getc() {
     char r;
     while(!(*AUX_MU_LSR_REG & 0x01)){};
@@ -44,7 +43,6 @@ char uart_getc() {
     return r;
 }
 
-// 
 char uart_recv() {
     char r;
     while(!(*AUX_MU_LSR_REG & 0x01)){};
@@ -52,13 +50,11 @@ char uart_recv() {
     return r=='\r'?'\n':r;
 }
 
-//  sends a character over the serial line.
 void uart_send(unsigned int c) {
     while(!(*AUX_MU_LSR_REG & 0x20)){};
     *AUX_MU_IO_REG = c;
 }
 
-// prints out a string
 int uart_puts(char *fmt, ...) {
     __builtin_va_list args;
     __builtin_va_start(args, fmt);

@@ -16,8 +16,8 @@ void cli_cmd_read(char*);
 void cli_cmd_exec(char*);
 void cli_print_banner();
 
-void cmd_help();
-void cmd_loadimg();
-void cmd_reboot();
+void do_cmd_help();
+void do_cmd_loadimg();
+void do_cmd_reboot();
 
 #endif /* _SHELL_H_ */

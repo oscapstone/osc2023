@@ -1,5 +1,5 @@
 #include "cpio.h"
-#include "utils.h"
+#include "u_string.h"
 
 /* Parse an ASCII hex string into an integer. (big endian)*/
 static unsigned int parse_hex_str(char *s, unsigned int max_len)

@@ -14,20 +14,20 @@
 // Using newc archive format
 struct cpio_newc_header
 {
-    char c_magic[6];      /* Magic header '070701'. */
-    char c_ino[8];        /* "i-node" number. */
-    char c_mode[8];       /* Permisions. */
-    char c_uid[8];        /* User ID. */
-    char c_gid[8];        /* Group ID. */
-    char c_nlink[8];      /* Number of hard links. */
-    char c_mtime[8];      /* Modification time. */
-    char c_filesize[8];   /* File size. */
-    char c_devmajor[8];   /* Major dev number. */
-    char c_devminor[8];   /* Minor dev number. */
+    char c_magic[6];            // fixed, "070701".
+    char c_ino[8];
+    char c_mode[8];
+    char c_uid[8];
+    char c_gid[8];
+    char c_nlink[8];
+    char c_mtime[8];
+    char c_filesize[8];
+    char c_devmajor[8];
+    char c_devminor[8];
     char c_rdevmajor[8];
     char c_rdevminor[8];
-    char c_namesize[8];   /* Length of filename in bytes. */
-    char c_check[8];      /* Checksum. */
+    char c_namesize[8];
+    char c_check[8];
 };
 
 /* write pathname, data, next header into corresponding parameter*/
