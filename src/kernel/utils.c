@@ -36,6 +36,13 @@ int strlen(const void *buf) {
     }
     return ret;
 }
+void strncpy(void* dest, void *src, unsigned long long size) {
+    int i;
+    for(i = 0; i < size - 1 && *(char*)(src + i); i ++) {
+        *(char*)(dest + i) = *(char*)(src + i);
+    }
+    *(char*)(dest+i) = '\0';
+}
 
 uint64_t ntohl(uint64_t t) {
     return ((uint64_t)(ntohi(t & 0xffffffffLL)) << 32) | (ntohi((t >> 32) & 0xffffffffLL));

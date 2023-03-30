@@ -30,6 +30,14 @@ void main(void) {
     while(kernel_sz --) {
         *(kernel_addr ++) = uart_recv();
     }
+    uart_send('F');
+    uart_send('I');
+    uart_send('N');
+    uart_send('I');
+    uart_send('S');
+    uart_send('H');
+    uart_send('\r');
+    uart_send('\n');
 
     // while(1) {
     //     uart_send(uart_recv());
