@@ -11,7 +11,6 @@
 #define LOW_MEMORY              	(2 * SECTION_SIZE)
 
 #ifndef __ASSEMBLER__
-
 extern void my_bzero(void *src, unsigned long n);
 
 #endif

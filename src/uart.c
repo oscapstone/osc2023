@@ -4,10 +4,10 @@
 #include "mailbox.h"
 #include "uart.h"
 
-
 void uart_init(void) 
 {
-    
+    // static int uart_inited = 0;
+    // if (uart_inited) return;
     /* set alternative function */
     //https://github.com/s-matyukevich/raspberry-pi-os/blob/master/docs/lesson01/rpi-os.md#mini-uart-initialization
     //register keyword ask compiler to store variable in CPU register as possible.
@@ -34,13 +34,20 @@ void uart_init(void)
     *AUX_MU_BAUD = 270;             //Set baud rate to 115200
 
     *AUX_MU_CNTL = 3;               //Finally, enable transmitter and receiver
+    // uart_inited = 1;
 }
 
 char uart_read(void)
 {
+    char r = _uart_read();
+    return r == '\r' ? '\n' : r;
+}
+
+char _uart_read(void)
+{
     while (!(*AUX_MU_LSR & 0x01));
     char r = *AUX_MU_IO & 0xff;
-    return r == '\r' ? '\n' : r;
+    return r;
 }
 
 unsigned int uart_readline(char *buffer, unsigned int buffer_size)
@@ -54,10 +61,30 @@ unsigned int uart_readline(char *buffer, unsigned int buffer_size)
     return (ptr - buffer);
 }
 
-void uart_write(char c)
+unsigned long long uart_read_hex_ull() {
+    unsigned long long res = 0;
+    //receive 8 byte
+    for (int i = 60; i >= 0; i -= 4) {
+        res |= ((uart_read() - '0') << i);
+    }
+    return res;
+}
+
+static void _uart_write(char c)
 {
     while (!(*AUX_MU_LSR & 0x20));
     *AUX_MU_IO = c;
+}
+
+void uart_write_retrace()
+{
+    _uart_write('\r');
+}
+
+void uart_write(char c)
+{
+    if (c == '\n') _uart_write('\r');
+    _uart_write(c);
 }
 
 void uart_flush() {
@@ -69,11 +96,12 @@ void uart_flush() {
 void uart_write_string(char* str)
 {
     for (int i = 0; str[i] != '\0'; i++) {
+        // if (str[i] == '\r') continue;
         uart_write((char)str[i]);
     }
 }
 
-void uart_write_no(unsigned int n) 
+void uart_write_no(unsigned long long n) 
 {
     if (n < 10) {
         uart_write('0' + n);
@@ -84,7 +112,7 @@ void uart_write_no(unsigned int n)
     }
 }
 
-void uart_write_no_hex(unsigned int n)
+void uart_write_no_hex(unsigned long long n)
 {
     const char *hex_str = "0123456789abcdef";
     if (n < 16) {
@@ -93,4 +121,41 @@ void uart_write_no_hex(unsigned int n)
         uart_write_no_hex(n >> 4);
         uart_write(hex_str[n & 0xf]);
     }
+}
+
+void byte_to_hex(char* buf, unsigned char byte) 
+{
+    const char hex_table[] = "0123456789abcdef";
+
+    buf[0] = hex_table[byte >> 4];
+    buf[1] = hex_table[byte & 0x0F];
+    buf[2] = '\0';
+}
+
+void dump_hex(const void* ptr, unsigned long long size) 
+{
+    const unsigned char* p = (const unsigned char*)ptr;
+    char buf[3];
+
+    for (unsigned long long i = 0; i < size; i++) {
+        byte_to_hex(buf, p[i]);
+        uart_write_string(buf);
+    }
+}
+
+unsigned int uart_read_input(char *cmd, unsigned int cmd_size)
+{
+    unsigned idx = 0;
+    do {
+        cmd[idx] = uart_read();
+        if (cmd[idx] == '\0' || cmd[idx] == '\n') {
+            cmd[idx] = '\0';
+            uart_write_string("\n");
+            return idx;
+        }
+        uart_write(cmd[idx]);
+        idx++;
+    } while (idx < cmd_size);
+    cmd[idx] = '\0';
+    return idx;
 }
