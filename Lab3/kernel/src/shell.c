@@ -1,14 +1,7 @@
 #include "shell.h"
-#include "string.h"
 #include "uart.h"
-#include "dtb.h"
-#include "cpio.h"
-#include "mailbox.h"
-#include "uart_boot.h"
-#include "malloc.h"
-#include "vt.h"
-#include "timer.h"
 #include "command.h"
+#include "string.h"
 
 
 void welcome_msg() {
@@ -161,7 +154,7 @@ void command_controller ( enum SPECIAL_CHARACTER input_parse, char c, char buffe
             else if ( !strcmp(buffer, "el"          ) ) command_el();
             else if ( !strcmp(buffer, "async"       ) ) uart_async_puts("async puts test success!!!\n");  
             else if ( !strcmp(buffer, "setTimeout"  ) ) command_setTimeout(args);
-            else if ( !strcmp(buffer, "set2s"       ) ) command_set2sAlert();
+            else if ( !strcmp(buffer, "set2sAlert"  ) ) command_set2sAlert();
             else                                        command_not_found(buffer);
 
         }

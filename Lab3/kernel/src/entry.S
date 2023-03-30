@@ -58,9 +58,7 @@
 .endm
 
 
-
-.align 11 // vector table should be aligned to 0x800
-
+.align 11 // vector table should be aligned to 0x800 
 .global exception_vector_table
 
 

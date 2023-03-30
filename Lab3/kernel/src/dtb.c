@@ -10,8 +10,6 @@
 
 char* dtb_ptr;
 
-
-
 uint32_t uint32_endian_big2lttle(uint32_t data){
 
     char* r = (char*)&data;

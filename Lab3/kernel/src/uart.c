@@ -6,13 +6,13 @@
 #include "shell.h"
 
 
-#define IRQS1  ((volatile unsigned int*)(0x3f00b210))
+#define IRQS1  ((volatile unsigned int*)(0x3f00b210)) // BCM2835, section-1.2.3
 
-//implement first in first out buffer with a read index and a write index
-char uart_tx_buffer[VSPRINT_MAX_BUF_SIZE]={};
-unsigned int uart_tx_buffer_widx = 0;  //write index
-unsigned int uart_tx_buffer_ridx = 0;  //read index
-char uart_rx_buffer[VSPRINT_MAX_BUF_SIZE]={};
+//Implement FIFO buffer with a read index and a write index
+char uart_tx_buffer[VSPRINT_MAX_BUF_SIZE]={}; //uart transmit buffer
+unsigned int uart_tx_buffer_widx = 0;         // read index -> head of list
+unsigned int uart_tx_buffer_ridx = 0;         // write index -> tail of list
+char uart_rx_buffer[VSPRINT_MAX_BUF_SIZE]={}; //uart write buffer
 unsigned int uart_rx_buffer_widx = 0;
 unsigned int uart_rx_buffer_ridx = 0;
 
@@ -177,14 +177,14 @@ int  uart_printf(char* fmt, ...) {
 
 
 char uart_async_getc() {
-    *AUX_MU_IER |=1; // enable read interrupt
-    // while buffer empty
-    // enable read interrupt to get some input into buffer
+    *AUX_MU_IER |=1; // Enable read interrupt
+    // While buffer empty
+    // Enable read interrupt to get some input into buffer
     while (uart_rx_buffer_ridx == uart_rx_buffer_widx) *AUX_MU_IER |=1; // enable read interrupt
-    el1_interrupt_disable();
-    char r = uart_rx_buffer[uart_rx_buffer_ridx++];
-    if (uart_rx_buffer_ridx >= VSPRINT_MAX_BUF_SIZE) uart_rx_buffer_ridx = 0;
-    el1_interrupt_enable();
+    el1_interrupt_disable();  //Disable EL1 interrupts to prevent race conditions while reading characters.
+    char r = uart_rx_buffer[uart_rx_buffer_ridx++]; //Read a character from the receive buffer and move the read pointer to the next position
+    if (uart_rx_buffer_ridx >= VSPRINT_MAX_BUF_SIZE) uart_rx_buffer_ridx = 0; //If the read pointer is out of bounds of the buffer, it is set to 0 to function as a circular buffer.
+    el1_interrupt_enable(); // Enable EL1 interrupt
     return r;
 }
 
@@ -197,12 +197,12 @@ char uart_recv() {
 
 
 void uart_async_putc(char c) {
-    while( (uart_tx_buffer_widx + 1) % VSPRINT_MAX_BUF_SIZE == uart_tx_buffer_ridx ) // full buffer wait
+    while( (uart_tx_buffer_widx + 1) % VSPRINT_MAX_BUF_SIZE == uart_tx_buffer_ridx ) // Full buffer wait
     {
-        // start asynchronous transfer 
-        *AUX_MU_IER |=2;  // enable write interrupt
+        // Start asynchronous transfer 
+        *AUX_MU_IER |=2;  // Enable write interrupt
     }
-    uart_tx_buffer[uart_tx_buffer_widx++] = c;
+    uart_tx_buffer[uart_tx_buffer_widx++] = c; //Write the character c into the send buffer and move the send pointer to the next position.
     if(uart_tx_buffer_widx >= VSPRINT_MAX_BUF_SIZE)uart_tx_buffer_widx=0;  // cycle pointer
     // start asynchronous transfer
     *AUX_MU_IER |=2;  // enable write interrupt
@@ -251,9 +251,9 @@ int uart_async_printf(char *fmt, ...)
 
 // AUX_MU_IER -> BCM2837-ARM-Peripherals.pdf - Pg.12
 void uart_interrupt_enable(){
-    *AUX_MU_IER |=1;  // enable read interrupt
-    *AUX_MU_IER |=2;  // enable write interrupt
-    *IRQS1 |= 1 << 29;    // Pg.112
+    *AUX_MU_IER |=1;  // enable read interrupt, AUX_MU_IER[0] for receive interrupts.
+    *AUX_MU_IER |=2;  // enable write interrupt, AUX_MU_IER[1] for transmit interrupts.
+    *IRQS1 |= 1 << 29;  // Pg.113, ARM peripherals interrupts table, unmask AUX_INT. 
 }
 
 void uart_interrupt_disable(){
@@ -268,10 +268,12 @@ void uart_r_irq_handler(){
         *AUX_MU_IER &= ~(1);  // disable read interrupt
         return;
     }
+
     uart_rx_buffer[uart_rx_buffer_widx++] = uart_recv();
     uart_send(uart_rx_buffer[uart_rx_buffer_widx-1]);
-    if(uart_rx_buffer_widx>=VSPRINT_MAX_BUF_SIZE) uart_rx_buffer_widx=0;
-    *AUX_MU_IER |=1;
+    if(uart_rx_buffer_widx >= VSPRINT_MAX_BUF_SIZE) uart_rx_buffer_widx=0;
+
+    *AUX_MU_IER |=1; // enable read interrupt
 }
 
 void uart_w_irq_handler(){
@@ -280,7 +282,9 @@ void uart_w_irq_handler(){
         *AUX_MU_IER &= ~(2);  // disable write interrupt
         return;  // buffer empty
     }
+
     uart_send(uart_tx_buffer[uart_tx_buffer_ridx++]);
     if(uart_tx_buffer_ridx>=VSPRINT_MAX_BUF_SIZE) uart_tx_buffer_ridx=0;
+
     *AUX_MU_IER |=2;  // enable write interrupt
 }

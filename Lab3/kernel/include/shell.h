@@ -17,10 +17,11 @@ enum SPECIAL_CHARACTER
     UNKNOWN = -1,
 
 };
+enum SPECIAL_CHARACTER parse ( char );
+
 
 void shell_start () ;
 void welcome_msg() ;
-enum SPECIAL_CHARACTER parse ( char );
 void command_controller ( enum SPECIAL_CHARACTER, char c, char [], int *);
 void input_buffer_overflow_message ( char [] );
 

@@ -5,7 +5,6 @@
 #include "string.h"
 
 struct list_head *timer_event_list; // first head has nothing, store timer_event_t after it
-
 void timer_list_init()
 {
     INIT_LIST_HEAD(timer_event_list);
@@ -15,25 +14,25 @@ void core_timer_enable()
 {
     __asm__ __volatile__(
         "mov x1, 1\n\t"
-        "msr cntp_ctl_el0, x1\n\t" // enable
-
-        //"mrs x1, cntfrq_el0\n\t"
-        //"mov x2, 0x100000\n\t"
-        //"mul x1, x1, x2\n\t"        //set a big value prevent interrupt immediately
-        //"msr cntp_tval_el0, x1\n\t" // set expired time
-
+        "msr cntp_ctl_el0, x1\n\t" // cntp_ctl_el0[0]: enable, Control register for the EL1 physical timer.
+                                   // cntp_tval_el0: Holds the timer value for the EL1 physical timer
         "mov x2, 2\n\t"
         "ldr x1, =" XSTR(CORE0_TIMER_IRQ_CTRL) "\n\t"
         "str w2, [x1]\n\t" // unmask timer interrupt
     :::"x1","x2");
 }
+// reference :
+// cntp_ctl_el0 ; https://developer.arm.com/documentation/ddi0601/2021-12/AArch64-Registers/CNTP-CTL-EL0--Counter-timer-Physical-Timer-Control-register
+
+
+
 
 void core_timer_disable()
 {
     __asm__ __volatile__(
         "mov x2, 0\n\t"
         "ldr x1, =" XSTR(CORE0_TIMER_IRQ_CTRL) "\n\t"
-        "str w2, [x1]\n\t" // unmask timer interrupt
+        "str w2, [x1]\n\t"  // QA7_rev3.4.pdf: mask all timer interrupt
     :::"x1","x2");
 }
 
@@ -68,6 +67,7 @@ void two_second_alert(char *str)
     uart_printf("alert '%s': \r\nexception irq_router ->  seconds after booting : %d\r\n", str, cntpct_el0 / cntfrq_el0);
 
     add_timer(two_second_alert, 2, "two_second_alert");
+    
 }
 
 void core_timer_handler()

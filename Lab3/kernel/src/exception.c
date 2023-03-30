@@ -14,7 +14,6 @@ void el1_interrupt_disable(){
 }
 
 void el1h_irq_router(){
-    
     // decouple the handler into irqtask queue
     // (1) https://datasheets.raspberrypi.com/bcm2835/bcm2835-peripherals.pdf - Pg.113
     // (2) https://datasheets.raspberrypi.com/bcm2836/bcm2836-peripherals.pdf - Pg.16
@@ -41,6 +40,7 @@ void el1h_irq_router(){
         core_timer_enable();
     }
 }
+
 
 void el0_sync_router(){
     unsigned long long spsr_el1;
@@ -82,8 +82,8 @@ void el0_irq_64_router(){
 
 
 void invalid_exception_router(unsigned long long x0){
-    uart_printf("invalid exception : 0x%x\r\n",x0);
-    while(1);
+    //uart_printf("invalid exception : 0x%x\r\n",x0);
+    //while(1);
 }
 
 // ------------------------------------------------------------------------------------------
@@ -99,6 +99,7 @@ If there are higher priority tasks, execute the highest priority task.
 int curr_task_priority = 9999;   // Small number has higher priority
 
 struct list_head *task_list;
+
 void irqtask_list_init()
 {
     INIT_LIST_HEAD(task_list);
