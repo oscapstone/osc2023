@@ -47,7 +47,7 @@ int mbox_call(unsigned char ch)
     return 0;
 }
 
-void get_board_revision(unsigned int* revision){
+void get_board_revision(unsigned int *revision){
     mbox[0] = 7*4;
     mbox[1] = REQUEST_CODE;
     mbox[2] = GET_BOARD_REVISION;
@@ -65,7 +65,7 @@ void get_board_revision(unsigned int* revision){
     }
 }
 
-void get_arm_memory(arm_info* arm_mem){
+void get_arm_memory(arm_info *arm_mem){
     mbox[0] = 8*4;
     mbox[1] = REQUEST_CODE;
     mbox[2] = GET_ARM_MEMORY;

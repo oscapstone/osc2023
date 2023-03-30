@@ -1,7 +1,7 @@
 #include <reboot.h>
 
 void set(long addr, unsigned int value) {
-    volatile unsigned int* point = (unsigned int*)addr;
+    volatile unsigned int *point = (unsigned int*)addr;
     *point = value;
 }
 
