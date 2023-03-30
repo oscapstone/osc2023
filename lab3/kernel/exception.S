@@ -43,7 +43,14 @@
 .globl branch_to_address_el0
 branch_to_address_el0:
         /*
-         * bit[7]: IRQ interrupt mask
+         * SPSR_EL1, Saved Program Status Register (EL1)
+         *
+         * D            bit[9]          0b1     Debug exception mask
+         * A            bit[8]          0b1     SError interrupt mask
+         * I            bit[7]          0b0     IRQ interrupt mask
+         * F            bit[6]          0b1     FIQ interrupt mask
+         * M[4]         bit[4]          0b0     AArch64 execution state
+         * M[3:0]       bit[3:0]        0b0000  EL0t
          */
         mov     x2, 0x340
         msr     spsr_el1, x2
