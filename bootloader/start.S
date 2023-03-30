@@ -14,7 +14,7 @@ _start:
     mov     x22, x2
     mov     x23, x3
 
-    // set x1 = address of relocated main()
+    // set x28 = address of relocated main()
     ldr     x1, =main
     ldr     x2, =_start
     ldr     x3, =__bootloader_start
@@ -42,10 +42,10 @@ relocate_loop:
     cbnz    x5, relocate_loop
 
 run_main:
-    mov x0, x20
-    mov x1, x21
-    mov x2, x22
-    mov x3, x23
+    mov     x0, x20
+    mov     x1, x21
+    mov     x2, x22
+    mov     x3, x23
     br      x28
 
 hang:

@@ -27,10 +27,10 @@ clear_bss_loop:
     cbnz    x5, clear_bss_loop
 
 run_main:
-    mov x0, x20
-    mov x1, x21
-    mov x2, x22
-    mov x3, x23
+    mov     x0, x20
+    mov     x1, x21
+    mov     x2, x22
+    mov     x3, x23
     b       main
 
 hang:
