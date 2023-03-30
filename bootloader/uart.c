@@ -61,6 +61,7 @@ char uart_getc() {
     /* convert carriage return to newline */
     return r=='\r'?'\n':r;
 }
+
 char uart_recv(){
     while (1) {
         if ((*AUX_MU_LSR)&0x01) break;
@@ -72,7 +73,6 @@ void uart_getline(char* buf, int maxlen){
     int count = 0;
     while(count < maxlen - 1){
         char recv = uart_getc();
-        uart_send(recv);
         if(recv == '\n' || recv == '\r' || recv == '\0'){
             break;
         }
