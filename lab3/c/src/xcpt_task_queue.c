@@ -6,6 +6,8 @@
 #include <stdint.h>
 #include <stdnoreturn.h>
 
+#include "oscos/xcpt.h"
+
 #define TASK_STACK_AREA_SZ 8192
 #define MAX_N_TASKS 8
 
@@ -33,8 +35,12 @@ noreturn void xcpt_task_queue_fini(xcpt_frame_t *xcpt_frame);
 
 bool task_queue_add(const int priority, void (*const task_fn)(void *),
                     void *const arg) {
-  if (_n_tasks == MAX_N_TASKS)
+  XCPT_MASK_ALL();
+
+  if (_n_tasks == MAX_N_TASKS) {
+    XCPT_UNMASK_ALL();
     return false;
+  }
 
   const size_t i = _n_tasks++;
   _tasks[i] = (task_t){.priority = priority,
@@ -45,10 +51,15 @@ bool task_queue_add(const int priority, void (*const task_fn)(void *),
                                .pstate = 0x5, // EL1h. All interrupts unmasked.
                                .pc = (uint64_t)xcpt_task_queue_run}};
 
+  XCPT_UNMASK_ALL();
   return true;
 }
 
-void task_queue_remove(const size_t i) { _tasks[i] = _tasks[--_n_tasks]; }
+void task_queue_remove(const size_t i) {
+  XCPT_UNMASK_ALL();
+  _tasks[i] = _tasks[--_n_tasks];
+  XCPT_MASK_ALL();
+}
 
 noreturn void task_queue_sched(void) {
   _curr_task = 0;
