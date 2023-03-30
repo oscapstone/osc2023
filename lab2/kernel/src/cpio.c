@@ -3,7 +3,7 @@
 #include "shell.h"
 #include "math.h"
 
-extern void* CPIO_DEFAULT_PLACE;
+extern void* CPIO_DEFAULT_PLACE; //因為我們從dtb的callback 取得這個地址了,所以可以不用指定地址
 
 
 /* example cpio file:

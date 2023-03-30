@@ -14,6 +14,7 @@ _start: //get cpu id, let cpu0 working only.
 	b	1b
 	
 2: //cpu id ==0
+	//助教說： 可以用另一個reg.(ex: x19) 把x0 dtb的地址存起來, 後面c裡面用 asm volatile 把x30拿出來, 就不用用傳參的方式
 	//set top of stack just before our code (stack grows to a lower address)
 	//ldr	x1, = _start //ldr:load address
 	ldr	x1, =__stack_top
@@ -30,7 +31,9 @@ _start: //get cpu id, let cpu0 working only.
 
 
 4:// jump to C code
-	//bl	main //find from link
+	// for passing the device tree loading address.
+	ldr x1, =_dtb
+	str x0, [x1], #8 
 	bl	relocate
   // for failsafe, halt this core too
 	b	1b
