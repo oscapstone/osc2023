@@ -1,22 +1,16 @@
 #include "aux_reg.h"
 #include "mini_uart.h"
-
-#define IRQS1					(unsigned int*)0x3F00B210
-#define CORE0_INTERRUPT_SOURCE	(unsigned int*)0x40000060
-#define GPU_PENDING1_REGISTER	(unsigned int*)0x3F00B204
-
-extern void EL1_core_timer_handler();
-extern void EL0_core_timer_handler();
+#include "timer.h"
 
 void enable_interrupt()
 {
-	asm volatile("msr	DAIFClr,0xF;");		//DAIF : Interrupt Mask Bits
+	asm volatile("msr	DAIFClr,0xF");		//DAIF : Interrupt Mask Bits
 	return;
 }
 
 void disable_interrupt()
 {
-	asm volatile("msr	DAIFSet,0xF;");
+	asm volatile("msr	DAIFSet,0xF");
 	return;
 }
 
@@ -63,14 +57,39 @@ void mini_uart_handler()
 	return;
 }
 
+void EL0_core_timer_handler()
+{
+	asm volatile
+	(
+		"mrs     x0,CNTFRQ_EL0;"
+    	"mov     x1,2;"
+    	"mul     x0,x0,x1;"            //set time = 2 sec
+    	"msr     CNTP_TVAL_EL0,x0;"    //set new timeout
+	);
+	print_time();
+	return;
+}
+
+void EL1_core_timer_handler()
+{
+	asm volatile
+	(
+		"mrs     x0,CNTFRQ_EL0;"
+    	"msr     CNTP_TVAL_EL0,x0;"    //set new timeout , plus 1 sec
+	);
+	print_time();
+	one_sec_pass();
+	return;
+}
+
 void EL1_check_interrupt_source()
 {
-	if(*CORE0_INTERRUPT_SOURCE & 0x00000002)	//bit 1  : CNTPNSIRQ interrupt
+	if(*CORE0_INTERRUPT_SOURCE & 0x00000002)		//bit 1  : CNTPNSIRQ interrupt
 	{
 		uart_send_string("async EL1 timer interrupt\r\n");
 		EL1_core_timer_handler();		
 	}	
-	if(*GPU_PENDING1_REGISTER & 0x20000000)		//bit 29 : AUX intterupt (uart1_interrupt)
+	else if(*GPU_PENDING1_REGISTER & 0x20000000)	//bit 29 : AUX intterupt (uart1_interrupt)
 	{
 		mini_uart_handler();
 	}
@@ -84,10 +103,6 @@ void EL0_check_interrupt_source()
 		uart_send_string("async EL0 timer interrupt\r\n");
 		EL0_core_timer_handler();		
 	}	
-	/*if(*GPU_PENDING1_REGISTER & 0x20000000)		//bit 29 : AUX intterupt (uart1_interrupt)
-	{
-		mini_uart_handler();
-	}*/
 	return;
 }
 
@@ -115,9 +130,6 @@ void recv_async_string()
 {
 	*AUX_MU_IER_REG &= 0x2;			//disable RX interrupt , keep TX interrupt(when need to print/use AUX_MU_IO_REG , should close RX interrupt)
 	char str[100];
-	uart_int(read_front);
-	uart_int(read_back);
-	uart_send_string("recv\r\n");
 	int i;
 	for(i=0;read_front != read_back;i++)
 	{
@@ -131,6 +143,7 @@ void recv_async_string()
 	str[i] = '\0';
 	read_front = 0;					//clean read_buffer(fake)
 	read_back = 0;
+	uart_send_string("recv -> ");
 	uart_send_string(str);
 	uart_send_string("\r\n");
 	return;

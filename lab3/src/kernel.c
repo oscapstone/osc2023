@@ -3,9 +3,9 @@
 #include "ramdisk.h"
 #include "string.h"
 #include "fdt.h"
+#include "check_interrupt.h"
 
 extern void set_exception_vector_table();
-extern void core_timer_enable();
 static uint32_t ramdisk;
 
 void cpio_addr(char* value)	//callback func , do ramdisk address get & setup
@@ -33,7 +33,7 @@ void kernel_main(void* dtb)		//x0 is the first argument
 	fdt_api((char*)dtb,func,"linux,initrd-start");	//find initrd-start property & get its value
 	
 	set_exception_vector_table();					//set vbar_el1 for exception & interrupt
-    
+   
 	while (1)
     {
 		char command[100];

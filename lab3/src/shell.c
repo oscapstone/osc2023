@@ -39,6 +39,8 @@ void shell_option(char* command,char* ramdisk)
 		uart_send_string("cat\t\t: show file content\r\n");
 		uart_send_string("alloc\t\t: show allocate example\r\n");
 		uart_send_string("run\t\t: run an function in EL0\r\n");
+		uart_send_string("async_io\t\t: show async_io process\r\n");
+		uart_send_string("timer\t\t: show timer-multiplexing process\r\n");
 	}
 	else if(!strcmp(command,"hello"))
 	{
@@ -81,21 +83,28 @@ void shell_option(char* command,char* ramdisk)
 	{
 		enable_interrupt();
 		mini_uart_enable();
-		send_async_string("this is async_ioop\r\n");
-		recv_async_string();
-		disable_interrupt();
-	}
-	else if(!strcmp(command,"sleep"))
-	{
-		enable_interrupt();
-		extern void core_timer_enable();
-		extern void core_timer_disable();
+		send_async_string("this is async_io\r\n");
 		core_timer_enable();
+		void (*func)();
+		func = recv_async_string;
+		sleep(func,6);
+		func = core_timer_disable;
+		sleep(func,12);											//time will end in (start time + 12) second later
+		func = disable_interrupt;
+		sleep(func,12);
+	}
+	else if(!strcmp(command,"timer"))
+	{
+		enable_interrupt();										//interrupt mask clear
+		core_timer_enable();									//start time
 		init_t_queue();
-		setTimeout("this will print after 6 second\r\n",6);
-		setTimeout("this will print after 4 second\r\n",4);
-		core_timer_disable();
-		disable_interrupt();
+		setTimeout("this will print after 6 second\r\n",6);		//should appear 6 second later
+		setTimeout("this will print after 4 second\r\n",4);		//should appear 4 second later
+		void (*func)();
+		func = core_timer_disable;
+		sleep(func,12);											//time will end in (start time + 12) second later
+		func = disable_interrupt;
+		sleep(func,12);											//interrupt mask set
 	}
 	else
 	{

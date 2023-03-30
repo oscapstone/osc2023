@@ -1,6 +1,7 @@
-#ifndef TIME_H
-#define TIME_H
-
+void core_timer_enable();
+void core_timer_disable();
 void setTimeout(char* message,int second);
-
-#endif
+void sleep(void (*func)(void*),int second);
+void init_t_queue();
+void print_time();
+void one_sec_pass();
