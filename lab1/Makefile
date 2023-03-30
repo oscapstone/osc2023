@@ -12,9 +12,11 @@ LINKERLD = $(SRC_DIR)/linker.ld
 
 SRCS = $(wildcard $(SRC_DIR)/*.c)
 OBJS = $(SRCS:$(SRC_DIR)/%.c=$(OUT_DIR)/%.o)
-CFLAGS = -Wall -O2 -ffreestanding -nostdinc -nostdlib -nostartfiles -I include 
+CFLAGS = -Wall -ffreestanding -nostdinc -nostdlib -nostartfiles -I include 
 
 all: clean kernel8.img
+
+
 
 $(ENTRY_OBJS): $(ENTRY)
 	$(CC) $(CFLAGS) -c $< -o $@
