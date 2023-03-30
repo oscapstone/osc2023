@@ -1,3 +1,2 @@
 ./lab*/kernel*
-./lab*/out
-
+./lab*/build

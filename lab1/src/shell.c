@@ -1,5 +1,4 @@
 #include "uart.h"
-// #include "util.h"
 #include "mbox.h"
 #include "reboot.h"
 

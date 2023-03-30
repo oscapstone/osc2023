@@ -1,0 +1,9 @@
+{
+    "files.associations": {
+        "my_str.h": "c",
+        "dtb.h": "c",
+        "heap.h": "c"
+    },
+    "C_Cpp.intelliSenseEngineFallback": "enabled",
+    "C_Cpp.errorSquiggles": "disabled"
+}
