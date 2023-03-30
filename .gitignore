@@ -10,3 +10,12 @@
 
 # Local config for vscode
 .vscode
+
+# Tools
+tool-*
+
+# initrd
+*.cpio
+
+# device tree
+*.dtb

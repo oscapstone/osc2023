@@ -18,5 +18,5 @@ _start:
     // start kernel, this call should not return
     BL      start_kernel
 
-    wfe
-    b _start
+3:  WFE
+    B       3b

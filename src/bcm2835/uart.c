@@ -39,9 +39,14 @@ void uart_init() {
     *AUX_MU_CNTL_REG = 3;   // Enable transmitter (Tx) and receiver(Rx)
 }
 
-char uart_recv() {
+char uart_recvraw() {
     while (!(*AUX_MU_LSR_REG & (1 << 0))) {/* nop */}
     char c = (char)(*AUX_MU_IO_REG);
+    return c;
+}
+
+char uart_recv() {
+    char c = uart_recvraw();
     return c == '\r' ? '\n' : c;
 }
 
