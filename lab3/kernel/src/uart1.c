@@ -105,14 +105,26 @@ char uart_async_getc() {
 // uart_async_putc writes to buffer
 // uart_w_irq_handler read from buffer then output
 void uart_async_putc(char c) {
-    // if buffer full, wait for uart_w_irq_handler
+
+    // If the buffer is full, wait for uart_w_irq_handler
     while( (uart_tx_buffer_widx + 1) % VSPRINT_MAX_BUF_SIZE == uart_tx_buffer_ridx )  *AUX_MU_IER_REG |=2;  // enable write interrupt
+
+    // Disable interrupts
     el1_interrupt_disable();
+
+    // Add the character to the transmit buffer
     uart_tx_buffer[uart_tx_buffer_widx++] = c;
-    if(uart_tx_buffer_widx >= VSPRINT_MAX_BUF_SIZE) uart_tx_buffer_widx=0;  // cycle pointer
+
+    // Wrap around the buffer index when it reaches the end
+    if(uart_tx_buffer_widx >= VSPRINT_MAX_BUF_SIZE) uart_tx_buffer_widx=0;
+
+    // Enable interrupts
     el1_interrupt_enable();
+
+    // Enable write interrupt
     *AUX_MU_IER_REG |=2;  // enable write interrupt
 }
+
 
 int  uart_puts(char* fmt, ...) {
     __builtin_va_list args;
@@ -144,27 +156,44 @@ void uart_interrupt_disable(){
     *AUX_MU_IER_REG &= ~(2);  // disable write interrupt
 }
 
-
 void uart_r_irq_handler(){
+
+    // If the buffer is full, disable read interrupt and return
     if((uart_rx_buffer_widx + 1) % VSPRINT_MAX_BUF_SIZE == uart_rx_buffer_ridx)
     {
         *AUX_MU_IER_REG &= ~(1);  // disable read interrupt
         return;
     }
+
+    // Read data from UART receive buffer and add it to the buffer
     uart_rx_buffer[uart_rx_buffer_widx++] = uart_recv();
+
+    // Echo the received data back to UART
     uart_send(uart_rx_buffer[uart_rx_buffer_widx-1]);
+
+    // Wrap around the buffer index when it reaches the end
     if(uart_rx_buffer_widx>=VSPRINT_MAX_BUF_SIZE) uart_rx_buffer_widx=0;
+
+    // Enable read interrupt
     *AUX_MU_IER_REG |=1;
 }
 
 void uart_w_irq_handler(){
+
+    // If the buffer is empty, disable write interrupt and return
     if(uart_tx_buffer_ridx == uart_tx_buffer_widx)
     {
         *AUX_MU_IER_REG &= ~(2);  // disable write interrupt
         return;  // buffer empty
     }
+
+    // Send data from the transmit buffer to UART
     uart_send(uart_tx_buffer[uart_tx_buffer_ridx++]);
+
+    // Wrap around the buffer index when it reaches the end
     if(uart_tx_buffer_ridx>=VSPRINT_MAX_BUF_SIZE) uart_tx_buffer_ridx=0;
-    *AUX_MU_IER_REG |=2;  // enable write interrupt
+
+    // Enable write interrupt
+    *AUX_MU_IER_REG |=2;
 }
 

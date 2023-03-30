@@ -25,13 +25,13 @@ void el1h_irq_router(){
     //  IRQ_PENDING_1 : IRQ_BASE + 0x204
     if(*IRQ_PENDING_1 & IRQ_PENDING_1_AUX_INT && *CORE0_INTERRUPT_SOURCE & INTERRUPT_SOURCE_GPU) // from aux && from GPU0 -> uart exception
     {
-        if (*AUX_MU_IIR_REG & (1 << 1))
+        if (*AUX_MU_IIR_REG & (1 << 1))// if uart write interrupt bit=1
         {
             *AUX_MU_IER_REG &= ~(2);  // disable write interrupt
             irqtask_add(uart_w_irq_handler, UART_IRQ_PRIORITY);
             irqtask_run_preemptive(); // run the queued task before returning to the program.
         }
-        else if (*AUX_MU_IIR_REG & (2 << 1))
+        else if (*AUX_MU_IIR_REG & (2 << 1))// if uart read interrupt bit=1
         {
             *AUX_MU_IER_REG &= ~(1);  // disable read interrupt
             irqtask_add(uart_r_irq_handler, UART_IRQ_PRIORITY);
