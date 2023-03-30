@@ -3,28 +3,35 @@
 #include "timer.h"
 #include "exception.h"
 
+void enable_interrupt(void) {
+    asm volatile("msr DAIFCLr, 0xf\r\n");
+}
+
+void disable_interrupt(void) {
+    asm volatile("msr DAIFSet, 0xf\r\n");
+}
+
 void el0_irq_entry(void) {
-    mini_uart_puts("received core timer interrupt!\r\n");
-
-    unsigned long current   = get_current_time();
-    unsigned long frequency = get_core_frequency();
-
-    mini_uart_puts("seconds:\t");
-    printdec(current / frequency);
-    mini_uart_puts("\r\n");
-
-    mini_uart_puts("frequency:\t");
-    printdec(frequency);
-    mini_uart_puts("\r\n\r\n");
-
+    disable_interrupt();
     core_timer_handler();
+    enable_interrupt();
 }
 
 void el1h_irq_entry(void) {
-    mini_uart_puts("el1h_irq_entry\r\n");
+    disable_interrupt();
+
+    if ((*IRQ_PENDING_1 & IRQ_PENDING_1_AUX_INT) && (*CORE0_IRQ_SOURCE & IRQ_SOURCE_GPU)) {
+        async_mini_uart_handler();
+    } else if (*CORE0_IRQ_SOURCE & IRQ_SOURCE_CNTPNSIRQ) {
+        reset_core_timer();
+    }
+
+    enable_interrupt();
 }
 
 void exception_entry(void) {
+    disable_interrupt();
+
     unsigned long elr, esr, spsr;
 
     asm volatile("mrs %0, elr_el1"  :"=r"(elr)  ::"memory");
@@ -42,8 +49,12 @@ void exception_entry(void) {
     mini_uart_puts("spsr_el1:\t");
     printhex(spsr);
     mini_uart_puts("\r\n\r\n");
+
+    enable_interrupt();
 }
 
 void invalid_exception_entry(void) {
+    disable_interrupt();
     mini_uart_puts("invalid exception!\r\n");
+    enable_interrupt();
 }

@@ -48,7 +48,7 @@ cpio: $(PROGS)
 dtb: $(PROGS)
 	$(QEMU) -M raspi3 -kernel $< -display none -serial null -serial pty -initrd $(CPIO) -dtb $(DTB)
 
-debug: $(BUILD_DIR)/$(ELF)
+debug: $(PROGS)
 	$(QEMU) -M raspi3 -kernel $< -display none -S -s -serial null -serial pty -initrd $(CPIO) -dtb $(DTB)
 
 clean:

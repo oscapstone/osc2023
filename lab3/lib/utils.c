@@ -2,6 +2,10 @@
 #include "muart.h"
 
 void printdec(unsigned long value) {
+    if (value == 0) {
+        mini_uart_puts("0"); return;
+    }
+
     char nums[20]; unsigned int len = 0;
 
     while (value) {

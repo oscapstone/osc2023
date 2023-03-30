@@ -1,7 +1,7 @@
 #ifndef __UTILS_H__
 #define __UTILS_H__
 
-#define BUFSIZE 64
+#define BUFSIZE 256
 
 void printdec(unsigned long value);
 void printhex(unsigned long value);

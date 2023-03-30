@@ -3,6 +3,7 @@
 #include "utils.h"
 #include "shell.h"
 #include "timer.h"
+#include "exception.h"
 #include "devicetree.h"
 
 int main(void) {
@@ -11,6 +12,7 @@ int main(void) {
     devicetree_get_address();
     fdt_traverse(initramfs_callback);
 
+    enable_interrupt();
     core_timer_enable();
 
     mini_uart_puts("\r\nBasic Shell\r\n");
@@ -34,6 +36,8 @@ int main(void) {
             hello();
         } else if (strcmp(buffer, "alloc") == 0) {
             alloc();
+        } else if (strcmp(buffer, "async") == 0) {
+            async();
         } else if (strcmp(buffer, "reboot") == 0) {
             reboot();
         } else if (strcmp(buffer, "execute") == 0) {

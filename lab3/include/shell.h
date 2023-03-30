@@ -7,6 +7,7 @@ void info(void);
 void usage(void);
 void hello(void);
 void alloc(void);
+void async(void);
 void reboot(void);
 void execute(void);
 void message(char *s);

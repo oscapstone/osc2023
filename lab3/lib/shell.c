@@ -2,6 +2,7 @@
 #include "cpio.h"
 #include "muart.h"
 #include "shell.h"
+#include "utils.h"
 #include "reboot.h"
 #include "mailbox.h"
 
@@ -25,6 +26,7 @@ void usage(void) {
     mini_uart_puts("info:    print hardware's information\r\n");
     mini_uart_puts("hello:   print Hello World!\r\n");
     mini_uart_puts("alloc:   test for the simple_alloc function\r\n");
+    mini_uart_puts("async:   test for asynchronous function\r\n");
     mini_uart_puts("reboot:  reboot the device\r\n");
     mini_uart_puts("execute: run user program from initramfs\r\n");
 }
@@ -46,6 +48,34 @@ void alloc(void) {
 
 void hello(void) {
     mini_uart_puts("Hello World!\r\n");
+}
+
+void async(void) {
+    enable_mini_uart_interrupt();
+
+    delay(10000);
+
+    char buffer[BUFSIZE];
+    while (1) {
+        async_mini_uart_puts("> ");
+        unsigned int len = async_mini_uart_gets(buffer, BUFSIZE);
+
+        if (len == 0) {
+            async_mini_uart_puts("\r\n");
+            continue;
+        }
+
+        async_mini_uart_puts(buffer);
+        async_mini_uart_puts("\r\n");
+
+        if (strncmp(buffer, "exit", len) == 0) {
+            break;
+        }
+    }
+    
+    delay(10000);
+
+    disable_mini_uart_interrupt();
 }
 
 void reboot(void) {

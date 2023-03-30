@@ -1,5 +1,10 @@
 #include "gpio.h"
 #include "muart.h"
+#include "utils.h"
+#include "exception.h"
+
+char rbuffer[BUFSIZE], wbuffer[BUFSIZE];
+unsigned int rstart = 0, rend = 0, wstart = 0, wend = 0;
 
 void delay(int waits) {
     while (waits--);
@@ -29,7 +34,7 @@ char mini_uart_getc(void) {
     return (char) *AUX_MU_IO_REG;
 }
 
-void mini_uart_gets(char *buffer, int size) {
+void mini_uart_gets(char *buffer, unsigned int size) {
     char *p = buffer;
 
     for (int i = 0; i < size - 1; i++) {
@@ -45,13 +50,92 @@ void mini_uart_gets(char *buffer, int size) {
     *p = '\0';
 }
 
-void mini_uart_putc(char c) {
+void mini_uart_putc(const char c) {
     while ((*AUX_MU_LSR_REG & 0x20) == 0);
     *AUX_MU_IO_REG = c;
 }
 
-void mini_uart_puts(char *s) {
+void mini_uart_puts(const char *s) {
     while (*s != '\0') {
         mini_uart_putc(*s++);
     }
+}
+
+void enable_read_interrupt(void) {
+    *AUX_MU_IER_REG |= 0x01;
+}
+
+void disable_read_interrupt(void) {
+    *AUX_MU_IER_REG &= ~0x01;
+}
+
+void enable_write_interrupt(void) {
+    *AUX_MU_IER_REG |= 0x02;
+}
+
+void disable_write_interrupt(void) {
+    *AUX_MU_IER_REG &= ~0x02;
+}
+
+void enable_mini_uart_interrupt(void) {
+    enable_read_interrupt();
+    *ENABLE_IRQS_1 |= (1 << 29);
+}
+
+void disable_mini_uart_interrupt(void) {
+    disable_write_interrupt();
+    *DISABLE_IRQS_1 |= (1 << 29);
+}
+
+void async_mini_uart_handler(void) {
+    disable_mini_uart_interrupt();
+
+    if (*AUX_MU_IIR_REG & 0x04) {
+        char c = *AUX_MU_IO_REG;
+        rbuffer[rend++] = c;
+        rend = (rend == BUFSIZE)? 0: rend;
+    } else if (*AUX_MU_IIR_REG & 0x02) {
+        while (*AUX_MU_LSR_REG & 0x20) {
+            if (wstart == wend) {             
+                enable_read_interrupt(); break;
+            }
+
+            char c = wbuffer[wstart++];
+            *AUX_MU_IO_REG = c;
+            wstart = (wstart == BUFSIZE)? 0: wstart;
+        }
+    }
+
+    enable_mini_uart_interrupt();
+}
+
+void async_mini_uart_puts(const char *s) {
+    while (*s != '\0') {
+        wbuffer[wend++] = *s++;
+        wend = (wend == BUFSIZE)? 0: wend;
+    }
+
+    enable_write_interrupt();
+}
+
+unsigned int async_mini_uart_gets(char *buffer, unsigned int size) {
+    int idx;
+
+    for (idx = 0; idx < size - 1; idx++) {
+        while (rstart == rend) {
+            asm volatile("nop\r\n");
+        }
+
+        if (rbuffer[rstart] == '\r' || rbuffer[rstart] == '\n') {
+            rstart += (rstart + 1 >= BUFSIZE)? 1 - BUFSIZE: 1;
+            break;
+        }
+
+        buffer[idx] = rbuffer[rstart++];
+        rstart = (rstart == BUFSIZE)? 0: rstart;
+    }
+
+    buffer[idx] = '\0';
+
+    return idx;
 }

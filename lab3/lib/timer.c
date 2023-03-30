@@ -1,4 +1,15 @@
 #include "timer.h"
+#include "muart.h"
+#include "utils.h"
+#include "exception.h"
+
+void reset_core_timer(void) {
+    asm volatile(
+        "mrs    x0, cntfrq_el0\r\n\t"
+        "add    x0, x0, x0\r\n\t"
+        "msr    cntp_tval_el0, x0\r\n\t"
+    );
+}
 
 void core_timer_enable(void) {
     asm volatile(
@@ -13,11 +24,16 @@ void core_timer_enable(void) {
 }
 
 void core_timer_handler(void) {
-    asm volatile(
-        "mrs    x0, cntfrq_el0\r\n\t"
-        "add    x0, x0, x0\r\n\t"
-        "msr    cntp_tval_el0, x0\r\n\t"
-    );
+    mini_uart_puts("received core timer interrupt!\r\n");
+
+    unsigned long current   = get_current_time();
+    unsigned long frequency = get_core_frequency();
+
+    mini_uart_puts("seconds after booting: ");
+    printdec(current / frequency);
+    mini_uart_puts("\r\n\r\n");
+
+    reset_core_timer();
 }
 
 unsigned long get_current_time(void) {

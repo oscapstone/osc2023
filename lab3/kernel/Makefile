@@ -18,6 +18,7 @@ LIB_FILES    = $(wildcard $(LIB_DIR)/*.c)
 LIBOBJ_FILES = $(LIB_FILES:$(LIB_DIR)/%.c=$(BUILD_DIR)/%.o)
 
 CPIO = ../initramfs.cpio
+DTB  = ../bcm2710-rpi-3-b-plus.dtb
 
 ELF   = kernel8.elf
 PROGS = kernel8.img
@@ -44,8 +45,11 @@ run: $(PROGS)
 cpio: $(PROGS)
 	$(QEMU) -M raspi3 -kernel $< -display none -serial null -serial stdio -initrd $(CPIO)
 
-debug: $(BUILD_DIR)/$(ELF)
-	$(QEMU) -M raspi3 -kernel $< -display none -S -s -serial null -serial stdio
+dtb: $(PROGS)
+	$(QEMU) -M raspi3 -kernel $< -display none -serial null -serial stdio -initrd $(CPIO) -dtb $(DTB)
+
+debug: $(PROGS)
+	$(QEMU) -M raspi3 -kernel $< -display none -S -s -serial null -serial stdio -initrd $(CPIO) -dtb $(DTB)
 
 clean:
 	rm $(PROGS) $(OBJ_FILES) $(BUILD_DIR)/$(ELF)

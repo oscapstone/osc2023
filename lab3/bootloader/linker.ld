@@ -13,6 +13,7 @@ SECTIONS
         __bss_end = .;
     }
 
+    . = ALIGN(0x8);
     __end = .;
 }
 
