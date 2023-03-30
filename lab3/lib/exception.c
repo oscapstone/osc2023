@@ -12,9 +12,7 @@ void disable_interrupt(void) {
 }
 
 void el0_irq_entry(void) {
-    disable_interrupt();
-    core_timer_handler();
-    enable_interrupt();
+    print_elapsed_time();
 }
 
 void el1h_irq_entry(void) {
@@ -23,7 +21,7 @@ void el1h_irq_entry(void) {
     if ((*IRQ_PENDING_1 & IRQ_PENDING_1_AUX_INT) && (*CORE0_IRQ_SOURCE & IRQ_SOURCE_GPU)) {
         async_mini_uart_handler();
     } else if (*CORE0_IRQ_SOURCE & IRQ_SOURCE_CNTPNSIRQ) {
-        reset_core_timer();
+        remove_core_timer();
     }
 
     enable_interrupt();
@@ -54,7 +52,5 @@ void exception_entry(void) {
 }
 
 void invalid_exception_entry(void) {
-    disable_interrupt();
     mini_uart_puts("invalid exception!\r\n");
-    enable_interrupt();
 }

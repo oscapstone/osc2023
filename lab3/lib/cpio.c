@@ -67,8 +67,8 @@ void cpio_execute(void) {
             char *location = ((void*) current) + offset;
             char *sp = location + STACKSIZE;
             asm volatile(
-                "msr     spsr_el1, xzr\r\n\t"
                 "msr     elr_el1, %0\r\n\t"
+                "msr     spsr_el1, xzr\r\n\t"
                 "msr     sp_el0, %1\r\n\t"
                 "eret    \r\n\t"
                 ::

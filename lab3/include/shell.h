@@ -10,6 +10,8 @@ void alloc(void);
 void async(void);
 void reboot(void);
 void execute(void);
+void boottime(void);
+void multiplex(void);
 void message(char *s);
 
 #endif
