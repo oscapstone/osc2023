@@ -4,10 +4,12 @@
 #include <stdint.h>
 #include <stddef.h>
 #include "printf.h"
+#include "utils.h"
 #include "mini_uart.h"
 
 int strcmp(const char *str1, const char *str2);
 int strlen(const char *str);
+char *strcpy(char *destination, const char *source);
 
 void *memset(void *dest, register int val, int len);
 int memcmp(void *s1, void *s2, int n);

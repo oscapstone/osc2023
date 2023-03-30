@@ -1,10 +1,17 @@
 #include "utils.h"
 #include "peripherals/mini_uart.h"
 #include "peripherals/gpio.h"
+#include "peripherals/irq.h"
 #include "stdlib.h"
 
 // get address from linker
 extern volatile unsigned char _end;
+
+char read_buffer[100];
+char write_buffer[100];
+int len_WB = 0;
+int len_RB = 0;
+int buffer_count = 0;
 
 void uart_send(char c)
 {
@@ -121,3 +128,56 @@ void _putchar(char character)
 // 		uart_send(*s++);
 // 	}
 // }
+
+void asyn_read()
+{
+	memset(read_buffer, '\0', 100);
+
+	put32(AUX_MU_IER_REG, 1); // Enable receive and transmit interrupts
+	put32(ENABLE_IRQS_1, 1 << 29);
+
+	// enable interrupt in el1
+	asm("msr DAIFClr, 0xf;");
+
+	while (read_buffer[strlen(read_buffer) - 1] != '\r')
+		;
+}
+
+void asyn_write()
+{
+	strcpy(write_buffer, read_buffer);
+	len_WB = strlen(write_buffer);
+
+	put32(AUX_MU_IER_REG, 2); // Enable receive and transmit interrupts
+	put32(ENABLE_IRQS_1, 1 << 29);
+
+	// enable interrupt in el1
+	asm("msr DAIFClr, 0xf;");
+
+	while (strlen(write_buffer) != 0)
+		;
+}
+
+void uart_rx_handler()
+{
+	read_buffer[len_RB++] = get32(AUX_MU_IO_REG);
+
+	if (read_buffer[len_RB - 1] == '\r')
+	{
+		put32(AUX_MU_IER_REG, 0); // Disable receive and transmit interrupts
+		read_buffer[len_RB] = '\0';
+		len_RB = 0;
+	}
+}
+
+void uart_tx_handler()
+{
+	if (buffer_count < len_WB)
+		put32(AUX_MU_IO_REG, write_buffer[buffer_count++]);
+	else
+	{
+		put32(AUX_MU_IER_REG, 0); // Disable receive and transmit interrupts
+		buffer_count = 0;
+		memset(write_buffer, '\0', 100);
+	}
+}

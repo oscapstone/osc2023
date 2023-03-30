@@ -1,3 +1,5 @@
+#include "peripherals/mini_uart.h"
+#include "peripherals/irq.h"
 #include "stdlib.h"
 
 /**
@@ -111,6 +113,34 @@ void exc_handler(unsigned long type, unsigned long esr, unsigned long elr, unsig
     uart_hex(far >> 32);
     uart_hex(far);
     uart_send_string("\n");
+
+    return;
+}
+
+void el1_irq_interrupt_handler()
+{
+    // GPU IRQ 57 : UART Interrupt
+    if (get32(IRQ_BASIC_PENDING & (1 << 19)))
+    {
+        if (get32(AUX_MU_IIR_REG) & 0b100) // Receiver holds valid byte
+        {
+            uart_rx_handler();
+        }
+        else if (get32(AUX_MU_IIR_REG) & 0b010) // Transmit holding register empty
+        {
+            uart_tx_handler();
+        }
+    }
+    // ARM Core Timer Interrupt
+    else if (get32(CORE0_INTR_SRC) & (1 << 1))
+    {
+        // arm_core_timer_intr_handler();
+    }
+    // ARM Local Timer Interrupt
+    else if (get32(CORE0_INTR_SRC) & (1 << 11))
+    {
+        // arm_local_timer_intr_handler();
+    }
 
     return;
 }

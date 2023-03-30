@@ -8,6 +8,7 @@
         "stdlib.h": "c",
         "mini_uart.h": "c",
         "gpio.h": "c",
-        "base.h": "c"
+        "base.h": "c",
+        "stddef.h": "c"
     }
 }

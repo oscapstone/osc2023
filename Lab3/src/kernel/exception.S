@@ -1,3 +1,6 @@
+#define CORE0_INTERRUPT_SOURCE 0x40000060
+#define IIR_ADDR 0x3f215048
+
 .global set_el1_exception_vector_table
 .global exception_vector_table
 
@@ -43,31 +46,6 @@
     add sp, sp, 32 * 8
 .endm
 
-exception_handler:
-    save_all
-    mov x0, #0
-    mrs x1, esr_el1
-    mrs x2, elr_el1
-    mrs x3, spsr_el1
-    mrs x4, far_el1
-    bl exc_handler
-    load_all
-    eret
-
-exception_handler_sync_sp_elx_lower_el:
-    save_all
-    mov x0, #0
-    mrs x1, esr_el1
-    mrs x2, elr_el1
-    mrs x3, spsr_el1
-    mrs x4, far_el1
-    bl exc_handler
-    load_all
-    eret
-
-exception_handler_irq_sp_elx_lower_el:
-    bl el0_core_timer_handler
-
 .align 11 // vector table should be aligned to 0x800
 el1_exception_vector_table:
     b exception_handler // branch to a handler function.
@@ -79,9 +57,9 @@ el1_exception_vector_table:
     b exception_handler
     .align 7
 
-    b exception_handler
+    b exception_handler_sync_sp_elx_same_el
     .align 7
-    b exception_handler
+    b exception_handler_irq_sp_elx_same_el
     .align 7
     b exception_handler
     .align 7
@@ -111,10 +89,47 @@ set_el1_exception_vector_table:
     msr vbar_el1, x0
     ret lr
 
+exception_handler:
+    save_all
+    mov x0, #0
+    mrs x1, esr_el1
+    mrs x2, elr_el1
+    mrs x3, spsr_el1
+    mrs x4, far_el1
+    bl exc_handler
+    load_all
+    eret
+
+exception_handler_sync_sp_elx_lower_el:
+    save_all
+    mov x0, #0
+    mrs x1, esr_el1
+    mrs x2, elr_el1
+    mrs x3, spsr_el1
+    mrs x4, far_el1
+    bl exc_handler
+    load_all
+    eret
+
+exception_handler_irq_sp_elx_lower_el:
+    b el0_core_timer_handler
+
+exception_handler_sync_sp_elx_same_el:
+    b exception_handler
+
+exception_handler_irq_sp_elx_same_el:
+    b el1_core_interrupt_handler
+
 el0_core_timer_handler:
     save_all
     mrs x0, cntpct_el0
     mrs x1, cntfrq_el0    
     bl el0_timer_handler
+    load_all
+    eret
+
+el1_core_interrupt_handler:
+    save_all
+    bl el1_irq_interrupt_handler
     load_all
     eret

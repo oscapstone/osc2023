@@ -7,6 +7,7 @@
 
 extern void *_dtb_ptr;
 extern char *cpioDest;
+extern char *read_buffer;
 
 #define COMMAND_BUFFER 20
 #define FILENAME_BUFFER 20
@@ -20,11 +21,13 @@ void shell_main(char *command)
         uart_send_string("help\t: print this help menu\n");
         uart_send_string("hello\t: print Hello World!\n");
         uart_send_string("reboot\t: reboot the device\n");
-        uart_send_string("ls\t:\n");
-        uart_send_string("cat\t:\n");
-        uart_send_string("dts\t:\n");
-        uart_send_string("svc\t:\n");
-        uart_send_string("time\t:\n");
+        uart_send_string("ls\t: list information about files\n");
+        uart_send_string("cat\t: copy each FILE to standard output\n");
+        uart_send_string("dts\t: list devicetree\n");
+        uart_send_string("svc\t: test svc interrupt in user program\n");
+        uart_send_string("time\t: time 2 secs\n");
+        uart_send_string("asynr\t: [test] asynchronous read\n");
+        uart_send_string("asynw\t: [test] asynchronous write\n");
     }
     else if (!strcmp(command, "hello"))
     {
@@ -140,21 +143,30 @@ void shell_main(char *command)
     {
         get_current_time();
         asm volatile(
-            "mov x3, 0x0;" // use x3 instead of x0 because x0 is reserved automatically to store the address of "handling_info"
-            "msr spsr_el1, x3;"
-            "mov x0, %0;"
-            "add x0, x0, 12;"
-            "msr elr_el1, x0;"
-            "mov x0, 0x1000000;"
-            "msr sp_el0, x0;"
-            "mrs x0, cntfrq_el0;"
-            "add x0, x0, x0;"
-            "msr cntp_tval_el0, x0;"
+            "mov x1, 0x0;" // not sure why can't use x0, may have something to to with %0
+            "msr spsr_el1, x1;"
+            "mov x2, %0;"
+            "add x2, x2, 12;"
+            "msr elr_el1, x2;"
+            "mov x2, 0x1000000;"
+            "msr sp_el0, x2;"
+            "mrs x2, cntfrq_el0;"
+            "add x2, x2, x2;"
+            "msr cntp_tval_el0, x2;"
             "bl core_timer_enable;"
             "eret;"
             :
             : "r"(shell_start)
             :);
+    }
+    else if (!strcmp(command, "asynr"))
+    {
+        asyn_read();
+    }
+    else if (!strcmp(command, "asynw"))
+    {
+        asyn_write();
+        uart_send('\n');
     }
 }
 
