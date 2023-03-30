@@ -1,5 +1,4 @@
 #include "mini_uart.h"
-#include "utils.h"
 
 void uart_send(unsigned int c) {
   while ((*AUX_MU_LSR & 0x20) == 0);

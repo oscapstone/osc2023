@@ -56,4 +56,7 @@ dkms.conf
 
 # MacOS
 .DS_Store
+build*/
+.vscode/
+.lldbinit
 
