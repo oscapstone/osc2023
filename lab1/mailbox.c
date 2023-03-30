@@ -6,6 +6,7 @@
 /** retun 0 on failuer, non-zerp on success */
 int mailbox_call ( unsigned char channel, volatile uint32_t * mail_box )
 {   
+    /* combine message address with channel number */
     const uint32_t interface = ((unsigned int)((unsigned long)mail_box)&~0xF) | (channel & 0xF);
 
     /* wait until  the full flag is not set */

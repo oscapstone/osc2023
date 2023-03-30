@@ -23,7 +23,7 @@ sudo dd if=nctuos.img of=/dev/sdb
 ## Test With QEMU
 
 ```
-qemu-system-aarch64 -M raspi3b -kernel kernel8.img -display none -S -s
+qemu-system-aarch64 -M raspi3 -kernel kernel8.img -display none -S -s
 ```
 
 ## Interact with Rpi3
