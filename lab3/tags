@@ -1,0 +1,192 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.9~svn20110310	//
+ARMGNU	Makefile	/^ARMGNU ?= aarch64-none-elf$/;"	m
+ARMGNU	initramfs/Makefile	/^ARMGNU ?= aarch64-none-elf$/;"	m
+ASM_FILES	Makefile	/^ASM_FILES = $(wildcard $(SRC_DIR)\/*.S)$/;"	m
+AUX_ENABLES	include/peripherals/mini_uart.h	6;"	d
+AUX_MU_BAUD_REG	include/peripherals/mini_uart.h	11;"	d
+AUX_MU_CNTL_REG	include/peripherals/mini_uart.h	7;"	d
+AUX_MU_IER_REG	include/peripherals/mini_uart.h	8;"	d
+AUX_MU_IIR_REG	include/peripherals/mini_uart.h	12;"	d
+AUX_MU_IO_REG	include/peripherals/mini_uart.h	14;"	d
+AUX_MU_LCR_REG	include/peripherals/mini_uart.h	9;"	d
+AUX_MU_LSR_REG	include/peripherals/mini_uart.h	13;"	d
+AUX_MU_MCR_REG	include/peripherals/mini_uart.h	10;"	d
+AUX_MU_MSR_REG	include/peripherals/mini_uart.h	15;"	d
+AUX_MU_SCRATCH_REG	include/peripherals/mini_uart.h	16;"	d
+AUX_MU_STAT_REG	include/peripherals/mini_uart.h	17;"	d
+BUILD_DIR	Makefile	/^BUILD_DIR = build$/;"	m
+CC	Makefile	/^CC = $(ARMGNU)-gcc$/;"	m
+CC	initramfs/Makefile	/^CC = $(ARMGNU)-gcc$/;"	m
+CFLAGS	Makefile	/^CFLAGS = -Wall -O3 -g$/;"	m
+CFLAGS	initramfs/Makefile	/^CFLAGS = -Wall -O3$/;"	m
+CPIO	Makefile	/^CPIO = initramfs.cpio$/;"	m
+CPPFLAGS	Makefile	/^CPPFLAGS = -Iinclude -MMD -MP -static$/;"	m
+CPPFLAGS	initramfs/Makefile	/^CPPFLAGS = -Iinclude -MMD -MP -static$/;"	m
+C_FILES	Makefile	/^C_FILES = $(wildcard $(SRC_DIR)\/*.c)$/;"	m
+DTB	Makefile	/^DTB = bcm2710-rpi-3-b-plus.dtb$/;"	m
+END_TAG	include/peripherals/mailbox.h	35;"	d
+END_TAG	include/peripherals/mini_uart.h	28;"	d
+END_TAG	include/peripherals/tag.h	9;"	d
+ENV_HDR	Makefile	/^ENV_HDR = -initrd initramfs.cpio -dtb bcm2710-rpi-3-b-plus.dtb$/;"	m
+FDT_BEGIN_NODE	src/dtb.c	6;"	d	file:
+FDT_END	src/dtb.c	14;"	d	file:
+FDT_END_NODE	src/dtb.c	8;"	d	file:
+FDT_NOP	src/dtb.c	12;"	d	file:
+FDT_PROP	src/dtb.c	10;"	d	file:
+GET_ARM_MEMORY	include/peripherals/mailbox.h	30;"	d
+GET_BOARD_REVISION	include/peripherals/mailbox.h	29;"	d
+GET_BOARD_REVISION	include/peripherals/mini_uart.h	23;"	d
+GET_BOARD_REVISION	include/peripherals/tag.h	4;"	d
+GPCLR0	include/peripherals/gpio.h	8;"	d
+GPFSEL1	include/peripherals/gpio.h	6;"	d
+GPPUD	include/peripherals/gpio.h	9;"	d
+GPPUDCLK0	include/peripherals/gpio.h	10;"	d
+GPSET0	include/peripherals/gpio.h	7;"	d
+LD	Makefile	/^LD = $(ARMGNU)-ld$/;"	m
+LD	initramfs/Makefile	/^LD = $(ARMGNU)-ld$/;"	m
+LDFLAGS	Makefile	/^LDFLAGS = -nostdlib $/;"	m
+LDFLAGS	initramfs/Makefile	/^LDFLAGS = -nostdlib $/;"	m
+MAX_CMD	src/main.c	7;"	d	file:
+MAX_CMD	src/shell.c	5;"	d	file:
+MBOX_CH_BTNS	include/peripherals/mailbox.h	24;"	d
+MBOX_CH_COUNT	include/peripherals/mailbox.h	26;"	d
+MBOX_CH_FB	include/peripherals/mailbox.h	20;"	d
+MBOX_CH_LEDS	include/peripherals/mailbox.h	23;"	d
+MBOX_CH_POWER	include/peripherals/mailbox.h	19;"	d
+MBOX_CH_PROP	include/peripherals/mailbox.h	27;"	d
+MBOX_CH_TOUCH	include/peripherals/mailbox.h	25;"	d
+MBOX_CH_VCHIQ	include/peripherals/mailbox.h	22;"	d
+MBOX_CH_VUART	include/peripherals/mailbox.h	21;"	d
+MBOX_CONFIG	include/peripherals/mailbox.h	10;"	d
+MBOX_EMPTY	include/peripherals/mailbox.h	14;"	d
+MBOX_FULL	include/peripherals/mailbox.h	13;"	d
+MBOX_POLL	include/peripherals/mailbox.h	7;"	d
+MBOX_READ	include/peripherals/mailbox.h	6;"	d
+MBOX_REQUEST	include/peripherals/mailbox.h	16;"	d
+MBOX_RESPONSE	include/peripherals/mailbox.h	12;"	d
+MBOX_SENDER	include/peripherals/mailbox.h	8;"	d
+MBOX_STATUS	include/peripherals/mailbox.h	9;"	d
+MBOX_TAG_GETSERIAL	include/peripherals/mailbox.h	38;"	d
+MBOX_TAG_LAST	include/peripherals/mailbox.h	39;"	d
+MBOX_WRITE	include/peripherals/mailbox.h	11;"	d
+MMIO_BASE	include/peripherals/mailbox.h	4;"	d
+OBJCOPY	Makefile	/^OBJCOPY = $(ARMGNU)-objcopy$/;"	m
+OBJCOPY	initramfs/Makefile	/^OBJCOPY = $(ARMGNU)-objcopy$/;"	m
+OBJ_FILES	Makefile	/^OBJ_FILES = $(C_FILES:$(SRC_DIR)\/%.c=$(BUILD_DIR)\/%.o)$/;"	m
+PBASE	include/peripherals/gpio.h	4;"	d
+PBASE	include/peripherals/mini_uart.h	4;"	d
+PM_PASSWORD	include/peripherals/mini_uart.h	19;"	d
+PM_RSTC	include/peripherals/mini_uart.h	20;"	d
+PM_WDOG	include/peripherals/mini_uart.h	21;"	d
+REQUEST_CODE	include/peripherals/mailbox.h	31;"	d
+REQUEST_CODE	include/peripherals/mini_uart.h	24;"	d
+REQUEST_CODE	include/peripherals/tag.h	5;"	d
+REQUEST_FAILED	include/peripherals/mailbox.h	33;"	d
+REQUEST_FAILED	include/peripherals/mini_uart.h	26;"	d
+REQUEST_FAILED	include/peripherals/tag.h	7;"	d
+REQUEST_SUCCEED	include/peripherals/mailbox.h	32;"	d
+REQUEST_SUCCEED	include/peripherals/mini_uart.h	25;"	d
+REQUEST_SUCCEED	include/peripherals/tag.h	6;"	d
+SRC_DIR	Makefile	/^SRC_DIR = src$/;"	m
+TAG_REQUEST_CODE	include/peripherals/mailbox.h	34;"	d
+TAG_REQUEST_CODE	include/peripherals/mini_uart.h	27;"	d
+TAG_REQUEST_CODE	include/peripherals/tag.h	8;"	d
+VIDEOCORE_MBOX	include/peripherals/mailbox.h	5;"	d
+Welcome	src/main.c	/^void Welcome(){$/;"	f
+_CPIO_H	include/cpio.h	2;"	d
+_DTB_H	include/dtb.h	4;"	d
+_MAILBOX_H	include/peripherals/mailbox.h	2;"	d
+_MINI_UART_H	include/mini_uart.h	2;"	d
+_P_GPIO_H	include/peripherals/gpio.h	2;"	d
+_P_MINI_UART	include/peripherals/mini_uart.h	2;"	d
+_SHELL_H	include/shell.h	2;"	d
+_TAG_H	include/peripherals/tag.h	2;"	d
+_UTILS_H	include/utils.h	2;"	d
+_start	initramfs/usr.S	/^_start:$/;"	l
+_start	src/boot.S	/^_start:$/;"	l
+address	src/dtb.c	/^    uint64_t address; $/;"	m	struct:__anon3	file:
+atoi	src/utils.c	/^int atoi(char * c){$/;"	f
+boot_cpuid_phys	src/dtb.c	/^    uint32_t boot_cpuid_phys; $/;"	m	struct:__anon2	file:
+bswap_32	src/dtb.c	/^uint32_t bswap_32(uint32_t num) {$/;"	f
+bswap_64	src/dtb.c	/^uint64_t bswap_64(uint64_t num) {$/;"	f
+buf_clear	src/shell.c	/^void buf_clear(char *buf){$/;"	f
+c_check	src/cpio.c	/^    char	   c_check[8];$/;"	m	struct:__anon1	file:
+c_devmajor	src/cpio.c	/^    char	   c_devmajor[8];$/;"	m	struct:__anon1	file:
+c_devminor	src/cpio.c	/^    char	   c_devminor[8];$/;"	m	struct:__anon1	file:
+c_filesize	src/cpio.c	/^    char	   c_filesize[8];$/;"	m	struct:__anon1	file:
+c_gid	src/cpio.c	/^    char	   c_gid[8];$/;"	m	struct:__anon1	file:
+c_ino	src/cpio.c	/^    char	   c_ino[8];$/;"	m	struct:__anon1	file:
+c_magic	src/cpio.c	/^    char	   c_magic[6];$/;"	m	struct:__anon1	file:
+c_mode	src/cpio.c	/^    char	   c_mode[8];$/;"	m	struct:__anon1	file:
+c_mtime	src/cpio.c	/^    char	   c_mtime[8];$/;"	m	struct:__anon1	file:
+c_namesize	src/cpio.c	/^    char	   c_namesize[8];$/;"	m	struct:__anon1	file:
+c_nlink	src/cpio.c	/^    char	   c_nlink[8];$/;"	m	struct:__anon1	file:
+c_rdevmajor	src/cpio.c	/^    char	   c_rdevmajor[8];$/;"	m	struct:__anon1	file:
+c_rdevminor	src/cpio.c	/^    char	   c_rdevminor[8];$/;"	m	struct:__anon1	file:
+c_uid	src/cpio.c	/^    char	   c_uid[8];$/;"	m	struct:__anon1	file:
+callback_initramfs	src/cpio.c	/^int callback_initramfs(void * addr){$/;"	f
+cancel_reset	src/mini_uart.c	/^void cancel_reset() {$/;"	f
+cat_list	src/cpio.c	/^void cat_list () {$/;"	f
+cmd_task	src/shell.c	/^enum cmd_task {$/;"	g	file:
+cpio_t	src/cpio.c	/^} cpio_t;$/;"	t	typeref:struct:__anon1	file:
+dtb_list	src/dtb.c	/^void dtb_list(void *dtb) {$/;"	f
+exception_entry	src/shell.c	/^void exception_entry() {$/;"	f
+exception_handler	src/boot.S	/^exception_handler:$/;"	l
+exception_vector_table	src/boot.S	/^exception_vector_table:$/;"	l
+exec_prog	src/shell.c	/^void exec_prog(char * addr){$/;"	f
+exp	src/utils.c	/^int exp(int i, int j){$/;"	f
+fdt_header	src/dtb.c	/^} fdt_header;$/;"	t	typeref:struct:__anon2	file:
+fdt_prop	src/dtb.c	/^}fdt_prop;$/;"	t	typeref:struct:__anon4	file:
+fdt_reserve_entry	src/dtb.c	/^} fdt_reserve_entry;$/;"	t	typeref:struct:__anon3	file:
+find_dtb	src/dtb.c	/^int find_dtb(void *dtb, const char* name, int name_len, void (*func)(void*)){$/;"	f
+from_el2_to_el1	src/boot.S	/^from_el2_to_el1:$/;"	l
+get_initramfs	src/cpio.c	/^int get_initramfs(){$/;"	f
+hello	src/shell.c	/^    hello,$/;"	e	enum:cmd_task	file:
+help	src/shell.c	/^    help,$/;"	e	enum:cmd_task	file:
+hex2bin	src/utils.c	/^int hex2bin(char *s, int n){$/;"	f
+initrd_list	src/cpio.c	/^void initrd_list()$/;"	f
+kernel_main	src/main.c	/^void kernel_main(void *dtb)$/;"	f
+last_comp_version	src/dtb.c	/^    uint32_t last_comp_version; $/;"	m	struct:__anon2	file:
+len	src/dtb.c	/^    uint32_t len;$/;"	m	struct:__anon4	file:
+load_prog	src/cpio.c	/^unsigned int * load_prog (void * prog) {$/;"	f
+magic	src/dtb.c	/^    uint32_t magic;$/;"	m	struct:__anon2	file:
+mbox	src/mini_uart.c	/^volatile unsigned int  __attribute__((aligned(16))) mbox[36];$/;"	v
+mbox_call	src/mini_uart.c	/^void mbox_call(unsigned char ch)$/;"	f
+mem	src/cpio.c	/^static void *mem = 0x8000000;$/;"	v	file:
+memcmp	src/mini_uart.c	/^int memcmp(void *s1, void *s2, int n)$/;"	f
+nameoff	src/dtb.c	/^    uint32_t nameoff; $/;"	m	struct:__anon4	file:
+oct2bin	src/utils.c	/^int oct2bin(char *s, int n)$/;"	f
+off_dt_strings	src/dtb.c	/^    uint32_t off_dt_strings; $/;"	m	struct:__anon2	file:
+off_dt_struct	src/dtb.c	/^    uint32_t off_dt_struct; $/;"	m	struct:__anon2	file:
+off_mem_rsvmap	src/dtb.c	/^    uint32_t off_mem_rsvmap; $/;"	m	struct:__anon2	file:
+parse	src/main.c	/^	parse$/;"	e	enum:stat	file:
+parse_cmd	src/shell.c	/^unsigned int parse_cmd(char *cmd, void *dtb){$/;"	f
+print_initramfs	src/cpio.c	/^void print_initramfs(){$/;"	f
+read	src/main.c	/^	read,$/;"	e	enum:stat	file:
+reboot	src/shell.c	/^    reboot$/;"	e	enum:cmd_task	file:
+reset	src/mini_uart.c	/^void reset(int tick) {                 \/\/ reboot after watchdog timer expire$/;"	f
+set	src/mini_uart.c	/^void set(long addr, unsigned int value) {$/;"	f
+set_exception_vector_table	src/boot.S	/^set_exception_vector_table:$/;"	l
+shell_input	src/shell.c	/^void shell_input(char *cmd){$/;"	f
+simple_malloc	src/utils.c	/^void* simple_malloc(void **now, int size) {$/;"	f
+size	src/dtb.c	/^    uint64_t size;$/;"	m	struct:__anon3	file:
+size_dt_strings	src/dtb.c	/^    uint32_t size_dt_strings; $/;"	m	struct:__anon2	file:
+size_dt_struct	src/dtb.c	/^    uint32_t size_dt_struct;$/;"	m	struct:__anon2	file:
+stat	src/main.c	/^enum stat {$/;"	g	file:
+str_comp	src/shell.c	/^int str_comp(char *x, char *y){$/;"	f
+totalsize	src/dtb.c	/^    uint32_t totalsize; $/;"	m	struct:__anon2	file:
+uart_getc	src/mini_uart.c	/^char uart_getc() {$/;"	f
+uart_hex	src/mini_uart.c	/^void uart_hex(unsigned int d) {$/;"	f
+uart_hexdump	src/mini_uart.c	/^void uart_hexdump(unsigned int d) {$/;"	f
+uart_hexlong	src/mini_uart.c	/^void uart_hexlong(unsigned long d) {$/;"	f
+uart_init	src/mini_uart.c	/^void uart_init ( void ) {$/;"	f
+uart_int	src/utils.c	/^void uart_int(int i){$/;"	f
+uart_puts	src/mini_uart.c	/^void uart_puts(char *s) {$/;"	f
+uart_puts_l	src/mini_uart.c	/^void uart_puts_l(char *s, int l) {$/;"	f
+uart_send	src/mini_uart.c	/^void uart_send(char c) {$/;"	f
+version	src/dtb.c	/^    uint32_t version;$/;"	m	struct:__anon2	file:
