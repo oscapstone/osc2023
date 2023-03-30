@@ -22,9 +22,9 @@ LDFLAGS_RELEASE = -flto -Xlinker --gc-sections
 LDLIBS_BASE = -lgcc
 
 OBJS      = start main delay devicetree el initrd mailbox mailbox_info reset \
-            serial shell simple_malloc user_program vector_table xcpt \
+            serial shell simple_malloc timeout user_program vector_table xcpt \
 			xcpt_handler interrupt_handlers/core_timer interrupt_handlers/irq \
-			libc/string
+			ds/heapq libc/string
 LD_SCRIPT = $(SRC_DIR)/linker.ld
 
 # ------------------------------------------------------------------------------

@@ -34,7 +34,7 @@ vector_table:
 
     // IRQ.
     save_aapcs
-    bl irq_handler
+    bl irq_handler_el1
     load_aapcs
     eret
     .align 7

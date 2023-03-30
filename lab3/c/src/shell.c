@@ -3,10 +3,13 @@
 #include <stdbool.h>
 #include <stdnoreturn.h>
 
+#include "oscos/delay.h"
 #include "oscos/initrd.h"
 #include "oscos/libc/string.h"
 #include "oscos/reset.h"
 #include "oscos/serial.h"
+#include "oscos/simple_malloc.h"
+#include "oscos/timeout.h"
 #include "oscos/user_program.h"
 
 #define MAX_CMD_LEN 78
@@ -161,6 +164,29 @@ static void _shell_do_cmd_exec(void) {
   run_user_program();
 }
 
+static void _shell_do_cmd_settimeout(char *const cmd) {
+  const char *p = cmd + 11;
+
+  const char *const msg_start = p;
+  for (; !(*p == '\0' || *p == ' '); p++)
+    ;
+
+  const size_t msg_len = p - msg_start;
+  char *const msg_buf = simple_malloc(msg_len + 1);
+  memcpy(msg_buf, msg_start, msg_len);
+  msg_buf[msg_len] = '\0';
+
+  for (; *p == '\0' || *p == ' '; p++)
+    ;
+
+  uint64_t after_secs = 0;
+  for (; '0' <= *p && *p <= '9'; p++) {
+    after_secs = after_secs * 10 + (*p - '0');
+  }
+
+  add_timer((void (*)(void *))serial_puts, msg_buf, after_secs * NS_PER_SEC);
+}
+
 static void _shell_cmd_not_found(const char *const cmd) {
   serial_fputs("oscsh: ");
   serial_fputs(cmd);
@@ -190,6 +216,8 @@ void run_shell(void) {
       _shell_do_cmd_cat();
     } else if (strcmp(cmd_buf, "exec") == 0) {
       _shell_do_cmd_exec();
+    } else if (strncmp(cmd_buf, "setTimeout ", 11) == 0) {
+      _shell_do_cmd_settimeout(cmd_buf);
     } else {
       _shell_cmd_not_found(cmd_buf);
     }

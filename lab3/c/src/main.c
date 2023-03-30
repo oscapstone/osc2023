@@ -3,6 +3,7 @@
 #include "oscos/el.h"
 #include "oscos/serial.h"
 #include "oscos/shell.h"
+#include "oscos/timeout.h"
 #include "oscos/xcpt.h"
 
 void main(const void *const dtb_start) {
@@ -11,6 +12,8 @@ void main(const void *const dtb_start) {
   set_vector_table();
 
   serial_init();
+
+  core_timer_interrupt_enable_el1();
 
   XCPT_UNMASK_ALL();
 
