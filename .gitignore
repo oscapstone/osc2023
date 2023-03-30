@@ -2,6 +2,17 @@
 tags
 
 # Object file
+*.d
 *.o
 */obj/
+
+# Img, elf
+*.img
+*.elf
+
+# CPIO
+*.cpio
+
+# DTB
+*.dtb
 
