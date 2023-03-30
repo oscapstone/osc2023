@@ -35,8 +35,18 @@ vector_table:
     // IRQ.
     save_aapcs
     bl irq_handler_el1
-    load_aapcs
-    eret
+    stp x19, x20, [sp, -(14 * 8)]!
+    stp x21, x22, [sp, 2 * 8]
+    stp x23, x24, [sp, 4 * 8]
+    stp x25, x26, [sp, 6 * 8]
+    stp x27, x28, [sp, 8 * 8]
+    add x0, sp, 34 * 8
+    stp x29, x0, [sp, 10 * 8]
+    mrs x0, spsr_el1
+    mrs x1, elr_el1
+    stp x0, x1, [sp, 12 * 8]
+    mov x0, sp
+    b task_queue_entry
     .align 7
 
     // FIQ.

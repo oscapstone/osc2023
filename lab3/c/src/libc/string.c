@@ -55,3 +55,11 @@ void *memcpy(void *const restrict dest, const void *const restrict src,
 
   return dest;
 }
+
+void *memset(void *s, int c, size_t n) {
+  char *const p = s;
+  for (size_t i = 0; i < n; i++) {
+    p[i] = c;
+  }
+  return s;
+}
