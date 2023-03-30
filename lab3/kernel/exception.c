@@ -72,8 +72,9 @@ void irq_64_el0(void)
                  * CNTPNSIRQ interrupt
                  */
                 el0_timer_interrupt();
-                enable_interrupts_in_el1();
         }
+
+        enable_interrupts_in_el1();
 }
 
 void irq_64_el1(void)

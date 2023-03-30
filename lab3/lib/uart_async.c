@@ -75,14 +75,11 @@ int uart_async_send_string(char* str)
 
 void uart_send_buffer_content(void)
 {
-	if (write_st != write_ed) {
+	while (write_st != write_ed) {
 		uart_send(write_buffer[write_st++]);
 		write_st %= BUFFER_SIZE;
 	}
-	if (write_st == write_ed) {
-		disable_transmit_interrupt();
-		return;
-	}
+	disable_transmit_interrupt();
 }
 
 void uart_receive_to_buffer(void)
@@ -138,10 +135,12 @@ void demo_uart_async(void)
 
 void uart_async_interrupt_handler(void)
 {
+	disable_2nd_level_interrupt_ctrl();
         unsigned int interrupt_source = get32(AUX_MU_IIR_REG);
         if (interrupt_source & (0x2)) {
                 uart_send_buffer_content();
         } else if (interrupt_source & (0x4)) {
                 uart_receive_to_buffer();
         }
+	enable_2nd_level_interrupt_ctrl();
 }
