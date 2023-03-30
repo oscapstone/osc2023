@@ -7,9 +7,9 @@
 
 extern void *_dtb_ptr;
 extern char *cpioDest;
-extern char *read_buffer;
+extern char read_buffer[100];
 
-#define COMMAND_BUFFER 20
+#define COMMAND_BUFFER 50
 #define FILENAME_BUFFER 20
 
 void shell_start();
@@ -28,6 +28,7 @@ void shell_main(char *command)
         uart_send_string("time\t: time 2 secs\n");
         uart_send_string("asynr\t: [test] asynchronous read\n");
         uart_send_string("asynw\t: [test] asynchronous write\n");
+        uart_send_string("setTimeout\t: Usage: setTimeout <Message> <Seconds>\n");
     }
     else if (!strcmp(command, "hello"))
     {
@@ -61,7 +62,6 @@ void shell_main(char *command)
             filename[i - 4] = command[i];
             i++;
         }
-        filename[i] = '\0';
 
         read_content((char *)cpioDest, filename);
     }
@@ -165,9 +165,50 @@ void shell_main(char *command)
     }
     else if (!strcmp(command, "asynw"))
     {
-        asyn_write();
+        asyn_write(read_buffer);
         uart_send('\n');
     }
+    else if (!memcmp(command, "setTimeout", 10))
+    {
+        if (command[10] != ' ' || command[11] == '\0')
+        {
+            printf("Usage: setTimeout <Message> <Seconds>\n");
+            return;
+        }
+
+        char message[MESSAGE_BUFFER];
+        memset(message, '\0', MESSAGE_BUFFER);
+        int i = 11;
+        while (command[i] != ' ' && command[i] != '\0')
+        {
+            message[i - 11] = command[i];
+            i++;
+        }
+
+        if (command[i] != ' ' || command[i] == '\0' || command[i + 1] == '\0')
+        {
+            printf("Usage: setTimeout <Message> <Seconds>\n");
+            return;
+        }
+
+        char seconds[SECONDS_BUFFER];
+        memset(seconds, '\0', SECONDS_BUFFER);
+        while (command[i] != '\0')
+        {
+            seconds[i - strlen(message) - 1 - 11] = command[i];
+            i++;
+        }
+        int sec;
+        sec = atoi(seconds);
+
+        add_timer(sec, message);
+    }
+    else if (!strcmp(command, "test"))
+    {
+        add_timer(2, "HELLO");
+    }
+
+    return;
 }
 
 void shell_start()

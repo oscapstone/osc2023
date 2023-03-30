@@ -9,6 +9,10 @@
         "mini_uart.h": "c",
         "gpio.h": "c",
         "base.h": "c",
-        "stddef.h": "c"
+        "stddef.h": "c",
+        "deque": "c",
+        "forward_list": "c",
+        "list": "c",
+        "vector": "c"
     }
 }

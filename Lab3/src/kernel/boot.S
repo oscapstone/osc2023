@@ -26,6 +26,10 @@ proc_hang:
 	b 	proc_hang
 
 master:
+	mrs x0, cpacr_el1
+	orr x0, x0, #(3 << 20)
+	msr cpacr_el1, x0
+
 	ldr x1, =_start
 
 	// get CurrentEL

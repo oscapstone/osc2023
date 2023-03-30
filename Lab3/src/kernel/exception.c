@@ -1,6 +1,7 @@
 #include "peripherals/mini_uart.h"
 #include "peripherals/irq.h"
 #include "stdlib.h"
+#include "timer.h"
 
 /**
  * common exception handler
@@ -119,8 +120,11 @@ void exc_handler(unsigned long type, unsigned long esr, unsigned long elr, unsig
 
 void el1_irq_interrupt_handler()
 {
+    unsigned int irq_basic_pending = get32(IRQ_BASIC_PENDING);
+    irq_basic_pending &= (1 << 19); // clear bits
+
     // GPU IRQ 57 : UART Interrupt
-    if (get32(IRQ_BASIC_PENDING & (1 << 19)))
+    if (irq_basic_pending)
     {
         if (get32(AUX_MU_IIR_REG) & 0b100) // Receiver holds valid byte
         {
@@ -134,12 +138,12 @@ void el1_irq_interrupt_handler()
     // ARM Core Timer Interrupt
     else if (get32(CORE0_INTR_SRC) & (1 << 1))
     {
-        // arm_core_timer_intr_handler();
-    }
-    // ARM Local Timer Interrupt
-    else if (get32(CORE0_INTR_SRC) & (1 << 11))
-    {
-        // arm_local_timer_intr_handler();
+        long cntpct_el0, cntfrq_el0;
+        asm volatile(
+            "mrs %0, cntpct_el0;"
+            "mrs %1, cntfrq_el0;"
+            : "=r"(cntpct_el0), "=r"(cntfrq_el0));
+        el1_timer_handler(cntpct_el0, cntfrq_el0);
     }
 
     return;

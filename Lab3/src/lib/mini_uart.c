@@ -143,9 +143,9 @@ void asyn_read()
 		;
 }
 
-void asyn_write()
+void asyn_write(char *str)
 {
-	strcpy(write_buffer, read_buffer);
+	strcpy(write_buffer, str);
 	len_WB = strlen(write_buffer);
 
 	put32(AUX_MU_IER_REG, 2); // Enable receive and transmit interrupts

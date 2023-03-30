@@ -10,6 +10,7 @@
 int strcmp(const char *str1, const char *str2);
 int strlen(const char *str);
 char *strcpy(char *destination, const char *source);
+int atoi(char *str);
 
 void *memset(void *dest, register int val, int len);
 int memcmp(void *s1, void *s2, int n);
