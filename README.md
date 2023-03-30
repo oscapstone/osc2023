@@ -10,8 +10,8 @@ NYCU 2023 Operating System Capstone
 
 ## Environment
 
-- Ubuntu 22.04.2 LTS
-- QEMU 6.2.0
+- Fedora 37
+- QEMU 7.0.0
 - Raspbery Pi 3B+
 
 ## How to use
@@ -23,11 +23,20 @@ sudo apt update
 sudo apt install qemu-system-aarch64 gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu -y
 ```
 
-### Run on QEMU
+### Build Library
 
 ```shell
-make
-make run
+cd library && make && cd ..
+```
+
+### Run on QEMU
+
+```sehll
+# bootloader
+cd bootloader && make && make run
+
+# or kernel
+cd kernel && make && make run 
 ```
 
 ## Version History
@@ -43,3 +52,15 @@ Finish Lab 1
     - [x] Mailbox
 - Advanced
     - [x] Reboot
+
+### 2023-03-28
+
+Finish Lab 2
+
+- Basic
+    - [x] UART Bootloader
+    - [x] Initial Ramdisk
+    - [x] Simple Allocator
+- Advanced
+    - [x] Bootloader Self Relocation
+    - [x] Devicetree

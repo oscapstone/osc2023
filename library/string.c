@@ -1,13 +1,13 @@
 #include "string.h"
 #include "uart.h"
 #include "helper.h"
+#include "malloc.h"
 
 void string_init(string *s)
 {
     s->length = 0;
+    s->string = malloc(MAX_LENGTH);
 
-    char temp[MAX_LENGTH];
-    *s->string = temp;
     for (int i = 0; i < MAX_LENGTH; i++)
     {
         s->string = '\0';
@@ -22,12 +22,23 @@ void string_append(string *s, char c)
     }
 
     // don't append new line
-    if (c == '\n')
+    if (c == '\n' || c == '\r')
     {
         return;
     }
 
     s->string[s->length++] = c;
+    s->string[s->length] = '\0';
+}
+
+void string_backspace(string *s)
+{
+    if (s->length == 0)
+    {
+        return;
+    }
+
+    s->string[s->length--] = '\0';
     s->string[s->length] = '\0';
 }
 
