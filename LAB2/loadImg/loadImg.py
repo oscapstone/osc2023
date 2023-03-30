@@ -28,14 +28,14 @@ def send_img(ser, kernel):
             kernel_size -= ser.write(image.read(1))
             # ser.read_until(b".")
     # 讀取對方端傳來的結束訊息
-    print(ser.read_until(b"$ ").decode(), end="")
+    print(ser.read_until(b"> ").decode(), end="")
     return
 
 # 程式進入點
 if __name__ == "__main__":
     # 設定串列通訊的埠號和傳輸速率，以及逾時時間
-    ser = serial.Serial("/dev/ttyUSB0", BAUD_RATE, timeout=5)
-    # ser = serial.Serial("/dev/pts/6", BAUD_RATE, timeout=5)
+    # ser = serial.Serial("/dev/ttyUSB0", BAUD_RATE, timeout=5)
+    ser = serial.Serial("/dev/pts/33", BAUD_RATE, timeout=5)
 
     # 傳輸映像檔
     send_img(ser, "../kernel8.img")

@@ -1,6 +1,6 @@
 #include "mm.h"
 
-.section ".text.boot"
+.section ".text.boot"		//after start.elf put the kernel8.img into ram boot.s is the first program to exe, for initial all the section this kernel need to use
 
 .globl _start
 _start:
