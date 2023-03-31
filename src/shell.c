@@ -5,6 +5,7 @@
 #include "shell.h"
 #include "note.h"
 #include "initramfs.h"
+#include "time_interrupt.h"
 
 enum ANSI_ESC
 {
@@ -163,16 +164,22 @@ void shell_process_cmd(char *input_buffer, unsigned int input_size)
 int run_if_builtin(char *first_arg, char *other_args)
 {
     char input_buffer[MAX_SHELL_INPUT];
+    char *argv[MAX_ARGS+1];
     if (strcmp(first_arg, "help") == 0)
     {
-        uart_write_string("ls        : list files in initramfs\n");
-        uart_write_string("cat       : print content of a specific file in initramfs\n");
-        uart_write_string("dtb       : print device tree properties\n");
-        uart_write_string("help      : print this help menu\n");
-        uart_write_string("hello     : print Hello World!\n");
-        uart_write_string("reboot    : reboot the device\n");
-        uart_write_string("mknote    : make a note\n");
-        uart_write_string("linote    : list all notes\n");
+        uart_write_string("ls              : list files in initramfs\n");
+        uart_write_string("cat             : print content of a specific file in initramfs\n");
+        uart_write_string("dtb             : print device tree properties\n");
+        uart_write_string("help            : print this help menu\n");
+        uart_write_string("hello           : print Hello World!\n");
+        uart_write_string("async           : read and write a line asynchronously\n");
+        uart_write_string("reboot          : reboot the device\n");
+        uart_write_string("mknote          : make a note\n");
+        uart_write_string("linote          : list all notes\n");
+        uart_write_string("ldprog          : run program in EL0\n");
+        uart_write_string("uptime          : write system uptime\n");
+        uart_write_string("setTimeout      : write message at the given time\n");
+        uart_write_string("test_preemption : sleep the given amount of time and enqueue three timer task to timer queue.\n");
         return 1;
     }
     else if (strcmp(first_arg, "hello") == 0)
@@ -221,7 +228,66 @@ int run_if_builtin(char *first_arg, char *other_args)
         _fdt.fdt_print(&_fdt);
         return 1;
     }
+    else if (strcmp(first_arg, "ldprog") == 0)
+    {
+        uart_write_string("args: ");
+        uart_read_input(input_buffer, MAX_SHELL_INPUT);
+        shell_parse_argv(input_buffer, argv, MAX_ARGS);
+        _initramfs.exec(&_initramfs, argv);
+        return 1;
+    }
+    else if (strcmp(first_arg, "uptime") == 0)
+    {
+        write_uptime();
+        return 1;
+    } else if (strcmp(first_arg, "async") == 0) {
+        test_uart_async();
+        return 1;
+    } else if (strcmp(first_arg, "setTimeout") == 0) {
+        uart_write_string("message length: ");
+        uart_read_input(input_buffer, MAX_SHELL_INPUT);
+        int buf_size = atoi(input_buffer);
+        if (buf_size <= 0 || buf_size > 100) {
+            uart_write_string("length should within [1, 100].\n");
+            return 2;
+        }
+        char *msg = (char *)simple_malloc(buf_size * sizeof(char));
+        uart_write_string("message: ");
+        uart_read_input(msg, buf_size);
+        uart_write_string("duration: ");
+        uart_read_input(input_buffer, MAX_SHELL_INPUT);
+        int dur = atoi(input_buffer);
+        if (dur <= 0 || dur > 100) {
+            uart_write_string("duration should within [1, 100].\n");
+            return 2;
+        }
+        _timer_task_scheduler.add_timer_second(&_timer_task_scheduler, notify, msg, dur);
+        return 1;
+    } else if (strcmp(first_arg, "test_preemption") == 0) {
+        // uart_write_string("t: ");
+        // uart_read_input(input_buffer, MAX_SHELL_INPUT);
+        // int t = atoi(input_buffer);
+        // if (t <= 0 || t > 100) {
+        //     uart_write_string("t should within [1, 100].\n");
+        //     return 2;
+        // }
+        // _timer_task_scheduler.add_timer_second(&_timer_task_scheduler, sleep_timer, (size_t)t, 1);
+        _timer_task_scheduler.add_timer_second(&_timer_task_scheduler, sleep_timer, 1, 1);
+        return 1;
+    }
     return 0;
+}
+
+int shell_parse_argv(char *s, char *argv[], unsigned max_args)
+{
+    char *token = strtok(s, " \n");
+    int argc = 0;
+    while (token != NULL && argc < max_args) {
+        argv[argc++] = token;
+        token = strtok(NULL, " \n");
+    }
+    argv[argc] = NULL;
+    return argc;
 }
 
 void shell_main(void)

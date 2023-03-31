@@ -19,11 +19,11 @@ SECTIONS
 
   
   __bss_start = .;
-  .bss : { *(.bss*) } 
+  .bss (NOLOAD): { *(.bss*) } 
   . = ALIGN(0x1000);
   __bss_end = .;
 
-  .heap :
+  .heap (NOLOAD):
   {
     /*__heap_size = 16M;*/
     __heap_start = .;

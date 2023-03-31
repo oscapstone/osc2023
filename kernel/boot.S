@@ -1,7 +1,6 @@
 #include "mm.h"
-//put .text.boot as the first symbol in data section
+//put .text.boot as the first symbol in text section
 .section ".text.boot"
-
 //.global makes the symbol visible to ld.
 .global _start
 _start:
@@ -18,6 +17,7 @@ proc_hang:
 master:
   //clear bss section
   //my_bzero(__bss_start, size), a function defined in mm.S
+  	bl from_el2_to_el1
 	adr	x0, __bss_start
 	adr	x1, __bss_end
 	sub	x1, x1, x0

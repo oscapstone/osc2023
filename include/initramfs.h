@@ -23,9 +23,11 @@ struct initramfs {
     char *addr;
     void (*ls)(struct initramfs *self, char *path);
     void (*cat)(struct initramfs *self, char *path);
+    int (*exec)(struct initramfs *self, char *argv[]);
 };
 extern struct initramfs _initramfs;
 extern void init_initramfs(struct initramfs *fs);
 extern void _cpio_ls(struct initramfs *self, char *path);
 extern void _cpio_cat(struct initramfs *self, char *path);
+extern int _cpio_exec(struct initramfs *self, char *argv[]);
 #endif
