@@ -1,3 +1,17 @@
+.macro save_el1_context
+  sub sp, sp, 2 * 8
+  mrs x0, spsr_el1
+  mrs x1, elr_el1
+  stp x0, x1, [sp, 0]
+.endm
+
+.macro load_el1_context
+  ldp x0, x1, [sp, 0]
+  msr spsr_el1, x0
+  msr elr_el1, x1
+  add sp, sp, 2 * 8
+.endm
+
 // save general registers to stack
 .macro save_all
     sub sp, sp, 32 * 8
@@ -62,21 +76,47 @@ exception_vector_table:
   exception_entry exception_handler
   exception_entry exception_handler
 
-  exception_entry exception_handler
-  exception_entry exception_handler
-  exception_entry exception_handler
-  exception_entry exception_handler
+  //Exception from the currentEL while using SP_ELx
+  //e.g. kernel takes exceptions(EL1 -> EL1)
+  exception_entry _current_synchronuous_exception_handler //Synchronous
+  exception_entry _current_irq_exception_handler //IRQ
+  exception_entry exception_handler //FIQ
+  exception_entry exception_handler //SError
+
+  //Exception from a lower EL and at least one lower EL is AARCH64.
+  //e.g. 64bit user programs take exceptions(EL0 -> EL1)
+  exception_entry _lower_synchronous_exception_handler //Synchronous
+  exception_entry _lower_irq_exception_handler //IRQ
+  exception_entry exception_handler //FIQ
+  exception_entry exception_handler //SError
 
   exception_entry exception_handler
   exception_entry exception_handler
   exception_entry exception_handler
   exception_entry exception_handler
 
-  exception_entry exception_handler
-  exception_entry exception_handler
-  exception_entry exception_handler
-  exception_entry exception_handler
+.macro handler_template handler_name backbone
+\handler_name:
+  save_all
+  bl \backbone
+  load_all
+  eret
+.endm
 
+.macro el1_handler_template handler_name backbone
+\handler_name:
+  save_all
+  save_el1_context
+  bl \backbone
+  load_el1_context
+  load_all
+  eret
+.endm
+
+el1_handler_template _current_synchronuous_exception_handler current_synchronous_exception_router
+el1_handler_template _current_irq_exception_handler current_irq_exception_router
+handler_template _lower_synchronous_exception_handler lower_synchronous_exception_router
+handler_template _lower_irq_exception_handler lower_irq_exception_router
 
 
 .macro globalize symbol

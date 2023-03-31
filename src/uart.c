@@ -3,6 +3,12 @@
 #include "utils.h"
 #include "mailbox.h"
 #include "uart.h"
+#include "time_interrupt.h"
+
+char read_buf[BUFFER_MAX_SIZE];
+char write_buf[BUFFER_MAX_SIZE];
+int read_buf_start, read_buf_end;
+int write_buf_start, write_buf_end;
 
 void uart_init(void) 
 {
@@ -158,4 +164,120 @@ unsigned int uart_read_input(char *cmd, unsigned int cmd_size)
     } while (idx < cmd_size);
     cmd[idx] = '\0';
     return idx;
+}
+
+void uart_write_fraction(unsigned numerator, unsigned denominator, unsigned deg)
+{
+    unsigned q = numerator / denominator;
+    numerator = (numerator - q * denominator) * 10;
+    uart_write_no(q);
+    uart_write('.');
+    while (deg--) {
+        q = numerator / denominator;
+        numerator = (numerator - q * denominator) * 10;
+        uart_write('0' + q);
+    }
+}
+///////////////////////// async part /////////////////////
+
+void uart_irq_handler(void *arg)
+{
+    //To enable mini UART’s interrupt, you need to set AUX_MU_IER_REG(0x3f215044)
+    // *AUX_MU_IER = 1;
+    //and the second level interrupt controller’s Enable IRQs1(0x3f00b210)’s bit29.
+    //why 29?
+    //https://cs140e.sergio.bz/docs/BCM2837-ARM-Peripherals.pdf p113
+    *ENB_IRQS1 |= (1 << 29);
+    reg_t ier = (reg_t)arg;
+    ier &= ~(0x3);
+
+    if (*AUX_MU_IIR & 0x4) {
+        char c = (char)(*AUX_MU_IO);
+        read_buf[read_buf_end] = c;
+        read_buf_end = (read_buf_end + 1) % BUFFER_MAX_SIZE;
+    }
+    else if (*AUX_MU_IIR & 0x2) {
+        //AUX_MU_LSR&0x20是用來判斷 c 有沒有被寫進AUX_MU_IO
+        while (*AUX_MU_LSR & 0x20) {
+            if (write_buf_start == write_buf_end) {
+                //nothing to write, disable interrupt
+                ier &= ~(0x2);
+                break;
+            }
+            char c = write_buf[write_buf_start];
+            *AUX_MU_IO = c;
+            write_buf_start = (write_buf_start + 1) % BUFFER_MAX_SIZE;
+        }
+    }
+    *AUX_MU_IER = ier;
+    *DISABLE_IRQS1 &= ~(1 << 29);
+}
+
+char _async_uart_read()
+{
+    // Enable R interrupt
+    *AUX_MU_IER |= 0b1;
+    while (read_buf_start == read_buf_end);
+    char c = read_buf[read_buf_start];
+    read_buf_start = (read_buf_start + 1) % BUFFER_MAX_SIZE;
+    return c;
+}
+
+char async_uart_read()
+{
+    char c = _async_uart_read();
+    return c == '\r' ? '\n' : c;
+}
+
+void _async_uart_write(char c)
+{
+    write_buf[write_buf_end] = c;
+    write_buf_end = (write_buf_end + 1) % BUFFER_MAX_SIZE;
+    // Enable W interrupt
+    *AUX_MU_IER |= 0x2;
+}
+
+void async_uart_write(char c)
+{
+    if (c == '\n') _async_uart_write('\r');
+    _async_uart_write(c);
+}
+
+unsigned int async_uart_readline(char *buffer, unsigned int buffer_size)
+{
+    if (buffer_size == 0) return 0;
+    char *ptr = buffer, *buffer_tail = buffer + buffer_size - 1;
+    do {
+        *ptr = async_uart_read();
+    } while (*ptr != '\n' && (ptr++ < buffer_tail));
+    *ptr = '\0';
+    return (ptr - buffer);
+}
+
+void async_uart_write_string(char* str)
+{
+    for (int i = 0; str[i] != '\0'; i++) {
+        async_uart_write((char)str[i]);
+    }
+}
+
+void test_uart_async()
+{
+    *ENB_IRQS1 |= (1 << 29);
+    delay(15000);
+    char buffer[BUFFER_MAX_SIZE];
+    size_t index = 0;
+    while (index < BUFFER_MAX_SIZE-1)
+    {
+        buffer[index] = async_uart_read();
+        // uart_async_send(buffer[index]);
+        if (buffer[index] == '\n')
+        {
+            break;
+        }
+        index++;
+    }
+    buffer[index + 1] = '\0';
+    async_uart_write_string(buffer);
+    *DISABLE_IRQS1 &= ~(1 << 29);
 }

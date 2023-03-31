@@ -29,4 +29,6 @@ extern int strstartswith(char *str, char *prefix);
 extern char *my_strtok(char *str, const char *delm);
 extern char *strtok(char *str, const char *delm);
 extern unsigned long long hex2ull(char *s);
+typedef unsigned int reg_t;
+typedef unsigned long long size_t;
 #endif
