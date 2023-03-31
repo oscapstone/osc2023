@@ -1,11 +1,9 @@
 #include "bcm2837/rpi_gpio.h"
 #include "bcm2837/rpi_uart1.h"
+#include "bcm2837/rpi_irq.h"
 #include "uart1.h"
 #include "exception.h"
 #include "u_string.h"
-
-
-#define IRQS1  ((volatile unsigned int*)(0x3f00b210))
 
 //implement first in first out buffer with a read index and a write index
 char uart_tx_buffer[VSPRINT_MAX_BUF_SIZE]={};
@@ -138,7 +136,7 @@ int  uart_puts(char* fmt, ...) {
 void uart_interrupt_enable(){
     *AUX_MU_IER_REG |=1;  // enable read interrupt
     *AUX_MU_IER_REG |=2;  // enable write interrupt
-    *IRQS1 |= 1 << 29;    // Pg.112
+    *ENABLE_IRQS_1  |= 1 << 29;    // Pg.112
 }
 
 void uart_interrupt_disable(){
