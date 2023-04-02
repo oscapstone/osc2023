@@ -24,6 +24,7 @@ void do_cmd_hello();
 void do_cmd_info();
 void do_cmd_s_allocator();
 void do_cmd_ls(char*);
+void do_cmd_memory_tester();
 void do_cmd_setTimeout(char* msg, char* sec);
 void do_cmd_set2sAlert();
 void do_cmd_reboot();

@@ -14,6 +14,8 @@ void main(char* arg){
     dtb_ptr = arg;
     traverse_device_tree(dtb_ptr, dtb_callback_initramfs);
 
+    init_allocator();
+
     uart_init();
     irqtask_list_init();
     timer_list_init();

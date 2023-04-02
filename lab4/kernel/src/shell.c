@@ -9,7 +9,7 @@
 #include "memory.h"
 #include "timer.h"
 
-#define CLI_MAX_CMD 11
+#define CLI_MAX_CMD 12
 #define USTACK_SIZE 0x10000
 
 extern char* dtb_ptr;
@@ -25,6 +25,7 @@ struct CLI_CMDS cmd_list[CLI_MAX_CMD]=
     {.command="s_allocator", .help="simple allocator in heap session"},
     {.command="info", .help="get device information via mailbox"},
     {.command="ls", .help="list directory contents"},
+    {.command="memory_tester", .help="memory testcase generator, allocate and free"},
     {.command="setTimeout", .help="setTimeout [MESSAGE] [SECONDS]"},
     {.command="set2sAlert", .help="set core timer interrupt every 2 second"},
     {.command="reboot", .help="reboot the device"}
@@ -74,6 +75,8 @@ void cli_cmd_exec(char* buffer)
         do_cmd_s_allocator();
     } else if (strcmp(cmd, "ls") == 0) {
         do_cmd_ls(argvs);
+    } else if (strcmp(cmd, "memory_tester") == 0) {
+        do_cmd_memory_tester();
     } else if (strcmp(cmd, "setTimeout") == 0) {
         char* sec = str_SepbySpace(argvs);
         do_cmd_setTimeout(argvs, sec);
@@ -252,6 +255,49 @@ void do_cmd_ls(char* workdir)
         //if this is not TRAILER!!! (last of file)
         if(header_ptr!=0) uart_puts("%s\n", c_filepath);
     }
+}
+
+void do_cmd_memory_tester()
+{
+/*
+    char *p1 = kmalloc(0x820);
+    char *p2 = kmalloc(0x900);
+    char *p3 = kmalloc(0x2000);
+    char *p4 = kmalloc(0x3900);
+    kfree(p3);
+    kfree(p4);
+    kfree(p1);
+    kfree(p2);
+*/
+    char *a = kmalloc(0x10);
+    char *b = kmalloc(0x100);
+    char *c = kmalloc(0x1000);
+
+    kfree(a);
+    kfree(b);
+    kfree(c);
+
+    a = kmalloc(32);
+    char *aa = kmalloc(50);
+    b = kmalloc(64);
+    char *bb = kmalloc(64);
+    c = kmalloc(128);
+    char *cc = kmalloc(129);
+    char *d = kmalloc(256);
+    char *dd = kmalloc(256);
+    char *e = kmalloc(512);
+    char *ee = kmalloc(999);
+
+    kfree(a);
+    kfree(aa);
+    kfree(b);
+    kfree(bb);
+    kfree(c);
+    kfree(cc);
+    kfree(dd);
+    kfree(d);
+    kfree(e);
+    kfree(ee);
 }
 
 void do_cmd_setTimeout(char* msg, char* sec)
