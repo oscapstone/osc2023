@@ -1,9 +1,9 @@
-#include "heap.h"
+#include "memory.h"
 
 extern char _heap_top;
 static char* htop_ptr = &_heap_top;
 
-void* kmalloc(unsigned int size) {
+void* s_allocator(unsigned int size) {
     // -> htop_ptr
     // htop_ptr + 0x02:  heap_block size
     // htop_ptr + 0x10 ~ htop_ptr + 0x10 * k:
@@ -19,6 +19,6 @@ void* kmalloc(unsigned int size) {
     return r;
 }
 
-void free(void* ptr) {
+void s_free(void* ptr) {
     // TBD
 }

@@ -1,6 +1,6 @@
 #include "timer.h"
 #include "uart1.h"
-#include "heap.h"
+#include "memory.h"
 #include "u_string.h"
 
 #define STR(x) #x
@@ -43,8 +43,8 @@ void core_timer_handler(){
 
 void timer_event_callback(timer_event_t * timer_event){
     list_del_entry((struct list_head*)timer_event); // delete the event in queue
-    free(timer_event->args);                        // free the event's space
-    free(timer_event);
+    s_free(timer_event->args);                        // free the event's space
+    s_free(timer_event);
     ((void (*)(char*))timer_event-> callback)(timer_event->args);  // call the event
 
     // set queue linked list to next time event if it exists
@@ -70,9 +70,9 @@ void timer_set2sAlert(char* str)
 
 
 void add_timer(void *callback, unsigned long long timeout, char* args){
-    timer_event_t* the_timer_event = kmalloc(sizeof(timer_event_t)); // free by timer_event_callback
+    timer_event_t* the_timer_event = s_allocator(sizeof(timer_event_t)); // free by timer_event_callback
     // store all the related information in timer_event
-    the_timer_event->args = kmalloc(strlen(args)+1);
+    the_timer_event->args = s_allocator(strlen(args)+1);
     strcpy(the_timer_event -> args,args);
     the_timer_event->interrupt_time = get_tick_plus_s(timeout);
     the_timer_event->callback = callback;

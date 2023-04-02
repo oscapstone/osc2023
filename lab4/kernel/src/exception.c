@@ -3,7 +3,7 @@
 #include "uart1.h"
 #include "exception.h"
 #include "timer.h"
-#include "heap.h"
+#include "memory.h"
 
 // DAIF, Interrupt Mask Bits
 void el1_interrupt_enable(){
@@ -106,7 +106,7 @@ void irqtask_list_init()
 
 
 void irqtask_add(void *task_function,unsigned long long priority){
-    irqtask_t *the_task = kmalloc(sizeof(irqtask_t)); // free by irq_tasl_run_preemptive()
+    irqtask_t *the_task = s_allocator(sizeof(irqtask_t)); // free by irq_tasl_run_preemptive()
 
     // store all the related information into irqtask node
     // manually copy the device's buffer
@@ -162,7 +162,7 @@ void irqtask_run_preemptive(){
 
         curr_task_priority = prev_task_priority;
         el1_interrupt_enable();
-        free(the_task);
+        s_free(the_task);
     }
 }
 
