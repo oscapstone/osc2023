@@ -112,7 +112,7 @@ set_exception_vector_table:
 exception_handler:
     save_all
 	mov x0, 0
-    // bl default_exception_handler
+    bl default_exception_handler
 	// Do nothing
     load_all
     eret
@@ -153,6 +153,16 @@ curr_syn_eh:
   load_all
   eret
 
+curr_irq_eh:
+  save_all
+  save_exception_reg
+
+  bl irq_handler
+
+  load_exception_reg
+  load_all
+  eret
+
 .align 11				// vector table should be aligned to 0x800
 .global exception_vector_table
 exception_vector_table:
@@ -169,7 +179,7 @@ exception_vector_table:
 	// Exception from the current EL while using SP_ELx 
 	b curr_syn_eh
   	.align 7
-	b l64_irq_eh
+	b curr_irq_eh
 	.align 7
 	b exception_handler
 	.align 7

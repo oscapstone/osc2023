@@ -271,16 +271,11 @@ void uart_irq_handler(){
 
     // Transmit holding register empty
     if(iir & 0x02){
-        /* if head equals to tail ==> means the write buffer is empty.
-           Then we need to disable transmit interrupt*/
-        if(w_head == w_tail){
-            // uint32 ier = get32(AUX_MU_IER_REG);
-            // ier &= ~(0x02);
-            // put32(AUX_MU_IER_REG, ier);
-        }
+        /* if head equals to tail ==> means the write buffer is empty. */
+
         /* if head not equals to tail ==> means write buffer is not empty
            Then we need to write the buffer to IO register and move the buffer pointer backward*/
-        else{
+        if(w_head != w_tail){
             put32(AUX_MU_IO_REG, w_buffer[w_head]);
             w_head = (w_head+1)%BUFSIZE;
         }
