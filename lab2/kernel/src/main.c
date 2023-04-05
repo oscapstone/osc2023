@@ -64,7 +64,12 @@ void main()
                 input();       		
   		initrd_cat(buffer);
 	} else if (strncmp(buffer, "alloc", 5)==0) {
-		malloc(8);
+		char *alloc = malloc(8);
+		uart_puts("8 bytes allocated, starts from address: \n");
+    		uart_hex((unsigned int)alloc);
+    		uart_puts("\n");
+	} else {
+		uart_puts("Command not found\r\n");
 	}
     }
 }

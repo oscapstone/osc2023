@@ -1,18 +1,56 @@
 #include "gpio.h"
+#include "uart.h"
+#include "interrupt.h"
 
-/* Auxilary mini UART registers */
-#define AUX_ENABLE      ((volatile unsigned int*)(MMIO_BASE+0x00215004))
-#define AUX_MU_IO       ((volatile unsigned int*)(MMIO_BASE+0x00215040))
-#define AUX_MU_IER      ((volatile unsigned int*)(MMIO_BASE+0x00215044))
-#define AUX_MU_IIR      ((volatile unsigned int*)(MMIO_BASE+0x00215048))
-#define AUX_MU_LCR      ((volatile unsigned int*)(MMIO_BASE+0x0021504C))
-#define AUX_MU_MCR      ((volatile unsigned int*)(MMIO_BASE+0x00215050))
-#define AUX_MU_LSR      ((volatile unsigned int*)(MMIO_BASE+0x00215054))
-#define AUX_MU_MSR      ((volatile unsigned int*)(MMIO_BASE+0x00215058))
-#define AUX_MU_SCRATCH  ((volatile unsigned int*)(MMIO_BASE+0x0021505C))
-#define AUX_MU_CNTL     ((volatile unsigned int*)(MMIO_BASE+0x00215060))
-#define AUX_MU_STAT     ((volatile unsigned int*)(MMIO_BASE+0x00215064))
-#define AUX_MU_BAUD     ((volatile unsigned int*)(MMIO_BASE+0x00215068))
+#define max_len 256
+
+static char read_buf[max_len];
+static char write_buf[max_len];
+static int rx = 0;
+static int tx = 0;
+static int count;
+
+int uart_receive_handler(){
+	uart_puts("receive\n");
+	if(rx >= max_len - 1)
+		rx %= max_len;
+  	read_buf[rx++] = (char)(*AUX_MU_IO);
+	return 0;
+}
+
+int uart_transmit_handler(){
+	uart_puts("transmit\n");
+	if(tx >= 0) {
+		*AUX_MU_IO = write_buf[count++];     // Write to buffer
+        tx--;
+    }
+	else
+  		*AUX_MU_IER &= 0x01;    // Transmition done disable transmit interrupt. 
+	return 0;
+}
+
+int uart_a_puts(const char* str, int len){
+	if(len <= 0)
+		return 1;
+	tx = len;
+    count = 0;
+	for(int i = 0; i < len; i++){
+		write_buf[i] = str[i];
+	}
+	*AUX_MU_IER |= 0x03;		// Enable Tx interrupt.
+	return 0;
+}
+
+int uart_a_gets(char* str, int len) {
+	if(len <= 0)
+		return 1;
+	for(int i = 0; i < rx && i < len; i++){
+		str[i] = read_buf[i];
+	}
+	rx = 0;
+	return 0;
+}
+
 
 /**
  * Set baud rate and characteristics (115200 8N1) and map to GPIO
@@ -33,11 +71,11 @@ void uart_init()
 
     *GPPUDCLK0 = 0;        // flush GPIO setup
     /* initialize UART */
-    *AUX_ENABLE |=1;       // enable UART1, AUX mini uart
+    *AUX_ENABLE |= 1;       // enable UART1, AUX mini uart
     *AUX_MU_CNTL = 0;
     *AUX_MU_LCR = 3;       // 8 bits
     *AUX_MU_MCR = 0;
-    *AUX_MU_IER = 0;
+    *AUX_MU_IER = 0x3;
     *AUX_MU_IIR = 0xc6;    // disable interrupts
     *AUX_MU_BAUD = 270;    // 115200 baud
     *AUX_MU_CNTL = 3;      // enable Tx, Rx
@@ -83,13 +121,13 @@ void uart_puts(char *s) {
     }
 }
 
-void uart_putsn(char *s, int n) {
-	  while (n-- > 0) {
-    		  if (*s == '\n') {
-		      uart_send('\r');
-	        }
-	          uart_send(*s++);
-	    }
+void uart_putsn(char *s, int n) {                               
+    while (n-- > 0) {                                             
+        if (*s == '\n') {
+            uart_send('\r');
+        }                                                       
+        uart_send(*s++);                                
+    }
 }
 
 // Display a binary value in hexadecimal
