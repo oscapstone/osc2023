@@ -2,11 +2,19 @@
 #include "u_list.h"
 #include "uart1.h"
 #include "exception.h"
+#include "dtb.h"
 
-// ------ Lab2 ------
-extern char _heap_top;
+extern char  _heap_top;
 static char* htop_ptr = &_heap_top;
 
+extern char  _start;
+extern char  _end;
+extern char  _stack_top;
+extern char* CPIO_DEFAULT_START;
+extern char* CPIO_DEFAULT_END;
+extern char* dtb_ptr;
+
+// ------ Lab2 ------
 void* s_allocator(unsigned int size) {
     // -> htop_ptr
     // htop_ptr + 0x02:  heap_block size
@@ -28,14 +36,16 @@ void s_free(void* ptr) {
 }
 
 // ------ Lab4 ------
-static frame_t            frame_array[MAX_PAGES] = {0};
+static frame_t*           frame_array;
 static list_head_t        frame_freelist[FRAME_MAX_IDX];
 static list_head_t        cache_list[CACHE_MAX_IDX];
 
 void init_allocator()
 {
+    frame_array = s_allocator(BUDDY_MEMORY_PAGE_COUNT * sizeof(frame_t));
+
     // init frame_array
-    for (int i = 0; i < MAX_PAGES; i++)
+    for (int i = 0; i < BUDDY_MEMORY_PAGE_COUNT; i++)
     {
         if (i % (1 << FRAME_IDX_FINAL) == 0)
         {
@@ -56,7 +66,7 @@ void init_allocator()
         INIT_LIST_HEAD(&cache_list[i]);
     }
 
-    for (int i = 0; i < MAX_PAGES; i++)
+    for (int i = 0; i < BUDDY_MEMORY_PAGE_COUNT; i++)
     {
         //init listhead for each frame
         INIT_LIST_HEAD(&frame_array[i].listhead);
@@ -69,6 +79,21 @@ void init_allocator()
             list_add(&frame_array[i].listhead, &frame_freelist[FRAME_IDX_FINAL]);
         }
     }
+
+    /* should reserve these memory region
+    Spin tables for multicore boot (0x0000 - 0x1000)
+    Kernel image in the physical memory
+    Initramfs
+    Devicetree (Optional, if you have implement it)
+    Your simple allocator (startup allocator)
+    stack
+    */
+    uart_sendline("\r\n* Startup Allocation *\r\n");
+    uart_sendline("buddy system: usable memory region: 0x%x ~ 0x%x\n", BUDDY_MEMORY_BASE, BUDDY_MEMORY_BASE + BUDDY_MEMORY_PAGE_COUNT * PAGESIZE);
+    dtb_find_and_store_reserved_memory(); // find spin tables in dtb
+    memory_reserve((unsigned long long)&_start, (unsigned long long)&_end); // kernel
+    memory_reserve((unsigned long long)&_heap_top, (unsigned long long)&_stack_top);  // heap & stack -> simple allocator
+    memory_reserve((unsigned long long)CPIO_DEFAULT_START, (unsigned long long)CPIO_DEFAULT_END);
 }
 
 //smallest 4K
@@ -289,4 +314,48 @@ void kfree(void *ptr)
         return;
     }
     cache_free(ptr);
+}
+
+void memory_reserve(unsigned long long start, unsigned long long end)
+{
+    start -= start % PAGESIZE; // floor (align 0x1000)
+    end = end % PAGESIZE ? end + PAGESIZE - (end % PAGESIZE) : end; // ceiling (align 0x1000)
+
+    uart_sendline("Reserved Memory: ");
+    uart_sendline("start 0x%x ~ ", start);
+    uart_sendline("end 0x%x\r\n",end);
+
+    //delete page from freelist
+    for (int order = FRAME_IDX_FINAL; order >= 0; order--)
+    {
+        list_head_t *pos;
+        list_for_each(pos, &frame_freelist[order])
+        {
+            unsigned long long pagestart = ((frame_t *)pos)->idx * PAGESIZE + BUDDY_MEMORY_BASE;
+            unsigned long long pageend = pagestart + (PAGESIZE << order);
+
+            if (start <= pagestart && end >= pageend) // if page all in reserved memory -> delete it from freelist
+            {
+                ((frame_t *)pos)->used = FRAME_ALLOCATED;
+                uart_sendline("    [!] Reserved page in 0x%x - 0x%x\n", pagestart, pageend);
+                uart_sendline("        Before\n");
+                dump_page_info();
+                list_del_entry(pos);
+                uart_sendline("        Remove usable block for reserved memory: order %d\r\n", order);
+                uart_sendline("        After\n");
+                dump_page_info();
+            }
+            else if (start >= pageend || end <= pagestart) // no intersection
+            {
+                continue;
+            }
+            else // partial intersection (or reversed memory all in the page)
+            {
+                list_del_entry(pos);
+                list_head_t *temppos = pos -> prev;
+                list_add(&release_redundant((frame_t *)pos)->listhead, &frame_freelist[order - 1]);
+                pos = temppos;
+            }
+        }
+    }
 }

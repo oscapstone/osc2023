@@ -13,7 +13,7 @@
 #define USTACK_SIZE 0x10000
 
 extern char* dtb_ptr;
-void* CPIO_DEFAULT_PLACE;
+extern void* CPIO_DEFAULT_START;
 
 struct CLI_CMDS cmd_list[CLI_MAX_CMD]=
 {
@@ -100,7 +100,7 @@ void do_cmd_cat(char* filepath)
     char* c_filepath;
     char* c_filedata;
     unsigned int c_filesize;
-    struct cpio_newc_header *header_ptr = CPIO_DEFAULT_PLACE;
+    struct cpio_newc_header *header_ptr = CPIO_DEFAULT_START;
 
     while(header_ptr!=0)
     {
@@ -144,7 +144,7 @@ void do_cmd_exec(char* filepath)
     char* c_filepath;
     char* c_filedata;
     unsigned int c_filesize;
-    struct cpio_newc_header *header_ptr = CPIO_DEFAULT_PLACE;
+    struct cpio_newc_header *header_ptr = CPIO_DEFAULT_START;
 
     while(header_ptr!=0)
     {
@@ -240,7 +240,7 @@ void do_cmd_ls(char* workdir)
     char* c_filepath;
     char* c_filedata;
     unsigned int c_filesize;
-    struct cpio_newc_header *header_ptr = CPIO_DEFAULT_PLACE;
+    struct cpio_newc_header *header_ptr = CPIO_DEFAULT_START;
 
     while(header_ptr!=0)
     {

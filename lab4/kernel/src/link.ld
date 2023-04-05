@@ -5,7 +5,7 @@ _heap_stack_size = 8M;
 #            text, rodata, bss
 #            heap+stack // simple allocator
 # 0x880000   _end
-# 0x3000000  bootloader // _dtb is somewhere in here
+# 0x3000000  bootloader
 # 0x3100000  _end
 # 0x8000000  initramfs
 # 0x10000000 buddy_system
@@ -33,5 +33,4 @@ SECTIONS
         _stack_top = .;
     }
     _end = .;
-
 }
