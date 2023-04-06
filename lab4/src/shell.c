@@ -6,6 +6,7 @@
 #include "to_EL0.h"
 #include "check_interrupt.h"
 #include "timer.h"
+#include "buddy.h"
 
 void shell_input(char* command)
 {
@@ -105,6 +106,14 @@ void shell_option(char* command,char* ramdisk)
 		sleep(func,12);											//time will end in (start time + 12) second later
 		func = disable_interrupt;
 		sleep(func,12);											//interrupt mask set
+	}
+	else if(!strcmp(command,"buddy"))
+	{
+		init_buddy();
+		page_alloc(52);			//52KB -> 16 page
+		page_alloc(12);			//12KB ->  4 page
+		page_alloc(52);
+		show_page();
 	}
 	else
 	{
