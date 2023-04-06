@@ -9,7 +9,7 @@ void  s_free(void* ptr);
 
 /* Lab4 */
 #define BUDDY_MEMORY_BASE       0x0     // 0x10000000 - 0x20000000 (SPEC) -> Advanced #3 for all memory region
-#define BUDDY_MEMORY_PAGE_COUNT 0x3C000 // let BUDDY_MEMORY use 0x0 ~ 0x3C000000
+#define BUDDY_MEMORY_PAGE_COUNT 0x3C000 // let BUDDY_MEMORY use 0x0 ~ 0x3C000000 (SPEC)
 #define PAGESIZE    0x1000     // 4KB
 #define MAX_PAGES   0x10000    // 65536 (Entries), PAGESIZE * MAX_PAGES = 0x10000000 (SPEC)
 
@@ -47,10 +47,10 @@ typedef struct frame
     unsigned int idx;
 } frame_t;
 
-void init_allocator();
+void     init_allocator();
 frame_t *release_redundant(frame_t *frame);
 frame_t *get_buddy(frame_t *frame);
-int coalesce(frame_t *frame_ptr);
+int      coalesce(frame_t *frame_ptr);
 
 void dump_page_info();
 void dump_cache_info();

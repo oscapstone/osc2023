@@ -36,9 +36,9 @@ void s_free(void* ptr) {
 }
 
 // ------ Lab4 ------
-static frame_t*           frame_array;
-static list_head_t        frame_freelist[FRAME_MAX_IDX];
-static list_head_t        cache_list[CACHE_MAX_IDX];
+static frame_t*           frame_array;                    // store memory's statement and page's corresponding index
+static list_head_t        frame_freelist[FRAME_MAX_IDX];  // store available block for page
+static list_head_t        cache_list[CACHE_MAX_IDX];      // store available block for cache
 
 void init_allocator()
 {
@@ -68,25 +68,24 @@ void init_allocator()
 
     for (int i = 0; i < BUDDY_MEMORY_PAGE_COUNT; i++)
     {
-        //init listhead for each frame
+        // init listhead for each frame
         INIT_LIST_HEAD(&frame_array[i].listhead);
         frame_array[i].idx = i;
         frame_array[i].cache_order = CACHE_NONE;
 
-        //add init frame into freelist
+        // add init frame (FRAME_IDX_FINAL) into freelist
         if (i % (1 << FRAME_IDX_FINAL) == 0)
         {
             list_add(&frame_array[i].listhead, &frame_freelist[FRAME_IDX_FINAL]);
         }
     }
 
-    /* should reserve these memory region
+    /* Startup reserving the following region:
     Spin tables for multicore boot (0x0000 - 0x1000)
-    Kernel image in the physical memory
-    Initramfs
     Devicetree (Optional, if you have implement it)
-    Your simple allocator (startup allocator)
-    stack
+    Kernel image in the physical memory
+    Your simple allocator (startup allocator) (Stack + Heap in my case)
+    Initramfs
     */
     uart_sendline("\r\n* Startup Allocation *\r\n");
     uart_sendline("buddy system: usable memory region: 0x%x ~ 0x%x\n", BUDDY_MEMORY_BASE, BUDDY_MEMORY_BASE + BUDDY_MEMORY_PAGE_COUNT * PAGESIZE);
@@ -96,16 +95,14 @@ void init_allocator()
     memory_reserve((unsigned long long)CPIO_DEFAULT_START, (unsigned long long)CPIO_DEFAULT_END);
 }
 
-//smallest 4K
 void* page_malloc(unsigned int size)
 {
     uart_sendline("    [+] Allocate page - size : %d(0x%x)\r\n", size, size);
     uart_sendline("        Before\r\n");
     dump_page_info();
 
-    // get real val size
-    //int allocsize;
     int val;
+    // turn size into minimum 4KB * 2**val
     for (int i = FRAME_IDX_0; i <= FRAME_IDX_FINAL; i++)
     {
 
@@ -132,13 +129,13 @@ void* page_malloc(unsigned int size)
         if (!list_empty(&frame_freelist[target_val]))
             break;
     }
-
     if (target_val > FRAME_IDX_FINAL)
     {
         uart_puts("[!] No available frame in freelist, page_malloc ERROR!!!!\r\n");
         return (void*)0;
     }
-    // get the frame from freelist
+
+    // get the available frame from freelist
     frame_t *target_frame_ptr = (frame_t*)frame_freelist[target_val].next;
     list_del_entry((struct list_head *)target_frame_ptr);
 
@@ -147,6 +144,8 @@ void* page_malloc(unsigned int size)
     {
         release_redundant(target_frame_ptr);
     }
+
+    // Allocate it
     target_frame_ptr->used = FRAME_ALLOCATED;
     uart_sendline("        physical address : 0x%x\n", BUDDY_MEMORY_BASE + (PAGESIZE*(target_frame_ptr->idx)));
     uart_sendline("        After\r\n");
@@ -157,7 +156,7 @@ void* page_malloc(unsigned int size)
 
 void page_free(void* ptr)
 {
-    frame_t *target_frame_ptr = &frame_array[((unsigned long long)ptr - BUDDY_MEMORY_BASE) >> 12]; // MAX_PAGES * 64bit -> 0x1000 * 0x10000000
+    frame_t *target_frame_ptr = &frame_array[((unsigned long long)ptr - BUDDY_MEMORY_BASE) >> 12]; // PAGESIZE * Available Region -> 0x1000 * 0x10000000 // SPEC #1, #2
     uart_sendline("    [+] Free page: 0x%x, val = %d\r\n",ptr, target_frame_ptr->val);
     uart_sendline("        Before\r\n");
     dump_page_info();
@@ -170,6 +169,7 @@ void page_free(void* ptr)
 
 frame_t* release_redundant(frame_t *frame)
 {
+    // order -1 -> add its buddy to free list (frame itself will be used in master function)
     frame->val -= 1;
     frame_t *buddyptr = get_buddy(frame);
     buddyptr->val = frame->val;
@@ -235,7 +235,7 @@ void dump_cache_info()
 
 void page2caches(int order)
 {
-    //make caches of the order from a page
+    // make caches from a smallest-size page
     char *page = page_malloc(PAGESIZE);
     frame_t *pageframe_ptr = &frame_array[((unsigned long long)page - BUDDY_MEMORY_BASE) >> 12];
     pageframe_ptr->cache_order = order;
@@ -254,12 +254,15 @@ void* cache_malloc(unsigned int size)
     uart_sendline("[+] Allocate cache - size : %d(0x%x)\r\n", size, size);
     uart_sendline("    Before\r\n");
     dump_cache_info();
+
+    // turn size into cache order: 32B * 2**order
     int order;
     for (int i = CACHE_IDX_0; i <= CACHE_IDX_FINAL; i++)
     {
         if (size <= (32 << i)) { order = i; break; }
     }
 
+    // if no available cache in list, assign one page for it
     if (list_empty(&cache_list[order]))
     {
         page2caches(order);
@@ -291,12 +294,13 @@ void *kmalloc(unsigned int size)
     uart_sendline("================================\r\n");
     uart_sendline("[+] Request kmalloc size: %d\r\n", size);
     uart_sendline("================================\r\n");
-    //For page
+    // if size is larger than cache size, go for page
     if (size > (32 << CACHE_IDX_FINAL))
     {
         void *r = page_malloc(size);
         return r;
     }
+    // go for cache
     void *r = cache_malloc(size);
     return r;
 }
@@ -307,12 +311,13 @@ void kfree(void *ptr)
     uart_sendline("==========================\r\n");
     uart_sendline("[+] Request kfree 0x%x\r\n", ptr);
     uart_sendline("==========================\r\n");
-    //For page
+    // If no cache assigned, go for page
     if ((unsigned long long)ptr % PAGESIZE == 0 && frame_array[((unsigned long long)ptr - BUDDY_MEMORY_BASE) >> 12].cache_order == CACHE_NONE)
     {
         page_free(ptr);
         return;
     }
+    // go for cache
     cache_free(ptr);
 }
 
@@ -325,7 +330,7 @@ void memory_reserve(unsigned long long start, unsigned long long end)
     uart_sendline("start 0x%x ~ ", start);
     uart_sendline("end 0x%x\r\n",end);
 
-    //delete page from freelist
+    // delete page from free list
     for (int order = FRAME_IDX_FINAL; order >= 0; order--)
     {
         list_head_t *pos;
@@ -349,7 +354,7 @@ void memory_reserve(unsigned long long start, unsigned long long end)
             {
                 continue;
             }
-            else // partial intersection (or reversed memory all in the page)
+            else // partial intersection, separate the page into smaller size.
             {
                 list_del_entry(pos);
                 list_head_t *temppos = pos -> prev;
