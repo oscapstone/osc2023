@@ -1,0 +1,9 @@
+qemu-system-aarch64 -M raspi3 -kernel kernel8.img -serial null -serial stdio -display none -initrd initramfs.cpio -dtb bcm2710-rpi-3-b-plus.dtb -d int
+Board model: 00000000
+Board revision: 00A02082
+Serial number: 0000000000000000
+ARM memory base address: 00000000
+ARM memory size: 3C000000
+initramfs_addr at 0000000008000000
+Starting shell...
+# 
