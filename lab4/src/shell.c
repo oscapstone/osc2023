@@ -113,6 +113,9 @@ void shell_option(char* command,char* ramdisk)
 		page_alloc(52);			//52KB -> 16 page
 		page_alloc(12);			//12KB ->  4 page
 		page_alloc(52);
+		page_free(16);
+//		page_alloc(12);
+		page_free(0);
 		show_page();
 	}
 	else
