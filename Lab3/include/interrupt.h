@@ -30,6 +30,7 @@ void enable_interrupt();
 void disable_interrupt();
 void irq_handler(unsigned long long x0);
 void invalid_exception_handler(unsigned long long x0);
+void sync_el0_64_handler();
 void set_cpacr_el1();
 
 #endif

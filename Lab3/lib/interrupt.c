@@ -33,11 +33,11 @@ void disable_uart_rx_interrupt() {
 }
 
 void enable_interrupt() {
-    asm volatile("msr DAIFSet, 0xf");
+    asm volatile("msr DAIFClr, 0xf");
 }
 
 void disable_interrupt() {
-    asm volatile("msr DAIFClr, 0xf");
+    asm volatile("msr DAIFSet, 0xf");
 }
 
 void irq_handler(unsigned long long x0) {
@@ -68,6 +68,20 @@ void irq_handler(unsigned long long x0) {
 
 void invalid_exception_handler(unsigned long long x0) {
     uart_printf("invalid handler 0x%x\n", x0);
+}
+
+void sync_el0_64_handler() {
+    unsigned long long spsr, elr, esr;
+    asm volatile(
+        "mrs x1, spsr_el1\n\t":"=r"(spsr):
+    );
+    asm volatile(
+        "mrs x1, elr_el1\n\t":"=r"(elr):
+    );
+    asm volatile(
+        "mrs x1, esr_el1 \n\t":"=r"(esr):
+    );
+    uart_printf("spsr_el1: %d, elr_el1: %d, esr_el1: %d", spsr, elr, esr);
 }
 
 // output

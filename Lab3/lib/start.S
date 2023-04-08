@@ -43,20 +43,7 @@ kernel:
     bl      main
     // if fail
     b       halt
-
-sync_el0_64_handler:
-    mov x1, 0
-    b sync_el0_64_handler_loop1
-
-sync_el0_64_handler_loop1:
-    add x1, x1, 1
-    svc 0
-    cmp x1, 5
-    blt sync_el0_64_handler_loop2
-
-sync_el0_64_handler_loop2:
-    b sync_el0_64_handler_loop1
-
+ 
 .macro save_all // .macro 是像是 define 的東西
     sub sp, sp, 32 * 12 // 把sp往下移，清出一段空間因為要放register的值
     stp x0, x1, [sp ,16 * 0] // 一次把兩個register的值放進stack，一個register 8 byte，所以指定offset以16為單位

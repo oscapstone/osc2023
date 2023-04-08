@@ -127,27 +127,32 @@ int ls(char *working_dir)
 }
 
 /* timer */
+unsigned long long get_clock_freq() {
+    unsigned long long tick_freq;
+    asm volatile(
+        "mrs %0, cntfrq_el0\n\t":"=r"(tick_freq)
+    );
+    return tick_freq;
+}
+
 unsigned long long get_clock_time() {
     unsigned long long current_tick;
     asm volatile(
-        "mrs x1, cntpct_el0\n\t":"=r"(current_tick):
+        "mrs %0, cntpct_el0\n\t":"=r"(current_tick)
     );
 
-    unsigned long long tick_freq;
-    asm volatile(
-        "mrs x1, cntfrq_el0\n\t":"=r"(current_tick):
-    );
+    unsigned long long tick_freq = get_clock_freq();
 
     return current_tick / tick_freq;
 }
 
 void print_timeout(unsigned long long sec) {
-    uart_printf("Set Timeout %d sec.\n", sec);
+    uart_printf("Set Timeout %d sec.\n", sec / get_clock_freq());
 }
 
 void twoSec(unsigned long long sec) {
     uart_printf("Current second: %d\n", get_clock_time());
-    add_timer(twoSec, 2); // continuously set timeout 2 sec
+    add_timer(twoSec, 2 * get_clock_freq()); // continuously set timeout 2 sec
 }
 
 /* shell */
@@ -208,15 +213,21 @@ void shell(void) {
             cat(command + 4);
         }
         // Lab 3
-        else if (strncmp("exec", command, 4) == 0) {
-            exec_file(command + 5);
+        else if (strcmp("exec", command) == 0) {
+            exec_file("exec.o");
         }
-        else if (strncmp("asyncPut", command, 8) == 0) {
-            uart_async_putc(command + 9);
+        else if (strcmp("async", command) == 0) {
+            char c = 'a';
+            uart_printf("Press `q` to quit\n");
+            while (c != 'q') {
+                c = uart_async_getc();
+                uart_async_putc(c);
+            }
+            uart_printf("\n");
         }
         else if (strncmp("setTimeout", command, 10) == 0) {
             int sec = atoi(command + 11);
-            add_timer(print_timeout, sec);
+            add_timer(print_timeout, sec * get_clock_freq());
         }
         else if (strcmp("twoSec", command) == 0) {
             add_timer(twoSec, 2);
