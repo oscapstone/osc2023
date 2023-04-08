@@ -15,6 +15,8 @@ _start:
     b       1b
 2:  // cpu id == 0
     // stack operation is "Full Descending" mode. Need set the top of the stack to the top of the stack space
+    bl from_el2_to_el1
+    bl set_exception_vector_table
     ldr x1, =_start
     mov sp, x1
     
@@ -28,6 +30,7 @@ _start:
     cbnz    w2, 3b
 
     // jump to C code, should not return
-4:  bl      main
+4:  
+    bl      main
     // for failsafe, halt this core too
     b       1b
