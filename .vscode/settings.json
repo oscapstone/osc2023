@@ -1,0 +1,9 @@
+{
+    "files.associations": {
+        "malloc.h": "c",
+        "uart.h": "c",
+        "list.h": "c",
+        "timer.h": "c"
+    },
+    "C_Cpp.errorSquiggles": "disabled"
+}

@@ -8,7 +8,7 @@ def sendKernelImg(s, f):
     file_stats = os.stat(f)
     # Send kernel size
     tty.write(str(file_stats.st_size).encode('utf-8'))
-    tty.write('\n'.encode('utf-8'))
+    tty.write('\n'.encode('utf-8')) # End by \n
     # Send kernel image byte-by-byte
     with open(f, "rb") as fp:
         byte = fp.read(1)
@@ -16,7 +16,6 @@ def sendKernelImg(s, f):
             tty.write(byte)
             byte = fp.read(1)
             time.sleep(0.0001)
-    # tty.write('\n'.encode('utf-8'))
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

@@ -44,7 +44,7 @@ volatile unsigned int  __attribute__((aligned(16))) mbox[36];
  */
 int mbox_call(unsigned char ch)
 {
-    unsigned int r = (((unsigned int)((unsigned long)&mbox)&~0xF) | (ch&0xF));
+    unsigned int r = (((unsigned int)((unsigned long)&mbox)&~0xF) | (ch&0xF)); // mox: setting, ch: channel
     /* wait until we can write to the mailbox */
     do{
         asm volatile("nop");
