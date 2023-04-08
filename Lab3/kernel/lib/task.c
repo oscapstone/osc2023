@@ -24,7 +24,7 @@ void add_task(task_callback_t callback, int priority) {
 }
 
 void pop_task() {
-    if (!list_empty(task_head)) {
+    while (!list_empty(task_head)) {
         task_t * first = (task_t *) list_entry(task_head->next, task_t, listhead);
         list_del_entry(task_head->next);
         first->callback();
