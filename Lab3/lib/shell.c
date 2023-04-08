@@ -5,6 +5,7 @@
 #include "cpio.h"
 #include "exec.h"
 #include "timer.h"
+#include "interrupt.h"
 
 extern char *cpio_start;
 
@@ -209,6 +210,9 @@ void shell(void) {
         // Lab 3
         else if (strncmp("exec", command, 4) == 0) {
             exec_file(command + 5);
+        }
+        else if (strncmp("asyncPut", command, 8) == 0) {
+            uart_async_putc(command + 9);
         }
         else if (strncmp("setTimeout", command, 10) == 0) {
             int sec = atoi(command + 11);

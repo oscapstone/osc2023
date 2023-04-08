@@ -7,7 +7,7 @@ char *__heap_top = (char *) &__heap_start;
 
 void *simple_malloc(unsigned long size)
 {
-    uart_printf("%x\n", __heap_top);
+    // uart_printf("malloc %x\n", __heap_top);
     char *r = __heap_top;
     __heap_top += size;
     return r;

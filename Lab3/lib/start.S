@@ -9,7 +9,7 @@ _start:
     cbz     x1, master
     // cpu id > 0, stop
 
-halt:  
+halt:
     wfe
     b       halt
 

@@ -20,8 +20,8 @@ void fdt_traverse(dtb_callback callback)
 
     if (endian_big2little(header->magic) != 0xD00DFEED)
     {
-        uart_printf("fdt_traverse: wrong magic in fdt_traverse\n");
-        uart_printf("expect: 0XD00DFEED, get: %x\n", endian_big2little(header->magic));
+        // uart_printf("fdt_traverse: wrong magic in fdt_traverse\n");
+        // uart_printf("expect: 0XD00DFEED, get: %x\n", endian_big2little(header->magic));
         return;
     }
 
