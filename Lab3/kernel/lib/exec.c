@@ -21,15 +21,15 @@ int exec_file(char *thefilepath)
     char* filepath;
     char* filedata;
     unsigned int filesize;
-    struct cpio_newc_header *header_pointer = (struct cpio_newc_header *)cpio_start;
+    struct cpio_newc_header *header_pointer = (struct cpio_newc_header *)header_pointer;
 
-    while(header_pointer!=0)
+    while (header_pointer != 0)
     {
         int error = cpio_newc_parse_header(header_pointer,&filepath,&filesize,&filedata,&header_pointer);
         //if parse header error
         if(error)
         {
-            uart_printf("error");
+            uart_printf("error\n");
             break;
         }
 
@@ -42,7 +42,7 @@ int exec_file(char *thefilepath)
         //if this is TRAILER!!! (last of file)
         if (header_pointer == 0)
         {
-            uart_printf("execfile: %s: No such file or directory\n", thefilepath);
+            uart_printf("exec_file: %s: No such file or directory\n", thefilepath);
             return -1;
         }
     }

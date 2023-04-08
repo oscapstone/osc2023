@@ -29,10 +29,10 @@ $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
 	aarch64-linux-gnu-gcc -o $@ $(CFLAGS) -c $<
 
 run: $(IMAGE).img 
-	qemu-system-aarch64 -machine $(MACHINE) -kernel $(IMAGE).img -display none -serial null -serial stdio
+	qemu-system-aarch64 -machine $(MACHINE) -kernel $(IMAGE).img -initrd $(CPIO_FILE) -dtb $(DTB_FILE) -display none -serial null -serial stdio
 
 dbg: $(IMAGE).img 
-	qemu-system-aarch64 -machine $(MACHINE) -kernel $(IMAGE).img -display none -serial null -serial stdio -s -S
+	qemu-system-aarch64 -machine $(MACHINE) -kernel $(IMAGE).img -initrd $(CPIO_FILE) -dtb $(DTB_FILE) -display none -serial null -serial stdio -s -S
 
 clean:
 	rm -rf $(OBJ_DIR) *.img *.elf */*.elf
