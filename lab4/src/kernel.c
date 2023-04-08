@@ -4,6 +4,7 @@
 #include "string.h"
 #include "fdt.h"
 #include "check_interrupt.h"
+#include "buddy.h"
 
 extern void set_exception_vector_table();
 static uint32_t ramdisk;
@@ -33,7 +34,9 @@ void kernel_main(void* dtb)		//x0 is the first argument
 	fdt_api((char*)dtb,func,"linux,initrd-start");	//find initrd-start property & get its value
 	
 	set_exception_vector_table();					//set vbar_el1 for exception & interrupt
-   
+   	
+	init_buddy();
+
 	while (1)
     {
 		char command[100];

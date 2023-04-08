@@ -42,6 +42,9 @@ void shell_option(char* command,char* ramdisk)
 		uart_send_string("run\t\t: run an function in EL0\r\n");
 		uart_send_string("async_io\t\t: show async_io process\r\n");
 		uart_send_string("timer\t\t: show timer-multiplexing process\r\n");
+		uart_send_string("p_alloc\t\t: alloc page by KB\r\n");
+		uart_send_string("p_free\t\t: free page by index\r\n");
+		uart_send_string("p_show\t\t: show page_array log\r\n");
 	}
 	else if(!strcmp(command,"hello"))
 	{
@@ -107,16 +110,66 @@ void shell_option(char* command,char* ramdisk)
 		func = disable_interrupt;
 		sleep(func,12);											//interrupt mask set
 	}
-	else if(!strcmp(command,"buddy"))
+	else if(!strcmp(command,"p_alloc"))
+	{			
+		uart_send_string("KB you want to allocate : ");
+		char c;
+		int sum = 0;
+		while((c = uart_recv()) != '\n')
+		{
+			sum *= 10;
+			sum += (c-'0');
+			uart_send(c);
+		}
+		uart_send_string("\r\n");
+		page_alloc(sum);
+	}
+	else if(!strcmp(command,"p_free"))
 	{
-		init_buddy();
-		page_alloc(52);			//52KB -> 16 page
-		page_alloc(12);			//12KB ->  4 page
-		page_alloc(52);
-		page_free(16);
-//		page_alloc(12);
-		page_free(0);
+		uart_send_string("index you want to free : ");
+		char c;
+		int sum = 0;
+		while((c = uart_recv()) != '\n')
+		{
+			sum *= 10;
+			sum += (c-'0');
+			uart_send(c);
+		}
+		uart_send_string("\r\n");
+		page_free(sum);
+	}
+	else if(!strcmp(command,"p_show"))
+	{
 		show_page();
+	}
+	else if(!strcmp(command,"reserve"))
+	{
+		char c;
+		uart_send_string("reserve you want to start : ");
+		int start = 0;
+		while((c = uart_recv()) != '\n')
+		{
+			start *= 10;
+			start += (c-'0');
+			uart_send(c);
+		}
+		uart_send_string("\r\n");
+		
+		uart_send_string("reserve you want to end : ");
+		int end = 0;
+		while((c = uart_recv()) != '\n')
+		{
+			end *= 10;
+			end += (c-'0');
+			uart_send(c);
+		}
+		uart_send_string("\r\n");
+
+		memory_reserve(start,end);
+	}
+	else if(!strcmp(command,"r_show"))
+	{
+		show_pool_info();
 	}
 	else
 	{

@@ -135,7 +135,6 @@ int hex_to_int(char *str,int n) //n : number of digits
     return sum;
 }
 
-
 void uart_init()
 {
 	*AUX_ENABLES |= 1;			//enable mini uart , can access to its registers

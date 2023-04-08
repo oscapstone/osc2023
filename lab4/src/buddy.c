@@ -16,28 +16,38 @@ struct page** page_list;
 struct page*  page_array;
 static int page_total = 512/4;	//page_size = 4KB
 
+struct reserve_pool
+{
+	char* start;
+	char* end;
+	struct reserve_pool* next;
+};
+
+struct reserve_pool *res_pool;
+
 void init_buddy()
 {
 	char* buddy_start = (char*)0x10000000;				//can use 0x10000000 ~ 0x20000000
-	char* buddy_end = buddy_start + (page_total * sizeof(struct page));
+	char* buddy_end = buddy_start + (page_total * sizeof(struct page));		//my page size : 24
 	page_array = buddy_start;							//page_array start from buddy_start
-	page_array[0].val = log_2(page_total);				//maximum value -> can use all page_total
+	page_array[0].val = log_2(page_total);				//maximum order -> can use all page_total
 	page_array[0].index = 0;
-	page_array[0].next = null;							//init next is NULL
+	page_array[0].next = null;
 	page_array[0].valid = 1;							//valid = true
 	for(int i=1;i<page_total;i++)
 	{
 		page_array[i].val = -1;							//this page don't have value -> -1
 		page_array[i].index = i;
-		page_array[i].next = null;						//init next is NULL
+		page_array[i].next = null;
 		page_array[i].valid = 1;
 	}
 	page_list = buddy_end + ((MAX_ORDER) * sizeof(struct page*));		//put page_list behind buddy_end
-	page_list[0] = &page_array[0];											//for tmp , no use
+	page_list[0] = &page_array[0];
 	for(int i=1;i<MAX_ORDER;i++)
 	{
-		page_list[i] = null;							//init list -> list have unused space
+		page_list[i] = null;							//unuse order_list
 	}
+	res_pool = null;									//init res_pool
 	return;
 }
 
@@ -181,6 +191,100 @@ void show_page()
 			uart_send_string("\r\n");
 		}
 		pos += size;
+	}
+	return;
+}
+
+char* d_alloc(int size)
+{
+	int kb_need = (size%1024 == 0) ?size/1024 :size/1024+1;			//calculate kb_need
+	struct reserve_pool *tmp = res_pool;
+	while(1)
+	{	
+		char* start = page_alloc(kb_need);							//ask for a page frame
+		while(tmp != null)
+		{
+			if(start >= tmp->start && start <= tmp->end)			//check page frame is not in reserve memory
+			{
+				break;												//need to request another page frame
+			}
+			tmp = tmp->next;
+		}
+		if(tmp == null)												//have check all reserve memory
+		{
+			return start;
+		}
+	}
+	return 0;														//should not be here
+}
+
+void memory_reserve(int start,int end)
+{
+	struct reserve_pool *tmp = res_pool;
+	if(tmp == null)													//no element in res_pool
+	{
+		struct reserve_pool *res = memalloc(sizeof(struct reserve_pool));	//use lab2's memalloc to allocate new space
+		res->start = start;
+		res->end = end;
+		res->next = null;
+		res_pool = res;
+		uart_send_string("start: ");
+		uart_int(start);
+		uart_send_string(" , end:");
+		uart_int(end);
+		uart_send_string(" , have been reserved\r\n");
+		return;
+	}
+	else if(end < tmp->start)										//should put in the list's head
+	{
+		struct reserve_pool *res = memalloc(sizeof(struct reserve_pool));
+		res->start = start;
+		res->end = end;
+		res->next = res_pool;
+		res_pool = res;
+		uart_send_string("start: ");
+		uart_int(start);
+		uart_send_string(" , end:");
+		uart_int(end);
+		uart_send_string(" , have been reserved\r\n");
+		return;
+	}
+	else
+	{
+		while(tmp->next != null)
+		{
+			if(start > tmp->end)
+			{
+				break;
+			}
+			tmp = tmp->next;
+		}
+	}
+	struct reserve_pool *res = memalloc(sizeof(struct reserve_pool));
+	res->start = start;
+	res->end = end;
+	res->next = tmp->next;
+	tmp->next = res;
+	uart_send_string("start: ");
+	uart_int(start);
+	uart_send_string(" , end:");
+	uart_int(end);
+	uart_send_string(" , have been reserved\r\n");
+	return;
+}
+
+void show_pool_info()
+{
+	struct reserve_pool *tmp = res_pool;
+	uart_send_string("reserve pool : \r\n");
+	while(tmp != null)
+	{
+		uart_send_string("start: ");
+		uart_hex(tmp->start);
+		uart_send_string(" , end: ");
+		uart_hex(tmp->end);
+		uart_send_string("\r\n");
+		tmp = tmp->next;
 	}
 	return;
 }
