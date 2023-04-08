@@ -362,7 +362,7 @@ int preserve(void* addr, int size){
 }
 
 void* smalloc(int size){
-	size = size / 4 + size % 4;	// Base 32bits
+	size = size / 4 + (size % 4) ? 1 : 0;	// Base 32bits
 	if(size >= SMEM_MAX || size < 0)
 		return 0;
 	return list_pops(size);

@@ -30,12 +30,17 @@ int main(void *dtb_location) {
   void* sa = smalloc(4);
   void* sb = smalloc(4);
   void* sc = smalloc(16);
+  void* sd = smalloc(15);
   uart_puts("smem test\n");
   uart_puth(sa);
   uart_puts("\n");
   uart_puth(sb);
   uart_puts("\n");
   uart_puth(sc);
+  uart_puts("\n");
+  uart_puth(sd);
+  uart_puts("\n");
+  uart_puth(malloc(1));
   uart_puts("\n");
   set_exception_vector_table();
   //core_timer_enable();
