@@ -214,7 +214,7 @@ void shell(void) {
         }
         // Lab 3
         else if (strcmp("exec", command) == 0) {
-            exec_file("exec.o");
+            exec_file("test");
         }
         else if (strcmp("async", command) == 0) {
             char c = 'a';

@@ -21,7 +21,7 @@ int exec_file(char *thefilepath)
     char* filepath;
     char* filedata;
     unsigned int filesize;
-    struct cpio_newc_header *header_pointer = (struct cpio_newc_header *)header_pointer;
+    struct cpio_newc_header *header_pointer = (struct cpio_newc_header *)cpio_start;
 
     while (header_pointer != 0)
     {

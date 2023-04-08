@@ -73,13 +73,13 @@ void invalid_exception_handler(unsigned long long x0) {
 void sync_el0_64_handler() {
     unsigned long long spsr, elr, esr;
     asm volatile(
-        "mrs x1, spsr_el1\n\t":"=r"(spsr):
+        "mrs %0, spsr_el1\n\t":"=r"(spsr):
     );
     asm volatile(
-        "mrs x1, elr_el1\n\t":"=r"(elr):
+        "mrs %0, elr_el1\n\t":"=r"(elr):
     );
     asm volatile(
-        "mrs x1, esr_el1 \n\t":"=r"(esr):
+        "mrs %0, esr_el1 \n\t":"=r"(esr):
     );
     uart_printf("spsr_el1: %d, elr_el1: %d, esr_el1: %d", spsr, elr, esr);
 }
