@@ -9,7 +9,7 @@
 #define MEM_MAX 7 		// 2^0 -> 2^6 * 4KB
 #define MEM_SIZE 0x3c000	// 0x3c00 0000 / 4KB (0x1000)
 #define FRAME_SIZE 0x1000
-#define SMEM_MAX 5		// 2^0 -> 2^4 * 32 bytes
+#define SMEM_MAX 5		// 2^0 -> 2^4 * 32 bits
 
 typedef struct MEM_NODE{
 	int index;
@@ -17,12 +17,17 @@ typedef struct MEM_NODE{
 	struct MEM_NODE* next;
 }mem_node;
 
+typedef struct SLOT{
+	void* addr;
+	struct SLOT* prev;
+	struct SLOT* next;
+}slot;
 
 /// Page frame allocator
 void *pmalloc(int);
 
 /// Small memory allocator
-void *smalloc(uint64_t);
+void *smalloc(int);
 
 /// Free the page
 // TODO: We should free the page without the accurate memory input.

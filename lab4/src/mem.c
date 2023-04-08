@@ -11,12 +11,14 @@
 // Use -1 to represent Free but belong to others body
 // Use -2 to represent allocated
 static char* mem_arr = 0;
-// Free frame list (array[5])
 static mem_node **free_mem = 0;
+static slot **free_smem = 0;
+
 static int list_add(int, int index);
 static int list_delete(int, int index);
 static int split_buddy(int index, int);
 static int merge_buddy(int index, int v);
+static int gen_slots(int);
 
 /*=================================================================
  * Private function implementation
@@ -164,9 +166,69 @@ static int list_pop(int cnt){
 	return ret;
 }
 
+static int list_adds(int cnt, void* addr){
+	slot* cur = (slot*) malloc(sizeof(slot));
+	cur->addr = addr;
+	if(free_smem[cnt] == NULL){
+		free_smem[cnt] = cur;
+		cur->next = NULL;
+		cur->prev = NULL;
+	}
+	else{
+		cur->next = free_smem[cnt];
+		free_smem[cnt]->prev = cur;
+		free_smem[cnt] = cur;
+	}
+	return 0;
+}
 
+static int list_deletes(int cnt, void* addr){
+	slot* head = free_smem[cnt];
+	slot* cur;
 
+	for(cur = head; cur != NULL; cur = cur->next){
+		if(addr == cur->addr){
+			if(cur == head){
+				free_smem[cnt] = cur->next;
+			}
+			if(cur->next != NULL){
+				cur->next->prev = cur->prev;
+			}
+			if(cur->prev != NULL){
+				cur->prev->next = cur->next;
+			}
+			return 0;
+		}
+	}
+	uart_puth(addr );
+	uart_puti(cnt);
+	uart_puts("Cannot find the target node to delete\n");
+	return 1;
+}
 
+static void* list_pops(int cnt){
+	int ret = free_smem[cnt]->addr;
+	list_deletes(cnt, ret);
+	return ret;
+}
+/*******************************************************************
+ * Generate small memorys by a 4KB frame
+ * support 2^0 -> 2^4 * 32 bits
+ ******************************************************************/
+static int gen_slots(int size){
+	int t = 1;
+	for(int i = 0; i < size; ++i){
+		t *= 2;
+	}
+	uint32_t* mem = (uint32_t*)pmalloc(0);
+	for(int i = 0; i < FRAME_SIZE; i += t){
+		list_adds(size, (void*)(mem + i));
+	}
+	uart_puts("***Slot generate size: ");
+	uart_puti(t * 4);
+	uart_puts(" bytes\n");
+	return 0;
+}
 
 /******************************************************************
  * Page malloc init (buddy system)
@@ -174,6 +236,7 @@ static int list_pop(int cnt){
 int pmalloc_init(void){
 	mem_arr = (char*)malloc(sizeof(char) * MEM_SIZE);
 	free_mem = (mem_node**)malloc(sizeof(mem_node*) * MEM_MAX);
+	free_smem = (slot**)malloc(sizeof(slot*) * SMEM_MAX);
 	int t = 1;
 	if(!mem_arr || !free_mem){
 		uart_puts("Pmalloc Init error!\n");
@@ -191,6 +254,10 @@ int pmalloc_init(void){
 		mem_arr[i] = MEM_MAX - 1;
 		list_add(MEM_MAX - 1, i);
 	}
+	// Generate small memory slots
+	for(int i = 0; i < SMEM_MAX; i++)
+		gen_slots(i);
+
 		
 	return 0;
 }
@@ -294,3 +361,15 @@ int preserve(void* addr, int size){
 	return 0;
 }
 
+void* smalloc(int size){
+	size = size / 4 + size % 4;	// Base 32bits
+	if(size >= SMEM_MAX || size < 0)
+		return 0;
+	return list_pops(size);
+}
+
+/*
+void* sfree(void* addr){
+	return list_delete(size, addr);
+}
+*/

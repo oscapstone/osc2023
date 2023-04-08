@@ -27,6 +27,16 @@ int main(void *dtb_location) {
   pfree(c);
   pfree(b);
   pfree(a);
+  void* sa = smalloc(4);
+  void* sb = smalloc(4);
+  void* sc = smalloc(16);
+  uart_puts("smem test\n");
+  uart_puth(sa);
+  uart_puts("\n");
+  uart_puth(sb);
+  uart_puts("\n");
+  uart_puth(sc);
+  uart_puts("\n");
   set_exception_vector_table();
   //core_timer_enable();
   fdt_find_do(dtb_location, "linux,initrd-start", initrd_fdt_callback);
