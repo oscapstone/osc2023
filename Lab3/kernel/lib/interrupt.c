@@ -81,7 +81,7 @@ void sync_el0_64_handler() {
     asm volatile(
         "mrs %0, esr_el1 \n\t":"=r"(esr):
     );
-    uart_printf("spsr_el1: %d, elr_el1: %d, esr_el1: %d", spsr, elr, esr);
+    uart_printf("spsr_el1: %d, elr_el1: %d, esr_el1: %d\n", spsr, elr, esr);
 }
 
 // output
