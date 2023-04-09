@@ -5,7 +5,7 @@
 #include "dtb.h"
 #include "exception.h"
 #include "timer.h"
-
+#include "stdlib.h"
 char* dtb_ptr;
 
 void main(char* arg){
@@ -16,6 +16,8 @@ void main(char* arg){
 
     uart_init();
     irqtask_list_init();
+    buddy_system_init();
+    mem_init();
     timer_list_init();
 
     uart_interrupt_enable();

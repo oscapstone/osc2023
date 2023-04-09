@@ -91,15 +91,18 @@ void reserve_memory(unsigned long long start, unsigned long long end) {
             uart_puts("\n");
         }
     }
-    int start_page = (start - MEMORY_BASE) / PAGESIZE;
-    int end_page = (end - MEMORY_BASE - 1) / PAGESIZE;
+    // int start_page = (start - MEMORY_BASE) / PAGESIZE;
+    // int end_page = (end - MEMORY_BASE - 1) / PAGESIZE;
+    start -= start % PAGESIZE; // floor (align 0x1000)
+    end = end % PAGESIZE ? end + PAGESIZE - (end % PAGESIZE) : end; // ceiling (align 0x1000)
+
     uart_puts("start_page: ");
-    uart_2hex(start_page);
+    uart_2hex(start);
     uart_puts("\n");
     uart_puts("end_page: ");
-    uart_2hex(end_page);
+    uart_2hex(end);
     uart_puts("\n");
-    for (int i = start_page; i <= end_page; i++) {
+    for (int i = start; i <= end; i++) {
         frame_array[i] = ALLOCATED;
         list_del_init(&node[i].list);
     }
@@ -161,14 +164,22 @@ void buddy_system_init() {
     uart_sendline("\r\n* Startup Allocation *\r\n");
     uart_sendline("buddy system: usable memory region: 0x%x ~ 0x%x\n", BUDDY_MEMORY_BASE, BUDDY_MEMORY_BASE + BUDDY_MEMORY_PAGE_COUNT * PAGESIZE);
     dtb_find_and_store_reserved_memory(); // find spin tables in dtb
-    reserve_memory((unsigned long long)&_start, (unsigned long long)&_end); // kernel
-    reserve_memory((unsigned long long)&_heap_top, (unsigned long long)&_stack_top);  // heap & stack -> simple allocator
-    reserve_memory((unsigned long long)CPIO_DEFAULT_START, (unsigned long long)CPIO_DEFAULT_END);
+    uart_sendline("\r\n* Start to reserve_memory *\r\n");
+    // reserve_memory((unsigned long long)&_start, (unsigned long long)&_end); // kernel
+    // reserve_memory((unsigned long long)&_heap_top, (unsigned long long)&_stack_top);  // heap & stack -> simple allocator
+    // reserve_memory((unsigned long long)CPIO_DEFAULT_START, (unsigned long long)CPIO_DEFAULT_END);
+    
+    reserve_memory(0x0, 0x1000); // Spin tables for multicore boot
+    reserve_memory(0x7E000, 0x80000); // 
+    reserve_memory(0x80000, (unsigned long)base); // kernel
+    reserve_memory(0x3c000000, 0x40000000);
+
 
     for (int i = 0; i < MAX_PAGES; i++)
         buddy_system_update_list(i);
 
     buddy_system_print_all();
+    uart_sendline("\r\n* Finish *\r\n");
     return;
 }
 
