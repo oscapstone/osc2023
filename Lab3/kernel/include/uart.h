@@ -20,6 +20,8 @@
 #define AUX_MU_STAT ((volatile unsigned int *)(MMIO_BASE + 0x00215064))
 #define AUX_MU_BAUD ((volatile unsigned int *)(MMIO_BASE + 0x00215068))
 
+#define ENABLE_IRQS_1 ((volatile unsigned int *)(MMIO_BASE + 0x0000b210))
+
 void uart_init();
 void uart_putc(char c);
 char uart_getc();
@@ -28,4 +30,16 @@ int uart_printf(char *fmt, ...);
 void uart_puts(char *s);
 void uart_hex(unsigned int d);
 char uart_get();
+
+void enable_uart_interrupt();
+void enable_uart_tx_interrupt();
+void disable_uart_tx_interrupt();
+void enable_uart_rx_interrupt();
+void disable_uart_rx_interrupt();
+void uart_tx_interrupt_handler();
+void uart_rx_interrupt_handler();
+void uart_async_putc(char c);
+char uart_async_getc();
+int uart_async_printf(char *fmt, ...);
+
 #endif

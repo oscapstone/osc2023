@@ -3,6 +3,8 @@
 
 #include "list.h"
 
+#define LOW_PRIORITY 100
+
 typedef void (*task_callback_t)(void);
 
 typedef struct task

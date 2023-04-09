@@ -6,6 +6,7 @@
 #include "exec.h"
 #include "timer.h"
 #include "interrupt.h"
+#include "task.h"
 
 extern char *cpio_start;
 
@@ -131,9 +132,27 @@ void print_timeout(char * str) {
     uart_printf("SetTimeout: %s\n", str);
 }
 
-void twoSec(char * str) {
+void two_second(char * str) {
     uart_printf("Current second: %d\n", get_clock_time());
-    add_timer(twoSec, "", 2 * get_clock_freq());
+    add_timer(two_second, "", 2 * get_clock_freq());
+}
+
+/* preempt */
+void high_priority_task() {
+    uart_async_printf("high priority start\n");
+    uart_async_printf("high priority end\n");
+}
+
+void low_priority_task() {
+    uart_async_printf("low priority start\n");
+    add_task(high_priority_task, 1);
+    uart_async_printf("\r"); // trigger pop_task
+    for (int i = 0; i < 1000000; i++) ;
+    uart_async_printf("low priority end\n");
+}
+
+void test_preemption() {
+    add_task(low_priority_task, 4);
 }
 
 /* shell */
@@ -167,7 +186,7 @@ void shell(void) {
             uart_puts("malloc\t: allocate memory to specific string\n");
             uart_puts("ls\t: print files and directories\n");
             uart_puts("cat [FILE]\t: print specific file\n");
-            uart_puts("exec [FILE]\t: execute specific file\n");
+            uart_puts("exec\t: execute specific file\n");
         }
         else if (strcmp("reboot", command) == 0) {
             uart_puts("rebooting...\n");
@@ -206,6 +225,9 @@ void shell(void) {
             }
             uart_printf("\n");
         }
+        else if (strcmp("preempt", command) == 0) {
+            test_preemption();
+        }
         else if (strncmp("setTimeout", command, 10) == 0) {
             int idx = 11;
             char* msg = (char*) simple_malloc(10);
@@ -217,13 +239,11 @@ void shell(void) {
             add_timer(print_timeout, msg, sec * get_clock_freq());
         }
         else if (strcmp("twoSec", command) == 0) {
-            add_timer(twoSec, "", 2 * get_clock_freq());
+            add_timer(two_second, "", 2 * get_clock_freq());
         }
         else {
             uart_puts("unknown\n");
         }
-        
     }
-        
 }
 

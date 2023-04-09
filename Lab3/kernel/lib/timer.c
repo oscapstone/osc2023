@@ -78,6 +78,7 @@ void add_timer(timer_callback_t callback, char * msg, unsigned long long expire_
     new_event->callback = callback;
     new_event->args = msg;
 
+    disable_interrupt();
     list_head_t * iter;
     int not_insert_flag = 1;
     list_for_each(iter, timer_event_head) {
@@ -91,6 +92,7 @@ void add_timer(timer_callback_t callback, char * msg, unsigned long long expire_
     if (not_insert_flag) {
         list_add_tail(&new_event->listhead, timer_event_head);
     }
+    enable_interrupt();
     
     set_core_timer_interrupt_to_first();
 
@@ -99,7 +101,9 @@ void add_timer(timer_callback_t callback, char * msg, unsigned long long expire_
 
 void pop_timer() {
     timer_event_t * first = (timer_event_t *) list_entry(timer_event_head->next, timer_event_t, listhead);
+    disable_interrupt();
     list_del_entry(timer_event_head->next);
+    enable_interrupt();
     first->callback(first->args);
     if (list_empty(timer_event_head)) {
         core_timer_interrupt_disable();
