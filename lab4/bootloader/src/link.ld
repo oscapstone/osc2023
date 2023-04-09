@@ -1,5 +1,5 @@
-_heap_stack_size = 1M;
-_bootloader_size = 64K;
+_heap_stack_size = 1M;  
+# heap_size 0x100000
 
 SECTIONS
 {

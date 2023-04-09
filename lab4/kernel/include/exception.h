@@ -1,7 +1,7 @@
 #ifndef	_EXCEPTION_H_
 #define	_EXCEPTION_H_
 
-#include "u_list.h"
+#include "list.h"
 
 #define UART_IRQ_PRIORITY  1
 #define TIMER_IRQ_PRIORITY 0

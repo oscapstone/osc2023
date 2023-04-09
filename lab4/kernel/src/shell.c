@@ -6,8 +6,9 @@
 #include "cpio.h"
 #include "u_string.h"
 #include "dtb.h"
-#include "heap.h"
+#include "buddy_system.h"
 #include "timer.h"
+#include <stdlib.h>
 
 #define CLI_MAX_CMD 11
 #define USTACK_SIZE 0x10000

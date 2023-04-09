@@ -1,7 +1,9 @@
 #include "timer.h"
 #include "uart1.h"
-#include "heap.h"
+#include "buddy_system.h"
 #include "u_string.h"
+#include <stdlib.h>
+
 
 #define STR(x) #x
 #define XSTR(s) STR(s)
@@ -47,7 +49,7 @@ void core_timer_handler(){
 }
 
 void timer_event_callback(timer_event_t * timer_event){
-    list_del_entry((struct list_head*)timer_event); // delete the event in queue
+    list_del((struct list_head*)timer_event); // delete the event in queue
     free(timer_event->args);                        // free the event's space
     free(timer_event);
     ((void (*)(char*))timer_event-> callback)(timer_event->args);  // call the event

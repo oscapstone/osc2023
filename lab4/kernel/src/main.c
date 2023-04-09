@@ -1,6 +1,6 @@
 #include "uart1.h"
 #include "shell.h"
-#include "heap.h"
+#include "buddy_system.h"
 #include "u_string.h"
 #include "dtb.h"
 #include "exception.h"
