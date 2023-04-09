@@ -92,9 +92,9 @@ void add_timer(timer_callback_t callback, char * msg, unsigned long long expire_
     if (not_insert_flag) {
         list_add_tail(&new_event->listhead, timer_event_head);
     }
-    enable_interrupt();
     
     set_core_timer_interrupt_to_first();
+    enable_interrupt();
 
     core_timer_interrupt_enable();
 }
@@ -109,7 +109,9 @@ void pop_timer() {
         core_timer_interrupt_disable();
     }
     else {
+        disable_interrupt();
         set_core_timer_interrupt_to_first();
+        enable_interrupt();
     }
 }
 
