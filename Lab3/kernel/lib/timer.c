@@ -1,6 +1,7 @@
 #include "timer.h"
 #include "malloc.h"
 #include "list.h"
+#include "uart.h"
 #include "interrupt.h"
 
 #define STR(x)        #x
@@ -22,6 +23,26 @@ void core_timer_interrupt_disable() {
         "ldr x1, =" XSTR(CORE0_TIMER_IRQ_CTRL) "\n\t"
         "str w2, [x1]"
     );
+}
+
+unsigned long long get_clock_freq() {
+    unsigned long long tick_freq;
+    asm volatile(
+        "mrs %0, cntfrq_el0\n\t":"=r"(tick_freq)
+    );
+    return tick_freq;
+}
+
+unsigned long long get_current_tick() {
+    unsigned long long current_tick;
+    asm volatile(
+        "mrs %0, cntpct_el0\n\t":"=r"(current_tick)
+    );
+    return current_tick;
+}
+
+unsigned long long get_clock_time() {
+    return get_current_tick() / get_clock_freq();
 }
 
 void set_core_timer_interrupt(unsigned long long time) {
@@ -51,19 +72,19 @@ void core_timer_handler() {
     }
 }
 
-void add_timer(timer_callback_t callback, unsigned long long expire_time) {
+void add_timer(timer_callback_t callback, char * msg, unsigned long long expire_time) {
     timer_event_t * new_event = (timer_event_t *)simple_malloc(sizeof(timer_event_t));
     new_event->expire_time = expire_time;
     new_event->callback = callback;
+    new_event->args = msg;
 
     list_head_t * iter;
     int not_insert_flag = 1;
     list_for_each(iter, timer_event_head) {
         timer_event_t * cur_event = (timer_event_t *) list_entry(iter, timer_event_t, listhead);
-        timer_event_t * next_event = (timer_event_t *) list_entry(iter->next, timer_event_t, listhead);
-        if (cur_event->expire_time <= expire_time && expire_time <= next_event->expire_time) {
+        if (expire_time < cur_event->expire_time) {
             not_insert_flag = 0;
-            __list_add(&new_event->listhead, iter, iter->next);
+            list_add(&new_event->listhead, iter->prev);
             break;
         }
     }
@@ -79,7 +100,7 @@ void add_timer(timer_callback_t callback, unsigned long long expire_time) {
 void pop_timer() {
     timer_event_t * first = (timer_event_t *) list_entry(timer_event_head->next, timer_event_t, listhead);
     list_del_entry(timer_event_head->next);
-    first->callback(first->expire_time);
+    first->callback(first->args);
     if (list_empty(timer_event_head)) {
         core_timer_interrupt_disable();
     }

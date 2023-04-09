@@ -127,32 +127,13 @@ int ls(char *working_dir)
 }
 
 /* timer */
-unsigned long long get_clock_freq() {
-    unsigned long long tick_freq;
-    asm volatile(
-        "mrs %0, cntfrq_el0\n\t":"=r"(tick_freq)
-    );
-    return tick_freq;
+void print_timeout(char * str) {
+    uart_printf("SetTimeout: %s\n", str);
 }
 
-unsigned long long get_clock_time() {
-    unsigned long long current_tick;
-    asm volatile(
-        "mrs %0, cntpct_el0\n\t":"=r"(current_tick)
-    );
-
-    unsigned long long tick_freq = get_clock_freq();
-
-    return current_tick / tick_freq;
-}
-
-void print_timeout(unsigned long long sec) {
-    uart_printf("Set Timeout %d sec.\n", sec / get_clock_freq());
-}
-
-void twoSec(unsigned long long sec) {
+void twoSec(char * str) {
     uart_printf("Current second: %d\n", get_clock_time());
-    add_timer(twoSec, 2 * get_clock_freq()); // continuously set timeout 2 sec
+    add_timer(twoSec, "", 2 * get_clock_freq());
 }
 
 /* shell */
@@ -226,11 +207,17 @@ void shell(void) {
             uart_printf("\n");
         }
         else if (strncmp("setTimeout", command, 10) == 0) {
-            int sec = atoi(command + 11);
-            add_timer(print_timeout, sec * get_clock_freq());
+            int idx = 11;
+            char* msg = (char*) simple_malloc(10);
+            int msg_idx = 0;
+            while (command[idx] != ' ') {
+                msg[msg_idx++] = command[idx++];
+            }
+            int sec = atoi(command + idx + 1);
+            add_timer(print_timeout, msg, sec * get_clock_freq());
         }
         else if (strcmp("twoSec", command) == 0) {
-            add_timer(twoSec, 2);
+            add_timer(twoSec, "", 2 * get_clock_freq());
         }
         else {
             uart_puts("unknown\n");

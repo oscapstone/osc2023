@@ -11,10 +11,9 @@ void add_task(task_callback_t callback, int priority) {
     int not_insert_flag = 1;
     list_for_each(iter, task_head) {
         task_t * cur_task = (task_t *) list_entry(iter, task_t, listhead);
-        task_t * next_task = (task_t *) list_entry(iter->next, task_t, listhead);
-        if (cur_task->prio <= priority && priority <= next_task->prio) {
+        if (priority < cur_task->prio) {
             not_insert_flag = 0;
-            __list_add(&new_task->listhead, iter, iter->next);
+            list_add(&new_task->listhead, iter->prev);
             break;
         }
     }
