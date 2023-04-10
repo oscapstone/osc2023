@@ -8,6 +8,8 @@ int  uart_sendline(char* fmt, ...);
 char uart_async_getc();
 void uart_async_putc(char c);
 int  uart_puts(char* fmt, ...);
+char uart_getc();
+void get_uart_input(char *input);
 void uart_2hex(unsigned int d);
 
 void uart_interrupt_enable();
