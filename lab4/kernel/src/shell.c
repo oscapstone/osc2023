@@ -288,6 +288,13 @@ void do_cmd_memory_tester()
     char *e = kmalloc(512);
     char *ee = kmalloc(999);
 
+    char *f = kmalloc(0x2000);
+    char *ff = kmalloc(0x2000);
+    char *g = kmalloc(0x2000);
+    char *gg = kmalloc(0x2000);
+    char *h = kmalloc(0x2000);
+    char *hh = kmalloc(0x2000);
+
     kfree(a);
     kfree(aa);
     kfree(b);
@@ -298,6 +305,13 @@ void do_cmd_memory_tester()
     kfree(d);
     kfree(e);
     kfree(ee);
+
+    kfree(f);
+    kfree(ff);
+    kfree(g);
+    kfree(gg);
+    kfree(h);
+    kfree(hh);
 }
 
 void do_cmd_setTimeout(char* msg, char* sec)
