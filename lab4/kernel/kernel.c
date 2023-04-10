@@ -3,6 +3,7 @@
 #include "device_tree.h"
 #include "exception.h"
 #include "timer.h"
+#include "mem_frame.h"
 
 #define MAX_ULONG       0x7fffffffffffffffll
 
@@ -15,6 +16,8 @@ void kernel_main(void)
 	enable_core_timer();
 	reset_core_timer_absolute(MAX_ULONG);
 	enable_interrupts_in_el1();
+
+	init_frames();
 
 	uart_send_string("Kernel Starts...\r\n");
 	shell_loop();

@@ -9,6 +9,7 @@
 #include "exception.h"
 #include "mm.h"
 #include "timer.h"
+#include "mem_frame.h"
 
 #define MAX_BUFFER_SIZE 256u
 static char buffer[MAX_BUFFER_SIZE];
@@ -25,6 +26,7 @@ void send_help_message(void)
         uart_send_string("demo-async:\tshow uart async send and receive\r\n");
         uart_send_string("set-timeout [msg] [sec]:\r\n");
         uart_send_string("\tprint [msg] after [sec] seconds\r\n");
+        uart_send_string("demo-frame:\tdemo frame allocation and free\r\n");
 }
 
 void parse_cmd(void)
@@ -54,6 +56,8 @@ void parse_cmd(void)
                 branch_to_address_el0(demo_uart_async, USER_STACK_POINTER);
         } else if (!strncmp(buffer, "set-timeout ", strlen("set-timeout "))) {
                 cmd_add_timer(buffer);
+        } else if (!strcmp(buffer, "demo-frame")) {
+                demo_frame();
         } else {
                 uart_send_string("Command not found, ");
                 uart_send_string("type 'help' for commands.\r\n");

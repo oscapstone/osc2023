@@ -79,7 +79,7 @@ master:
         /*
          * Initializes the stack pointer
          * and pass execution to the kernel_main function
-         * LOW_MEMORY is defined in mm.h and is equal to 4MB
          */
-        mov     sp, #LOW_MEMORY
+        ldr     x0, =_start
+        mov     sp, x0
         bl      kernel_main

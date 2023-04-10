@@ -1,6 +1,6 @@
 #include "mini_uart.h"
 
-#define HEAP_SIZE 0x10000
+#define HEAP_SIZE 0x1000000
 
 extern char heap_start;
 
