@@ -64,6 +64,8 @@ void cli_cmd_exec(char* buffer)
         do_cmd_setTimeout(argvs, sec);
     } else if (strcmp(cmd, "set2sAlert") == 0) {
         do_cmd_set2sAlert();
+    } else if (strcmp(cmd, "set2sAlert") == 0) {
+        do_cmd_set2sAlert();  
     } else if (strcmp(cmd, "reboot") == 0) {
         do_cmd_reboot();
     }
