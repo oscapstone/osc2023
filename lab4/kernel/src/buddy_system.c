@@ -169,8 +169,11 @@ void buddy_system_init() {
     uart_sendline("buddy system: usable memory region: 0x%x ~ 0x%x\n", BUDDY_MEMORY_BASE, BUDDY_MEMORY_BASE + BUDDY_MEMORY_PAGE_COUNT * PAGESIZE);
     dtb_find_and_store_reserved_memory(); // find spin tables in dtb
     uart_sendline("\r\n* Start to reserve_memory *\r\n");
+    uart_sendline("\r\n* Reserve kernel *\r\n");
     reserve_memory((unsigned long long)&_start, (unsigned long long)&_end); // kernel
+    uart_sendline("\r\n* Reserve heap & stack *\r\n");
     reserve_memory((unsigned long long)&_heap_top, (unsigned long long)&_stack_top);  // heap & stack -> simple allocator
+    uart_sendline("\r\n* Reserve CPIO *\r\n");
     reserve_memory((unsigned long long)CPIO_DEFAULT_START, (unsigned long long)CPIO_DEFAULT_END);
 
     for (int i = 0; i < MAX_PAGES; i++)
