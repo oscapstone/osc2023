@@ -129,11 +129,11 @@ int ls(char *working_dir)
 
 /* timer */
 void print_timeout(char * str) {
-    uart_printf("setTimeout msg: %s\tCurrent second %d\n", str, get_clock_time());
+    uart_printf("setTimeout  Current second: %d\tmsg: %s\n", get_clock_time(), str);
 }
 
 void two_second(char * str) {
-    uart_printf("twoSec\tCurrent second: %d\n", get_clock_time());
+    uart_printf("twoSec      Current second: %d\n", get_clock_time());
     add_timer(two_second, "", get_current_tick() + 2 * get_clock_freq());
 }
 
@@ -152,7 +152,8 @@ void low_priority_task() {
 }
 
 void test_preemption() {
-    add_task(low_priority_task, 4);
+    add_task(low_priority_task, 9);
+    uart_async_printf("\r"); // trigger pop_task
 }
 
 /* shell */
@@ -161,6 +162,9 @@ void shell(void) {
 
     char command[32];
     int idx = 0;
+
+    char messages[MAX_BUF_SIZE];
+    int messages_idx = 0;
 
     while (1) {
         idx = 0;
@@ -229,16 +233,27 @@ void shell(void) {
             test_preemption();
         }
         else if (strncmp("setTimeout", command, 10) == 0) {
+            // int idx = 11;
+            // char* msg = (char*) simple_malloc(15 * sizeof(char));
+            // int msg_idx = 0;
+            // while (command[idx] != ' ') {
+            //     msg[msg_idx++] = command[idx++];
+            // }
+            // int sec = atoi(command + idx + 1);
+            // uart_printf("setTimeout %d seconds start at %d\n", sec, get_clock_time());
+            // add_timer(print_timeout, msg, get_current_tick() + sec * get_clock_freq());
+
             int idx = 11;
-            char* msg = (char*) simple_malloc(10);
-            int msg_idx = 0;
+            int msg_idx = messages_idx;
             while (command[idx] != ' ') {
-                msg[msg_idx++] = command[idx++];
+                messages[messages_idx++] = command[idx++];
             }
             int sec = atoi(command + idx + 1);
             uart_printf("setTimeout %d seconds start at %d\n", sec, get_clock_time());
-            add_timer(print_timeout, msg, get_current_tick() + sec * get_clock_freq());
+            add_timer(print_timeout, messages + msg_idx, get_current_tick() + sec * get_clock_freq());
+            messages_idx++;
         }
+        
         else if (strcmp("twoSec", command) == 0) {
             add_timer(two_second, "", get_current_tick() + 2 * get_clock_freq());
         }

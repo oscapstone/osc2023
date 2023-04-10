@@ -30,8 +30,8 @@ void main(char *arg)
     uart_init();
     enable_interrupt();
     set_cpacr_el1();
-    core_timer_interrupt_disable_alternative();
     enable_core_timer();
+    core_timer_interrupt_disable_alternative();
     core_timer_interrupt_enable();
     enable_uart_interrupt();
     shell();

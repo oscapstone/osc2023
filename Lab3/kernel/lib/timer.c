@@ -52,7 +52,7 @@ void set_core_timer_interrupt(unsigned long long time) {
 }
 
 void core_timer_interrupt_disable_alternative() {
-    set_core_timer_interrupt(100000 + get_current_tick());
+    set_core_timer_interrupt(100000 * get_clock_freq() + get_current_tick());
 }
 
 void enable_core_timer() {
