@@ -6,6 +6,8 @@
 #define FRAME_SIZE      0x1000
 #define NUM_FRAME       ((MEM_END - MEM_START) / FRAME_SIZE)
 
+#define FRAME_ADDRESS_MASK      ~((unsigned long)FRAME_SIZE - 1)
+
 #define MAX_ORDER               6
 
 #define FSTATE_ALLOCATED        -1

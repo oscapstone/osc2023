@@ -4,6 +4,7 @@
 #include "exception.h"
 #include "timer.h"
 #include "mem_frame.h"
+#include "mem_allocator.h"
 
 #define MAX_ULONG       0x7fffffffffffffffll
 
@@ -18,6 +19,7 @@ void kernel_main(void)
 	enable_interrupts_in_el1();
 
 	init_frames();
+	init_allocator();
 
 	uart_send_string("Kernel Starts...\r\n");
 	shell_loop();

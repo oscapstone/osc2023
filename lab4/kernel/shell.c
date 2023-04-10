@@ -10,6 +10,7 @@
 #include "mm.h"
 #include "timer.h"
 #include "mem_frame.h"
+#include "mem_allocator.h"
 
 #define MAX_BUFFER_SIZE 256u
 static char buffer[MAX_BUFFER_SIZE];
@@ -27,6 +28,7 @@ void send_help_message(void)
         uart_send_string("set-timeout [msg] [sec]:\r\n");
         uart_send_string("\tprint [msg] after [sec] seconds\r\n");
         uart_send_string("demo-frame:\tdemo frame allocation and free\r\n");
+        uart_send_string("demo-malloc:\tdemo malloc and free\r\n");
 }
 
 void parse_cmd(void)
@@ -58,6 +60,8 @@ void parse_cmd(void)
                 cmd_add_timer(buffer);
         } else if (!strcmp(buffer, "demo-frame")) {
                 demo_frame();
+        } else if (!strcmp(buffer, "demo-malloc")) {
+                demo_dynamic_allocation();
         } else {
                 uart_send_string("Command not found, ");
                 uart_send_string("type 'help' for commands.\r\n");
