@@ -47,13 +47,12 @@ unsigned long long get_clock_time() {
 
 void set_core_timer_interrupt(unsigned long long time) {
     asm volatile(
-        "msr cntp_tval_el0, %0\n\t"::"r"(time)
+        "msr cntp_cval_el0, %0\n\t"::"r"(time)
     );
 }
 
 void core_timer_interrupt_disable_alternative() {
-    set_core_timer_interrupt(100000);
-    // set_core_timer_interrupt(get_clock_freq() * 15);
+    set_core_timer_interrupt(100000 + get_current_tick());
 }
 
 void enable_core_timer() {

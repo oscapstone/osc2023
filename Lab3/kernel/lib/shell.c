@@ -129,12 +129,12 @@ int ls(char *working_dir)
 
 /* timer */
 void print_timeout(char * str) {
-    uart_printf("SetTimeout: %s\n", str);
+    uart_printf("setTimeout msg: %s\tCurrent second %d\n", str, get_clock_time());
 }
 
 void two_second(char * str) {
-    uart_printf("Current second: %d\n", get_clock_time());
-    add_timer(two_second, "", 2 * get_clock_freq());
+    uart_printf("twoSec\tCurrent second: %d\n", get_clock_time());
+    add_timer(two_second, "", get_current_tick() + 2 * get_clock_freq());
 }
 
 /* preempt */
@@ -236,10 +236,11 @@ void shell(void) {
                 msg[msg_idx++] = command[idx++];
             }
             int sec = atoi(command + idx + 1);
-            add_timer(print_timeout, msg, sec * get_clock_freq());
+            uart_printf("setTimeout %d seconds start at %d\n", sec, get_clock_time());
+            add_timer(print_timeout, msg, get_current_tick() + sec * get_clock_freq());
         }
         else if (strcmp("twoSec", command) == 0) {
-            add_timer(two_second, "", 2 * get_clock_freq());
+            add_timer(two_second, "", get_current_tick() + 2 * get_clock_freq());
         }
         else {
             uart_puts("unknown\n");
