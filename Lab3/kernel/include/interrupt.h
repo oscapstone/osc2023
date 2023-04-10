@@ -10,8 +10,8 @@
 #define CORE0_INT_SRC_GPU (1 << 8)
 #define CORE0_INT_SRC_TIMER (1 << 1)
 
-#define UART_IRQ_PRIORITY 10
-#define TIMER_IRQ_PRIORITY 5
+#define UART_IRQ_PRIORITY 5
+#define TIMER_IRQ_PRIORITY 10
 
 
 void enable_interrupt();

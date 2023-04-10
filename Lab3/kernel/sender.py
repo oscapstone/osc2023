@@ -7,7 +7,7 @@ def sendKernelImg(s, f):
     tty = serial.Serial(s, 115200, timeout=0.5)
     file_stats = os.stat(f)
     # Send Boot cmd
-    tty.write('Boot\n'.encode('utf-8')) # End by
+    tty.write('load\n'.encode('utf-8')) # End by
     # Send kernel size
     tty.write(str(file_stats.st_size).encode('utf-8'))
     tty.write('\n'.encode('utf-8')) # End by \n
