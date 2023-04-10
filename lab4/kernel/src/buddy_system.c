@@ -50,6 +50,10 @@ void* kmalloc(unsigned int size) {
     return r;
 }
 
+void s_free(void* ptr) {
+    // TBD
+}
+
 
 void buddy_system_update_list(int index) {
     int level = frame_array[index];
@@ -83,26 +87,26 @@ void *simple_malloc(void **cur, unsigned long size) {
 void reserve_memory(unsigned long long start, unsigned long long end) {
     for (int i = 0; i < MAX_PAGES; i++) {
         if (frame_array[i] != 0 && frame_array[i] != ALLOCATED && frame_array[i] != BELONG_LEFT) {
-            uart_puts("i = ");
+            uart_sendline("i = ");
             uart_2hex(i);
-            uart_puts("\n");
-            uart_puts("frame_array[i] = ");
+            uart_sendline("\n");
+            uart_sendline("frame_array[i] = ");
             uart_2hex(frame_array[i]);
-            uart_puts("\n");
+            uart_sendline("\n");
         }
     }
-    // int start_page = (start - MEMORY_BASE) / PAGESIZE;
-    // int end_page = (end - MEMORY_BASE - 1) / PAGESIZE;
-    start -= start % PAGESIZE; // floor (align 0x1000)
-    end = end % PAGESIZE ? end + PAGESIZE - (end % PAGESIZE) : end; // ceiling (align 0x1000)
+    int start_page = (start - MEMORY_BASE) / PAGESIZE;
+    int end_page = (end - MEMORY_BASE - 1) / PAGESIZE;
+    // start -= start % PAGESIZE; // floor (align 0x1000)
+    // end = end % PAGESIZE ? end + PAGESIZE - (end % PAGESIZE) : end; // ceiling (align 0x1000)
 
-    uart_puts("start_page: ");
-    uart_2hex(start);
-    uart_puts("\n");
-    uart_puts("end_page: ");
-    uart_2hex(end);
-    uart_puts("\n");
-    for (int i = start; i <= end; i++) {
+    uart_sendline("start_page: ");
+    uart_2hex(start_page);
+    uart_sendline("\n");
+    uart_sendline("end_page: ");
+    uart_2hex(end_page);
+    uart_sendline("\n");
+    for (int i = start_page; i <= end_page; i++) {
         frame_array[i] = ALLOCATED;
         list_del_init(&node[i].list);
     }
@@ -110,30 +114,30 @@ void reserve_memory(unsigned long long start, unsigned long long end) {
 
 void buddy_system_print_all() {
     struct list_head *tmp;
-    uart_puts("----------- list ----------\n");
+    uart_sendline("----------- list ----------\n");
     for (int i = 0; i < LOG2_MAX_PAGES_PLUS_1; i++) {
-        uart_puts("head[");
+        uart_sendline("head[");
         uart_2hex(i);
-        uart_puts("]: ");
+        uart_sendline("]: ");
         list_for_each(tmp, &head[i]) {
             uart_2hex(list_entry(tmp, struct buddy_system_node, list)->index);
-            uart_puts(" ");
+            uart_sendline(" ");
         }
-        uart_puts("\n");
+        uart_sendline("\n");
     }
-    // uart_puts("----------- array ----------");
+    // uart_sendline("----------- array ----------");
     // for (int i = 0; i < MAX_PAGES; i++) {
     //     if (i % 8 == 0)
-    //         uart_puts("\n");
+    //         uart_sendline("\n");
     //     if (frame_array[i] == BELONG_LEFT)
-    //         uart_puts("--------");
+    //         uart_sendline("--------");
     //     else if (frame_array[i] == ALLOCATED)
-    //         uart_puts("XXXXXXXX");
+    //         uart_sendline("XXXXXXXX");
     //     else
     //         uart_2hex(frame_array[i]);
-    //     uart_puts(" ");
+    //     uart_sendline(" ");
     // }
-    uart_puts("\n----------------------------\n");
+    uart_sendline("\n----------------------------\n");
 
     return;
 }
@@ -165,15 +169,9 @@ void buddy_system_init() {
     uart_sendline("buddy system: usable memory region: 0x%x ~ 0x%x\n", BUDDY_MEMORY_BASE, BUDDY_MEMORY_BASE + BUDDY_MEMORY_PAGE_COUNT * PAGESIZE);
     dtb_find_and_store_reserved_memory(); // find spin tables in dtb
     uart_sendline("\r\n* Start to reserve_memory *\r\n");
-    // reserve_memory((unsigned long long)&_start, (unsigned long long)&_end); // kernel
-    // reserve_memory((unsigned long long)&_heap_top, (unsigned long long)&_stack_top);  // heap & stack -> simple allocator
-    // reserve_memory((unsigned long long)CPIO_DEFAULT_START, (unsigned long long)CPIO_DEFAULT_END);
-    
-    reserve_memory(0x0, 0x1000); // Spin tables for multicore boot
-    reserve_memory(0x7E000, 0x80000); // 
-    reserve_memory(0x80000, (unsigned long)base); // kernel
-    reserve_memory(0x3c000000, 0x40000000);
-
+    reserve_memory((unsigned long long)&_start, (unsigned long long)&_end); // kernel
+    reserve_memory((unsigned long long)&_heap_top, (unsigned long long)&_stack_top);  // heap & stack -> simple allocator
+    reserve_memory((unsigned long long)CPIO_DEFAULT_START, (unsigned long long)CPIO_DEFAULT_END);
 
     for (int i = 0; i < MAX_PAGES; i++)
         buddy_system_update_list(i);
@@ -218,19 +216,19 @@ int buddy_system_find_node_index(int level) {
 unsigned long int buddy_system_alloc(int size) {
     int suitable_size = buddy_system_find_suitable_size(size);
     int level = log2(suitable_size / 4);
-    uart_puts("buddy_system_alloc: ");
+    uart_sendline("buddy_system_alloc: ");
     uart_2hex(suitable_size);
-    uart_puts("\nlevel: ");
+    uart_sendline("\nlevel: ");
     uart_2hex(level);
-    uart_puts("\n");
+    uart_sendline("\n");
     int index = buddy_system_find_node_index(level);
     if (index == -1) {
-        uart_puts("Can't find suitable node!\n");
+        uart_sendline("Can't find suitable node!\n");
         return -1;
     }
-    uart_puts("index: ");
+    uart_sendline("index: ");
     uart_2hex(index);
-    uart_puts("\n");
+    uart_sendline("\n");
     list_del_init(&node[index].list);
     frame_array[index] = ALLOCATED;
     buddy_system_print_all();
@@ -238,20 +236,20 @@ unsigned long int buddy_system_alloc(int size) {
 }
 
 void buddy_system_free(int index) {
-    uart_puts("buddy_system_free index: ");
+    uart_sendline("buddy_system_free index: ");
     uart_2hex(index);
-    uart_puts("\n");
+    uart_sendline("\n");
 
     if (frame_array[index] != ALLOCATED) {
-        uart_puts("This node is not allocated!\n");
+        uart_sendline("This node is not allocated!\n");
         return;
     }
 
     int level = node[index].level;
     frame_array[index] = level;
-    uart_puts("level: ");
+    uart_sendline("level: ");
     uart_2hex(level);
-    uart_puts("\n");
+    uart_sendline("\n");
 
     list_add(&node[index].list, &head[level]);
     buddy_system_update_list(index);

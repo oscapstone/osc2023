@@ -8,7 +8,6 @@
 #include "dtb.h"
 #include "buddy_system.h"
 #include "timer.h"
-#include <stdlib.h>
 
 #define CLI_MAX_CMD 11
 #define USTACK_SIZE 0x10000
@@ -155,7 +154,7 @@ void do_cmd_exec(char* filepath)
                 "eret\n\t"              // Perform exception return. EL1 -> EL0
                 :: "r" (c_filedata),
                    "r" (ustack+USTACK_SIZE));
-            free(ustack);
+            s_free(ustack);
             break;
         }
 

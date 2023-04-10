@@ -2,8 +2,6 @@
 #include "uart1.h"
 #include "buddy_system.h"
 #include "u_string.h"
-#include <stdlib.h>
-
 
 #define STR(x) #x
 #define XSTR(s) STR(s)
@@ -49,9 +47,9 @@ void core_timer_handler(){
 }
 
 void timer_event_callback(timer_event_t * timer_event){
-    list_del((struct list_head*)timer_event); // delete the event in queue
-    free(timer_event->args);                        // free the event's space
-    free(timer_event);
+    list_del_init((struct list_head*)timer_event); // delete the event in queue
+    s_free(timer_event->args);                        // free the event's space
+    s_free(timer_event);
     ((void (*)(char*))timer_event-> callback)(timer_event->args);  // call the event
 
     // set queue linked list to next time event if it exists

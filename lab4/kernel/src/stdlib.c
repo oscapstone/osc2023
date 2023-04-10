@@ -19,18 +19,18 @@ int page_number = 0;
 void mem_print_all() {
     struct list_head *tmp;
 
-    uart_puts("----------- block ----------\n");
+    uart_sendline("----------- block ----------\n");
     list_for_each(tmp, &block_head) {
         struct block *block = list_entry(tmp, struct block, list);
-        uart_puts("address: ");
+        uart_sendline("address: ");
         uart_2hex((unsigned long int)block);
-        uart_puts(" size: ");
+        uart_sendline(" size: ");
         uart_2hex(block->size);
-        uart_puts(" free: ");
+        uart_sendline(" free: ");
         uart_2hex(block->free);
-        uart_puts("\n");
+        uart_sendline("\n");
     }
-    uart_puts("----------------------------\n");
+    uart_sendline("----------------------------\n");
 }
 
 void mem_init() {
@@ -100,8 +100,4 @@ void free_page(unsigned long int ptr) {
         if (block->page_number == list_entry(block->list.prev, struct block, list)->page_number)
             merge(list_entry(block->list.prev, struct block, list), block);
     mem_print_all();
-}
-
-void free(void* ptr) {
-    // TBD
 }

@@ -6,6 +6,7 @@
 #define BUDDY_MEMORY_PAGE_COUNT 0x3C000 // let BUDDY_MEMORY use 0x0 ~ 0x3C000000 (SPEC)
 
 void* kmalloc(unsigned int size);
+void s_free(void* ptr);
 void buddy_system_init();
 unsigned long int buddy_system_alloc(int size);
 void buddy_system_free(int index);
