@@ -122,6 +122,14 @@ static int merge_buddy(int index, int v){
 
 static int list_add(int cnt, int index){
 	mem_node* cur = (mem_node*) malloc(sizeof(mem_node));
+	/*
+	uart_puti(cnt);
+	uart_puth(cur);
+	uart_puth(cur->index);
+	uart_puth(free_mem[cnt]);
+	uart_puts("free_mem[cnt]");
+	uart_puth(cur->index);
+	*/
 	cur->index = index;
 	if(free_mem[cnt] == NULL){
 		free_mem[cnt] = cur;
@@ -133,6 +141,7 @@ static int list_add(int cnt, int index){
 		free_mem[cnt]->prev = cur;
 		free_mem[cnt] = cur;
 	}
+	//uart_puts("list_add return\n");
 	return 0;
 }
 
@@ -144,6 +153,7 @@ static int list_delete(int cnt, int index){
 		if(index == cur->index){
 			if(cur == head){
 				free_mem[cnt] = cur->next;
+				return 0;
 			}
 			if(cur->next != NULL){
 				cur->next->prev = cur->prev;
@@ -190,6 +200,7 @@ static int list_deletes(int cnt, void* addr){
 		if(addr == cur->addr){
 			if(cur == head){
 				free_smem[cnt] = cur->next;
+				return 0;
 			}
 			if(cur->next != NULL){
 				cur->next->prev = cur->prev;
@@ -243,6 +254,8 @@ int pmalloc_init(void){
 		return 1;
 	}
 	memset(mem_arr, -1, MEM_SIZE);
+	memset(free_mem, 0, MEM_MAX * sizeof(mem_node*));
+	memset(free_smem, 0, SMEM_MAX * sizeof(slot*));
 
 	for(int i = 1; i < MEM_MAX; i++){
 		t *= 2;
@@ -251,14 +264,16 @@ int pmalloc_init(void){
 	// Split the global array into max page size
 	int i;
 	for( i = 0; i < MEM_SIZE; i += t){
+		uart_puti(i);
+		uart_puts(" ");
 		mem_arr[i] = MEM_MAX - 1;
 		list_add(MEM_MAX - 1, i);
 	}
 	// Generate small memory slots
-	for(int i = 0; i < SMEM_MAX; i++)
+	for(int i = 0; i < SMEM_MAX; i++){
 		gen_slots(i);
+	}
 
-		
 	return 0;
 }
 

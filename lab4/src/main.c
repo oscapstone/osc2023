@@ -14,6 +14,8 @@ int main(void *dtb_location) {
   uart_setup();
   heap_init();
   pmalloc_init();
+  set_exception_vector_table();
+  enable_int();
   preserve(0, 0x10000000);
   void* a = pmalloc(4);
   void* b = pmalloc(4);
@@ -42,10 +44,8 @@ int main(void *dtb_location) {
   uart_puts("\n");
   uart_puth(malloc(1));
   uart_puts("\n");
-  set_exception_vector_table();
   //core_timer_enable();
   fdt_find_do(dtb_location, "linux,initrd-start", initrd_fdt_callback);
-  //enable_int();
   terminal_run();
 
   return 0;

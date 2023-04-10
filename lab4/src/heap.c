@@ -17,16 +17,17 @@ static char *head;
  * Avoid override the location of data
  */
 int heap_init() {
-  head = (char *)&_end;
-  int pad = (4 - ((int)&_end % 4)) % 4;
+  //head = (char *)&_end;
+  head = 0x1000000;
+  int pad = (8 - ((int)&_end % 8)) % 8;
   head += pad;
-  head += 4;
+  head += 8;
   return 0;
 }
 
 // Note: Padding
 void *malloc(int t) {
-  int pad = (4 - (t % 4)) % 4;
+  int pad = (8 - (t % 8)) % 8;
   void *tmp = (void *)head;
   if (t <= 0)
     return 0;
