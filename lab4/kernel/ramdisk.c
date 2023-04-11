@@ -2,6 +2,7 @@
 #include "string_utils.h"
 #include "device_tree.h"
 #include "mem_utils.h"
+#include "mem_frame.h"
 
 #define MAX_NUM_FILE  10
 #define CPIO_HEADER_SIZE 110
@@ -61,6 +62,8 @@ void parse(void)
         fdt_traverse(set_ramdisk_adr);
 #endif /* QEMU_DEBUG */
 
+        memory_reserve(header_ptr, (void*)(header_ptr + 0x800));
+
         char *ptr = (char*)header_ptr + CPIO_HEADER_SIZE;
         /*
          * c_mode is 00000000 if it is the special record 
@@ -96,6 +99,11 @@ void parse(void)
                 file_count++;
         }
         parsed = 1;
+}
+
+void init_ramdisk(void)
+{
+        parse();
 }
 
 void ramdisk_ls(void)

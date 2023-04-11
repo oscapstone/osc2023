@@ -1,6 +1,7 @@
 #include "peripherals/device_tree.h"
 #include "mini_uart.h"
 #include "string_utils.h"
+#include "mem_frame.h"
 
 struct fdt_header {
         char magic[4];
@@ -31,6 +32,7 @@ int get_device_tree_adr(void)
                 uart_send_string("[ERROR] Device tree: wrong magic\r\n");
                 return 1;
         }
+        memory_reserve(device_tree_adr, (void*)(device_tree_adr + 0x800));
         
         dt_struct_adr = (char*)device_tree_adr + 
                 big_bytes_to_uint((char*)&(device_tree_adr->off_dt_struct), 4);

@@ -29,6 +29,7 @@ void send_help_message(void)
         uart_send_string("\tprint [msg] after [sec] seconds\r\n");
         uart_send_string("demo-frame:\tdemo frame allocation and free\r\n");
         uart_send_string("demo-malloc:\tdemo malloc and free\r\n");
+        uart_send_string("show-reserve:\tshow reserved parts\r\n");
 }
 
 void parse_cmd(void)
@@ -62,6 +63,8 @@ void parse_cmd(void)
                 demo_frame();
         } else if (!strcmp(buffer, "demo-malloc")) {
                 demo_dynamic_allocation();
+        } else if (!strcmp(buffer, "show-reserve")) {
+                show_reservation();
         } else {
                 uart_send_string("Command not found, ");
                 uart_send_string("type 'help' for commands.\r\n");

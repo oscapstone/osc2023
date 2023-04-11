@@ -24,5 +24,6 @@ void memory_reserve(void* start, void* end);
 void process_mem_reserve(void);
 
 void demo_frame(void);
+void show_reservation(void);
 
 #endif /* MEM_FRAME_H */

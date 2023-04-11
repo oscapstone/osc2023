@@ -55,7 +55,7 @@ unsigned int physical_address_to_id(void* ptr)
 
 void init_frames(void)
 {
-        frame_array = simple_malloc(NUM_FRAME * sizeof(struct frame));
+        frame_array = startup_allocator(NUM_FRAME * sizeof(struct frame));
 
         max_block_nframe = (int)pow(2, MAX_ORDER);
         num_frame = NUM_FRAME;
@@ -242,6 +242,10 @@ void free_frame(void *ptr)
         }
         merge_with_buddy(id);
 }
+
+/*
+ * MEMORY RESERVATION
+ */
 
 void memory_reserve(void* start, void* end)
 {
@@ -449,27 +453,64 @@ void demo_frame(void)
 {
         logging = 1;
 
+        uart_endl();
         uart_send_string("demo_frame ------------------------------------\r\n");
+        uart_endl();
 
-        uart_send_string("TEST-1 ALLOCATE FRAME ORDER 0\r\n");
-        int* pos = allocate_frame(0);
+        uart_send_string("TEST-1 ALLOCATE FRAME ORDER 3 (A)\r\n");
+        int* p1 = allocate_frame(3);
         uart_send_string("allocated address = ");
-        uart_send_hex_64((unsigned long)pos);
+        uart_send_hex_64((unsigned long)p1);
+        uart_send_string(", id = ");
+        uart_send_int(physical_address_to_id(p1));
         uart_endl();
         uart_endl();
 
-        uart_send_string("TEST-2 ALLOCATE FRAME ORDER 4\r\n");
-        int* tmp = allocate_frame(4);
+        uart_send_string("TEST-2 ALLOCATE FRAME ORDER 3 (B)\r\n");
+        int* p2 = allocate_frame(3);
         uart_send_string("allocated address = ");
-        uart_send_hex_64((unsigned long)tmp);
+        uart_send_hex_64((unsigned long)p2);
+        uart_send_string(", id = ");
+        uart_send_int(physical_address_to_id(p2));
         uart_endl();
         uart_endl();
 
-        uart_send_string("TEST-3 FREE FRAME ORDER 0\r\n");
-        free_frame(pos);
+        uart_send_string("TEST-3 FREE FRAME ORDER 3 (A)\r\n");
+        free_frame(p1);
         uart_endl();
 
+        uart_send_string("TEST-4 FREE FRAME ORDER 3 (B)\r\n");
+        free_frame(p2);
+
+        uart_endl();
         uart_send_string("-----------------------------------------------\r\n");
+        uart_endl();
 
         logging = 0;
+}
+
+void show_reservation(void)
+{
+        uart_endl();
+        uart_send_string("show_reservation ------------------------------\r\n");
+        uart_endl();
+
+        uart_send_string("Reserved parts: \r\n");
+        for (int i = 0; i < num_reserve; i++) {
+                unsigned int start = reserve_list[i].start;
+                unsigned int end = reserve_list[i].end;
+                uart_send_string("id: [");
+                uart_send_int(start);
+                uart_send_string(", ");
+                uart_send_int(end);
+                uart_send_string("], adr: [");
+                uart_send_hex_64((unsigned long)id_to_physical_address(start));
+                uart_send_string(", ");
+                uart_send_hex_64((unsigned long)id_to_physical_address(end));
+                uart_send_string("]\r\n");
+        }
+
+        uart_endl();
+        uart_send_string("-----------------------------------------------\r\n");
+        uart_endl();
 }
