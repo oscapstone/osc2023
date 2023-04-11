@@ -140,23 +140,6 @@ char uart_getc() {
     return r;
 }
 
-void get_uart_input(char *input) {
-    char tmp;
-    int i = 0;
-    while (1) {
-        tmp = uart_async_getc();
-        if (tmp == '\n') {
-            uart_puts("\n");
-            input[i] = '\0';
-            break;
-        } else
-            uart_send(tmp);
-
-        input[i] = tmp;
-        i++;
-    }
-}
-
 // AUX_MU_IER_REG -> BCM2837-ARM-Peripherals.pdf - Pg.12
 void uart_interrupt_enable(){
     *AUX_MU_IER_REG |=1;  // enable read interrupt

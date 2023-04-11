@@ -6,7 +6,6 @@
 
 void* CPIO_DEFAULT_START;
 void* CPIO_DEFAULT_END;
-extern void* CPIO_DEFAULT_PLACE;
 extern char* dtb_ptr;
 
 //stored as big endian
@@ -118,11 +117,17 @@ void dtb_callback_show_tree(uint32_t node_type, char *name, void *data, uint32_t
 void dtb_callback_initramfs(uint32_t node_type, char *name, void *value, uint32_t name_size) {
     // https://github.com/stweil/raspberrypi-documentation/blob/master/configuration/device-tree.md
     // linux,initrd-start will be assigned by start.elf based on config.txt
-    if(node_type==FDT_PROP && strcmp(name,"linux,initrd-start")==0)
+    if (node_type == FDT_PROP && strcmp(name,"linux,initrd-start") == 0)
     {
-        CPIO_DEFAULT_PLACE = (void *)(unsigned long long)uint32_endian_big2lttle(*(uint32_t*)value);
+        CPIO_DEFAULT_START = (void *)(unsigned long long)uint32_endian_big2lttle(*(uint32_t*)value);
+    }
+    if (node_type == FDT_PROP && strcmp(name, "linux,initrd-end") == 0)
+    {
+        CPIO_DEFAULT_END = (void *)(unsigned long long)uint32_endian_big2lttle(*(uint32_t *)value);
     }
 }
+
+
 
 
 void dtb_find_and_store_reserved_memory()
@@ -148,5 +153,6 @@ void dtb_find_and_store_reserved_memory()
     }
 
     // reserve device tree itself
+    uart_sendline("reserve device tree itself \r\n");
     reserve_memory((unsigned long long)dtb_ptr, (unsigned long long)dtb_ptr + uint32_endian_big2lttle(header->totalsize));
 }

@@ -7,6 +7,7 @@
 #include "u_string.h"
 #include "dtb.h"
 #include "buddy_system.h"
+#include "stdlib.h"
 #include "timer.h"
 
 #define CLI_MAX_CMD 11
@@ -14,6 +15,10 @@
 
 extern char* dtb_ptr;
 void* CPIO_DEFAULT_PLACE;
+
+unsigned long int ptr[1024] = {0};
+int valid[1024] = {0};
+int ptr_num = 0;
 
 void cli_cmd_clear(char* buffer, int length)
 {
@@ -64,10 +69,19 @@ void cli_cmd_exec(char* buffer)
         do_cmd_setTimeout(argvs, sec);
     } else if (strcmp(cmd, "set2sAlert") == 0) {
         do_cmd_set2sAlert();
-    } else if (strcmp(cmd, "set2sAlert") == 0) {
-        do_cmd_set2sAlert();  
+    } else if (strcmp(cmd, "buddy_system_alloc") == 0) {
+        do_cmd_buddy_system_alloc(cmd);  
+    } else if (strcmp(cmd, "buddy_system_free") == 0) {
+        do_cmd_buddy_system_free(cmd);  
+    } else if (strcmp(cmd, "malloc") == 0) {
+        do_cmd_malloc(cmd);  
+    } else if (strcmp(cmd, "free") == 0) {
+        do_cmd_free(cmd);  
     } else if (strcmp(cmd, "reboot") == 0) {
         do_cmd_reboot();
+    }
+    else{
+        uart_puts("Error command!\n");
     }
 }
 
@@ -125,6 +139,10 @@ void do_cmd_help()
     uart_puts("\tls:\t\tlist directory contents.\n");
     uart_puts("\tsetTimeout:\tsetTimeout [MESSAGE] [SECONDS].\n");
     uart_puts("\tset2sAlert:\tset core timer interrupt every 2 second.\n");
+    uart_puts("\tbuddy_system_alloc:\t alloc buddy system in KB\n");
+    uart_puts("\tbuddy_system_free:\tfree the buddy system by index\n");
+    uart_puts("\tmalloc:\t\tdynamic memory allocator.\n");
+    uart_puts("\tfree:\t\tfree memory allocated using malloc\n");
     uart_puts("\treboot:\t\treboot the device.\n");
     uart_puts("\n");
 }
@@ -255,6 +273,50 @@ void do_cmd_setTimeout(char* msg, char* sec)
 void do_cmd_set2sAlert()
 {
     add_timer(timer_set2sAlert,2,"2sAlert");
+}
+
+void do_cmd_buddy_system_alloc(char *command)
+{
+    uart_puts("size(KB): ");
+    cli_cmd_read(command);
+    unsigned long int address = buddy_system_alloc(atoi(command));
+    uart_puts("address: 0x");
+    uart_2hex(address);
+    uart_puts("\n");
+}
+
+void do_cmd_buddy_system_free(char *command)
+{
+    uart_puts("index: ");
+    cli_cmd_read(command);
+    buddy_system_free(atoi(command));
+    uart_puts("\n");
+}
+
+void do_cmd_malloc(char *command)
+{
+    uart_puts("size(B): ");
+    cli_cmd_read(command);
+    ptr[ptr_num] = (unsigned long int)malloc(atoi(command));
+    uart_puts("index: ");
+    uart_2hex(ptr_num);
+    uart_puts("\n");
+    uart_puts("address: 0x");
+    uart_2hex(ptr[ptr_num]);
+    uart_puts("\n");
+    valid[ptr_num] = 1;
+    ptr_num++;
+}
+
+void do_cmd_free(char *command)
+{
+    uart_puts("index: ");
+    cli_cmd_read(command);
+    if (valid[atoi(command)]) {
+        free_page((unsigned long int)ptr[atoi(command)]);
+        valid[atoi(command)] = 0;
+    } else
+        uart_puts("invalid index\n");
 }
 
 void do_cmd_reboot()

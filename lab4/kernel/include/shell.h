@@ -26,6 +26,10 @@ void do_cmd_kmalloc();
 void do_cmd_ls(char*);
 void do_cmd_setTimeout(char* msg, char* sec);
 void do_cmd_set2sAlert();
+void do_cmd_buddy_system_alloc();
+void do_cmd_buddy_system_free();
+void do_cmd_malloc();
+void do_cmd_free();
 void do_cmd_reboot();
 
 #endif /* _SHELL_H_ */

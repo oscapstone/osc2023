@@ -8,7 +8,7 @@
 
 struct block {
     size_t size;
-    int free;
+    int free;  // 0: be used, 1: free to use
     int page_number;
     struct list_head list;
 };
@@ -50,20 +50,29 @@ void *malloc(size_t size) {
     while (len % BLOCK_SIZE)
         len++;
 
+    // for loop the free block in linked list
     list_for_each(tmp, &block_head) {
         struct block *block = list_entry(tmp, struct block, list);
+        // block is free and the size is the size requested
         if (block->free && block->size == len) {
             block->free = 0;
             mem_print_all();
+
+            // return a pointer to the memory
             return (void *)block + BLOCK_SIZE;
         }
+        // find a larger block size
         if (block->free && block->size >= len) {
             len += BLOCK_SIZE;
             struct block *ptr = block + len / BLOCK_SIZE;
+
+            // the remainder of the original block
             ptr->size = block->size - len;
             ptr->free = 1;
             ptr->page_number = block->page_number;
             list_add(&ptr->list, &block->list);
+
+            // exactly the size requested
             block->size = len - BLOCK_SIZE;
             block->free = 0;
             mem_print_all();
@@ -71,10 +80,13 @@ void *malloc(size_t size) {
         }
     }
 
+    // PAGESIZE 4kB
     int request = (size + BLOCK_SIZE) / 4096;
     if ((size + BLOCK_SIZE) % 4096 != 0)
         request++;
     request *= 4;
+
+    // buddy_system_alloc return a pointer to the allocated memory
     struct block *block = (struct block *)buddy_system_alloc(request);
     block->size = request / 4 * 4096 - BLOCK_SIZE;
     block->free = 1;

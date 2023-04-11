@@ -8,6 +8,7 @@
 void* kmalloc(unsigned int size);
 void s_free(void* ptr);
 void buddy_system_init();
+void buddy_system_print_all();
 unsigned long int buddy_system_alloc(int size);
 void buddy_system_free(int index);
 void reserve_memory(unsigned long long start, unsigned long long end);

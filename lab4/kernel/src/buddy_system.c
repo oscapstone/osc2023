@@ -5,11 +5,11 @@
 #include "dtb.h"
 #include "exception.h"
 
-#define MEMORY_BASE 0x0
-#define PAGESIZE 0x1000 // 4KB
-#define MAX_PAGES 0x40000
-#define LOG2_MAX_PAGES 18
-#define LOG2_MAX_PAGES_PLUS_1 19
+#define MEMORY_BASE 0x0      // 0x10000000 - 0x20000000 (SPEC) -> Advanced #3 for all memory region
+#define PAGESIZE 0x1000      // 4KB
+#define MAX_PAGES 0x10000    // 65536 (Entries), PAGESIZE * MAX_PAGES = 0x10000000 (SPEC)
+#define LOG2_MAX_PAGES 16
+#define LOG2_MAX_PAGES_PLUS_1 17
 #define BELONG_LEFT -1
 #define ALLOCATED -2
 
@@ -24,14 +24,15 @@ extern char* CPIO_DEFAULT_END;
 extern char* dtb_ptr;
 
 struct buddy_system_node {
-    int index;
-    int level;
-    struct list_head list;
+    int index;     // index in frame array
+    int level;     // 0 ~ 17
+    struct list_head list; // free list in this level
 };
 
 struct buddy_system_node *node;
 struct list_head *head;
-int *frame_array;
+int *frame_array;  // index, BELONG_LEFT, ALLOCATED
+
 
 
 void* kmalloc(unsigned int size) {
@@ -56,22 +57,31 @@ void s_free(void* ptr) {
 
 
 void buddy_system_update_list(int index) {
+    // checks the level of the newly freed block
     int level = frame_array[index];
+
+    // If the level is at the maximum level or the block is already marked as allocated or it is already marked as belonging to the left half of a larger block,
     if (level == LOG2_MAX_PAGES || level == BELONG_LEFT || level == ALLOCATED)
         return;
 
+    // use the block’s index xor with its exponent to find its buddy (SPEC)
     int buddy = index ^ pow2(level);
+
+    // it has already been allocated or is not of the same size -> do nothing
     if (frame_array[buddy] != level)
         return;
 
     int frist = index < buddy ? index : buddy;
     int second = index < buddy ? buddy : index;
 
+    // delete the current block and its buddy block from their current free list
     list_del_init(&node[frist].list);
     list_del_init(&node[second].list);
     frame_array[frist] = level + 1;
     frame_array[second] = BELONG_LEFT;
     node[frist].level = level + 1;
+
+    // adds the new, larger block to the free list of the next level
     list_add(&node[frist].list, &head[level + 1]);
     buddy_system_update_list(frist);
 
@@ -100,12 +110,10 @@ void reserve_memory(unsigned long long start, unsigned long long end) {
     // start -= start % PAGESIZE; // floor (align 0x1000)
     // end = end % PAGESIZE ? end + PAGESIZE - (end % PAGESIZE) : end; // ceiling (align 0x1000)
 
-    uart_sendline("start_page: ");
-    uart_2hex(start_page);
-    uart_sendline("\n");
-    uart_sendline("end_page: ");
-    uart_2hex(end_page);
-    uart_sendline("\n");
+    uart_sendline("Reserved Memory: ");
+    uart_sendline("start_page 0x%x ~ ", start_page);
+    uart_sendline("end_page 0x%x\r\n",end_page);
+
     for (int i = start_page; i <= end_page; i++) {
         frame_array[i] = ALLOCATED;
         list_del_init(&node[i].list);
@@ -169,11 +177,14 @@ void buddy_system_init() {
     uart_sendline("buddy system: usable memory region: 0x%x ~ 0x%x\n", BUDDY_MEMORY_BASE, BUDDY_MEMORY_BASE + BUDDY_MEMORY_PAGE_COUNT * PAGESIZE);
     dtb_find_and_store_reserved_memory(); // find spin tables in dtb
     uart_sendline("\r\n* Start to reserve_memory *\r\n");
-    uart_sendline("\r\n* Reserve kernel *\r\n");
+
+    uart_sendline("\r\n* Reserve kernel: 0x%x ~ 0x%x* \r\n", &_start, &_end);
     reserve_memory((unsigned long long)&_start, (unsigned long long)&_end); // kernel
-    uart_sendline("\r\n* Reserve heap & stack *\r\n");
+
+    uart_sendline("\r\n* Reserve heap & stack: 0x%x ~ 0x%x *\r\n", &_heap_top, &_stack_top);
     reserve_memory((unsigned long long)&_heap_top, (unsigned long long)&_stack_top);  // heap & stack -> simple allocator
-    uart_sendline("\r\n* Reserve CPIO *\r\n");
+
+    uart_sendline("\r\n* Reserve CPIO: 0x%x ~ 0x%x *\r\n", CPIO_DEFAULT_START, CPIO_DEFAULT_END);
     reserve_memory((unsigned long long)CPIO_DEFAULT_START, (unsigned long long)CPIO_DEFAULT_END);
 
     for (int i = 0; i < MAX_PAGES; i++)
@@ -218,7 +229,7 @@ int buddy_system_find_node_index(int level) {
 
 unsigned long int buddy_system_alloc(int size) {
     int suitable_size = buddy_system_find_suitable_size(size);
-    int level = log2(suitable_size / 4);
+    int level = log2(suitable_size / 4);  // level0: 4(KB)
     uart_sendline("buddy_system_alloc: ");
     uart_2hex(suitable_size);
     uart_sendline("\nlevel: ");
@@ -254,6 +265,7 @@ void buddy_system_free(int index) {
     uart_2hex(level);
     uart_sendline("\n");
 
+    // node is added to the free list corresponding to its level
     list_add(&node[index].list, &head[level]);
     buddy_system_update_list(index);
     buddy_system_print_all();
