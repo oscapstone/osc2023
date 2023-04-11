@@ -3,6 +3,8 @@
 #include "mem_frame.h"
 #include "mem_utils.h"
 
+#define NULL 0xFFFFFFFF
+
 struct frame {
         int val;
         struct frame *prev;
@@ -15,6 +17,15 @@ static unsigned int num_frame;
 static int logging = 0;
 static struct frame *frame_list[MAX_ORDER + 1];
 static struct frame *frame_array;
+
+struct reserved_adr {
+        unsigned long start;
+        unsigned long end;
+};
+
+static int finished_reserve;
+static int num_reserve;
+static struct reserved_adr reserve_list[MAX_RERSERVE];
 
 unsigned int get_frame_id(struct frame *ptr)
 {
@@ -133,6 +144,14 @@ void add_frame_to_list(unsigned int id, unsigned int order)
 
 void cut_memory_block(unsigned int id, unsigned int target_order)
 {
+        if (logging) {
+                uart_send_string("[LOG] cut_memory_block: id = ");
+                uart_send_int((int)id);
+                uart_send_string(", target_order = ");
+                uart_send_int((int)target_order);
+                uart_endl();
+        }
+
         unsigned int current_order = frame_array[id].val;
         unsigned int current_nframe = pow(2, current_order);
 
@@ -142,6 +161,7 @@ void cut_memory_block(unsigned int id, unsigned int target_order)
                 int new_id = id + current_nframe;
                 add_frame_to_list(new_id, current_order);
         }
+        frame_array[id].val = target_order;
 }
 
 void* allocate_frame(unsigned int order)
@@ -164,8 +184,14 @@ void* allocate_frame(unsigned int order)
         return id_to_physical_address(id);
 }
 
-void remove_frame_from_list(unsigned int id)
+/*
+ * Returns 0 on failure
+ */
+int remove_frame_from_list(unsigned int id)
 {
+        int order = frame_array[id].val;
+        if (order < 0) return 0;
+
         struct frame *prev = frame_array[id].prev;
         struct frame *next = frame_array[id].next;
 
@@ -174,7 +200,6 @@ void remove_frame_from_list(unsigned int id)
         frame_array[id].prev = 0;
         frame_array[id].next = 0;
 
-        unsigned int order = frame_array[id].val;
         if (frame_list[order] == &frame_array[id]) frame_list[order] = next;
 
         if (logging) {
@@ -184,6 +209,7 @@ void remove_frame_from_list(unsigned int id)
                 uart_send_int((int)id);
                 uart_endl();
         }
+        return 1;
 }
 
 void merge_with_buddy(unsigned int id)
@@ -215,6 +241,208 @@ void free_frame(void *ptr)
                 return;
         }
         merge_with_buddy(id);
+}
+
+void memory_reserve(void* start, void* end)
+{
+        if (finished_reserve) {
+                uart_send_string("[ERROR] memory reservation already finished");
+                return;
+        }
+        if (num_reserve >= MAX_RERSERVE) {
+                uart_send_string("[ERROR] exceed max number of reseravtion");
+                return;
+        }
+        reserve_list[num_reserve].start = (unsigned long)start;
+        reserve_list[num_reserve].end = (unsigned long)end;
+        num_reserve++;
+}
+
+void merge_overlap_reservation(int i, int j)
+{
+        if (reserve_list[i].start == reserve_list[j].end) {
+                reserve_list[i].start = reserve_list[j].start;
+        } else if (reserve_list[i].end == reserve_list[j].start) {
+                reserve_list[i].end = reserve_list[j].end;
+        } else if (reserve_list[i].start <= reserve_list[j].start
+                        && reserve_list[i].end >= reserve_list[j].end) {
+        } else if (reserve_list[i].start >= reserve_list[j].start
+                        && reserve_list[i].end <= reserve_list[j].end) {
+                reserve_list[i].end = reserve_list[j].end;
+                reserve_list[i].start = reserve_list[j].start;
+        } else {
+                return;
+        }
+        reserve_list[j].start = NULL;
+        reserve_list[j].end = NULL;
+}
+
+int clean_reservation_list(void) {
+        int cnt = 0;
+        for (int i = 0; i < num_reserve; i++) {
+                if (reserve_list[i].start == NULL) continue;
+                reserve_list[cnt].start = reserve_list[i].start;
+                reserve_list[cnt].end = reserve_list[i].end;
+                cnt ++;
+        }
+        return cnt;
+}
+
+void turn_reserve_adr_to_id(void)
+{
+        for (int i = 0; i < num_reserve; i++) {
+                reserve_list[i].start = physical_address_to_id(
+                                        (void*)reserve_list[i].start);
+                reserve_list[i].end = physical_address_to_id(
+                                        (void*)(reserve_list[i].end - 1));
+
+                if (reserve_list[i].start > reserve_list[i].end) {
+                        reserve_list[i].start = NULL;
+                        reserve_list[i].end = NULL;
+                        uart_send_string(
+                                "[ERROR] invalid reservation address\r\n");
+                        continue;
+                }
+                for (int j = 0; j < i; j++) {
+                        merge_overlap_reservation(i, j);
+                }
+        }
+        num_reserve = clean_reservation_list();
+        if (logging) {
+                uart_send_string("[LOG] parts to reserve: ");
+                for (int i = 0; i < num_reserve; i++) {
+                        uart_send_string(" (");
+                        uart_send_int(reserve_list[i].start);
+                        uart_send_string(", ");
+                        uart_send_int(reserve_list[i].end);
+                        uart_send_string(") ");
+                        uart_endl();
+                }
+        }
+}
+
+void allocate_id_order(unsigned int id, int order)
+{
+        if (logging) {
+                uart_send_string("[LOG] allocate_id_order: id = ");
+                uart_send_int(id);
+                uart_send_string(", order = ");
+                uart_send_int(order);
+                uart_endl();
+        }
+
+        unsigned int block_id = id;
+        unsigned int block_order = order;
+        while (!remove_frame_from_list(block_id)) {
+                block_id &= ~(1 << block_order);
+                block_order++;
+        }
+        block_order = frame_array[block_id].val;
+
+        if (logging) {
+                uart_send_string("[LOG] found alocatable: id = ");
+                uart_send_int(block_id);
+                uart_send_string(", order = ");
+                uart_send_int(block_order);
+                uart_endl();
+        }
+
+        while (block_order > order) {
+                if (block_id == id) {
+                        cut_memory_block(id, order);
+                        break;
+                }
+                block_order --;
+                cut_memory_block(block_id, block_order);
+                /*
+                 * Moves if request frame is at the right side
+                 */
+                if ((block_id | (1 << block_order)) <= id) {
+                        add_frame_to_list(block_id, block_order);
+                        block_id = block_id | (1 << block_order);
+                        remove_frame_from_list(block_id);
+                        frame_array[block_id].val = block_order;
+                }
+        }
+        frame_array[id].val = FSTATE_ALLOCATED;
+}
+
+void allocate_id_range(unsigned int start, unsigned int end, int order)
+{
+        if (start == NULL || end == NULL) return;
+        if (logging) {
+                uart_send_string("[LOG] allocate_id_range: start = ");
+                uart_send_int(start);
+                uart_send_string(", end = ");
+                uart_send_int(end);
+                uart_send_string(", order = ");
+                uart_send_int(order);
+                uart_endl();
+        }
+        /*
+         * Break down if requested size > size of MAX_ORDER blocks
+         */
+        if ((order == MAX_ORDER) && ((end - start + 1) >= max_block_nframe)) {
+                unsigned int head_id = start;
+                /*
+                 * Allocates the prefix part that is smaller than MAX_ORDER
+                 */
+                if (head_id % max_block_nframe != 0) {
+                        head_id >>= order;
+                        head_id += 1;
+                        head_id <<= order;
+                        allocate_id_range(start, head_id - 1, order - 1);
+                }
+                /*
+                 * Allocates the whole block of MAX_ORDER
+                 */
+                while (head_id + max_block_nframe <= (end + 1)) {
+                        allocate_id_order(head_id, order);
+                        head_id += max_block_nframe;
+                }
+                /*
+                 * Allocates the remaining part
+                 */
+                if (head_id <= end) allocate_id_range(head_id, end, order - 1);
+                return;
+        }
+        /*
+         * Allocates if requested range fits the size of current order
+         */
+        if (start % (1 << order) == 0 && (end + 1) % (1 << order) == 0) {
+                allocate_id_order(start, order);
+                return;
+        }
+        /*
+         * Allocates block of a smaller order
+         */
+        order -= 1;
+        unsigned int second_id = start;
+        second_id >>= order;
+        second_id += 1;
+        second_id <<= order;
+        if (start >= second_id || end < second_id) {
+                allocate_id_range(start, end, order);
+                return;
+        }
+        /*
+         * Breaks down if it lays across to blocks of current order
+         */
+        allocate_id_range(start, second_id - 1, order);
+        allocate_id_range(second_id, end, order);
+}
+
+void process_mem_reserve(void)
+{
+        finished_reserve = 1;
+        turn_reserve_adr_to_id();
+        for (int i = 0; i < num_reserve; i++) {
+                if (logging) {
+                        uart_send_string("[LOG] reserve part\r\n");
+                }
+                allocate_id_range(
+                        reserve_list[i].start, reserve_list[i].end, MAX_ORDER);
+        }
 }
 
 void demo_frame(void)
