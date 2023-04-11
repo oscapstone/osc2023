@@ -1,4 +1,5 @@
 #include "task.h"
+#include "uart.h"
 
 extern list_head_t * task_head;
 int cur_priority = LOW_PRIORITY;
@@ -32,6 +33,8 @@ void pop_task() {
             return;
         }
 
+        int origin_prio = cur_priority;
+
         disable_interrupt();
         list_del_entry(task_head->next);
         cur_priority = first->prio;
@@ -40,7 +43,7 @@ void pop_task() {
         first->callback();
 
         disable_interrupt();
-        cur_priority = LOW_PRIORITY;
+        cur_priority = origin_prio;
         enable_interrupt();
     }
 }

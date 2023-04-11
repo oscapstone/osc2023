@@ -239,6 +239,7 @@ void shell(void) {
             // while (command[idx] != ' ') {
             //     msg[msg_idx++] = command[idx++];
             // }
+            // msg[msg_idx] = '\0';
             // int sec = atoi(command + idx + 1);
             // uart_printf("setTimeout %d seconds start at %d\n", sec, get_clock_time());
             // add_timer(print_timeout, msg, get_current_tick() + sec * get_clock_freq());
@@ -253,7 +254,6 @@ void shell(void) {
             add_timer(print_timeout, messages + msg_idx, get_current_tick() + sec * get_clock_freq());
             messages_idx++;
         }
-        
         else if (strcmp("twoSec", command) == 0) {
             add_timer(two_second, "", get_current_tick() + 2 * get_clock_freq());
         }
