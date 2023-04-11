@@ -28,7 +28,6 @@ struct fdt_reserve_entry {
     uint64_t size;
 };
 
-
 uint32_t uint32_endian_big2lttle(uint32_t data)
 {
     char* r = (char*)&data;
@@ -127,12 +126,10 @@ void dtb_callback_initramfs(uint32_t node_type, char *name, void *value, uint32_
     }
 }
 
-
-
-
 void dtb_find_and_store_reserved_memory()
 {
     struct fdt_header *header = (struct fdt_header *) dtb_ptr;
+    // indicates that it is a valid DTB
     if (uint32_endian_big2lttle(header->magic) != 0xD00DFEED)
     {
         uart_puts("traverse_device_tree : wrong magic in traverse_device_tree");

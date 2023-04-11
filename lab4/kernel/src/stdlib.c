@@ -47,6 +47,7 @@ void mem_init() {
 void *malloc(size_t size) {
     int len = size;
     struct list_head *tmp;
+    // BLOCK_SIZE alig
     while (len % BLOCK_SIZE)
         len++;
 
@@ -105,9 +106,13 @@ void merge(struct block *f, struct block *s) {
 void free_page(unsigned long int ptr) {
     struct block *block = (struct block *)(ptr - BLOCK_SIZE);
     block->free = 1;
+
+    // checks if the next or previous blocks in the list are also free
     if (block->list.next != &block_head && list_entry(block->list.next, struct block, list)->free)
+        // belong to the same physical page
         if (block->page_number == list_entry(block->list.next, struct block, list)->page_number)
             merge(block, list_entry(block->list.next, struct block, list));
+            
     if (block->list.prev != &block_head && list_entry(block->list.prev, struct block, list)->free)
         if (block->page_number == list_entry(block->list.prev, struct block, list)->page_number)
             merge(list_entry(block->list.prev, struct block, list), block);

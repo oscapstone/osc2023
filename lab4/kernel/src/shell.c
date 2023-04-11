@@ -10,11 +10,11 @@
 #include "stdlib.h"
 #include "timer.h"
 
-#define CLI_MAX_CMD 11
+#define CLI_MAX_CMD 12
 #define USTACK_SIZE 0x10000
 
 extern char* dtb_ptr;
-void* CPIO_DEFAULT_PLACE;
+void* CPIO_DEFAULT_START;
 
 unsigned long int ptr[1024] = {0};
 int valid[1024] = {0};
@@ -98,7 +98,7 @@ void do_cmd_cat(char* filepath)
     char* c_filepath;
     char* c_filedata;
     unsigned int c_filesize;
-    struct cpio_newc_header *header_ptr = CPIO_DEFAULT_PLACE;
+    struct cpio_newc_header *header_ptr = CPIO_DEFAULT_START;
 
     while(header_ptr!=0)
     {
@@ -152,7 +152,7 @@ void do_cmd_exec(char* filepath)
     char* c_filepath;
     char* c_filedata;
     unsigned int c_filesize;
-    struct cpio_newc_header *header_ptr = CPIO_DEFAULT_PLACE;
+    struct cpio_newc_header *header_ptr = CPIO_DEFAULT_START;
 
     while(header_ptr!=0)
     {
@@ -248,7 +248,7 @@ void do_cmd_ls(char* workdir)
     char* c_filepath;
     char* c_filedata;
     unsigned int c_filesize;
-    struct cpio_newc_header *header_ptr = CPIO_DEFAULT_PLACE;
+    struct cpio_newc_header *header_ptr = CPIO_DEFAULT_START;
 
     while(header_ptr!=0)
     {

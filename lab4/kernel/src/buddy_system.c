@@ -31,7 +31,7 @@ struct buddy_system_node {
 
 struct buddy_system_node *node;
 struct list_head *head;
-int *frame_array;  // index, BELONG_LEFT, ALLOCATED
+int *frame_array;  // level, BELONG_LEFT, ALLOCATED
 
 
 
@@ -133,18 +133,6 @@ void buddy_system_print_all() {
         }
         uart_sendline("\n");
     }
-    // uart_sendline("----------- array ----------");
-    // for (int i = 0; i < MAX_PAGES; i++) {
-    //     if (i % 8 == 0)
-    //         uart_sendline("\n");
-    //     if (frame_array[i] == BELONG_LEFT)
-    //         uart_sendline("--------");
-    //     else if (frame_array[i] == ALLOCATED)
-    //         uart_sendline("XXXXXXXX");
-    //     else
-    //         uart_2hex(frame_array[i]);
-    //     uart_sendline(" ");
-    // }
     uart_sendline("\n----------------------------\n");
 
     return;
@@ -202,26 +190,31 @@ int buddy_system_find_suitable_size(int size) {
     return ret;
 }
 
-int buddy_system_spilt(int level) {
+int buddy_system_split(int level) {
     if (level > LOG2_MAX_PAGES)
         return -1;
 
-    if (list_empty(&head[level]) && buddy_system_spilt(level + 1) == -1)
+    // if the given level is empty, go to next level
+    if (list_empty(&head[level]) && buddy_system_split(level + 1) == -1)
         return -1;
 
+    // removes the first block from the list
     struct buddy_system_node *tmp = list_first_entry(&head[level], struct buddy_system_node, list);
     list_del_init(&tmp->list);
     frame_array[tmp->index] = level - 1;
     node[tmp->index].level = level - 1;
+
+    // from index tmp->index ~ tmp->index + pow2(level - 1) -1 is use for "tmp->index"'s Buddy and store BELONG_LEFT
     frame_array[tmp->index + pow2(level - 1)] = level - 1;
     node[tmp->index + pow2(level - 1)].level = level - 1;
+    // add to the free list
     list_add(&node[tmp->index + pow2(level - 1)].list, &head[level - 1]);
     list_add(&tmp->list, &head[level - 1]);
     return 1;
 }
 
 int buddy_system_find_node_index(int level) {
-    if (list_empty(&head[level]) && buddy_system_spilt(level + 1) == -1)
+    if (list_empty(&head[level]) && buddy_system_split(level + 1) == -1)
         return -1;
 
     return list_first_entry(&head[level], struct buddy_system_node, list)->index;
