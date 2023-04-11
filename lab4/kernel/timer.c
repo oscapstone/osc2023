@@ -2,6 +2,7 @@
 #include "mini_uart.h"
 #include "string_utils.h"
 #include "mem_utils.h"
+#include "mem_allocator.h"
 
 unsigned long get_current_time(void)
 {
@@ -97,6 +98,7 @@ void demo_callback(void *str)
         uart_send_string("Timer callback msg: ");
         uart_send_string((char*) str);
         uart_endl();
+        free(str);
 }
 
 void add_timer(void (*callback)(void*), void *arg, int sec)
@@ -132,9 +134,8 @@ void cmd_add_timer(char* cmd)
          */
         char* msg_in_cmd = cmd + strlen("set-timeout ");
         cmd[i] = '\0';
-        // TODO: free this
         int len = strlen(msg_in_cmd);
-        char* msg = simple_malloc(len+1);
+        char* msg = malloc(len+1);
         memcpy(msg, msg_in_cmd, len);
         msg[len] = '\0';
 

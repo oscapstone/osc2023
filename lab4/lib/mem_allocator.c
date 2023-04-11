@@ -145,9 +145,9 @@ void demo_dynamic_allocation(void)
 
         uart_send_string("TEST-1 FIRST ALLOCATION\r\n");
         uart_send_string("# size = 50\r\n");
-        char* ptr = malloc(50);
+        char* ptr1 = malloc(50);
         uart_send_string("-> allocated address = ");
-        uart_send_hex_64((unsigned long)ptr);
+        uart_send_hex_64((unsigned long)ptr1);
         uart_endl();
         uart_endl();
 
@@ -161,9 +161,9 @@ void demo_dynamic_allocation(void)
 
         uart_send_string("TEST-3 ALLOCATE FROM EXISTING FRAME\r\n");
         uart_send_string("# size = 120\r\n");
-        ptr = malloc(120);
+        char* ptr2 = malloc(120);
         uart_send_string("-> allocated address = ");
-        uart_send_hex_64((unsigned long)ptr);
+        uart_send_hex_64((unsigned long)ptr2);
         uart_endl();
         uart_endl();
 
@@ -187,9 +187,9 @@ void demo_dynamic_allocation(void)
 
         uart_send_string("TEST-7 ALLOCATE NEW FRAME\r\n");
         uart_send_string("# size = 100\r\n");
-        ptr = malloc(100);
+        char* ptr3 = malloc(100);
         uart_send_string("-> allocated address = ");
-        uart_send_hex_64((unsigned long)ptr);
+        uart_send_hex_64((unsigned long)ptr3);
         uart_endl();
 
         uart_endl();
@@ -197,4 +197,8 @@ void demo_dynamic_allocation(void)
         uart_endl();
 
         logging = 0;
+
+        free(ptr1);
+        free(ptr2);
+        free(ptr3);
 }
