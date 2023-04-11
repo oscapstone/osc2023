@@ -4,15 +4,19 @@
 #include "exception.h"
 #include "utils.h"
 #include "timer.h"
+#include "mm.h"
 
 
-
-int kernel()
+char* dtb_ptr;
+int kernel(char* arg)
 {
+    uart_init();
+
+    dtb_ptr = arg;
+    traverse_device_tree(dtb_ptr, dtb_callback_initramfs);
     
-    void *base = (void *) DT_ADDR;
-    traverse_device_tree(base, dtb_callback_initramfs);
-    
+    init_allocator();
+
     // set up serial console
     uart_init();
     
@@ -21,7 +25,7 @@ int kernel()
     timer_list_init();
    
     core_timer_enable();
-    uart_interrupt_enable();
+    //uart_interrupt_enable();
     el1_interrupt_enable();  // enable interrupt in EL1 -> EL1
     
 

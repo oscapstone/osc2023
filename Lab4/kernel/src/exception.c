@@ -2,7 +2,7 @@
 #include "uart.h"
 #include "exception.h"
 #include "timer.h"
-#include "malloc.h"
+#include "mm.h"
 
 // DAIF, Interrupt Mask Bits
 void el1_interrupt_enable(){
@@ -82,9 +82,8 @@ void el0_irq_64_router(){
 
 
 void invalid_exception_router(unsigned long long x0){
-    uart_printf("invalid exception : 0x%x\r\n",x0);
+    //uart_printf("invalid exception : 0x%x\r\n",x0);
     //while(1);
-    
 }
 
 // ------------------------------------------------------------------------------------------
@@ -164,7 +163,7 @@ void irqtask_run_preemptive(){
 
         curr_task_priority = prev_task_priority;
         el1_interrupt_enable();
-        free(the_task);
+        simple_free(the_task);
     }
 }
 

@@ -12,17 +12,17 @@ SECTIONS
 
     .rodata : { 
         *(.rodata .rodata.* .gnu.linkonce.r*) 
-         . = ALIGN(16);
+        . = ALIGN(0x1000);
         }
 
     .data : { 
         *(.data) 
-         . = ALIGN(16);
+        . = ALIGN(0x1000);
         }
     
 
     .bss (NOLOAD) : {
-        . = ALIGN(16);
+        . = ALIGN(0x1000);
         __bss_start = .;
         *(.bss)
         __bss_end = .;
@@ -30,13 +30,15 @@ SECTIONS
    
 
     .heap : {
+        . = ALIGN(8);
 		__heap_top = .;
-		. = . + __heap_size;
+
 		*(.heap)
 	}
-	
+	. = . + __heap_size;
 
  	.stack : {
+        . = ALIGN(8);
 		__stack_top = .;
         *(.stack)
         __stack_end = .;

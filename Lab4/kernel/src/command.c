@@ -1,15 +1,16 @@
+#include "peripherals/rpi_uart.h"
+#include "peripherals/rpi_mailbox.h"
 #include "shell.h"
 #include "utils.h"
 #include "uart.h"
-#include "peripherals/rpi_uart.h"
 #include "dtb.h"
 #include "cpio.h"
-#include "peripherals/rpi_mailbox.h"
 #include "uart_boot.h"
-#include "malloc.h"
+#include "mm.h"
 #include "vt.h"
 #include "timer.h"
 
+extern char* dtb_ptr;
 
 
 
@@ -21,7 +22,7 @@ void command_not_found (char * s) {
 
 }
 
-extern void* CPIO_DEFAULT_PLACE;
+extern void* CPIO_DEFAULT_START;
 void command_help (){
 
     /* Lab1 Feature */
@@ -132,7 +133,7 @@ void command_ls(){
     char* c_filepath;
     char* c_filedata;
     unsigned int c_filesize;
-    struct cpio_newc_header *header_ptr = CPIO_DEFAULT_PLACE;
+    struct cpio_newc_header *header_ptr = CPIO_DEFAULT_START;
 
     while(header_ptr!=0)
     {
@@ -159,7 +160,7 @@ void command_cat(char *args){
     char* c_filepath;
     char* c_filedata;
     unsigned int c_filesize;
-    struct cpio_newc_header *header_ptr = CPIO_DEFAULT_PLACE;
+    struct cpio_newc_header *header_ptr = CPIO_DEFAULT_START;
 
     while(header_ptr!=0){
         int error = cpio_newc_parse_header(header_ptr, &c_filepath, &c_filesize, &c_filedata, &header_ptr);
@@ -187,9 +188,9 @@ void command_cat(char *args){
 
 
 
-void *base = (void *) DT_ADDR;
+
 void command_dtb(){
-    traverse_device_tree( base, dtb_callback_show_tree);
+    traverse_device_tree( dtb_ptr, dtb_callback_show_tree);
 }
 
 #define USTACK_SIZE 0x10000
@@ -197,7 +198,7 @@ void command_exec(char *filepath){
     char* c_filepath;
     char* c_filedata;
     unsigned int c_filesize;
-    struct cpio_newc_header *header_ptr = CPIO_DEFAULT_PLACE;
+    struct cpio_newc_header *header_ptr = CPIO_DEFAULT_START;
 
     while(header_ptr!=0)
     {
@@ -221,7 +222,7 @@ void command_exec(char *filepath){
                 "eret\n\t"              // Perform exception return. EL1 -> EL0
                 :: "r" (c_filedata),
                    "r" (ustack+USTACK_SIZE));
-            free(ustack);
+            simple_free(ustack);
             break;
         }
             
@@ -248,4 +249,56 @@ void command_setTimeout(char *args){
 void command_set2sAlert()
 {
     add_timer(two_second_alert, 2, "two_second_alert");
+}
+
+
+
+void command_memory_tester()
+{
+
+    char *a = kmalloc(0x10);
+    char *b = kmalloc(0x100);
+    char *c = kmalloc(0x1000);
+
+    kfree(a);
+    kfree(b);
+    kfree(c);
+    /*
+    a = kmalloc(32);
+    char *aa = kmalloc(50);
+    b = kmalloc(64);
+    char *bb = kmalloc(64);
+    c = kmalloc(128);
+    char *cc = kmalloc(129);
+    char *d = kmalloc(256);
+    char *dd = kmalloc(256);
+    char *e = kmalloc(512);
+    char *ee = kmalloc(999);
+
+    char *f = kmalloc(0x2000);
+    char *ff = kmalloc(0x2000);
+    char *g = kmalloc(0x2000);
+    char *gg = kmalloc(0x2000);
+    char *h = kmalloc(0x2000);
+    char *hh = kmalloc(0x2000);
+
+    kfree(a);
+    kfree(aa);
+    kfree(b);
+    kfree(bb);
+    kfree(c);
+    kfree(cc);
+    kfree(dd);
+    kfree(d);
+    kfree(e);
+    kfree(ee);
+
+    kfree(f);
+    kfree(ff);
+    kfree(g);
+    kfree(gg);
+    kfree(h);
+    kfree(hh);
+    */
+   
 }

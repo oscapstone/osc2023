@@ -1,7 +1,7 @@
 #include "timer.h"
 #include "registers.h"
 #include "uart.h"
-#include "malloc.h"
+#include "mm.h"
 #include "utils.h"
 
 struct list_head *timer_event_list; // first head has nothing, store timer_event_t after it
@@ -40,8 +40,8 @@ void timer_event_callback(timer_event_t *timer_event)
 {
 
     list_del_entry((struct list_head *)timer_event); // delete the event
-    free(timer_event->args);                         // free the arg space
-    free(timer_event);
+    simple_free(timer_event->args);                         // simple_free the arg space
+    simple_free(timer_event);
     ((void (*)(char *))timer_event->callback)(timer_event->args); // call the callback store in event
 
     //set interrupt to next time_event if existing
@@ -85,7 +85,7 @@ void core_timer_handler()
 void add_timer(void *callback, unsigned long long timeout, char *args)
 {
 
-    timer_event_t *the_timer_event = simple_malloc(sizeof(timer_event_t)); //need to free by event handler
+    timer_event_t *the_timer_event = simple_malloc(sizeof(timer_event_t)); //need to simple_free by event handler
 
     // store argument string into timer_event
     the_timer_event->args = simple_malloc(strlen(args) + 1);

@@ -6,10 +6,8 @@
 .global _start
 
 _start:
-    /* store dt loading address to 0x200000 */
-    /* if the kernel is loaded directly */
-    /*ldr     	x1, =0x200000 */
-    /*str     	x0, [x1] */
+
+
 
     /* read cpu id, stop slave cores */
     mrs         x1, mpidr_el1
@@ -49,6 +47,8 @@ init_bss:
     cbnz        w2, init_bss
     
 loop_end:
+    ldr         x1, =dtb_ptr
+    str         x0, [x1], #8
     bl          kernel
     b           proc_hang
 

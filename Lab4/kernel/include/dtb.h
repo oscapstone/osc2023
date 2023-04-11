@@ -19,9 +19,15 @@
 typedef void (*dtb_callback)(uint32_t node_type, char *name, void *value, uint32_t name_size);
 
 uint32_t uint32_endian_big2lttle(uint32_t data);
+uint64_t uint64_endian_big2lttle(uint64_t data);
+
 void traverse_device_tree(void *base,dtb_callback callback);  //traverse dtb tree
 void dtb_callback_show_tree(uint32_t node_type, char *name, void *value, uint32_t name_size);
 void dtb_callback_initramfs(uint32_t node_type, char *name, void *value, uint32_t name_size);
+
+void dtb_find_and_store_reserved_memory();
+
+
 
 /* All the header fields are 32-bit integers, stored in big-endian format. */
 struct fdt_header {
@@ -36,5 +42,13 @@ struct fdt_header {
     uint32_t size_dt_strings;       /* The length in bytes of the strings block section of the devicetree blob.*/
     uint32_t size_dt_struct;        /* The length in bytes of the structure block section of the devicetree blob.*/
 };
+
+
+// memory reservation block - https://zhuanlan.zhihu.com/p/144863497
+struct fdt_reserve_entry {
+    uint64_t address;
+    uint64_t size;
+};
+
 
 #endif
