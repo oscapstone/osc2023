@@ -1,5 +1,8 @@
 
 
+__heap_size  = 1M;
+__stack_size = 0x1000;
+
 SECTIONS
 {
     . = 0x80000;
@@ -35,7 +38,7 @@ SECTIONS
 
 		*(.heap)
 	}
-	. = . + __heap_size;
+	. = __heap_top + __heap_size;
 
  	.stack : {
         . = ALIGN(8);
@@ -47,7 +50,6 @@ SECTIONS
 }
 
 __bss_size = (__bss_end - __bss_start)>>3;
-__heap_size  = 0x1000;
-__stack_size = 0x1000;
+
 
 

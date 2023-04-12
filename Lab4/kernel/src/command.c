@@ -255,7 +255,6 @@ void command_set2sAlert()
 
 void command_memory_tester()
 {
-
     char *a = kmalloc(0x10);
     char *b = kmalloc(0x100);
     char *c = kmalloc(0x1000);
@@ -263,7 +262,7 @@ void command_memory_tester()
     kfree(a);
     kfree(b);
     kfree(c);
-    /*
+
     a = kmalloc(32);
     char *aa = kmalloc(50);
     b = kmalloc(64);
@@ -299,6 +298,5 @@ void command_memory_tester()
     kfree(gg);
     kfree(h);
     kfree(hh);
-    */
-   
+    
 }

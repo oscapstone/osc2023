@@ -42,38 +42,54 @@ static list_head_t        cache_list[CACHE_MAX_IDX];      // store available blo
 
 void init_allocator()
 {
+    // Declare Frame Array through the heap, because the heap is responsible for managing the dynamic allocation of memory
     frame_array = simple_malloc(BUDDY_MEMORY_PAGE_COUNT * sizeof(frame_t));
 
-    // Init frame_array
+    // Init frame_array from 0 ~ 0x3C000 ( spec )
     for (int i = 0; i < BUDDY_MEMORY_PAGE_COUNT; i++)
     {
+
         if (i % (1 << FRAME_IDX_FINAL) == 0)
         { 
+            // Set the size of each frame to the largest block ( 2^6 x 4kb ), 
+            // val is set to order 6 ( 2^6 x 4kb )
             frame_array[i].val = FRAME_IDX_FINAL; 
+            // The idx’th frame is free, but it belongs to a larger contiguous memory block. 
             frame_array[i].used = FRAME_FREE; 
         }
     }
 
-    // Init frame freelist
+    // Init frame freelist from order 0 ~ 6 ( 2^val x 4kb )
+    // Frame_freelist[i] can be used to manage free frames of different sizes. 
+    // For example, frame_freelist[0] is used to manage free frames of size 2^0 x 4KB = 4KB, 
+    // frame_freelist[1] is used to manage free frames of size 2^1 x 4KB = 8KB, and so on.
     for (int i = FRAME_IDX_0; i <= FRAME_IDX_FINAL; i++)
     {
         INIT_LIST_HEAD(&frame_freelist[i]);
     }
 
-    //Init cache list
+    // Init cache list from order 0 ~ 6 ( 2^val )
+    // Cache_list[i] can be used to manage and track slab caches of different sizes. 
+    // For example, cache_list[0] is used to manage a slab cache with a size of 2^0, 
+    // cache_list[1] is used to manage a slab cache with a size of 2^1, and so on.
     for (int i = CACHE_IDX_0; i<= CACHE_IDX_FINAL; i++)
     {
         INIT_LIST_HEAD(&cache_list[i]);
     }
 
+
     for (int i = 0; i < BUDDY_MEMORY_PAGE_COUNT; i++)
     {
         // Init listhead for each frame
         INIT_LIST_HEAD(&frame_array[i].listhead);
+        // Set index value for each page.
         frame_array[i].idx = i;
+        // Set the cache_order of each page to CACHE_NONE ( page is not currently allocated )
         frame_array[i].cache_order = CACHE_NONE;
 
         // Add init frame (FRAME_IDX_FINAL) into freelist
+        // Check if the current page index is a multiple of freelist. 
+        // If yes, add the page to freelist.
         if (i % (1 << FRAME_IDX_FINAL) == 0)
         {
             list_add(&frame_array[i].listhead, &frame_freelist[FRAME_IDX_FINAL]);
@@ -106,8 +122,10 @@ void* page_malloc(unsigned int size)
     uart_printf("        Before\r\n");
     dump_page_info();
 
-    int val;
-    // turn size into minimum 4KB * 2**val
+    int val =0;
+    
+    // Find the corresponding Page size
+    // Turn size into minimum 2^val x 4KB
     for (int i = FRAME_IDX_0; i <= FRAME_IDX_FINAL; i++)
     {
 
@@ -126,11 +144,11 @@ void* page_malloc(unsigned int size)
 
     }
 
-    // find the smallest larger frame in freelist
+    // Find the smallest larger frame in freelist
     int target_val;
     for (target_val = val; target_val <= FRAME_IDX_FINAL; target_val++)
     {
-        // freelist does not have 2**i order frame, going for next order
+        // Freelist does not have 2^i order frame, going for next order
         if (!list_empty(&frame_freelist[target_val]))
             break;
     }
@@ -140,11 +158,18 @@ void* page_malloc(unsigned int size)
         return (void*)0;
     }
 
-    // get the available frame from freelist
+
+    // Get an available frame from the target list (freelist[target_val]), 
+    // and store its pointer in the target_frame_ptr variable.
     frame_t *target_frame_ptr = (frame_t*)frame_freelist[target_val].next;
+    // Removes the selected memory block from the free list, 
+    // indicating that this block will be allocated. 
     list_del_entry((struct list_head *)target_frame_ptr);
 
     // Release redundant memory block to separate into pieces
+    // If the fetched memory block is larger than actually needed, 
+    // it is split into smaller blocks until the required size is met. 
+    // The loop decrements from target_val (obtained block size) to val (actual required size).
     for (int j = target_val; j > val; j--) // ex: 10000 -> 01111
     {
         release_redundant(target_frame_ptr);
@@ -161,12 +186,23 @@ void* page_malloc(unsigned int size)
 
 void page_free(void* ptr)
 {
+    // Calculate the position of the frame_t structure corresponding to the memory page 
+    // that needs to be released in frame_array, and store its pointer in the target_frame_ptr variable.
+    // Note. ">>12", which is to convert address offset to page frame index (2^12 = 4KB) .
     frame_t *target_frame_ptr = &frame_array[((unsigned long long)ptr - BUDDY_MEMORY_BASE) >> 12]; // PAGESIZE * Available Region -> 0x1000 * 0x10000000 // SPEC #1, #2
     uart_printf("    [+] Free page: 0x%x, val = %d\r\n",ptr, target_frame_ptr->val);
     uart_printf("        Before\r\n");
     dump_page_info();
+
+    // Set the state of the target frame as free (FRAME_FREE).
     target_frame_ptr->used = FRAME_FREE;
-    while(coalesce(target_frame_ptr)==0); // merge buddy iteratively
+
+    // Merge buddy iteratively, 
+    // If the merge is successful, keep trying to merge the next buddy until no further merges are possible.
+    while(coalesce(target_frame_ptr)==0); 
+
+    // Add the frame corresponding to the released memory page to the free list (freelist) of the corresponding order, 
+    // indicating that it is now available.
     list_add(&target_frame_ptr->listhead, &frame_freelist[target_frame_ptr->val]);
     uart_printf("        After\r\n");
     dump_page_info();
@@ -174,10 +210,17 @@ void page_free(void* ptr)
 
 frame_t* release_redundant(frame_t *frame)
 {
-    // order -1 -> add its buddy to free list (frame itself will be used in master function)
+    // Order -1 -> add its buddy to free list (frame itself will be used in master function)
     frame->val -= 1;
+    // Call the get_buddy function to find the buddy (buddy) of the current memory block, 
+    // and store its pointer in the buddyptr variable.
+
     frame_t *buddyptr = get_buddy(frame);
+    // Sets the Buddy's order (levels of size etc.) to be the same as the current memory block, 
+    // since they are all split into smaller blocks of the same size.
     buddyptr->val = frame->val;
+
+    // Add buddy to the freelist corresponding to the order, indicating that it is now available.
     list_add(&buddyptr->listhead, &frame_freelist[buddyptr->val]);
     return frame;
 }
@@ -260,14 +303,14 @@ void* cache_malloc(unsigned int size)
     uart_printf("    Before\r\n");
     dump_cache_info();
 
-    // turn size into cache order: 32B * 2**order
-    int order;
+    // Turn size into cache order: 2^order x 32B
+    int order = 0;
     for (int i = CACHE_IDX_0; i <= CACHE_IDX_FINAL; i++)
     {
         if (size <= (32 << i)) { order = i; break; }
     }
 
-    // if no available cache in list, assign one page for it
+    // If no available cache in list, assign one page for it
     if (list_empty(&cache_list[order]))
     {
         page2caches(order);
@@ -284,6 +327,9 @@ void* cache_malloc(unsigned int size)
 void cache_free(void *ptr)
 {
     list_head_t *c = (list_head_t *)ptr;
+    // Calculate the corresponding page frame pointer pageframe_ptr according to the passed pointer ptr. 
+    // Here, ((unsigned long long)ptr - BUDDY_MEMORY_BASE) >> 12 calculates the page index where ptr is located, 
+    // and then finds the corresponding page frame in frame_array.
     frame_t *pageframe_ptr = &frame_array[((unsigned long long)ptr - BUDDY_MEMORY_BASE) >> 12];
     uart_printf("[+] Free cache: 0x%x, val = %d\r\n",ptr, pageframe_ptr->cache_order);
     uart_printf("    Before\r\n");
@@ -299,13 +345,13 @@ void *kmalloc(unsigned int size)
     uart_printf("\033[32m================================\n\033[0m\r");
     uart_printf("\033[32m[+] Request kmalloc size: %d\n\033[0m\r", size);
     uart_printf("\033[32m================================\n\033[0m\r\n");
-    // if size is larger than cache size, go for page
+    // If size is larger than cache size, go for page
     if (size > (32 << CACHE_IDX_FINAL))
     {
         void *r = page_malloc(size);
         return r;
     }
-    // go for cache
+    // Go for cache
     void *r = cache_malloc(size);
     return r;
 }
@@ -345,8 +391,12 @@ void memory_reserve(unsigned long long start, unsigned long long end)
             unsigned long long pagestart = ((frame_t *)pos)->idx * PAGESIZE + BUDDY_MEMORY_BASE;
             unsigned long long pageend = pagestart + (PAGESIZE << order);
 
+            // Start at the largest level (FRAME_IDX_FINAL) and walk down through the page frames of each level, 
+            // checking whether each page intersects with the reserved memory range.
             if (start <= pagestart && end >= pageend) // if page all in reserved memory -> delete it from freelist
             {
+                // If the page lies entirely within the reserved memory range, 
+                // remove it from the free list and mark it as allocated
                 ((frame_t *)pos)->used = FRAME_ALLOCATED;
                 uart_printf("    [!] Reserved page in 0x%x - 0x%x\n", pagestart, pageend);
                 uart_printf("        Before\n");
