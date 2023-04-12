@@ -47,8 +47,8 @@ master:
     bl from_el2_to_el1
 
 bss:
-	adr	x0, __bss_start
-	adr	x1, __bss_end
+	ldr	x0, =__bss_start
+	ldr	x1, =__bss_end
 	sub	x1, x1, x0
 	bl 	memzero
 

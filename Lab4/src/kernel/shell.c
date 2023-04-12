@@ -4,6 +4,7 @@
 #include "read_cpio.h"
 #include "device_tree.h"
 #include "timer.h"
+#include "page_alloc.h"
 
 extern void *_dtb_ptr;
 extern char *cpioDest;
@@ -11,6 +12,7 @@ extern char read_buffer[100];
 
 #define COMMAND_BUFFER 50
 #define FILENAME_BUFFER 20
+#define ARGV_BUFFER 30
 
 void shell_start();
 
@@ -29,6 +31,7 @@ void shell_main(char *command)
         uart_send_string("asynr\t: [test] asynchronous read\n");
         uart_send_string("asynw\t: [test] asynchronous write\n");
         uart_send_string("setTimeout\t: Usage: setTimeout <Message> <Seconds>\n");
+        uart_send_string("alloc\t:\n");
     }
     else if (!strcmp(command, "hello"))
     {
@@ -64,51 +67,6 @@ void shell_main(char *command)
         }
 
         read_content((char *)cpioDest, filename);
-    }
-    else if (!strcmp(command, "cat"))
-    {
-        uart_send_string("Filename: ");
-
-        char c;
-        int i = 0;
-        char filename[FILENAME_BUFFER];
-        // char *cpioDest = (char *)0x8000000;
-
-        memset(filename, '\0', FILENAME_BUFFER);
-
-        while (1)
-        {
-            c = uart_recv();
-
-            if (c >= 0 && c < 128) // Legal
-            {
-                if (c == '\n') // Enter
-                {
-                    filename[i] = '\0';
-                    uart_send(c);
-                    read_content((char *)cpioDest, filename);
-                    break;
-                }
-                else if (c == 8) // Backspace
-                {
-                    uart_send(c);
-                    uart_send(' ');
-                    uart_send(c);
-                    if (i > 0)
-                        i--;
-                }
-                else
-                {
-                    if (i < FILENAME_BUFFER)
-                    {
-                        if (c == 0)
-                            continue;
-                        filename[i++] = c;
-                    }
-                    uart_send(c);
-                }
-            }
-        }
     }
     else if (!strcmp(command, "dts"))
     {
@@ -204,9 +162,54 @@ void shell_main(char *command)
 
         add_timer(sec, message);
     }
-    else if (!strcmp(command, "test"))
+    else if (!memcmp(command, "alloc", 5))
     {
-        add_timer(2, "HELLO");
+        if (command[5] != ' ' || command[6] == '\0')
+        {
+            printf("Usage: alloc <size in bytes>\n");
+            return;
+        }
+
+        char argv_buffer[ARGV_BUFFER];
+        memset(argv_buffer, '\0', ARGV_BUFFER);
+        int i = 6;
+        while (command[i] != '\0')
+        {
+            argv_buffer[i - 6] = command[i];
+            i++;
+        }
+        int size;
+        size = atoi(argv_buffer);
+
+        void *addr = get_page_from_free_list(size);
+        if (addr == NULL)
+            printf("FAIL\n");
+        else
+        {
+            printf("SUCCESS\n");
+            printf("Get addr %p\n", addr);
+        }
+    }
+    else if (!memcmp(command, "free", 4))
+    {
+        if (command[4] != ' ' || command[5] == '\0')
+        {
+            printf("Usage: free <frame_array index>\n");
+            return;
+        }
+
+        char argv_buffer[ARGV_BUFFER];
+        memset(argv_buffer, '\0', ARGV_BUFFER);
+        int i = 5;
+        while (command[i] != '\0')
+        {
+            argv_buffer[i - 5] = command[i];
+            i++;
+        }
+        int index;
+        index = atoi(argv_buffer);
+
+        free_page_frame(index);
     }
 
     return;

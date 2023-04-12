@@ -1,6 +1,7 @@
 ARMGNU ?= aarch64-linux-gnu
 
 COPS = -Wall -nostdlib -nostartfiles -ffreestanding -Iinclude -g -mgeneral-regs-only
+CFLAGS = -Wall -O -ffreestanding -nostdlib -nostartfiles -g -Iinclude
 ASMOPS = -Iinclude 
 
 BUILD_DIR = build
@@ -13,7 +14,7 @@ clean :
 
 $(BUILD_DIR)/%_c.o: $(SRC_DIR)/%.c
 	@mkdir -p $(@D)
-	$(ARMGNU)-gcc $(COPS) -MMD -c $< -o $@
+	$(ARMGNU)-gcc $(CFLAGS) -MMD -c $< -o $@
 
 $(BUILD_DIR)/%_s.o: $(SRC_DIR)/%.S
 	@mkdir -p $(@D)

@@ -13,6 +13,8 @@
         "deque": "c",
         "forward_list": "c",
         "list": "c",
-        "vector": "c"
-    }
+        "vector": "c",
+        "math.h": "c"
+    },
+    "C_Cpp.errorSquiggles": "enabled"
 }
