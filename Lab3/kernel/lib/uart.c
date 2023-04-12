@@ -2,10 +2,17 @@
 
 char tx_buffer[MAX_BUF_SIZE];
 char rx_buffer[MAX_BUF_SIZE];
-unsigned int tx_bf_r_idx = 0;
-unsigned int tx_bf_w_idx = 0;
-unsigned int rx_bf_r_idx = 0;
-unsigned int rx_bf_w_idx = 0;
+static unsigned int tx_bf_r_idx;
+static unsigned int tx_bf_w_idx;
+static unsigned int rx_bf_r_idx;
+static unsigned int rx_bf_w_idx;
+
+void init_uart_async_index() {
+    tx_bf_r_idx = 0;
+    tx_bf_w_idx = 0;
+    rx_bf_r_idx = 0;
+    rx_bf_w_idx = 0;
+}
 
 void uart_init()
 {

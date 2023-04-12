@@ -27,12 +27,15 @@ void main(char *arg)
     // initialize task list head
     INIT_LIST_HEAD(task_head);
 
-    uart_init();
-    enable_interrupt();
-    set_cpacr_el1();
+    // initialize uart async index
+    init_uart_async_index();
+
     enable_core_timer();
     core_timer_interrupt_disable_alternative();
     core_timer_interrupt_enable();
+    uart_init();
     enable_uart_interrupt();
+    enable_interrupt();
+
     shell();
 }

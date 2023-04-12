@@ -22,9 +22,14 @@ from_el2_to_el1:
     eret // return to EL1
 
 master:
+    bl      from_el2_to_el1
+
+    mov     x1, (3 << 20)
+    msr     CPACR_EL1, x1
+
     adr     x1, exception_vector_table // set exception_vector_table
     msr     vbar_el1, x1
-    bl      from_el2_to_el1
+    
     ldr     x1, =_start
     mov     sp, x1
 

@@ -17,10 +17,6 @@ list_head_t * timer_event_head = &timer_event_head_item;
 LIST_HEAD(task_head_item);
 list_head_t * task_head = &task_head_item;
 
-/* memory buddy system */
-LIST_HEAD(buddy_head_item);
-list_head_t * buddy_head = &buddy_head_item;
-
 void main(char *arg)
 {
     dtb_base = arg;
@@ -32,8 +28,8 @@ void main(char *arg)
     // initialize task list head
     INIT_LIST_HEAD(task_head);
 
-    // initialize memory buddy system head
-    INIT_LIST_HEAD(buddy_head);
+    // initialize uart async index
+    init_uart_async_index();
 
     enable_core_timer();
     core_timer_interrupt_disable_alternative();
