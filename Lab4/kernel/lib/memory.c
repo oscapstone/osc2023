@@ -19,13 +19,13 @@ uint32_t chunk_slot_size[] = {
 frame_entry * frame_entries;
 chunk_entry * chunk_entries;
 
-list_head_t frame_free_lists[MAX_ORDER];  // linked link array
+list_head_t frame_free_lists[MAX_ORDER];  // linked list array
 list_head_t chunk_free_lists[9];
 
 
-static uint32_t f_count;
-static uint64_t mem_start;
-static uint64_t mem_end;
+uint32_t f_count;
+uint64_t mem_start;
+uint64_t mem_end;
 
 
 /* initialization */
@@ -88,7 +88,7 @@ void init_merge_frames() {
                 frame_entries[f1].order == i && frame_entries[f2].order == i)
                 ++frame_entries[f1].order;
             
-            f1 += (1 << (i + 1)); // skip merged frames, which is order i + 1
+            f1 += (1 << (i + 1)); // skip merged frames (buddy and itself), which is 2 to the power of i + 1
 
             if (f1 >= f_count)
                 break;
@@ -121,7 +121,7 @@ void init_chunk_listhead()
 }
 
 /* allocation */
-void * allocate_frame(uint32_t page_num) {
+void * allocate_frame(uint32_t page_num) { // page_num = the number of page needed
     if (page_num == 0) {
         return (void *)0;
     }
@@ -129,7 +129,7 @@ void * allocate_frame(uint32_t page_num) {
     int origin_order = log2n(page_num);
     int allocate_order = origin_order;
     while (allocate_order < MAX_ORDER && list_empty(&frame_free_lists[allocate_order])) {
-        allocate_order++; // no free frame
+        allocate_order++; // no free frame -> add order
     }
 
     if (allocate_order == MAX_ORDER) {
@@ -153,6 +153,7 @@ void * allocate_frame(uint32_t page_num) {
     uart_printf("allocate page index: %d\n", idx);
 #endif
 
+    // release redundant frame
     while (allocate_order > origin_order) {
         allocate_order--;
         int cut_half_idx = idx ^ (1 << allocate_order);
@@ -186,7 +187,7 @@ void * allocate_chunk(uint32_t size) {
 #endif
 
     chunk_entry_list_head * ptr;
-    if (list_empty(&chunk_free_lists[size_idx])) {
+    if (list_empty(&chunk_free_lists[size_idx])) { // no free chunk with the size
         void * page_address = allocate_frame(1);
         int page_idx = address2idx(page_address);
         chunk_entries[page_idx].size = size_idx;
@@ -228,6 +229,7 @@ void free_frame(void * address) {
     uart_printf("free page index: %d\n", idx);
 #endif
 
+    // merge
     int buddy_idx = idx ^ (1 << order);
     frame_entry_list_head * buddy_ptr1, * buddy_ptr2, * left_buddy_ptr;
     while (order < MAX_ORDER - 1 && frame_entries[buddy_idx].status == FREE && frame_entries[buddy_idx].order == order) {
@@ -239,7 +241,7 @@ void free_frame(void * address) {
 #endif
         order++;
 
-        // del bith left buddy and right buddy
+        // delete both left buddy and right buddy
         buddy_ptr1 = (frame_entry_list_head *)idx2address(buddy_idx);
         list_del_entry(&buddy_ptr1->listhead);
         buddy_ptr2 = (frame_entry_list_head *)idx2address(idx);
@@ -251,6 +253,7 @@ void free_frame(void * address) {
         left_buddy_ptr = (frame_entry_list_head *)idx2address(idx);
         list_add(&left_buddy_ptr->listhead, &frame_free_lists[order]);
 
+        // find the buddy index of the next order
         buddy_idx = idx ^ (1 << order);
     }
     
@@ -298,11 +301,23 @@ uint32_t log2n(uint32_t x) {
     return (x > 1) ? 1 + log2n(x / 2) : 0;
 }
 
-uint32_t address2idx(void *address) { // return frame or chunk index
+uint32_t log2(uint32_t x) {
+    uint32_t r;
+    r = (x > 0xFFFF) << 4; x >>= r;
+    uint32_t shift = (x > 0xFF) << 3;
+    x >>= shift; r |= shift;
+    shift = (x > 0xF) << 2;
+    x >>= shift; r |= shift;
+    shift = (x > 0x3) << 1;
+    x >>= shift; r |= shift;
+    return r | (x >> 1);
+}
+
+uint32_t address2idx(void *address) { // return frame index given frame or chunk address
     return ((uint64_t)address - mem_start) / PAGE_SIZE;
 }
 
-void * idx2address(uint32_t idx) { // return pointer of free frame
+void * idx2address(uint32_t idx) { // return pointer of frame given index
     return (void *)(mem_start + idx * PAGE_SIZE);
 }
 
@@ -317,18 +332,26 @@ int find_fit_chunk_slot(uint32_t size) {
 void page_frame_allocator_test() {
     char *pages[10];
 
+    uart_printf("Test 0\n");
     pages[0] = malloc(1*PAGE_SIZE + 123);
+    uart_printf("Test 1\n");
     pages[1] = malloc(1*PAGE_SIZE);
+    uart_printf("Test 2\n");
     pages[2] = malloc(3*PAGE_SIZE + 321);
-    // release redundant
+    uart_printf("Test 3\n");
     pages[3] = malloc(1*PAGE_SIZE + 31);
-    //
+    // release redundant
+    uart_printf("Test 4\n");
     pages[4] = malloc(1*PAGE_SIZE + 21);
+    uart_printf("Test 5\n");
     pages[5] = malloc(1*PAGE_SIZE);
 
     free_frame(pages[2]);
+    uart_printf("Test 6\n");
     pages[6] = malloc(1*PAGE_SIZE);
+    uart_printf("Test 7\n");
     pages[7] = malloc(1*PAGE_SIZE + 333);
+    uart_printf("Test 8\n");
     pages[8] = malloc(1*PAGE_SIZE);
 
     // Merge blocks

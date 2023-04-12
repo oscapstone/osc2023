@@ -20,7 +20,7 @@ list_head_t * task_head = &task_head_item;
 void main(char *arg)
 {
     dtb_base = arg;
-    fdt_traverse(initramfs_callback);   // initialize cpio
+    fdt_traverse(initramfs_callback);   // find cpio
 
     // initialize timer event list head
     INIT_LIST_HEAD(timer_event_head);

@@ -11,7 +11,7 @@ extern list_head_t * timer_event_head;
 
 void core_timer_interrupt_enable() {
     asm volatile(
-        "mov x2, 2\n\t"
+        "mov x2, 2\n\t" // 1 << 1
         "ldr x1, =" XSTR(CORE0_TIMER_IRQ_CTRL) "\n\t"
         "str w2, [x1]"
     );
@@ -19,7 +19,7 @@ void core_timer_interrupt_enable() {
 
 void core_timer_interrupt_disable() {
     asm volatile(
-        "mov x2, 0\n\t"
+        "mov x2, 0\n\t" // 0 << 1
         "ldr x1, =" XSTR(CORE0_TIMER_IRQ_CTRL) "\n\t"
         "str w2, [x1]"
     );

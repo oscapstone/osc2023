@@ -5,11 +5,11 @@
 
 
 void enable_interrupt() {
-    asm volatile("msr DAIFClr, 0xf");
+    asm volatile("msr DAIFClr, 0xf"); // Set DAIF to 0
 }
 
 void disable_interrupt() {
-    asm volatile("msr DAIFSet, 0xf");
+    asm volatile("msr DAIFSet, 0xf"); // Set DAIF to 1
 }
 
 void irq_handler(unsigned long long x0) {
@@ -53,7 +53,7 @@ void sync_el0_64_handler() {
     asm volatile(
         "mrs %0, esr_el1 \n\t":"=r"(esr):
     );
-    uart_printf("spsr_el1: %d, elr_el1: %d, esr_el1: %d\n", spsr, elr, esr);
+    uart_printf("spsr_el1: %d, elr_el1: %d, esr_el1: %d\n", spsr, elr, esr); // esr_el1: information for an exception taken to EL1
 }
 
 

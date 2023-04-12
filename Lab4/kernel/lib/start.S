@@ -16,10 +16,10 @@ halt:
 from_el2_to_el1:
     mov x1, (1 << 31) // EL1 uses aarch64
     msr hcr_el2, x1
-    mov x1, 0x3c5 // EL1h (SPSel = 1) with interrupt disabled
+    mov x1, 0x3c5     // Set jump target EL1h and EL1h interrupt disabled
     msr spsr_el2, x1
-    msr elr_el2, lr
-    eret // return to EL1
+    msr elr_el2, lr   // Set position to go to in EL1h
+    eret              // return to EL1
 
 master:
     bl      from_el2_to_el1
@@ -106,33 +106,33 @@ kernel:
 .endm
 
 .macro    ventry    label
-    .align    7
+    .align    7  // 0x80 = 1 << 7
     b    \label
 .endm
 
-.align 11 // vector table should be aligned to 0x800
+.align 11 // vector table should be aligned to 0x800 = 1 << 11 
 .global exception_vector_table
 exception_vector_table:
 
-    //Exception from the current EL while using SP_EL0
+    // Exception from the current EL using SP0
     ventry	sync_el1t			// Synchronous EL1t
     ventry	irq_el1t			// IRQ EL1t
     ventry	fiq_el1t			// FIQ EL1t
     ventry	error_el1t			// Error EL1t
     
-    //Exception from the current EL while using SP_ELx
+    // Exception from the current EL using the current SP
     ventry	sync_el1h			// Synchronous EL1h	
     ventry	irq_el1h		    // IRQ EL1h	
     ventry	fiq_el1h			// FIQ EL1h
     ventry	error_el1h			// Error EL1h
 
-    //Exception from a lower EL and at least one lower EL is AArch64
+    // Exception from a lower EL (AArch64)
     ventry	sync_el0_64			// Synchronous 64-bit EL0
     ventry	irq_el0_64			// IRQ 64-bit EL0
     ventry	fiq_el0_64			// FIQ 64-bit EL0
     ventry	error_el0_64		// Error 64-bit EL0
         
-    //Exception from a lower EL and at least all lower EL are AArch32
+    // Exception from a lower EL (AArch32)
     ventry	sync_el0_32			// Synchronous 32-bit EL0
     ventry	irq_el0_32			// IRQ 32-bit EL0
     ventry	fiq_el0_32			// FIQ 32-bit EL0

@@ -59,6 +59,7 @@ void * malloc(uint32_t size);
 
 /* utility */
 uint32_t log2n(uint32_t x);
+uint32_t log2(uint32_t x);
 uint32_t address2idx(void *address);
 void * idx2address(uint32_t idx);
 int find_fit_chunk_slot(uint32_t size);

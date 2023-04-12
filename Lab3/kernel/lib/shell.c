@@ -180,14 +180,17 @@ void shell(void) {
             uart_puts("Hello Kernel!\n");
         }
         else if (strcmp("help", command) == 0) {
-            uart_puts("help\t: print this help menu\n");
-            uart_puts("hello\t: print Hello World!\n");
-            uart_puts("reboot\t: reboot this device\n");
-            uart_puts("lshw\t: print hardware info from mailbox\n");
-            uart_puts("malloc\t: allocate memory to specific string\n");
-            uart_puts("ls\t: print files and directories\n");
-            uart_puts("cat [FILE]\t: print specific file\n");
-            uart_puts("exec\t: execute specific file\n");
+            uart_puts("help                   : print this help menu\n");
+            uart_puts("hello                  : print Hello World!\n");
+            uart_puts("reboot                 : reboot this device\n");
+            uart_puts("lshw                   : print hardware info from mailbox\n");
+            uart_puts("malloc                 : allocate memory to specific string\n");
+            uart_puts("ls                     : print files and directories\n");
+            uart_puts("cat [FILE]             : print FILE\n");
+            uart_puts("exec                   : execute file to go to EL1\n");
+            uart_puts("preempt                : test preemption\n");
+            uart_puts("setTimeout [MSG] [SEC] : prints MSG after SEC\n");
+            uart_puts("twoSec                 : enable two seconds alert\n");
         }
         else if (strcmp("reboot", command) == 0) {
             uart_puts("rebooting...\n");
