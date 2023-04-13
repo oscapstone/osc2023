@@ -117,12 +117,12 @@ static int dump_fdt_struct(char *dtb_start, uint32_t off_struct,
   fdt_prop *prop;  // property tag
   fdt_prop t_prop; // tmp property
   int pad = 0;
-  int tab = 0; 	   // Formatting
+  int tab = 0; // Formatting
 
   while (1) {
-	  for(int i = 0; i < tab; i++){
-		  uart_puts("  ");
-	  }
+    for (int i = 0; i < tab; i++) {
+      uart_puts("  ");
+    }
     tag = (uint32_t *)cur;
     t_int = b2l_32(*tag);
     // uart_puth(cur);
@@ -163,10 +163,10 @@ static int dump_fdt_struct(char *dtb_start, uint32_t off_struct,
       t_prop.len = b2l_32(prop->len);
       uart_puts("Property: ");
       uart_puts(str_lo + t_prop.nameoff);
-      //uart_puts("\n");
+      // uart_puts("\n");
       uart_puts(" ");
       cur += 8;
-      //uart_puti(t_prop.len);
+      // uart_puti(t_prop.len);
       uart_puts("value: ");
       if (t_prop.len == 0) {
         break;

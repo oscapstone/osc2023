@@ -16,6 +16,9 @@ int cat(void);
 int run_loader(void);
 int time_out(void);
 int async_read(void);
+int pmalloc_command(void);
+int smalloc_command(void);
+int pfree_command(void);
 
 struct command {
   const char *name;

@@ -35,10 +35,12 @@ int pfree(void*);
 
 /// Reserve the memory location.
 /// start address + size
+/// Called after pmalloc_init()
 int preserve(void*, int);
 
 /// Startup allocation.
-/// This function should be called after reserve address.
 int pmalloc_init(void);
+
+int smalloc_init(void);
 
 #endif //MEM_H

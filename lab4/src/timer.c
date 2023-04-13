@@ -119,10 +119,10 @@ int enable_timer_int(void) {
 /***********************************************************************
  * Delay cycles.
  **********************************************************************/
-int delay(uint64_t cycles){
-	if(cycles)
-	while(cycles-- > 0){
-		asm volatile("nop;");
-	}
-	return 0;
+int delay(uint64_t cycles) {
+  if (cycles)
+    while (cycles-- > 0) {
+      asm volatile("nop;");
+    }
+  return 0;
 }

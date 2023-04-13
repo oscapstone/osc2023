@@ -17,8 +17,8 @@ static char *head;
  * Avoid override the location of data
  */
 int heap_init() {
-  //head = (char *)&_end;
-  head = 0x1000000;
+  head = (char *)&_end;
+  // head = 0x1000000;
   int pad = (8 - ((int)&_end % 8)) % 8;
   head += pad;
   head += 8;

@@ -3,62 +3,157 @@
 #include "initrd.h"
 #include "loader.h"
 #include "mailbox.h"
+#include "mem.h"
 #include "str.h"
 #include "terminal.h"
 #include "timer.h"
 #include "uart.h"
 // static char buf[256];
 
-struct command commands[] = {{
-                                 .name = "help",
-                                 .help = "Show help message!\n",
-                                 .func = help,
-                             },
-                             {
-                                 .name = "lshw",
-                                 .help = "Show some HW informations\n",
-                                 .func = lshw,
-                             },
-                             {
-                                 .name = "hello",
-                                 .help = "Print \'hello world\'\n",
-                                 .func = hello,
-                             },
-                             {
-                                 .name = "reboot",
-                                 .help = "Reboot the device.\n",
-                                 .func = reboot,
-                             },
-                             {
-                                 .name = "ls",
-                                 .help = "List file name in FS.\n",
-                                 .func = ls,
-                             },
-                             {
-                                 .name = "cat",
-                                 .help = "Show the content of target file.\n",
-                                 .func = cat,
-                             },
-                             {
-                                 .name = "run",
-                                 .help = "Run the specific user program.\n",
-                                 .func = run_loader,
-                             },
-                             {
-                                 .name = "set timer",
-                                 .help = "set a timer and show the message.\n",
-                                 .func = time_out,
-                             },
-                             {
-                                 .name = "async_read",
-                                 .help = "Read by interrupt handler.\n",
-                                 .func = async_read,
-                             },
+struct command commands[] = {
+    {
+        .name = "help",
+        .help = "Show help message!\n",
+        .func = help,
+    },
+    {
+        .name = "lshw",
+        .help = "Show some HW informations\n",
+        .func = lshw,
+    },
+    {
+        .name = "hello",
+        .help = "Print \'hello world\'\n",
+        .func = hello,
+    },
+    {
+        .name = "reboot",
+        .help = "Reboot the device.\n",
+        .func = reboot,
+    },
+    {
+        .name = "ls",
+        .help = "List file name in FS.\n",
+        .func = ls,
+    },
+    {
+        .name = "cat",
+        .help = "Show the content of target file.\n",
+        .func = cat,
+    },
+    {
+        .name = "run",
+        .help = "Run the specific user program.\n",
+        .func = run_loader,
+    },
+    {
+        .name = "set timer",
+        .help = "set a timer and show the message.\n",
+        .func = time_out,
+    },
+    {
+        .name = "async_read",
+        .help = "Read by interrupt handler.\n",
+        .func = async_read,
+    },
+    {
+        .name = "pmalloc",
+        .help = "Alloc a memory from buddy system.\n",
+        .func = pmalloc_command,
+    },
+    {
+        .name = "pfree",
+        .help = "Free the memory from buddy system.\n",
+        .func = pfree_command,
+    },
+    {
+        .name = "smalloc",
+        .help = "Alloc a small memory from buddy system.\n",
+        .func = smalloc_command,
+    },
 
-                             // ALWAYS The last item of the array!!!
-                             {
-                                 .name = "NULL", // The end of the array
-                             }};
+    // ALWAYS The last item of the array!!!
+    {
+        .name = "NULL", // The end of the array
+    }};
+
+int smalloc_command() {
+  char *buf = (char *)malloc(sizeof(char) * 256);
+  memset(buf, 0, sizeof(char) * 256);
+  int size = 0;
+  int opt = 0;
+  uart_puts("Please input the memroy size: ");
+  uart_gets(buf);
+  for (int i = 0; i < 10; i++) {
+    if (buf[i] >= '0' && buf[i] <= '9') {
+      size += buf[i] - '0';
+      size *= 10;
+    }
+  }
+  size /= 10;
+  if (size == 0) {
+    return 0;
+  }
+  uart_puts("calling smalloc(");
+  uart_puti(size);
+  uart_puts(")\n");
+  uart_puth(smalloc(size));
+  return 0;
+}
+int pfree_command() {
+  char *buf = (char *)malloc(sizeof(char) * 256);
+  memset(buf, 0, sizeof(char) * 256);
+  uint64_t size = 0;
+  uart_puts("Please input the memroy address to FREE: ");
+  uart_gets(buf);
+  for (int i = 0; i < 10; i++) {
+    if (buf[i] >= '0' && buf[i] <= '9') {
+      size += buf[i] - '0';
+      size *= 16;
+    }
+    if (buf[i] >= 'A' && buf[i] <= 'F') {
+      size += buf[i] - 'A' + 10;
+      size *= 16;
+    }
+  }
+  size /= 16;
+  if (size == 0) {
+    return 0;
+  }
+  uart_puts("calling pfree(");
+  uart_puth(size);
+  uart_puts(")\n");
+  pfree(size);
+  return 0;
+}
+
+int pmalloc_command() {
+  char *buf = (char *)malloc(sizeof(char) * 256);
+  memset(buf, 0, sizeof(char) * 256);
+  int size = 0;
+  int opt = 0;
+  uart_puts("Please input the memroy size: ");
+  uart_gets(buf);
+  for (int i = 0; i < 10; i++) {
+    if (buf[i] >= '0' && buf[i] <= '9') {
+      size += buf[i] - '0';
+      size *= 10;
+    }
+  }
+  size /= 10;
+  if (size == 0) {
+    return 0;
+  }
+  size /= FRAME_SIZE; // 0x1000
+  for (; size > 0; size /= 2) {
+    opt++;
+  }
+  uart_puts("calling pmalloc(");
+  uart_puti(opt);
+  uart_puts(")\n");
+  pmalloc(opt);
+  return 0;
+}
 
 int async_read() {
   uart_puts("Async Read start...\n");
