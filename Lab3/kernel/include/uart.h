@@ -30,7 +30,7 @@ int uart_printf(char *fmt, ...);
 void uart_puts(char *s);
 void uart_hex(unsigned int d);
 char uart_get();
-
+ 
 void init_uart_async_index();
 void enable_uart_interrupt();
 void enable_uart_tx_interrupt();
