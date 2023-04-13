@@ -34,9 +34,11 @@ static int split_buddy(int index, int cnt) {
   if (index % k == 0) {
     mem_arr[index + k / 2] = cnt;
     mem_arr[index] = cnt;
+    // Mark as belonged
     for (int i = index + k / 2 + 1; i < index + k; ++i) {
       mem_arr[i] = -1;
     }
+    // Mark as belonged
     for (int i = index + 1; i < index + k / 2; ++i) {
       mem_arr[i] = -1;
     }
@@ -119,6 +121,7 @@ static int merge_buddy(int index, int v) {
   return 1;
 }
 
+// Add item into Free Page List
 static int list_add(int cnt, int index) {
   mem_node *cur = (mem_node *)malloc(sizeof(mem_node));
   /*
@@ -143,6 +146,7 @@ static int list_add(int cnt, int index) {
   return 0;
 }
 
+// Delete the item in the Free Page List.
 static int list_delete(int cnt, int index) {
   mem_node *head = free_mem[cnt];
   mem_node *cur;
@@ -168,12 +172,14 @@ static int list_delete(int cnt, int index) {
   return 1;
 }
 
+// Pop a item in the Free Page list
 static int list_pop(int cnt) {
   int ret = free_mem[cnt]->index;
   list_delete(cnt, ret);
   return ret;
 }
 
+// Add item in Free Slot List
 static int list_adds(int cnt, void *addr) {
   slot *cur = (slot *)malloc(sizeof(slot));
   cur->addr = addr;
@@ -189,6 +195,7 @@ static int list_adds(int cnt, void *addr) {
   return 0;
 }
 
+// Delete the specific item in Free Slot list
 static int list_deletes(int cnt, void *addr) {
   slot *head = free_smem[cnt];
   slot *cur;
@@ -214,6 +221,7 @@ static int list_deletes(int cnt, void *addr) {
   return 1;
 }
 
+// Pop the first item for Slots in free list
 static void *list_pops(int cnt) {
   int ret = free_smem[cnt]->addr;
   list_deletes(cnt, ret);
@@ -222,6 +230,7 @@ static void *list_pops(int cnt) {
 /*******************************************************************
  * Generate small memorys by a 4KB frame
  * support 2^0 -> 2^4 * 32 bits
+ * @size: The size should be multiple of 4 bytes.
  ******************************************************************/
 static int gen_slots(int size) {
   int t = 1;
@@ -232,6 +241,7 @@ static int gen_slots(int size) {
   for (int i = 0; i < FRAME_SIZE; i += t) {
     list_adds(size, (void *)(mem + i));
   }
+  // Log
   uart_puts("***Slot generate size: ");
   uart_puti(t * 4);
   uart_puts(" bytes\n");
@@ -284,7 +294,7 @@ int smalloc_init(void) {
 }
 
 /*****************************************************************
- * Page malloc
+ * Page malloc for buddy system
  ****************************************************************/
 void *pmalloc(int cnt) {
   int t = 1;
@@ -296,6 +306,7 @@ void *pmalloc(int cnt) {
     return 0;
   }
   int ret = 0;
+  // If free memory in current size
   if (free_mem[cnt] != NULL) {
     ret = list_pop(cnt);
     for (int i = 1; i < t; i++) {
@@ -309,34 +320,44 @@ void *pmalloc(int cnt) {
   }
   // Else
   int i;
+  // Find the free memory closet to target
   for (i = cnt + 1; i < MEM_MAX; i++) {
     if (free_mem[i] != NULL)
       break;
   }
+  // Pop one and split it to target size
   for (int j = i; j > cnt; --j) {
     ret = list_pop(j);
     split_buddy(ret, j);
   }
   ret = list_pop(cnt);
+  // Mark as belonged
   for (int i = 1; i < t; i++) {
     mem_arr[ret + i] = -1;
   }
+  // Mark as used
   mem_arr[ret] = -2;
+  // Log
   uart_puts("***PMALLOC with split!: ");
   uart_puth(ret << 12);
   uart_puts("\n");
   return (void *)(ret << 12);
 }
 
+/************************************************************************
+ * Free the memory allocated from buddy system.
+ * @addr: the target memory address to free.
+ ***********************************************************************/
 int pfree(void *addr) {
   int c = 1;
   int index = ((int)addr) >> 12;
   int t = 1;
+  // Get the Max size
   for (int i = 0; i < MEM_MAX; i++) {
     t *= 2;
   }
+  // Get the real size
   for (int i = 1; i < t; i++) {
-    // uart_puth((index + i) << 12);
     if (mem_arr[index + i] != (char)-1)
       break;
     c++;
@@ -345,6 +366,7 @@ int pfree(void *addr) {
     if (c >> i) {
       mem_arr[index] = i;
       list_add(i, index);
+      // Log
       uart_puts("***Free index: ");
       uart_puth(addr);
       uart_puts(", size: ");
@@ -360,6 +382,8 @@ int pfree(void *addr) {
 /********************************************************************
  * page reserve
  * Each reserve is at least the largest frame size.
+ * @addr: The start address to reserve.
+ * @size: The size from start address to reserve.
  ******************************************************************/
 int preserve(void *addr, int size) {
   int index = ((int)addr) >> 12;
@@ -369,9 +393,19 @@ int preserve(void *addr, int size) {
   }
   size = size / (t * FRAME_SIZE) + (size % t);
   size *= t;
+  // Mark as used
   for (int i = 0; i < size; i++) {
     mem_arr[index + i] = -2;
+    // Delete from the largest free frme list
+    if((index + i) % 64 == 0){
+	    //uart_puti(index + i);
+	    //uart_puts(" ");
+	    //uart_puth((index+i) << 12);
+	    //uart_puts(" ");
+	    list_delete(MEM_MAX - 1, (index + i));
+    }
   }
+  // Log
   uart_puts("***Reserve from: ");
   uart_puth(addr);
   uart_puts(" to: ");
@@ -382,6 +416,10 @@ int preserve(void *addr, int size) {
   return 0;
 }
 
+/***********************************************************************
+ * Small memory allocation.
+ * @size: the size need to be allocated
+ **********************************************************************/
 void *smalloc(int size) {
   size = size / 4 + ((size % 4) ? 1 : 0); // Base 32bits
   if (size >= SMEM_MAX || size < 0)
