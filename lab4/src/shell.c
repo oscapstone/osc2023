@@ -45,6 +45,9 @@ void shell_option(char* command,char* ramdisk)
 		uart_send_string("p_alloc\t\t: alloc page by KB\r\n");
 		uart_send_string("p_free\t\t: free page by index\r\n");
 		uart_send_string("p_show\t\t: show page_array log\r\n");
+		uart_send_string("d_alloc\t\t: alloc page by byte\r\n");
+		uart_send_string("show_pool\t\t: show pool info\r\n");
+		uart_send_string("clear_pool\t\t: clear pool\r\n");
 	}
 	else if(!strcmp(command,"hello"))
 	{

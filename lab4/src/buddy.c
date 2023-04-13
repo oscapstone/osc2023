@@ -44,6 +44,7 @@ void init_buddy()
 	page_total = (0x3C000000 - 0x0)/4096;				//245760
 	char* buddy_start = memalloc(page_total * sizeof(struct page));
 	MAX_ORDER = log_2(page_total);						//MAX_ORDER : 17
+	page_total = pow_2(MAX_ORDER);
 	page_array = buddy_start;							//page_array start from buddy_start
 	page_array[0].val = log_2(page_total);				//maximum order -> can use all page_total
 	page_array[0].index = 0;
@@ -140,8 +141,6 @@ void page_merge(int index)
 		page_array[index].val = -1;
 		page_array[front].val += 1;
 		struct page* tmp = page_list[MAX_ORDER-order];
-		uart_hex(tmp);
-		uart_send('\n');
 		if(tmp == &page_array[front])											//remove page is order_list head
 		{
 			page_list[MAX_ORDER-order] = page_list[MAX_ORDER-order]->next;
@@ -214,8 +213,21 @@ void page_free(char* start)
 void show_page()
 {
 	uart_send_string("************************************************************************\r\n");
+	for(int i=0;i<256;i++)
+	{
+		uart_send_string("addr: ");
+		uart_hex(4096 * page_array[i].index);
+		uart_send_string("\t, index: ");
+		uart_int(page_array[i].index);
+		uart_send_string("\t, val: ");
+		uart_int(page_array[i].val);
+		uart_send_string("\t, valid: ");
+		uart_int(page_array[i].valid);
+		uart_send_string("\r\n");
+	}
+	/*log will too large
 	int pos = 0;
-	while(pos < page_total && pos < 100)
+	while(pos < page_total)
 	{
 		int size = pow_2(page_array[pos].val);
 		for(int j=0;j<size;j++)
@@ -232,6 +244,7 @@ void show_page()
 		}
 		pos += size;
 	}
+	*/
 	return;
 }
 
