@@ -163,10 +163,11 @@ void buddy_system_init() {
     */
     uart_sendline("\r\n* Startup Allocation *\r\n");
     uart_sendline("buddy system: usable memory region: 0x%x ~ 0x%x\n", BUDDY_MEMORY_BASE, BUDDY_MEMORY_BASE + BUDDY_MEMORY_PAGE_COUNT * PAGESIZE);
-    dtb_find_and_store_reserved_memory(); // find spin tables in dtb
-    uart_sendline("\r\n* Start to reserve_memory *\r\n");
 
-    uart_sendline("\r\n* Reserve kernel: 0x%x ~ 0x%x* \r\n", &_start, &_end);
+    uart_sendline("\r\n* dtb_find_and_store *\r\n");
+    dtb_find_and_store_reserved_memory(); // find spin tables in dtb
+
+    uart_sendline("\r\n* Reserve kernel: 0x%x ~ 0x%x * \r\n", &_start, &_end);
     reserve_memory((unsigned long long)&_start, (unsigned long long)&_end); // kernel
 
     uart_sendline("\r\n* Reserve heap & stack: 0x%x ~ 0x%x *\r\n", &_heap_top, &_stack_top);
@@ -245,6 +246,7 @@ unsigned long int buddy_system_alloc(int size) {
 void buddy_system_free(int index) {
     uart_sendline("buddy_system_free index: ");
     uart_2hex(index);
+    //uart_send(index);
     uart_sendline("\n");
 
     if (frame_array[index] != ALLOCATED) {

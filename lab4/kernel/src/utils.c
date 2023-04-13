@@ -8,3 +8,7 @@ int log2(int x) {
 int pow2(int x) {
     return (1 << x);
 }
+
+int pow16(int x) {
+    return (4 << x);
+}

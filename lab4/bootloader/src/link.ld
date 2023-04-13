@@ -26,7 +26,5 @@ SECTIONS
 
     . = 0x3000000;
     _bootloader_relocated_addr = 0x3000000;
-    . = . + _bootloader_size;
 }
-
 __code_size = (_end - _start);

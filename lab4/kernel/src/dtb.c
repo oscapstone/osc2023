@@ -137,6 +137,7 @@ void dtb_find_and_store_reserved_memory()
     }
 
     // off_mem_rsvmap stores all of reserve memory map with address and size
+    // The memory reservation block contains a list of reserved memory regions, which are specified as a pair of address and size values.
     char *dt_mem_rsvmap_ptr = (char *)((char *)header + uint32_endian_big2lttle(header->off_mem_rsvmap));
     struct fdt_reserve_entry *reverse_entry = (struct fdt_reserve_entry *)dt_mem_rsvmap_ptr;
 
@@ -150,6 +151,6 @@ void dtb_find_and_store_reserved_memory()
     }
 
     // reserve device tree itself
-    uart_sendline("reserve device tree itself \r\n");
-    reserve_memory((unsigned long long)dtb_ptr, (unsigned long long)dtb_ptr + uint32_endian_big2lttle(header->totalsize));
+    // uart_sendline("reserve device tree itself \r\n");
+    // reserve_memory((unsigned long long)dtb_ptr, (unsigned long long)dtb_ptr + uint32_endian_big2lttle(header->totalsize));
 }

@@ -69,9 +69,9 @@ void cli_cmd_exec(char* buffer)
         do_cmd_setTimeout(argvs, sec);
     } else if (strcmp(cmd, "set2sAlert") == 0) {
         do_cmd_set2sAlert();
-    } else if (strcmp(cmd, "buddy_system_alloc") == 0) {
+    } else if (strcmp(cmd, "bs_alloc") == 0) {
         do_cmd_buddy_system_alloc(cmd);  
-    } else if (strcmp(cmd, "buddy_system_free") == 0) {
+    } else if (strcmp(cmd, "bs_free") == 0) {
         do_cmd_buddy_system_free(cmd);  
     } else if (strcmp(cmd, "malloc") == 0) {
         do_cmd_malloc(cmd);  
@@ -139,8 +139,8 @@ void do_cmd_help()
     uart_puts("\tls:\t\tlist directory contents.\n");
     uart_puts("\tsetTimeout:\tsetTimeout [MESSAGE] [SECONDS].\n");
     uart_puts("\tset2sAlert:\tset core timer interrupt every 2 second.\n");
-    uart_puts("\tbuddy_system_alloc:\t alloc buddy system in KB\n");
-    uart_puts("\tbuddy_system_free:\tfree the buddy system by index\n");
+    uart_puts("\tbs_alloc:\t alloc buddy system in KB\n");
+    uart_puts("\tbs_free:\tfree the buddy system by index\n");
     uart_puts("\tmalloc:\t\tdynamic memory allocator.\n");
     uart_puts("\tfree:\t\tfree memory allocated using malloc\n");
     uart_puts("\treboot:\t\treboot the device.\n");
@@ -289,7 +289,8 @@ void do_cmd_buddy_system_free(char *command)
 {
     uart_puts("index: ");
     cli_cmd_read(command);
-    buddy_system_free(atoi(command));
+    //uart_sendline("atoi :%d\n", hex2dec(command));
+    buddy_system_free(hex2dec(command));
     uart_puts("\n");
 }
 
@@ -313,7 +314,7 @@ void do_cmd_free(char *command)
     uart_puts("index: ");
     cli_cmd_read(command);
     if (valid[atoi(command)]) {
-        free_page((unsigned long int)ptr[atoi(command)]);
+        free_page((unsigned long int)ptr[hex2dec(command)]);
         valid[atoi(command)] = 0;
     } else
         uart_puts("invalid index\n");

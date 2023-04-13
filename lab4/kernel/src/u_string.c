@@ -1,5 +1,7 @@
 #include "u_string.h"
+#include "utils.h"
 #include <stddef.h>
+#include "uart1.h"
 
 unsigned int vsprintf(char *dst, char* fmt, __builtin_va_list args)
 {
@@ -232,4 +234,24 @@ int atoi(char* str)
 
     // return result.
     return res;
+}
+
+int hex2dec(char *hex) {
+    int result = 0;
+    for (int i = 0; hex[i] != '\0'; i++) {
+        char c = hex[i];
+        int digit;
+        if (c >= '0' && c <= '9') {
+            digit = c - '0';
+        } else if (c >= 'a' && c <= 'f') {
+            digit = c - 'a' + 10;
+        } else if (c >= 'A' && c <= 'F') {
+            digit = c - 'A' + 10;
+        } else {
+            // invalid hex digit
+            return 0;
+        }
+        result = (result << 4) | digit;
+    }
+    return result;
 }
