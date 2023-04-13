@@ -55,6 +55,8 @@ bss:
 	bl set_el1_exception_vector_table	// set el1 exception vector table base
 
 	mov	sp, #LOW_MEMORY // 4MB
+	// ldr x1, =_start
+    // mov sp, x1
 	bl	kernel_main
 	b 	proc_hang		// should never come here
 

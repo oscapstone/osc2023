@@ -187,7 +187,7 @@ void shell_main(char *command)
         if (size > MAX_POOL_SIZE)
         {
             // alloc pages
-            int frame_index = get_page_from_free_list(size);
+            int frame_index = get_page_from_free_list(size, -1);
             void *addr = frame_array[frame_index].addr;
             if (addr == NULL)
                 printf("FAIL\n");
@@ -228,7 +228,7 @@ void shell_main(char *command)
         int i = 10;
         while (command[i] != '\0')
         {
-            argv_buffer[i - 5] = command[i];
+            argv_buffer[i - 10] = command[i];
             i++;
         }
         int index;
@@ -261,6 +261,11 @@ void shell_main(char *command)
             debug();
             debug_pool();
         }
+    }
+    else if (!memcmp(command, "debug", 5))
+    {
+        debug();
+        debug_pool();
     }
 
     return;

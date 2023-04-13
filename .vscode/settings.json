@@ -14,7 +14,13 @@
         "forward_list": "c",
         "list": "c",
         "vector": "c",
-        "math.h": "c"
+        "math.h": "c",
+        "functional": "c",
+        "istream": "c",
+        "ostream": "c",
+        "tuple": "c",
+        "type_traits": "c",
+        "dynamic_alloc.h": "c"
     },
     "C_Cpp.errorSquiggles": "enabled"
 }
