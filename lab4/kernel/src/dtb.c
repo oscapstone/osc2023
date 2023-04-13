@@ -151,6 +151,6 @@ void dtb_find_and_store_reserved_memory()
     }
 
     // reserve device tree itself
-    // uart_sendline("reserve device tree itself \r\n");
-    // reserve_memory((unsigned long long)dtb_ptr, (unsigned long long)dtb_ptr + uint32_endian_big2lttle(header->totalsize));
+    uart_sendline("reserve device tree itself \r\n");
+    reserve_memory((unsigned long long)dtb_ptr, (unsigned long long)dtb_ptr + uint32_endian_big2lttle(header->totalsize));
 }

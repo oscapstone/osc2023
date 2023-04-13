@@ -81,6 +81,7 @@ void *malloc(size_t size) {
         }
     }
 
+    // If there are no free blocks of the appropriate size, the code calls buddy_system_alloc()
     // PAGESIZE 4kB
     int request = (size + BLOCK_SIZE) / 4096;
     if ((size + BLOCK_SIZE) % 4096 != 0)

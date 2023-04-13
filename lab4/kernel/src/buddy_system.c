@@ -140,11 +140,14 @@ void buddy_system_print_all() {
 
 void buddy_system_init() {
     void *base = (void *)&_end;
+    // 2^0 ~ 2^15 total #16 pages for freelist
     head = (struct list_head *)simple_malloc(&base, (unsigned long)sizeof(struct list_head) * LOG2_MAX_PAGES_PLUS_1);
     node = (struct buddy_system_node *)simple_malloc(&base, (unsigned long)sizeof(struct buddy_system_node) * MAX_PAGES);
+    // store int in frame_array
     frame_array = (int *)simple_malloc(&base, (unsigned long)sizeof(int) * MAX_PAGES);
 
     for (int i = 0; i < LOG2_MAX_PAGES_PLUS_1; i++)
+        // Initialize empty list head
         INIT_LIST_HEAD(&head[i]);
     for (int i = 0; i < MAX_PAGES; i++) {
         node[i].index = i;
@@ -155,7 +158,7 @@ void buddy_system_init() {
     }
 
     /* Startup reserving the following region:
-    Spin tables for multicore boot (0x0000 - 0x1000)
+    Spin tables is a data structure for multicore boot (0x0000 - 0x1000)
     Devicetree (Optional, if you have implement it)
     Kernel image in the physical memory
     Your simple allocator (startup allocator) (Stack + Heap in my case)
