@@ -46,7 +46,6 @@ typedef struct fdt_property  {
     char data[0];
 } dtb_property_t;
 
-extern struct fdt;
 typedef void(*fdt_callback_t)(struct fdt *self, dtb_node_t *node, dtb_property_t *prop, void *data);
 
 struct fdt {
@@ -56,12 +55,11 @@ struct fdt {
     uint32_t total_size;
     int (*fdt_traverse)(struct fdt *self, fdt_callback_t cb, void *data);
     int (*fdt_print) (struct fdt *self);
+    void *end_addr;
 };
 extern int _fdt_print(struct fdt *self);
 extern int _fdt_traversal(struct fdt *self, fdt_callback_t cb, void *data);
 extern struct fdt _fdt;
 int fdt_init(struct fdt *fdt, void *addr);
 void initramfs_fdt_cb(struct fdt *self, dtb_node_t *node, dtb_property_t *prop, void *data);
-
-
 #endif

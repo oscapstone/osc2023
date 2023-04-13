@@ -1,6 +1,6 @@
 #ifndef _INITRAMFS_H
 #define _INITRAMFS_H
-extern char *cpio_addr;
+extern char *cpio_addr, *cpio_end;
 //struct __attribute__((__packed__)) cpio_newc_header {
 struct cpio_newc_header {
     char	   c_magic[6];

@@ -2,6 +2,7 @@
 #define _TIME_INTERRUPT_H
 #include "utils.h"
 #include "mmio.h"
+#include "list.h"
 //https://github.com/Tekki/raspberrypi-documentation/blob/master/hardware/raspberrypi/bcm2836/QA7_rev3.4.pdf p7
 //https://datasheets.raspberrypi.com/bcm2836/bcm2836-peripherals.pdf 4.6
 #define CORE0_TIMER_IRQ_CTRL ((volatile unsigned int *)(0x40000040))

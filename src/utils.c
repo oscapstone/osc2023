@@ -238,3 +238,23 @@ int atoi(const char *str) {
 
     return sign * result;
 }
+
+unsigned long long alignToNextPowerOf2(unsigned long long num) {
+    num--;
+    num |= num >> 1;
+    num |= num >> 2;
+    num |= num >> 4;
+    num |= num >> 8;
+    num |= num >> 16;
+    num |= num >> 32;
+    num++;
+    return num;
+}
+
+unsigned ul_log2(unsigned long long n) {
+    unsigned result = 0;
+    while (n >>= 1) {
+        result++;
+    }
+    return result;
+}

@@ -7,6 +7,7 @@
 #include "note.h"
 #include "time_interrupt.h"
 #include "exception.h"
+#include "mm.h"
 extern char *_dtb_ptr;
 extern char _stext;
 extern char _etext;
@@ -39,6 +40,8 @@ int main(void)
     }
     dump_hex(&cpio_addr, 8);
     init_initramfs(&_initramfs);
+    init_buddy(&_buddy);
+    init_mem_pool(&_mem_pool);
     init_note();
     print_hw_info();
     uart_write_string("text section starts at: ");
@@ -52,7 +55,7 @@ int main(void)
     // core_timer_enable();
     enable_local_all_interrupt();
     //test
-    print_uptime_every2second();
+    // print_uptime_every2second();
 
     shell_main();
     return 0;

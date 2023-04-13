@@ -1,6 +1,6 @@
 #include "time_interrupt.h"
 #include "mini_uart.h"
-#include "salloc.h"
+#include "mm.h"
 #include "uart.h"
 #include "exception.h"
 #include "utils.h"
@@ -78,9 +78,6 @@ int _unlink(struct timer_task_scheduler *self, timer_task_t *task)
     task->prev->next = task->next;
     task->next = task->prev = task;
     self->qsize--;
-    // uart_write_string("a timer task has been removed, qsize: ");
-    // uart_write_no(self->qsize);
-    // uart_write_string("\n");
     //ask timer to intterupt on the next event
     if (self->head) {
         core_timer_enable();
@@ -159,7 +156,6 @@ void dbg_print_uptime()
     uart_write_no(cur_ticks);
     uart_write_string("\n");
     write_uptime();
-    return cur_ticks;
 }
 
 

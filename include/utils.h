@@ -1,5 +1,7 @@
 #ifndef	_UTILS_H
 #define	_UTILS_H
+#ifndef __ASSEMBLER__
+#include "stddef.h"
 #define NULL (void *)0
 #define ALIGN(num, base) ((num + base - 1) & ~(base - 1))
 #define max(x, y) ({ \
@@ -20,6 +22,15 @@
 #define write_sysreg(r, __val) ({                  \
 	asm volatile("msr " #r ", %0" :: "r" (__val)); \
 })
+#define ceil(numerator, denominator) (1 + ((numerator)-1) / (denominator))
+#define SWAP(x, y) do { typeof(x) temp##x##y = x; x = y; y = temp##x##y; } while (0)
+#define GETBIT(data, k) ( (data & (1 << (k))) >> (k) )
+#define SETBIT(data, k) ( (data |= (1 << (k))) )
+#define CLRBIT(data, k) ( (data &= ~(1 << (k))) )
+// #define offsetof(s,m) __builtin_offsetof(s,m)
+// #define container_of(ptr, type, member) ({ \
+//     void *__mptr = (void *)(ptr);          \
+//     ((type *)(__mptr - offsetof(type, member))); })
 extern void delay(unsigned int t);
 extern void *memcpy(void *dest, const void *src, unsigned int len);
 extern int strcmp(char *a, char *b);
@@ -29,6 +40,8 @@ extern int strstartswith(char *str, char *prefix);
 extern char *my_strtok(char *str, const char *delm);
 extern char *strtok(char *str, const char *delm);
 extern unsigned long long hex2ull(char *s);
+extern unsigned long long alignToNextPowerOf2(unsigned long long num);
+extern unsigned ul_log2(unsigned long long n);
 typedef unsigned int reg_t;
-typedef unsigned long long size_t;
+#endif
 #endif

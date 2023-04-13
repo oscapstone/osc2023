@@ -1,7 +1,7 @@
 #include "initramfs.h"
 #include "uart.h"
 #include "utils.h"
-char *cpio_addr;
+char *cpio_addr, *cpio_end;
 struct initramfs _initramfs;
 #define STACK_ADDR 0x200000
 #define STACK_SIZE 0x2000

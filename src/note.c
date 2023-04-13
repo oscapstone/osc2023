@@ -1,7 +1,7 @@
 #include "note.h"
 #include "uart.h"
 #include "utils.h"
-#include "salloc.h"
+#include "mm.h"
 struct note *note_head;
 void init_note()
 {
