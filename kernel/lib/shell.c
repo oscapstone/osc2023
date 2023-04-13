@@ -1,22 +1,25 @@
+#include "uart.h"
+#include "string.h"
 #include "shell.h"
+#include "mailbox.h"
+#include "system.h"
+#include "exec.h"
+#include "cpio.h"
+#include "dtb.h"
+#include "timer.h"
+#include "task.h"
+#include "mm.h"
 
 void shell()
 {
     char cmd[MAX_BUF_SIZE];
-
+    print_boot_messages();
     while (1)
     {
-        uart_printf("# ");
-        uart_gets(cmd);
+        uart_async_printf("# ");
+        uart_async_gets(cmd);
         cmd_resolve(cmd);
     }
-}
-
-void welcome()
-{
-    uart_printf("\x1b[H\x1b[J");
-    uart_printf("Welcome to my budget kernel !!!\n");
-    uart_printf("dtb address: %x\n", dtb_base);
 }
 
 void cmd_resolve(char *cmd)
@@ -26,15 +29,13 @@ void cmd_resolve(char *cmd)
     unsigned int cmd_length = strlen(cmd);
     int i, j;
 
-    argv[0] = simple_malloc(MAX_BUF_SIZE);
-
-    /* String processing */
+    argv[0] = smalloc(MAX_BUF_SIZE);
     for (i = 0, j = 0; i < cmd_length; ++i)
     {
         if (cmd[i] == ' ')
         {
             argv[argc][j] = '\0';
-            argv[++argc] = simple_malloc(MAX_BUF_SIZE);
+            argv[++argc] = smalloc(MAX_BUF_SIZE);
             j = 0;
             continue;
         }
@@ -42,48 +43,76 @@ void cmd_resolve(char *cmd)
     }
     argv[argc++][j] = '\0';
 
-    if (!strcmp(argv[0], "help"))
+    if (!strcmp(cmd, "help"))
     {
-        uart_printf("help                            : print this help menu\n");
-        uart_printf("hello                           : print Hello World!\n");
-        uart_printf("mailbox                         : show infos of board revision and ARM memory\n");
-        uart_printf("ls                              : list directory contents\r\n");
-        uart_printf("cat [FILE]                      : concatenate files and print on the standard output\r\n");
-        uart_printf("reboot                          : reboot the device\n");
-        uart_printf("clear                           : clear page\n");
+        uart_async_printf("help                            : print this help menu\n");
+        uart_async_printf("hello                           : print Hello World!\n");
+        uart_async_printf("mailbox                         : show infos of board revision and ARM memory\n");
+        uart_async_printf("reboot                          : reboot the device\n");
+        uart_async_printf("ls                              : list directory contents\n");
+        uart_async_printf("cat [FILE]                      : concatenate files and print on the standard output\n");
+        uart_async_printf("exec [FILE]                     : load program and execute a program\n");
+        uart_async_printf("setTimeout [MESSAGE] [SECONDS]  : print message after [SECONDS] seconds\n");
+        uart_async_printf("twoSecAlert [MESSAGE]           : set an alarm that alert every two seconds\n");
+        uart_async_printf("testPreempt                     : test preemption\n");
+        uart_async_printf("malloc [SIZE]                   : memory allocation\n");
+        uart_async_printf("testPFA                         : test page frame allocator\n");
+        uart_async_printf("testCSA                         : test chunk slot allocator\n");
+        uart_async_printf("clear                           : clear page\n");
     }
     else if (!strcmp(argv[0], "hello"))
-        uart_printf("Hello World!\n");
+        uart_async_printf("Hello World!\n");
     else if (!strcmp(argv[0], "reboot"))
         reboot();
     else if (!strcmp(argv[0], "mailbox"))
-    {
-        unsigned int board_revision;
-        unsigned int base_addr;
-        unsigned int size;
-
-        if (get_board_revision(&board_revision) != -1)
-            uart_printf("Board Revision: 0x%x\n", board_revision);
-        
-        if (get_arm_memory_info(&base_addr, &size) != -1)
-            uart_printf("ARM memory base address: 0x%x\nARM memory size: 0x%x\n", base_addr, size);
-    }
+        print_system_messages();
     else if (!strcmp(argv[0], "ls"))
         ls(".");
     else if (!strcmp(argv[0], "cat"))
         cat(argv[1]);
+    else if (!strcmp(argv[0], "exec"))
+        execfile(argv[1]);
+    else if (!strcmp(argv[0], "setTimeout"))
+        add_timer(uart_puts, argv[1], atoi(argv[2]));
+    else if (!strcmp(argv[0], "twoSecAlert"))
+        add_timer(two_second_alert, argv[1], 2);
+    else if (!strcmp(argv[0], "testPreempt"))
+        test_preemption();
+    else if (!strcmp(argv[0], "malloc"))
+        malloc(atoi(argv[1]));
+    else if (!strcmp(argv[0], "testPFA"))
+        page_frame_allocator_test();
+    else if (!strcmp(argv[0], "testCSA"))
+        chunk_slot_allocator_test();
     else if (!strcmp(argv[0], "clear"))
-        uart_printf("\x1b[H\x1b[J");
-    else if (!strcmp(argv[0], "alloc"))
-    {
-        char *str = (char *)simple_malloc(8);
-        *str = 'a';
-        *(str + 1) = 'b';
-        *(str + 2) = 'c';
-        *(str + 3) = '\0';
-        uart_printf("%s\n%x\n", str, __heap_top);
-    }
+        clear();
     else
-        uart_printf("Unknown command: %s\n", argv[0]);
+        uart_async_printf("Unknown command!: %s\n", argv[0]);
 }
 
+void clear()
+{
+    uart_async_printf("\x1b[H\x1b[J");
+}
+
+void print_boot_messages()
+{
+    clear();
+    uart_async_printf("WELCOME !!!!!\n");
+    uart_async_printf("dtb address: %x\n", dtb_base);
+    uart_async_printf("\n");
+}
+
+void print_system_messages()
+{
+    unsigned int board_revision;
+    get_board_revision(&board_revision);
+    uart_async_printf("Board revision is : 0x%x\n", board_revision);
+
+    unsigned int arm_mem_base_addr;
+    unsigned int arm_mem_size;
+
+    get_arm_memory_info(&arm_mem_base_addr, &arm_mem_size);
+    uart_async_printf("ARM memory base address in bytes : 0x%x\n", arm_mem_base_addr);
+    uart_async_printf("ARM memory size in bytes : 0x%x\n", arm_mem_size);
+}

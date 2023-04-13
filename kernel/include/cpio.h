@@ -1,15 +1,20 @@
 #ifndef CPIO_H
 #define CPIO_H
 
-#include "uart.h"
-#include "string.h"
-#include "utils.h"
+
+/*
+    cpio format : https://www.freebsd.org/cgi/man.cgi?query=cpio&sektion=5
+    header,file path,file data,header  ......     
+    header+file path (padding 4 bytes)
+    file data (padding 4 bytes)  (max size 4gb)
+*/
 
 #define CPIO_NEWC_HEADER_MAGIC "070701"    // big endian
 
+
 struct cpio_newc_header 
 {
-    char c_magic[6];           
+    char c_magic[6];            //magic   The string	"070701".
     char c_ino[8];
     char c_mode[8];
     char c_uid[8];
@@ -22,7 +27,7 @@ struct cpio_newc_header
     char c_rdevmajor[8];
     char c_rdevminor[8];
     char c_namesize[8];
-    char c_check[8];            
+    char c_check[8];            //check   This field is always set to zero by writers and ignored by	readers.  
 };
 
 /* write pathname,data,next header into corresponding parameter*/
@@ -32,5 +37,6 @@ int cpio_newc_parse_header(struct cpio_newc_header *this_header_pointer,
 
 int  ls(char* working_dir);
 int  cat(char* thefilepath);
+int  execfile(char *thefilepath);
 
 #endif

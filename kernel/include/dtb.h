@@ -1,9 +1,7 @@
 #ifndef DTB_H
 #define DTB_H
 
-#include "uart.h"
-#include "string.h"
-#include "utils.h"
+#include "uint.h"
 
 // manipulate device tree with dtb file format
 #define FDT_BEGIN_NODE 0x00000001
@@ -12,28 +10,28 @@
 #define FDT_NOP 0x00000004
 #define FDT_END 0x00000009
 
-typedef void (*dtb_callback)(unsigned int node_type, char *name, void *value, unsigned int name_size);
+typedef void (*dtb_callback)(uint32_t node_type, char *name, void *value, uint32_t name_size);
+
+extern char* cpio_start;
+extern char* cpio_end;
 
 // stored as big endian
-struct fdt_header {
-    unsigned int magic;
-    unsigned int totalsize;
-    unsigned int off_dt_struct;
-    unsigned int off_dt_strings;
-    unsigned int off_mem_rsvmap;
-    unsigned int version;
-    unsigned int last_comp_version;
-    unsigned int boot_cpuid_phys;
-    unsigned int size_dt_strings;
-    unsigned int size_dt_struct;
+struct fdt_header
+{
+    uint32_t magic;
+    uint32_t totalsize;
+    uint32_t off_dt_struct;
+    uint32_t off_dt_strings;
+    uint32_t off_mem_rsvmap;
+    uint32_t version;
+    uint32_t last_comp_version;
+    uint32_t boot_cpuid_phys;
+    uint32_t size_dt_strings;
+    uint32_t size_dt_struct;
 };
 
-void fdt_traverse(dtb_callback callback);
-void initramfs_callback(unsigned int node_type, char *name, void *value, unsigned int name_size);
-
-// device variables
-extern char *cpio_start;
-extern char *cpio_end;
-
+void traverse_device_tree(dtb_callback callback);  //traverse dtb tree
+void dtb_callback_show_tree(uint32_t node_type, char *name, void *value, uint32_t name_size);
+void dtb_callback_initramfs(uint32_t node_type, char *name, void *value, uint32_t name_size);
 
 #endif

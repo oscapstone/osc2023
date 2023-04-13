@@ -21,7 +21,9 @@ SRC_DIR = lib
 OBJ_DIR = build
 OBJS = $(A_SRCS:$(SRC_DIR)/%.S=$(OBJ_DIR)/%.o) $(C_SRCS:$(SRC_DIR)/%.c=$(OBJ_DIR)/%.o)
 INCLUDE = include
-CFLAGS = -ggdb -Wno-implicit -ffreestanding -nostdlib -nostartfiles -I$(INCLUDE)
+CFLAGS = -ggdb -Wno-implicit -Wno-int-conversion -ffreestanding -nostdlib -nostartfiles -I$(INCLUDE) -DDEMO
+CPIO_FILE = ../initramfs.cpio
+DTB_FILE = ../bcm2710-rpi-3-b-plus.dtb
 
 IMAGE = kernel8
 
@@ -42,10 +44,10 @@ $(OBJ_DIR)/%.o: lib/%.c
 	$(CC) -c $< $(CFLAGS) -o $@
 
 run: $(IMAGE).img 
-	$(QEMU) -machine $(MACHINE) -kernel $(IMAGE).img -display none -serial null -serial stdio
+	$(QEMU) -machine $(MACHINE) -kernel $(IMAGE).img -initrd $(CPIO_FILE) -dtb $(DTB_FILE) -display none -serial null -serial stdio
 
 dbg: $(IMAGE).img 
-	$(QEMU) -machine $(MACHINE) -kernel $(IMAGE).img -display none -serial null -serial stdio -s -S
+	$(QEMU) -machine $(MACHINE) -kernel $(IMAGE).img -initrd $(CPIO_FILE) -dtb $(DTB_FILE) -display none -serial null -serial stdio -s -S
 
 .PHONY: clean
 clean:

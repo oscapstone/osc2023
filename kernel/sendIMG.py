@@ -6,7 +6,11 @@ import time
 from argparse import ArgumentParser
 
 def passImg(f, s):
-    delay = 0.0005
+    if (s == "/dev/ttyUSB0") or (s == "/dev/tty.usbserial-0001"):
+        delay = 0.0003
+    else:
+        delay = 0
+    
     tty = serial.Serial(s, 115200, timeout=0.5) 
     file_stats = os.stat(f)
 
@@ -14,7 +18,6 @@ def passImg(f, s):
     time.sleep(delay)
 
     tty.write(str(file_stats.st_size).encode('utf-8'))
-#    tty.write(('9672').encode('utf-8'))
     time.sleep(delay*100)
 
     tty.write("\n".encode('utf-8'))

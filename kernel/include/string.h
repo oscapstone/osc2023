@@ -8,5 +8,4 @@ unsigned long long strlen(const char *str);
 char* strcpy (char *dest, const char *src);
 char* memcpy (void *dest, const void *src, unsigned long long len);
 int   atoi(char* str);
-
 #endif
