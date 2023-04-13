@@ -62,6 +62,7 @@ void parse(void)
         fdt_traverse(set_ramdisk_adr);
 #endif /* QEMU_DEBUG */
 
+        // TODO: get initrd-end from device tree
         memory_reserve(header_ptr, (void*)(header_ptr + 0x800));
 
         char *ptr = (char*)header_ptr + CPIO_HEADER_SIZE;

@@ -51,9 +51,13 @@ void parse_cmd(void)
         } else if (!strcmp(buffer, "cat")) {
                 ramdisk_cat();
         } else if (!strcmp(buffer, "exec")) {
+                uart_send_string("[INFO] exec: not implemented");
+                // TODO: not to copy or allocate a place
+                /*
                 if (!ramdisk_load_file_to_adr(USER_PROGRAM_START)) return;
                 reset_core_timer_in_second(2);
                 branch_to_address_el0(USER_PROGRAM_START, USER_STACK_POINTER);
+                */
         } else if (!strcmp(buffer, "demo-async")) {
                 reset_core_timer_in_second(600);
                 branch_to_address_el0(demo_uart_async, USER_STACK_POINTER);

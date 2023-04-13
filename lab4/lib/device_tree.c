@@ -32,6 +32,7 @@ int get_device_tree_adr(void)
                 uart_send_string("[ERROR] Device tree: wrong magic\r\n");
                 return 1;
         }
+        // TODO: can we get device tree size in runtime?
         memory_reserve(device_tree_adr, (void*)(device_tree_adr + 0x800));
         
         dt_struct_adr = (char*)device_tree_adr + 

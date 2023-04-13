@@ -1,6 +1,7 @@
 #ifndef MEM_FRAME_H
 #define MEM_FRAME_H
 
+// TODO: get memory size from device tree
 #define MEM_START       (unsigned long)0x0
 #define MEM_END         (unsigned long)0x3C000000
 #define FRAME_SIZE      0x1000
