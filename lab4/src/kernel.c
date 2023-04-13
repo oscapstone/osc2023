@@ -11,11 +11,12 @@ extern void set_exception_vector_table();
 extern unsigned char _end;
 static char* kernel_end = (char*)&_end;
 
-char* cpio_addr(char* value)	//callback func , do ramdisk address get & setup
+void cpio_addr(char* value)	//callback func , do ramdisk address get & setup
 {
 	char* ramdisk_start = value;
 	uint32_t ramdisk = to_little_endian_32(*((uint32_t*)ramdisk_start));
 	init_rd((char*)ramdisk);
+	return;
 }
 
 void kernel_main(void* dtb)		//x0 is the first argument
