@@ -18,7 +18,13 @@ char* alloc_base = (char*)&_end;
 
 void* memalloc(int size)
 {
+	int pad = (int)alloc_base%8;
+	pad = (8-(pad%8)+8)%8;
+	alloc_base += pad;
 	char* alloc = alloc_base;
+
+	pad = size%8;
+	pad = (8-(pad%8)+8)%8;
 	alloc_base += size;
 	return alloc;
 }

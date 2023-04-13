@@ -22,7 +22,7 @@ memzero:
 		cbnz	x1,memzero		//if bss_size != 0 , branch memzero(repeat clean)
 
 setup_EL1:
-		bl		from_EL2_to_EL1
+		//bl	from_EL2_to_EL1	//no use in this lab
 
 El1_start:
 		mov		sp,#0x40000		//put EL1 stack start from 0x40000	

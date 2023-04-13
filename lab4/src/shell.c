@@ -136,38 +136,35 @@ void shell_option(char* command,char* ramdisk)
 			uart_send(c);
 		}
 		uart_send_string("\r\n");
-		page_free(sum);
+		int addr = sum * 4096;
+		page_free(addr);
 	}
 	else if(!strcmp(command,"p_show"))
 	{
 		show_page();
 	}
-	else if(!strcmp(command,"reserve"))
+	else if(!strcmp(command,"d_alloc"))
 	{
 		char c;
-		uart_send_string("reserve you want to start : ");
-		int start = 0;
+		uart_send_string("size you want to alloc : ");
+		int sum = 0;
 		while((c = uart_recv()) != '\n')
 		{
-			start *= 10;
-			start += (c-'0');
+			sum *= 10;
+			sum += (c-'0');
 			uart_send(c);
 		}
 		uart_send_string("\r\n");
-		
-		uart_send_string("reserve you want to end : ");
-		int end = 0;
-		while((c = uart_recv()) != '\n')
-		{
-			end *= 10;
-			end += (c-'0');
-			uart_send(c);
-		}
+		char* addr = d_alloc(sum);
+		uart_send_string("start address : ");
+		uart_hex(addr);
 		uart_send_string("\r\n");
-
-		memory_reserve(start,end);
 	}
-	else if(!strcmp(command,"r_show"))
+	else if(!strcmp(command,"clear_pool"))
+	{
+		clear_pool();
+	}
+	else if(!strcmp(command,"show_pool"))
 	{
 		show_pool_info();
 	}

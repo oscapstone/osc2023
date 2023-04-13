@@ -7,12 +7,14 @@
 #include "buddy.h"
 
 extern void set_exception_vector_table();
-static uint32_t ramdisk;
 
-void cpio_addr(char* value)	//callback func , do ramdisk address get & setup
+extern unsigned char _end;
+static char* kernel_end = (char*)&_end;
+
+char* cpio_addr(char* value)	//callback func , do ramdisk address get & setup
 {
 	char* ramdisk_start = value;
-	ramdisk = to_little_endian_32(*((uint32_t*)ramdisk_start));
+	uint32_t ramdisk = to_little_endian_32(*((uint32_t*)ramdisk_start));
 	init_rd((char*)ramdisk);
 }
 
@@ -29,18 +31,25 @@ void kernel_main(void* dtb)		//x0 is the first argument
 	uart_hex((el>>2)&3);
 	uart_send_string("\r\n");
 	
-	void (*func)(char*);	//define callback func
+	void (*func)(char*);							//define callback func
 	func = &cpio_addr;
-	fdt_api((char*)dtb,func,"linux,initrd-start");	//find initrd-start property & get its value
+	fdt_api((char*)dtb,func,"linux,initrd-start");
+
+	char* ramf_start = 0x08000000;
+	char* ramf_end = 0x08000200;
 	
 	set_exception_vector_table();					//set vbar_el1 for exception & interrupt
-   	
-	init_buddy();
+   
+	init_buddy();									//simple allocator
+	memory_reserve(0x0,(char*)0x1000);				//Spin tables for multicore boot
+	memory_reserve((char*)0x80000,kernel_end);		//Kernel image in the physical memory
+	memory_reserve(ramf_start,ramf_end);			//Initramfs
+	memory_reserve(dtb,dtb + 0x16000);				//Devicetree
 
 	while (1)
     {
 		char command[100];
         shell_input(command);
-        shell_option(command,(char*)ramdisk);
+        shell_option(command,(char*)ramf_start);
     }
 }

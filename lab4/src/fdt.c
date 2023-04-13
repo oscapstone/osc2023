@@ -176,7 +176,7 @@ void fdt_info(char* fdt_origin)
 	return;
 }
 
-void fdt_api(char* fdt_origin,void(*func)(char* value),char* keyword)
+void fdt_api(char* fdt_origin,char*(*func)(char* value),char* keyword)
 {
 	fdt_header *fdt = (fdt_header*)fdt_origin;
 	to_little_endian_header(fdt);
