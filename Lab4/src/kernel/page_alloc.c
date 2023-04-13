@@ -51,7 +51,7 @@ void init_page_frame()
     }
 }
 
-void *get_page_from_free_list(int req_size)
+int get_page_from_free_list(int req_size)
 {
     // int req_num_of_page = -1;
     // if (req_size % MIN_PAGE_SIZE != 0)
@@ -82,7 +82,7 @@ void *get_page_from_free_list(int req_size)
             break;
     }
     if (alloc_order > MAX_ORDER)
-        return NULL;
+        return -1;
     while (alloc_order > req_order)
     {
         // split high order
@@ -95,7 +95,7 @@ void *get_page_from_free_list(int req_size)
         alloc_order--;
     }
     if (alloc_order != req_order)
-        return NULL;
+        return -1;
 
     // get require page
     alloc_index = free_list[alloc_order].next->index;
@@ -118,7 +118,7 @@ void *get_page_from_free_list(int req_size)
     debug();
 #endif
 
-    return frame_array[alloc_index].addr;
+    return alloc_index;
 }
 
 // This does NOT modify frame_array value
@@ -213,9 +213,6 @@ int merge_buddy(int index, int buddy, int order)
     {
         frame_array[i].val = FREE_BUDDY;
     }
-    printf("------------\n");
-    debug();
-    printf("------------\n");
     int new_buddy = index ^ (1 << (order + 1));
     if (frame_array[index].val == frame_array[new_buddy].val)
         return merge_buddy(index, new_buddy, order + 1);
@@ -223,10 +220,9 @@ int merge_buddy(int index, int buddy, int order)
         return order + 1;
 }
 
-#ifdef DEBUG
 void debug()
 {
-    printf("**DEBUGGING free_list\n");
+    printf("** DEBUGGING free_list\n");
     for (int i = 0; i <= MAX_ORDER; i++)
     {
         page_frame_node *iter;
@@ -240,7 +236,7 @@ void debug()
         printf("NULL\n");
     }
     printf("**\n");
-    printf("**DEBUGGING frame_array\n");
+    printf("** DEBUGGING frame_array\n");
     for (int i = 0; i < 20; i++)
     {
         printf("frame_array[%d].addr = %p\n", i, frame_array[i].addr);
@@ -254,4 +250,3 @@ void debug()
 
     return;
 }
-#endif

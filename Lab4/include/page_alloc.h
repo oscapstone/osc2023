@@ -1,7 +1,7 @@
 #ifndef _PAGE_ALLOC_H
 #define _PAGE_ALLOC_H
 
-#define DEBUG
+// #define DEBUG
 
 #define MAX_ORDER 11 // order 0 ~ 11
 #define ALLOCATED -1
@@ -24,14 +24,13 @@ struct _page_frame_node
 };
 
 void init_page_frame();
-void *get_page_from_free_list(int req_size);
+int get_page_from_free_list(int req_size);
 void add_to_free_list(page_frame_node *head_node, int index);
 void remove_from_free_list(page_frame_node *free_list_node);
 void put_back_to_free_list(int num_of_redundant_page, int index);
 int free_page_frame(int index);
 int merge_buddy(int index, int buddy, int order);
-#ifdef DEBUG
 void debug();
-#endif
+
 
 #endif /*_PAGE_ALLOC_H */
