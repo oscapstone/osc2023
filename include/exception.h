@@ -1,6 +1,8 @@
 #ifndef _EXCEPTION_H
 #define _EXCEPTION_H
 #include "utils.h"
+#include "stdint.h"
+#include "list.h"
 #define PRIORITY_BINS 8
 extern void disable_local_fiq_interrupt(void);
 extern void disable_local_irq_interrupt(void);
@@ -25,13 +27,13 @@ typedef void (*interrupt_handler_t) (void *data);
 struct interrupt_task_node {
     interrupt_handler_t handler;
     void *data;
-    struct interrupt_task_node *next;
+    list_t list;
 };
 struct interrupt_scheduler {
     //circular linked-lists
     int priority_stack[PRIORITY_BINS];
     int prior_stk_idx;
-    struct interrupt_task_node *qbins_tail[PRIORITY_BINS];
+    list_t qbins[PRIORITY_BINS];
     size_t qsize;
     void (*add_task) (struct interrupt_scheduler *self, interrupt_handler_t handler, void *data, unsigned priority);
 };

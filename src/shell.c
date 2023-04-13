@@ -173,6 +173,8 @@ int run_if_builtin(char *first_arg, char *other_args)
         uart_write_string("help            : print this help menu\n");
         uart_write_string("hello           : print Hello World!\n");
         uart_write_string("async           : read and write a line asynchronously\n");
+        uart_write_string("buddy           : test buddy system\n");
+        uart_write_string("malloc          : test dynamic memory allocation\n");
         uart_write_string("reboot          : reboot the device\n");
         uart_write_string("mknote          : make a note\n");
         uart_write_string("linote          : list all notes\n");
@@ -264,15 +266,13 @@ int run_if_builtin(char *first_arg, char *other_args)
         _timer_task_scheduler.add_timer_second(&_timer_task_scheduler, notify, msg, dur);
         return 1;
     } else if (strcmp(first_arg, "test_preemption") == 0) {
-        // uart_write_string("t: ");
-        // uart_read_input(input_buffer, MAX_SHELL_INPUT);
-        // int t = atoi(input_buffer);
-        // if (t <= 0 || t > 100) {
-        //     uart_write_string("t should within [1, 100].\n");
-        //     return 2;
-        // }
-        // _timer_task_scheduler.add_timer_second(&_timer_task_scheduler, sleep_timer, (size_t)t, 1);
         _timer_task_scheduler.add_timer_second(&_timer_task_scheduler, sleep_timer, 1, 1);
+        return 1;
+    } else if (strcmp(first_arg, "malloc") == 0) {
+        test_mem_pool();
+        return 1;
+    } else if (strcmp(first_arg, "buddy") == 0) {
+        test_buddy();
         return 1;
     }
     return 0;

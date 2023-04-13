@@ -28,6 +28,7 @@ int fdt_init(struct fdt *fdt, void *head_addr)
     fdt->total_size = fdt2hou(&(head->totalsize));
     fdt->fdt_traverse = _fdt_traversal;
     fdt->fdt_print = _fdt_print;
+    fdt->end_addr = (char *)head_addr + fdt2hou(&(head->totalsize));
     return 0;
 }
 
@@ -42,6 +43,11 @@ void initramfs_fdt_cb(struct fdt *self, dtb_node_t *node, dtb_property_t *prop, 
             uart_write_string("\n");
             
             cpio_addr = (char *)fdt2hou(&(prop->data));
+        } else if (strcmp(prop_name, "linux,initrd-end") == 0) {
+            uart_write_string(prop_name);
+            uart_write_string("\n");
+            
+            cpio_end = (char *)fdt2hou(&(prop->data));
         }
     }
 }

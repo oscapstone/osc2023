@@ -3,7 +3,8 @@
 #include "mini_uart.h"
 #include "exception.h"
 #include "time_interrupt.h"
-#include "salloc.h"
+#include "mm.h"
+#include "stdint.h"
 struct interrupt_scheduler _interrupt_scheduler;
 //later lab: https://oscapstone.github.io/labs/lab3.html#exception-handling
 
@@ -35,13 +36,9 @@ void current_synchronous_exception_router(void)
     default_handler();
 }
 
-void _qbin_unlink_head(struct interrupt_scheduler *self, struct interrupt_task_node **tail)
+void _qbin_unlink_head(struct interrupt_scheduler *self, list_t *head)
 {
-    if (*tail == (*tail)->next) {
-        *tail = NULL;
-    } else {
-        (*tail)->next = ((*tail)->next->next);
-    }
+    list_del(head->next);
     self->qsize--;
 }
 
@@ -49,10 +46,10 @@ struct interrupt_task_node *fetch_next(struct interrupt_scheduler *self, int *pr
     if (self->qsize == 0) return NULL;
     struct interrupt_task_node *task = NULL;
     for (int i = PRIORITY_BINS - 1; i >= 0; i--) {
-        if (self->qbins_tail[i] != NULL) {
-            task = self->qbins_tail[i]->next; //qbin head
+        if (!list_empty(self->qbins + i)) {
+            task = list_entry((self->qbins + i)->next, struct interrupt_task_node, list);
             *prior = i;
-            _qbin_unlink_head(self, self->qbins_tail + i);
+            _qbin_unlink_head(self, self->qbins + i);
             break;
         }
     }
@@ -82,60 +79,30 @@ void current_irq_exception_router(void)
         _interrupt_scheduler.add_task(&_interrupt_scheduler, uart_irq_handler, *AUX_MU_IER, 1);
         new_prior = 1;
     } else if (core_timer) {
-        //handle timer interrupt
-        //Basic Exercise 2 - Interrupt
-        /*
-        Todo
-            Enable the core timer’s interrupt. 
-            The interrupt handler should print 
-            the seconds after booting and set 
-            the next timeout to 2 seconds later.
-        */
-        //1. masks the device’s interrupt line,
         core_timer_disable();
-        //3. enqueues the processing task to the event queue,
         _interrupt_scheduler.add_task(&_interrupt_scheduler, _timer_task_scheduler.timer_interrupt_handler, &_timer_task_scheduler, 0);
         new_prior = 0;
     }
 
-    // uart_write_string("exception scheduler qsize: ");
-    // uart_write_no(_interrupt_scheduler.qsize);
-    // uart_write_string("\n");
-    
-    //unmasks the interrupt line to get the next interrupt at the end of the task.
-    //Preemption
-    //the newly enqueued task still needs to wait for the currently running task’s completion.
-    //Notice that the newly incoming task can still be inserted in this function call. (see code above)
-    //bottom half
-    disable_local_all_interrupt();
     int prior;
-    
-    // if (_interrupt_scheduler.prior_stack == NULL || new_prior > _interrupt_scheduler.prior_stack->priority) {    
     if (_interrupt_scheduler.prior_stk_idx != -1 && new_prior > _interrupt_scheduler.priority_stack[_interrupt_scheduler.prior_stk_idx]) {
         //Preemption
         struct interrupt_task_node *task = fetch_next(&_interrupt_scheduler, &prior);
-        // insert_prior(&_interrupt_scheduler, prior);
         _interrupt_scheduler.priority_stack[++(_interrupt_scheduler.prior_stk_idx)] = prior;
-        //4. do the tasks with interrupts enabled,
         enable_local_all_interrupt();
         //run single task
         task->handler(task->data);
         disable_local_all_interrupt();
-        // pop_prior(&_interrupt_scheduler);
         _interrupt_scheduler.prior_stk_idx--;
-    // } else if (_interrupt_scheduler.prior_stack == NULL) {
     } else if (_interrupt_scheduler.prior_stk_idx == -1) {
         //is not running
         while (_interrupt_scheduler.qsize) {
             struct interrupt_task_node *task = fetch_next(&_interrupt_scheduler, &prior);
-            // insert_prior(&_interrupt_scheduler, prior);
             _interrupt_scheduler.priority_stack[++(_interrupt_scheduler.prior_stk_idx)] = prior;
-            //4. do the tasks with interrupts enabled,
             enable_local_all_interrupt();
             //run single task
             task->handler(task->data);
             disable_local_all_interrupt();
-            // pop_prior(&_interrupt_scheduler);
             _interrupt_scheduler.prior_stk_idx--;
         }
     } //else {
@@ -154,16 +121,9 @@ void lower_irq_exception_router(void)
     default_handler();
 }
 
-void _insert_qbin(struct interrupt_scheduler *self, struct interrupt_task_node **tail, struct interrupt_task_node *task)
+void _insert_qbin(struct interrupt_scheduler *self, list_t *head, struct interrupt_task_node *task)
 {
-    if (*tail == NULL) {
-        task->next = task;
-        *tail = task;
-    } else {
-        task->next = (*tail)->next;
-        (*tail)->next = task;
-        *tail = task;
-    }
+    list_add_tail(&(task->list), head);
     self->qsize++;
 }
 
@@ -174,16 +134,16 @@ void _add_task(struct interrupt_scheduler *self, interrupt_handler_t handler, vo
     struct interrupt_task_node *new_node = (struct interrupt_task_node *)simple_malloc(sizeof(struct interrupt_task_node));
     new_node->handler = handler;
     new_node->data = data;
-    _insert_qbin(self, self->qbins_tail + priority, new_node);
+    INIT_LIST_HEAD(&(new_node->list));
+    _insert_qbin(self, self->qbins + priority, new_node);
     enable_local_all_interrupt();
 }
 
 void init_interrupt_scheduler(struct interrupt_scheduler *self)
 {
-    // self->prior_stack = NULL;
     self->prior_stk_idx = -1;
     for (int i = 0; i < PRIORITY_BINS; i++) {
-        self->qbins_tail[i] = NULL;
+        INIT_LIST_HEAD(self->qbins + i);
         self->priority_stack[i] = NULL;
     }
     self->qsize = 0;

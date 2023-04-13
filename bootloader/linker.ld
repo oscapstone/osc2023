@@ -2,6 +2,7 @@ ENTRY(_start)
 SECTIONS
 {
   . = 0x60000;
+  _proc_start = .;
   _stext = .;
   .text : { 
     *(.text.relo)
@@ -34,4 +35,5 @@ SECTIONS
   }
 
   _blsize = _ebss - _stext;
+  _proc_end = .;
 }
