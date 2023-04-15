@@ -4,6 +4,7 @@
 #include "exception.h"
 #include "timer.h"
 #include "memory.h"
+#include "syscall.h"
 
 // DAIF, Interrupt Mask Bits
 void el1_interrupt_enable(){
@@ -42,7 +43,30 @@ void el1h_irq_router(){
     }
 }
 
-void el0_sync_router(){
+long long el0_sync_router(unsigned long long x0, unsigned long long x1){
+    unsigned long long syscall_no;
+    __asm__ __volatile__("mov %0, x8\n\t": "=r"(syscall_no));
+
+    if (syscall_no == 0)
+    {
+        return getpid();
+    }
+    else if(syscall_no == 1)
+    {
+        return uartread((char *)x0, x1);
+    }
+    else if (syscall_no == 2)
+    {
+        return uartwrite((char *)x0, x1);
+    }
+    else if (syscall_no == 3)
+    {
+        return exec((char *)x0, (char **)x1);
+    }
+
+    return -1;
+
+    /*
     unsigned long long spsr_el1;
     __asm__ __volatile__("mrs %0, SPSR_EL1\n\t" : "=r" (spsr_el1)); // EL1 configuration, spsr_el1[9:6]=4b0 to enable interrupt
     unsigned long long elr_el1;
@@ -50,6 +74,7 @@ void el0_sync_router(){
     unsigned long long esr_el1;
     __asm__ __volatile__("mrs %0, ESR_EL1\n\t" : "=r" (esr_el1));   // ESR_EL1 holds symdrome information of exception, to know why the exception happens.
     uart_sendline("[Exception][el0_sync] spsr_el1 : 0x%x, elr_el1 : 0x%x, esr_el1 : 0x%x\n", spsr_el1, elr_el1, esr_el1);
+    */
 }
 
 void el0_irq_64_router(){

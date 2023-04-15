@@ -14,6 +14,12 @@ extern char* CPIO_DEFAULT_START;
 extern char* CPIO_DEFAULT_END;
 extern char* dtb_ptr;
 
+#ifdef DEBUG
+    #define memory_sendline(fmt, args ...) uart_sendline(fmt, ##args)
+#else
+    #define memory_sendline(fmt, args ...) (void)0
+#endif
+
 // ------ Lab2 ------
 void* s_allocator(unsigned int size) {
     // -> htop_ptr
@@ -87,8 +93,8 @@ void init_allocator()
     Your simple allocator (startup allocator) (Stack + Heap in my case)
     Initramfs
     */
-    uart_sendline("\r\n* Startup Allocation *\r\n");
-    uart_sendline("buddy system: usable memory region: 0x%x ~ 0x%x\n", BUDDY_MEMORY_BASE, BUDDY_MEMORY_BASE + BUDDY_MEMORY_PAGE_COUNT * PAGESIZE);
+    memory_sendline("\r\n* Startup Allocation *\r\n");
+    memory_sendline("buddy system: usable memory region: 0x%x ~ 0x%x\n", BUDDY_MEMORY_BASE, BUDDY_MEMORY_BASE + BUDDY_MEMORY_PAGE_COUNT * PAGESIZE);
     dtb_find_and_store_reserved_memory(); // find spin tables in dtb
     memory_reserve((unsigned long long)&_start, (unsigned long long)&_end); // kernel
     memory_reserve((unsigned long long)&_heap_top, (unsigned long long)&_stack_top);  // heap & stack -> simple allocator
@@ -97,10 +103,9 @@ void init_allocator()
 
 void* page_malloc(unsigned int size)
 {
-    uart_sendline("    [+] Allocate page - size : %d(0x%x)\r\n", size, size);
-    uart_sendline("        Before\r\n");
+    memory_sendline("    [+] Allocate page - size : %d(0x%x)\r\n", size, size);
+    memory_sendline("        Before\r\n");
     dump_page_info();
-
     int val;
     // turn size into minimum 4KB * 2**val
     for (int i = FRAME_IDX_0; i <= FRAME_IDX_FINAL; i++)
@@ -109,13 +114,13 @@ void* page_malloc(unsigned int size)
         if (size <= (PAGESIZE << i))
         {
             val = i;
-            uart_sendline("        block size = 0x%x\n", PAGESIZE << i);
+            memory_sendline("        block size = 0x%x\n", PAGESIZE << i);
             break;
         }
 
         if ( i == FRAME_IDX_FINAL)
         {
-            uart_puts("[!] request size exceeded for page_malloc!!!!\r\n");
+            memory_sendline("[!] request size exceeded for page_malloc!!!!\r\n");
             return (void*)0;
         }
 
@@ -131,7 +136,7 @@ void* page_malloc(unsigned int size)
     }
     if (target_val > FRAME_IDX_FINAL)
     {
-        uart_puts("[!] No available frame in freelist, page_malloc ERROR!!!!\r\n");
+        memory_sendline("[!] No available frame in freelist, page_malloc ERROR!!!!\r\n");
         return (void*)0;
     }
 
@@ -147,8 +152,8 @@ void* page_malloc(unsigned int size)
 
     // Allocate it
     target_frame_ptr->used = FRAME_ALLOCATED;
-    uart_sendline("        physical address : 0x%x\n", BUDDY_MEMORY_BASE + (PAGESIZE*(target_frame_ptr->idx)));
-    uart_sendline("        After\r\n");
+    memory_sendline("        physical address : 0x%x\n", BUDDY_MEMORY_BASE + (PAGESIZE*(target_frame_ptr->idx)));
+    memory_sendline("        After\r\n");
     dump_page_info();
 
     return (void *) BUDDY_MEMORY_BASE + (PAGESIZE * (target_frame_ptr->idx));
@@ -157,13 +162,13 @@ void* page_malloc(unsigned int size)
 void page_free(void* ptr)
 {
     frame_t *target_frame_ptr = &frame_array[((unsigned long long)ptr - BUDDY_MEMORY_BASE) >> 12]; // PAGESIZE * Available Region -> 0x1000 * 0x10000000 // SPEC #1, #2
-    uart_sendline("    [+] Free page: 0x%x, val = %d\r\n",ptr, target_frame_ptr->val);
-    uart_sendline("        Before\r\n");
+    memory_sendline("    [+] Free page: 0x%x, val = %d\r\n",ptr, target_frame_ptr->val);
+    memory_sendline("        Before\r\n");
     dump_page_info();
     target_frame_ptr->used = FRAME_FREE;
     while(coalesce(target_frame_ptr)==0); // merge buddy iteratively
     list_add(&target_frame_ptr->listhead, &frame_freelist[target_frame_ptr->val]);
-    uart_sendline("        After\r\n");
+    memory_sendline("        After\r\n");
     dump_page_info();
 }
 
@@ -200,37 +205,37 @@ int coalesce(frame_t *frame_ptr)
 
     list_del_entry((struct list_head *)buddy);
     frame_ptr->val += 1;
-    uart_sendline("    coalesce detected, merging 0x%x, 0x%x, -> val = %d\r\n", frame_ptr->idx, buddy->idx, frame_ptr->val);
+    memory_sendline("    coalesce detected, merging 0x%x, 0x%x, -> val = %d\r\n", frame_ptr->idx, buddy->idx, frame_ptr->val);
     return 0;
 }
 
 void dump_page_info(){
     unsigned int exp2 = 1;
-    uart_sendline("        ----------------- [  Number of Available Page Blocks  ] -----------------\r\n        | ");
+    memory_sendline("        ----------------- [  Number of Available Page Blocks  ] -----------------\r\n        | ");
     for (int i = FRAME_IDX_0; i <= FRAME_IDX_FINAL; i++)
     {
-        uart_sendline("%4dKB(%1d) ", 4*exp2, i);
+        memory_sendline("%4dKB(%1d) ", 4*exp2, i);
         exp2 *= 2;
     }
-    uart_sendline("|\r\n        | ");
+    memory_sendline("|\r\n        | ");
     for (int i = FRAME_IDX_0; i <= FRAME_IDX_FINAL; i++)
-        uart_sendline("     %4d ", list_size(&frame_freelist[i]));
-    uart_sendline("|\r\n");
+        memory_sendline("     %4d ", list_size(&frame_freelist[i]));
+    memory_sendline("|\r\n");
 }
 
 void dump_cache_info()
 {
     unsigned int exp2 = 1;
-    uart_sendline("    -- [  Number of Available Cache Blocks ] --\r\n    | ");
+    memory_sendline("    -- [  Number of Available Cache Blocks ] --\r\n    | ");
     for (int i = CACHE_IDX_0; i <= CACHE_IDX_FINAL; i++)
     {
-        uart_sendline("%4dB(%1d) ", 32*exp2, i);
+        memory_sendline("%4dB(%1d) ", 32*exp2, i);
         exp2 *= 2;
     }
-    uart_sendline("|\r\n    | ");
+    memory_sendline("|\r\n    | ");
     for (int i = CACHE_IDX_0; i <= CACHE_IDX_FINAL; i++)
-        uart_sendline("   %5d ", list_size(&cache_list[i]));
-    uart_sendline("|\r\n");
+        memory_sendline("   %5d ", list_size(&cache_list[i]));
+    memory_sendline("|\r\n");
 }
 
 void page2caches(int order)
@@ -251,8 +256,8 @@ void page2caches(int order)
 
 void* cache_malloc(unsigned int size)
 {
-    uart_sendline("[+] Allocate cache - size : %d(0x%x)\r\n", size, size);
-    uart_sendline("    Before\r\n");
+    memory_sendline("[+] Allocate cache - size : %d(0x%x)\r\n", size, size);
+    memory_sendline("    Before\r\n");
     dump_cache_info();
 
     // turn size into cache order: 32B * 2**order
@@ -270,8 +275,8 @@ void* cache_malloc(unsigned int size)
 
     list_head_t* r = cache_list[order].next;
     list_del_entry(r);
-    uart_sendline("    physical address : 0x%x\n", r);
-    uart_sendline("    After\r\n");
+    memory_sendline("    physical address : 0x%x\n", r);
+    memory_sendline("    After\r\n");
     dump_cache_info();
     return r;
 }
@@ -280,20 +285,20 @@ void cache_free(void *ptr)
 {
     list_head_t *c = (list_head_t *)ptr;
     frame_t *pageframe_ptr = &frame_array[((unsigned long long)ptr - BUDDY_MEMORY_BASE) >> 12];
-    uart_sendline("[+] Free cache: 0x%x, val = %d\r\n",ptr, pageframe_ptr->cache_order);
-    uart_sendline("    Before\r\n");
+    memory_sendline("[+] Free cache: 0x%x, val = %d\r\n",ptr, pageframe_ptr->cache_order);
+    memory_sendline("    Before\r\n");
     dump_cache_info();
     list_add(c, &cache_list[pageframe_ptr->cache_order]);
-    uart_sendline("    After\r\n");
+    memory_sendline("    After\r\n");
     dump_cache_info();
 }
 
 void *kmalloc(unsigned int size)
 {
-    uart_sendline("\n\n");
-    uart_sendline("================================\r\n");
-    uart_sendline("[+] Request kmalloc size: %d\r\n", size);
-    uart_sendline("================================\r\n");
+    memory_sendline("\n\n");
+    memory_sendline("================================\r\n");
+    memory_sendline("[+] Request kmalloc size: %d\r\n", size);
+    memory_sendline("================================\r\n");
     // if size is larger than cache size, go for page
     if (size > (32 << CACHE_IDX_FINAL))
     {
@@ -307,10 +312,10 @@ void *kmalloc(unsigned int size)
 
 void kfree(void *ptr)
 {
-    uart_sendline("\n\n");
-    uart_sendline("==========================\r\n");
-    uart_sendline("[+] Request kfree 0x%x\r\n", ptr);
-    uart_sendline("==========================\r\n");
+    memory_sendline("\n\n");
+    memory_sendline("==========================\r\n");
+    memory_sendline("[+] Request kfree 0x%x\r\n", ptr);
+    memory_sendline("==========================\r\n");
     // If no cache assigned, go for page
     if ((unsigned long long)ptr % PAGESIZE == 0 && frame_array[((unsigned long long)ptr - BUDDY_MEMORY_BASE) >> 12].cache_order == CACHE_NONE)
     {
@@ -326,9 +331,9 @@ void memory_reserve(unsigned long long start, unsigned long long end)
     start -= start % PAGESIZE; // floor (align 0x1000)
     end = end % PAGESIZE ? end + PAGESIZE - (end % PAGESIZE) : end; // ceiling (align 0x1000)
 
-    uart_sendline("Reserved Memory: ");
-    uart_sendline("start 0x%x ~ ", start);
-    uart_sendline("end 0x%x\r\n",end);
+    memory_sendline("Reserved Memory: ");
+    memory_sendline("start 0x%x ~ ", start);
+    memory_sendline("end 0x%x\r\n",end);
 
     // delete page from free list
     for (int order = FRAME_IDX_FINAL; order >= 0; order--)
@@ -342,12 +347,12 @@ void memory_reserve(unsigned long long start, unsigned long long end)
             if (start <= pagestart && end >= pageend) // if page all in reserved memory -> delete it from freelist
             {
                 ((frame_t *)pos)->used = FRAME_ALLOCATED;
-                uart_sendline("    [!] Reserved page in 0x%x - 0x%x\n", pagestart, pageend);
-                uart_sendline("        Before\n");
+                memory_sendline("    [!] Reserved page in 0x%x - 0x%x\n", pagestart, pageend);
+                memory_sendline("        Before\n");
                 dump_page_info();
                 list_del_entry(pos);
-                uart_sendline("        Remove usable block for reserved memory: order %d\r\n", order);
-                uart_sendline("        After\n");
+                memory_sendline("        Remove usable block for reserved memory: order %d\r\n", order);
+                memory_sendline("        After\n");
                 dump_page_info();
             }
             else if (start >= pageend || end <= pagestart) // no intersection

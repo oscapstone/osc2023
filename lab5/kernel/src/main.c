@@ -22,8 +22,9 @@ void main(char* arg){
     el1_interrupt_enable();  // enable interrupt in EL1 -> EL1
     core_timer_enable();
 
+#if DEBUG
     cli_cmd_read(input_buffer); // Wait for input, Windows cannot attach to SERIAL from two processes.
-
+#endif
     init_allocator();
 
     cli_print_banner();

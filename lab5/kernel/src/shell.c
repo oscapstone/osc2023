@@ -8,9 +8,9 @@
 #include "dtb.h"
 #include "memory.h"
 #include "timer.h"
+#include "sched.h"
 
-#define CLI_MAX_CMD 12
-#define USTACK_SIZE 0x10000
+#define CLI_MAX_CMD 13
 
 extern char* dtb_ptr;
 extern void* CPIO_DEFAULT_START;
@@ -23,6 +23,7 @@ struct CLI_CMDS cmd_list[CLI_MAX_CMD]=
     {.command="hello", .help="print Hello World!"},
     {.command="help", .help="print all available commands"},
     {.command="s_allocator", .help="simple allocator in heap session"},
+    {.command="thread_tester", .help="thread tester with dummy function - foo()"},
     {.command="info", .help="get device information via mailbox"},
     {.command="ls", .help="list directory contents"},
     {.command="memory_tester", .help="memory testcase generator, allocate and free"},
@@ -73,6 +74,8 @@ void cli_cmd_exec(char* buffer)
         do_cmd_info();
     } else if (strcmp(cmd, "s_allocator") == 0) {
         do_cmd_s_allocator();
+    } else if (strcmp(cmd, "thread_tester") == 0) {
+        do_cmd_thread_tester();
     } else if (strcmp(cmd, "ls") == 0) {
         do_cmd_ls(argvs);
     } else if (strcmp(cmd, "memory_tester") == 0) {
@@ -91,7 +94,7 @@ void cli_print_banner()
 {
     uart_puts("\r\n");
     uart_puts("=======================================\r\n");
-    uart_puts("  Welcome to NYCU-OSC 2023 Lab3 Shell  \r\n");
+    uart_puts("  Welcome to NYCU-OSC 2023 Lab5 Shell  \r\n");
     uart_puts("=======================================\r\n");
 }
 
@@ -159,13 +162,13 @@ void do_cmd_exec(char* filepath)
         if(strcmp(c_filepath, filepath)==0)
         {
             //exec c_filedata
-            char* ustack = s_allocator(USTACK_SIZE);
+            char* ustack = s_allocator(0x10000);
             asm("msr elr_el1, %0\n\t"   // elr_el1: Set the address to return to: c_filedata
                 "msr spsr_el1, xzr\n\t" // enable interrupt (PSTATE.DAIF) -> spsr_el1[9:6]=4b0. In Basic#1 sample, EL1 interrupt is disabled.
                 "msr sp_el0, %1\n\t"    // user program stack pointer set to new stack.
                 "eret\n\t"              // Perform exception return. EL1 -> EL0
                 :: "r" (c_filedata),
-                   "r" (ustack+USTACK_SIZE));
+                   "r" (ustack+0x10000));
             s_free(ustack);
             break;
         }
@@ -233,6 +236,16 @@ void do_cmd_s_allocator()
     char* test3 = s_allocator(0x28);
     memcpy(test3,"test malloc3",sizeof("test malloc3"));
     uart_puts("%s\n",test3);
+}
+
+void do_cmd_thread_tester()
+{
+    init_thread_sched();
+    for (int i = 0; i < 5; ++i)
+    { // N should > 2
+        thread_create(foo);
+    }
+    idle();
 }
 
 void do_cmd_ls(char* workdir)

@@ -30,7 +30,7 @@ void el1_interrupt_enable();
 void el1_interrupt_disable();
 
 void el1h_irq_router();
-void el0_sync_router();
+long long el0_sync_router(unsigned long long x0, unsigned long long x1);
 void el0_irq_64_router();
 
 void invalid_exception_router(); // exception_handler.S
