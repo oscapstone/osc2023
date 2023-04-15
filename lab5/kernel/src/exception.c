@@ -5,6 +5,9 @@
 #include "timer.h"
 #include "memory.h"
 #include "syscall.h"
+#include "sched.h"
+
+extern list_head_t *run_queue;
 
 // DAIF, Interrupt Mask Bits
 void el1_interrupt_enable(){
@@ -40,31 +43,49 @@ void el1h_irq_router(){
         irqtask_add(core_timer_handler, TIMER_IRQ_PRIORITY);
         irqtask_run_preemptive();
         core_timer_enable();
+
+        //at least two threads running -> schedule for any timer irq
+        if (run_queue->next->next != run_queue) schedule();
     }
 }
 
-long long el0_sync_router(unsigned long long x0, unsigned long long x1){
-    unsigned long long syscall_no;
-    __asm__ __volatile__("mov %0, x8\n\t": "=r"(syscall_no));
+void el0_sync_router(trapframe_t *tpf){
+
+    el1_interrupt_enable();
+    unsigned long long syscall_no = tpf->x8;
 
     if (syscall_no == 0)
     {
-        return getpid();
+        getpid(tpf);
     }
     else if(syscall_no == 1)
     {
-        return uartread((char *)x0, x1);
+        uartread(tpf, (char *)tpf->x0, tpf->x1);
     }
     else if (syscall_no == 2)
     {
-        return uartwrite((char *)x0, x1);
+        uartwrite(tpf, (char *)tpf->x0, tpf->x1);
     }
     else if (syscall_no == 3)
     {
-        return exec((char *)x0, (char **)x1);
+        exec(tpf, (char *)tpf->x0, (char **)tpf->x1);
     }
-
-    return -1;
+    else if (syscall_no == 4)
+    {
+        fork(tpf);
+    }
+    else if (syscall_no == 5)
+    {
+        exit(tpf, tpf->x0);
+    }
+    else if (syscall_no == 6)
+    {
+        syscall_mbox_call(tpf, (unsigned char)tpf->x0, (unsigned int *)tpf->x1);
+    }
+    else if (syscall_no == 7)
+    {
+        kill(tpf, (int)tpf->x0);
+    }
 
     /*
     unsigned long long spsr_el1;
@@ -102,6 +123,9 @@ void el0_irq_64_router(){
         irqtask_add(core_timer_handler, TIMER_IRQ_PRIORITY);
         irqtask_run_preemptive();
         core_timer_enable();
+
+        //at least two trhead running -> schedule for any timer irq
+        if (run_queue->next->next != run_queue) schedule();
     }
 }
 

@@ -2,6 +2,7 @@
 #include "uart1.h"
 #include "memory.h"
 #include "u_string.h"
+#include <stdint.h>
 
 #define STR(x) #x
 #define XSTR(s) STR(s)
@@ -9,6 +10,11 @@
 struct list_head* timer_event_list;  // first head has nothing, store timer_event_t after it 
 
 void timer_list_init(){
+    uint64_t tmp;
+    asm volatile("mrs %0, cntkctl_el1": "=r"(tmp));
+    tmp |= 1;
+    asm volatile("msr cntkctl_el1, %0":: "r"(tmp));
+
     INIT_LIST_HEAD(timer_event_list);
 }
 
@@ -65,16 +71,25 @@ void timer_set2sAlert(char* str)
     unsigned long long cntfrq_el0;
     __asm__ __volatile__("mrs %0, cntfrq_el0\n\t": "=r"(cntfrq_el0)); // tick frequency
     uart_sendline("[Interrupt][el1_irq][%s] %d seconds after booting\n", str, cntpct_el0/cntfrq_el0);
-    add_timer(timer_set2sAlert,2,"2sAlert");
+    add_timer(timer_set2sAlert,2,"2sAlert",0);
 }
 
 
-void add_timer(void *callback, unsigned long long timeout, char* args){
+void add_timer(void *callback, unsigned long long timeout, char* args, int inTickFormat){
     timer_event_t* the_timer_event = s_allocator(sizeof(timer_event_t)); // free by timer_event_callback
     // store all the related information in timer_event
     the_timer_event->args = s_allocator(strlen(args)+1);
     strcpy(the_timer_event -> args,args);
-    the_timer_event->interrupt_time = get_tick_plus_s(timeout);
+
+    if(inTickFormat == 0)
+    {
+        the_timer_event->interrupt_time = get_tick_plus_s(timeout); // store interrupt time into timer_event
+    }else
+    {
+        the_timer_event->interrupt_time = get_tick_plus_s(0) + timeout;
+    }
+
+
     the_timer_event->callback = callback;
     INIT_LIST_HEAD(&the_timer_event->listhead);
 

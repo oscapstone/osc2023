@@ -5,6 +5,7 @@
 #include "dtb.h"
 #include "exception.h"
 #include "timer.h"
+#include "sched.h"
 
 char* dtb_ptr;
 
@@ -26,6 +27,7 @@ void main(char* arg){
     cli_cmd_read(input_buffer); // Wait for input, Windows cannot attach to SERIAL from two processes.
 #endif
     init_allocator();
+    init_thread_sched();
 
     cli_print_banner();
     while(1){

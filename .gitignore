@@ -3,4 +3,5 @@
 *.o
 *.img
 *.elf
-*.cpio
+*/kernel/*.cpio
+*/bootloader/*.cpio

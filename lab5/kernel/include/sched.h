@@ -5,9 +5,11 @@
 
 #define PIDMAX 32768
 #define USTACK_SIZE 0x10000
+#define KSTACK_SIZE 0x10000
 
-extern void switch_to(void *curr_context, void *next_context);
+extern void  switch_to(void *curr_context, void *next_context);
 extern void* get_current();
+extern void  store_context(void *curr_context);
 
 typedef struct thread_context
 {
@@ -35,9 +37,11 @@ typedef struct thread
     int iszombie;
     int pid;
     int isused;
-    void* stack_alloced_ptr;
+    char* stack_alloced_ptr;
+    char* kernel_stack_alloced_ptr;
 } thread_t;
 
+void schedule_timer(char *notuse);
 void init_thread_sched();
 void idle();
 void schedule();

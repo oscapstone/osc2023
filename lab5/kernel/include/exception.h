@@ -6,6 +6,45 @@
 #define UART_IRQ_PRIORITY  1
 #define TIMER_IRQ_PRIORITY 0
 
+typedef struct trapframe
+{
+    unsigned long x0;
+    unsigned long x1;
+    unsigned long x2;
+    unsigned long x3;
+    unsigned long x4;
+    unsigned long x5;
+    unsigned long x6;
+    unsigned long x7;
+    unsigned long x8;
+    unsigned long x9;
+    unsigned long x10;
+    unsigned long x11;
+    unsigned long x12;
+    unsigned long x13;
+    unsigned long x14;
+    unsigned long x15;
+    unsigned long x16;
+    unsigned long x17;
+    unsigned long x18;
+    unsigned long x19;
+    unsigned long x20;
+    unsigned long x21;
+    unsigned long x22;
+    unsigned long x23;
+    unsigned long x24;
+    unsigned long x25;
+    unsigned long x26;
+    unsigned long x27;
+    unsigned long x28;
+    unsigned long x29;
+    unsigned long x30;
+    unsigned long spsr_el1;
+    unsigned long elr_el1;
+    unsigned long sp_el0;
+
+} trapframe_t;
+
 typedef struct irqtask
 {
     struct list_head listhead;
@@ -30,7 +69,7 @@ void el1_interrupt_enable();
 void el1_interrupt_disable();
 
 void el1h_irq_router();
-long long el0_sync_router(unsigned long long x0, unsigned long long x1);
+void el0_sync_router(trapframe_t* tpf);
 void el0_irq_64_router();
 
 void invalid_exception_router(); // exception_handler.S

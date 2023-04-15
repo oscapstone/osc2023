@@ -12,6 +12,7 @@
 
 #define CLI_MAX_CMD 13
 
+extern int   uart_recv_echo_flag;
 extern char* dtb_ptr;
 extern void* CPIO_DEFAULT_START;
 
@@ -161,16 +162,8 @@ void do_cmd_exec(char* filepath)
 
         if(strcmp(c_filepath, filepath)==0)
         {
-            //exec c_filedata
-            char* ustack = s_allocator(0x10000);
-            asm("msr elr_el1, %0\n\t"   // elr_el1: Set the address to return to: c_filedata
-                "msr spsr_el1, xzr\n\t" // enable interrupt (PSTATE.DAIF) -> spsr_el1[9:6]=4b0. In Basic#1 sample, EL1 interrupt is disabled.
-                "msr sp_el0, %1\n\t"    // user program stack pointer set to new stack.
-                "eret\n\t"              // Perform exception return. EL1 -> EL0
-                :: "r" (c_filedata),
-                   "r" (ustack+0x10000));
-            s_free(ustack);
-            break;
+            uart_recv_echo_flag = 0; // syscall.img has different mechanism on uart I/O.
+            exec_thread(c_filedata, c_filesize);
         }
 
         //if this is TRAILER!!! (last of file)
@@ -240,7 +233,6 @@ void do_cmd_s_allocator()
 
 void do_cmd_thread_tester()
 {
-    init_thread_sched();
     for (int i = 0; i < 5; ++i)
     { // N should > 2
         thread_create(foo);
@@ -329,12 +321,12 @@ void do_cmd_memory_tester()
 
 void do_cmd_setTimeout(char* msg, char* sec)
 {
-    add_timer(uart_sendline,atoi(sec),msg);
+    add_timer(uart_sendline,atoi(sec),msg,0);
 }
 
 void do_cmd_set2sAlert()
 {
-    add_timer(timer_set2sAlert,2,"2sAlert");
+    add_timer(timer_set2sAlert,2,"2sAlert",0);
 }
 
 void do_cmd_reboot()
