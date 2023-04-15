@@ -377,7 +377,7 @@ void *_mem_pool_malloc(struct mem_pool *self, size_t size)
     disable_local_all_interrupt();
     int order = ceil(size, 0x10);
 #ifdef PRINT_LOG
-    uart_write_string("Call mem pool malloc: ");
+    uart_write_string("Call mem pool kmalloc: ");
     uart_write_no(size);
     uart_write_string("\n");
 #endif
@@ -424,12 +424,12 @@ void init_mem_pool(mem_pool_t *self)
     self->free = _mem_pool_free;
 }
 
-void *malloc(size_t size)
+void *kmalloc(size_t size)
 {
     return _mem_pool.malloc(&_mem_pool, size);
 }
 
-void free(void *addr)
+void kfree(void *addr)
 {
     _mem_pool.free(&_mem_pool, addr);
 }
@@ -463,11 +463,11 @@ void test_buddy()
 
 void test_mem_pool()
 {
-    void *p1 = malloc(16);
-    void *p2 = malloc(16);
-    void *p3 = malloc(32);
+    void *p1 = kmalloc(16);
+    void *p2 = kmalloc(16);
+    void *p3 = kmalloc(32);
     // void *p4 = alloc_pages(16);
-    free(p1);
-    free(p3);
-    free(p2);
+    kfree(p1);
+    kfree(p3);
+    kfree(p2);
 }
