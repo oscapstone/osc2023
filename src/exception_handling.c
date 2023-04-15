@@ -7,10 +7,23 @@
 #include "stdint.h"
 struct interrupt_scheduler _interrupt_scheduler;
 //later lab: https://oscapstone.github.io/labs/lab3.html#exception-handling
+int interrupt_cnter;
+void test_enable_interrupt()
+{
+    interrupt_cnter--;
+    if (interrupt_cnter == 0) {
+        enable_local_all_interrupt();
+    }
+}
+void disable_interrupt()
+{
+    disable_local_all_interrupt();
+    interrupt_cnter++;
+}
 
 void default_handler()
 {
-    disable_local_all_interrupt();
+    disable_interrupt();
 
     unsigned long spsr = read_sysreg(spsr_el1);
     unsigned long elr = read_sysreg(elr_el1);
@@ -27,7 +40,7 @@ void default_handler()
     uart_write_no_hex(esr);
     uart_write_string("\n");
     
-    enable_local_all_interrupt();
+    test_enable_interrupt();
 }
 
 void current_synchronous_exception_router(void)
@@ -59,7 +72,7 @@ struct interrupt_task_node *fetch_next(struct interrupt_scheduler *self, int *pr
 //Decouple the Interrupt Handlers
 void current_irq_exception_router(void)
 {
-    disable_local_all_interrupt();
+    disable_interrupt();
     int new_prior = -1;
     // uart_write_string("In current_irq_exception_router\n");
     //top half
@@ -89,26 +102,26 @@ void current_irq_exception_router(void)
         //Preemption
         struct interrupt_task_node *task = fetch_next(&_interrupt_scheduler, &prior);
         _interrupt_scheduler.priority_stack[++(_interrupt_scheduler.prior_stk_idx)] = prior;
-        enable_local_all_interrupt();
+        test_enable_interrupt();
         //run single task
         task->handler(task->data);
-        disable_local_all_interrupt();
+        disable_interrupt();
         _interrupt_scheduler.prior_stk_idx--;
     } else if (_interrupt_scheduler.prior_stk_idx == -1) {
         //is not running
         while (_interrupt_scheduler.qsize) {
             struct interrupt_task_node *task = fetch_next(&_interrupt_scheduler, &prior);
             _interrupt_scheduler.priority_stack[++(_interrupt_scheduler.prior_stk_idx)] = prior;
-            enable_local_all_interrupt();
+            test_enable_interrupt();
             //run single task
             task->handler(task->data);
-            disable_local_all_interrupt();
+            disable_interrupt();
             _interrupt_scheduler.prior_stk_idx--;
         }
     } //else {
         //other one is running, that guy will wake handle the newly enqueued task
     //}
-    enable_local_all_interrupt();
+    test_enable_interrupt();
 }
 void lower_synchronous_exception_router(void)
 {
@@ -130,13 +143,13 @@ void _insert_qbin(struct interrupt_scheduler *self, list_t *head, struct interru
 void _add_task(struct interrupt_scheduler *self, interrupt_handler_t handler, void *data, unsigned priority)
 {
     //avoid re-entrance
-    disable_local_all_interrupt();
+    disable_interrupt();
     struct interrupt_task_node *new_node = (struct interrupt_task_node *)simple_malloc(sizeof(struct interrupt_task_node));
     new_node->handler = handler;
     new_node->data = data;
     INIT_LIST_HEAD(&(new_node->list));
     _insert_qbin(self, self->qbins + priority, new_node);
-    enable_local_all_interrupt();
+    test_enable_interrupt();
 }
 
 void init_interrupt_scheduler(struct interrupt_scheduler *self)

@@ -14,6 +14,11 @@ extern void enable_local_irq_interrupt(void);
 extern void enable_local_async_interrupt(void);
 extern void enable_local_dbg_interrupt(void);
 extern void enable_local_all_interrupt(void);
+
+extern int interrupt_cnter;
+extern void test_enable_interrupt();
+extern void disable_interrupt();
+
 extern void set_exception_vector_table(void);
 extern void exception_handler(void);
 extern void set_exception_vector_table(void);
