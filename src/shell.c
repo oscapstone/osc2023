@@ -4,6 +4,7 @@
 #include "reboot.h"
 #include "shell.h"
 #include "note.h"
+#include "thread.h"
 #include "initramfs.h"
 #include "time_interrupt.h"
 
@@ -273,6 +274,9 @@ int run_if_builtin(char *first_arg, char *other_args)
         return 1;
     } else if (strcmp(first_arg, "buddy") == 0) {
         test_buddy();
+        return 1;
+    } else if (strcmp(first_arg, "thread") == 0) {
+        demo_thread();
         return 1;
     }
     return 0;
