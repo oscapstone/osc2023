@@ -1,7 +1,8 @@
 _bootloader = 0x60000;
 _kernel     = 0x80000;
 _stack_top  = 0x400000;
-
+start_mem  = 0x7000000;
+end_mem    = 0x7ffffff;
 SECTIONS
 {
   . = _bootloader;

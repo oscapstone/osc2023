@@ -18,5 +18,6 @@ typedef uint64 fdt64_t;
 
 #define ALIGN(num, base) ((num + base - 1) & ~(base - 1))
 #define NULL 0
+#define PAGE_SIZE 0x1000
 
 #endif /* _TYPES_H */

@@ -263,10 +263,10 @@ void uart_irq_add(){
         return;
 
     disable_RW_interrupt();
-    if(add_task(uart_irq_handler, NULL, UART_PRIO))
+    if(add_task((void (*)(void *))uart_irq_handler, NULL, UART_PRIO))
         enable_RW_interrupt();
 }
-void uart_irq_handler(){
+void uart_irq_handler(void){
     uint32 iir = get32(AUX_MU_IIR_REG), ier = 0;
 
     // Transmit holding register empty

@@ -1,4 +1,5 @@
 #include <mini_uart.h>
+#include <utils.h>
 #include <syscall.h>
 
 funcp syscall_table[] = {

@@ -1,8 +1,6 @@
 #ifndef _SYSCALL_H
 #define _SYSCALL_H
 
-#define ARRAY_SIZE(x) (sizeof(x) / sizeof(x[0]))
-
 #define read_sysreg(r) ({                       \
     uint64 __val;                               \
     asm volatile("mrs %0, " #r : "=r" (__val)); \

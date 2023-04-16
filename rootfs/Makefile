@@ -6,15 +6,7 @@ LIB := ../obj/lib
 LIB_OBJ = $(wildcard $(LIB)/*.o)
 CFLAGS  = -Wall -nostdlib -nostartfiles -ffreestanding -mgeneral-regs-only \
 				-I$(INC)
-all: userprog1 userprog2
-userprog1: userprog1.elf
-	$(CROSS_COMPILE)objcopy -O binary $^ $@
-
-userprog1.elf: linker.ld userprog1.o $(LIB_OBJ)
-	$(LD) $(LDFLAGS) -T $< -o $@ userprog1.o $(LIB_OBJ)
-
-userprog1.o: userprog1.c
-	$(CC) $(CFLAGS) -c $< -o $@
+all: userprog2
 
 userprog2: userprog2.elf
 	$(CROSS_COMPILE)objcopy -O binary $^ $@

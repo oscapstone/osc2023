@@ -9,7 +9,7 @@
 #define CORE0_IRQ_SOURCE 0x40000060
 #define TIMER_NUM 32
 uint64 timer_boot_cnt;
-static int timer_dump = 0;
+// static int timer_dump = 0;
 
 timer_node t_nodes[TIMER_NUM];
 timer_meta t_meta;
@@ -126,12 +126,12 @@ void boot_time_callback()
         // Set next timer before calling any functions which may interrupt
     uint32 cntfrq_el0 = read_sysreg(cntfrq_el0);
     uint64 cntpct_el0 = read_sysreg(cntpct_el0);
-    timer_dump ++;
+    // timer_dump ++;
     // just dump two times
-    if(timer_dump<=2){
+    // if(timer_dump<=2){
         uart_printf("[Boot time: %lld seconds...]\r\n", (cntpct_el0 - timer_boot_cnt) / cntfrq_el0);
         add_timer(boot_time_callback, NULL ,2);
-    }
+    // }
     // }
 }
 

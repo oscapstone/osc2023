@@ -6,6 +6,7 @@
 #include <utils.h>
 #include <timer.h>
 #include <irq.h>
+#include <mm.h>
 
 #define BUFSIZE 0x100
 char shell_buf[BUFSIZE];
@@ -71,8 +72,9 @@ void kernel_main(char *fdt){
     uart_printf("[*] Kernel start running!\r\n");
     uart_printf("[*] fdt base: %x\r\n", fdt);
 
-    timer_init();
     initramfs_init(fdt);
+    mm_init(fdt);
+    timer_init();
     enable_irqs1();
     enable_interrupt();
     while(1)

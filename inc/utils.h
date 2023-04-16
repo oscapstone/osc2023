@@ -1,6 +1,8 @@
 #ifndef	_UTILS_H
 #define	_UTILS_H
 
+#define ARRAY_SIZE(x) (sizeof(x) / sizeof(x[0]))
+
 #define enable_interrupt(){           \
     asm volatile("msr DAIFClr, 0xf"); \
 }
