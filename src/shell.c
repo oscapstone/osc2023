@@ -7,6 +7,141 @@
 #include "thread.h"
 #include "initramfs.h"
 #include "time_interrupt.h"
+#include "syscall.h"
+
+static void hello_cmd(int argc, char *argv[])
+{
+    uart_write_string("Hello World!\n");
+}
+
+static void reboot_cmd(int argc, char *argv[])
+{
+    reset(0);
+    while (1) delay(10);
+}
+static void ls_cmd(int argc, char *argv[])
+{
+    _initramfs.ls(&_initramfs, "");
+}
+
+static void cat_cmd(int argc, char *argv[])
+{
+    if (argc < 2) {
+        uart_write_string("Usage: cat <file name>\n");
+        return;
+    }
+    _initramfs.cat(&_initramfs, argv[1]);
+}
+static void dump_cmd(int argc, char *argv[])
+{
+    if (argc < 2 || strlen(argv[1]) != 16) {
+        uart_write_string("Usage: dump <64b hex address>\n");
+        return;
+    }
+    dump_hex((void *)hex2ull(argv[1]), 8);
+}
+static void mknote_cmd(int argc, char *argv[])
+{
+    make_note();
+}
+static void linote_cmd(int argc, char *argv[])
+{
+    list_note();
+}
+static void dtb_cmd(int argc, char *argv[])
+{
+    _fdt.fdt_print(&_fdt);
+}
+static void ldprog_cmd(int argc, char *argv[])
+{
+    if (argc < 2) {
+        uart_write_string("Usage: ldprog <file name>\n");
+        return;
+    }
+    _initramfs.exec(&_initramfs, &argv[1]);
+}
+static void uptime_cmd(int argc, char *argv[])
+{
+    write_uptime();
+}
+static void async_cmd(int argc, char *argv[])
+{
+    test_uart_async();
+}
+static void timeout_cmd(int argc, char *argv[])
+{
+    char input_buffer[MAX_SHELL_INPUT];
+    uart_write_string("message length: ");
+    uart_read_input(input_buffer, MAX_SHELL_INPUT);
+    int buf_size = atoi(input_buffer);
+    if (buf_size <= 0 || buf_size > 100) {
+        uart_write_string("length should within [1, 100].\n");
+        return;
+    }
+    char *msg = (char *)simple_malloc(buf_size * sizeof(char));
+    uart_write_string("message: ");
+    uart_read_input(msg, buf_size);
+    uart_write_string("duration: ");
+    uart_read_input(input_buffer, MAX_SHELL_INPUT);
+    int dur = atoi(input_buffer);
+    if (dur <= 0 || dur > 100) {
+        uart_write_string("duration should within [1, 100].\n");
+        return;
+    }
+    _timer_task_scheduler.add_timer_second(&_timer_task_scheduler, notify, msg, dur);
+}
+static void preempt_cmd(int argc, char *argv[])
+{
+    _timer_task_scheduler.add_timer_second(&_timer_task_scheduler, sleep_timer, 1, 1);
+}
+static void malloc_cmd(int argc, char *argv[])
+{
+    test_mem_pool();
+}
+static void buddy_cmd(int argc, char *argv[])
+{
+    test_buddy();
+}
+static void thread_cmd(int argc, char *argv[])
+{
+    demo_thread();
+}
+static void fork_cmd(int argc, char *argv[])
+{
+
+}
+static void help_cmd(int argc, char *argv[])
+{
+    for (size_t i = 0; i < shell_cmd_cnt; i++) {
+        uart_write_string(cmd_list[i].name);
+        uart_write_string("\t\t: ");
+        uart_write_string(cmd_list[i].help);
+    }
+}
+// static void hello_cmd(int argc, char *argv[])
+
+struct shell_cmd cmd_list[] = {
+    {.name="ls", .help="list files in initramfs\n", .func=ls_cmd},
+    {.name="cat", .help="print content of a specific file in initramfs\n", .func=cat_cmd},
+    {.name="dtb", .help="print device tree properties\n", .func=dtb_cmd},
+    {.name="help", .help="print this help menu\n", .func=help_cmd},
+    {.name="fork", .help="test_fork\n", .func=fork_cmd},
+    {.name="hello", .help="print Hello World!\n", .func=hello_cmd},
+    {.name="async", .help="read and write a line asynchronously\n", .func=async_cmd},
+    {.name="buddy", .help="test buddy system\n", .func=buddy_cmd},
+    {.name="malloc", .help="test dynamic memory allocation\n", .func=malloc_cmd},
+    {.name="thread", .help="test kernel thread round-robin scheduling\n", .func=thread_cmd},
+    {.name="reboot", .help="reboot the device\n", .func=reboot_cmd},
+    {.name="mknote", .help="make a note\n", .func=mknote_cmd},
+    {.name="linote", .help="list all notes\n", .func=linote_cmd},
+    {.name="ldprog", .help="run program in EL0 without interrupt\n", .func=ldprog_cmd},
+    {.name="uptime", .help="write system uptime\n", .func=uptime_cmd},
+    {.name="timeout", .help="write message at the given time\n", .func=timeout_cmd},
+    {.name="preempt", .help="schedule a timer function which asynchronously write 'asyncw'.\n", .func=preempt_cmd},
+    
+};
+
+size_t shell_cmd_cnt = ARRAY_SIZE(cmd_list);
 
 enum ANSI_ESC
 {
@@ -18,7 +153,7 @@ enum ANSI_ESC
 
 enum ANSI_ESC decode_csi_key()
 {
-    char c = uart_read();
+    char c = kuart_read();
     switch (c)
     {
     case 'C':
@@ -28,7 +163,7 @@ enum ANSI_ESC decode_csi_key()
         return CursorBackward;
         break;
     case '3':
-        return uart_read() == '~' ? Delete : Unknown;
+        return kuart_read() == '~' ? Delete : Unknown;
         break;
     default:
         return Unknown;
@@ -38,7 +173,7 @@ enum ANSI_ESC decode_csi_key()
 
 enum ANSI_ESC decode_ansi_escape()
 {
-    return uart_read() == '[' ? decode_csi_key() : Unknown;
+    return kuart_read() == '[' ? decode_csi_key() : Unknown;
 }
 
 unsigned int shell_read_string(char *cmd, unsigned int cmd_size)
@@ -48,7 +183,7 @@ unsigned int shell_read_string(char *cmd, unsigned int cmd_size)
     int idx = 0, end = 0, i, last_end = 0;
     cmd[0] = '\0';
     char c;
-    while ((c = uart_read()) != '\n')
+    while ((c = kuart_read()) != '\n')
     {
         // Decode CSI key sequences
         if (c == 27) {
@@ -117,7 +252,7 @@ unsigned int shell_read_string(char *cmd, unsigned int cmd_size)
         uart_write_string("# ");
         uart_write_string(cmd);
         for (int j = 0; j < (last_end - end); j++)
-            uart_write(' ');
+            kuart_write(' ');
         uart_write_retrace();
         uart_write_string("\e[");
         uart_write_no((unsigned int)(idx + 2));
@@ -129,157 +264,26 @@ shell_input_loop_end:
     return (unsigned int)end;
 }
 
-unsigned int shell_set_first_arg(char *entire_cmd, unsigned int cmd_size, char *buffer, unsigned int buffer_size)
+int run_if_builtin(int argc, char *argv[])
 {
-    while (*entire_cmd == ' ')
-    {
-        entire_cmd++;
-        cmd_size--;
+    for (size_t i = 0; i < shell_cmd_cnt; i++) {
+        if (strcmp(argv[0], cmd_list[i].name) == 0) {
+            cmd_list[i].func(argc, argv);
+            return 1;
+        }
     }
-    char *first_arg_tail = entire_cmd, *cmd_tail = entire_cmd + cmd_size;
-    for (; first_arg_tail < cmd_tail; first_arg_tail++)
-    {
-        char cur = *first_arg_tail;
-        if (cur == '\0' || cur == '\n')
-            break;
-    }
-    unsigned int copy_size = min(buffer_size, (unsigned int)(first_arg_tail - entire_cmd));
-    memcpy(buffer, entire_cmd, copy_size);
-    buffer[copy_size] = '\0';
-    return copy_size;
+    return 0;
 }
 
 void shell_process_cmd(char *input_buffer, unsigned int input_size)
 {
     /* split first arg and others*/
-    char first_arg[MAX_SHELL_INPUT];
-    input_size = min(input_size, (unsigned int)MAX_SHELL_INPUT);
-    unsigned int first_arg_content_size = shell_set_first_arg(input_buffer, input_size, first_arg, MAX_SHELL_INPUT);
-
-    if (!run_if_builtin(first_arg, input_buffer + first_arg_content_size))
+    char *argv[MAX_ARGS+1];
+    int argc = shell_parse_argv(input_buffer, argv, MAX_ARGS);
+    if (!run_if_builtin(argc, argv))
     {
         uart_write_string("Command not found!\n");
     }
-}
-
-int run_if_builtin(char *first_arg, char *other_args)
-{
-    char input_buffer[MAX_SHELL_INPUT];
-    char *argv[MAX_ARGS+1];
-    if (strcmp(first_arg, "help") == 0)
-    {
-        uart_write_string("ls              : list files in initramfs\n");
-        uart_write_string("cat             : print content of a specific file in initramfs\n");
-        uart_write_string("dtb             : print device tree properties\n");
-        uart_write_string("help            : print this help menu\n");
-        uart_write_string("hello           : print Hello World!\n");
-        uart_write_string("async           : read and write a line asynchronously\n");
-        uart_write_string("buddy           : test buddy system\n");
-        uart_write_string("malloc          : test dynamic memory allocation\n");
-        uart_write_string("reboot          : reboot the device\n");
-        uart_write_string("mknote          : make a note\n");
-        uart_write_string("linote          : list all notes\n");
-        uart_write_string("ldprog          : run program in EL0\n");
-        uart_write_string("uptime          : write system uptime\n");
-        uart_write_string("setTimeout      : write message at the given time\n");
-        uart_write_string("test_preemption : sleep the given amount of time and enqueue three timer task to timer queue.\n");
-        return 1;
-    }
-    else if (strcmp(first_arg, "hello") == 0)
-    {
-        uart_write_string("Hello World!\n");
-        return 1;
-    }
-    else if (strcmp(first_arg, "reboot") == 0)
-    {
-        reset(0);
-        while (1)
-            delay(10); // hang until reboot
-        return 1;
-    }
-    else if (strcmp(first_arg, "ls") == 0)
-    {
-        //currently only support root directory listing
-        _initramfs.ls(&_initramfs, "");
-        return 1;
-    }
-    else if (strcmp(first_arg, "cat") == 0)
-    {
-        uart_write_string("Filename: ");
-        uart_read_input(input_buffer, MAX_SHELL_INPUT);
-        _initramfs.cat(&_initramfs, input_buffer);
-        return 1;
-    }
-    else if (strcmp(first_arg, "dump") == 0) 
-    {
-        uart_write_string("64b hex address: ");
-        dump_hex(uart_read_hex_ull(), 8);
-        return 1;
-    }
-    else if (strcmp(first_arg, "mknote") == 0) 
-    {
-        make_note();
-        return 1;
-    }
-    else if (strcmp(first_arg, "linote") == 0)
-    {
-        list_note();
-        return 1;
-    }
-    else if (strcmp(first_arg, "dtb") == 0)
-    {
-        _fdt.fdt_print(&_fdt);
-        return 1;
-    }
-    else if (strcmp(first_arg, "ldprog") == 0)
-    {
-        uart_write_string("args: ");
-        uart_read_input(input_buffer, MAX_SHELL_INPUT);
-        shell_parse_argv(input_buffer, argv, MAX_ARGS);
-        _initramfs.exec(&_initramfs, argv);
-        return 1;
-    }
-    else if (strcmp(first_arg, "uptime") == 0)
-    {
-        write_uptime();
-        return 1;
-    } else if (strcmp(first_arg, "async") == 0) {
-        test_uart_async();
-        return 1;
-    } else if (strcmp(first_arg, "setTimeout") == 0) {
-        uart_write_string("message length: ");
-        uart_read_input(input_buffer, MAX_SHELL_INPUT);
-        int buf_size = atoi(input_buffer);
-        if (buf_size <= 0 || buf_size > 100) {
-            uart_write_string("length should within [1, 100].\n");
-            return 2;
-        }
-        char *msg = (char *)simple_malloc(buf_size * sizeof(char));
-        uart_write_string("message: ");
-        uart_read_input(msg, buf_size);
-        uart_write_string("duration: ");
-        uart_read_input(input_buffer, MAX_SHELL_INPUT);
-        int dur = atoi(input_buffer);
-        if (dur <= 0 || dur > 100) {
-            uart_write_string("duration should within [1, 100].\n");
-            return 2;
-        }
-        _timer_task_scheduler.add_timer_second(&_timer_task_scheduler, notify, msg, dur);
-        return 1;
-    } else if (strcmp(first_arg, "test_preemption") == 0) {
-        _timer_task_scheduler.add_timer_second(&_timer_task_scheduler, sleep_timer, 1, 1);
-        return 1;
-    } else if (strcmp(first_arg, "malloc") == 0) {
-        test_mem_pool();
-        return 1;
-    } else if (strcmp(first_arg, "buddy") == 0) {
-        test_buddy();
-        return 1;
-    } else if (strcmp(first_arg, "thread") == 0) {
-        demo_thread();
-        return 1;
-    }
-    return 0;
 }
 
 int shell_parse_argv(char *s, char *argv[], unsigned max_args)
