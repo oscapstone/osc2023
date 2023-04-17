@@ -8,6 +8,7 @@
 #include<mem.h>
 #include<syscall.h>
 #include<utils.h>
+#include<mini_uart.h>
 
 extern char _stack_top;
 
@@ -34,7 +35,7 @@ static int memory_fdt_parser(int level, char *cur, char *dt_strings){
             cur+=sizeof(fdt32_t);
             if(!strcmp("memory@0", cur)){
                 memory_node = 1;
-                uart_printf("find memory node!\r\n");
+                // uart_printf("find memory node!\r\n");
             }
             else
                 memory_node = 0;
@@ -44,7 +45,7 @@ static int memory_fdt_parser(int level, char *cur, char *dt_strings){
                 break;           
             cur += sizeof(fdt32_t);
             struct fdt_property *fdtp = (struct fdt_property *)cur;
-            uart_printf("dt_string: %s\r\n", dt_strings + fdtp_nameoff(fdtp));
+            // uart_printf("dt_string: %s\r\n", dt_strings + fdtp_nameoff(fdtp));
             if(!strcmp("reg",dt_strings + fdtp_nameoff(fdtp))){
                 cur += sizeof(struct fdt_property);
                 memory_end = ld64(cur);

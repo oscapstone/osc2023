@@ -56,6 +56,8 @@ void shell_interact(void){
         if(_setTimeout(&shell_buf[10])==-1)
             uart_printf("usage: setTimeout <msg> <sec>\r\n");
     }
+    else if (!strcmp("chmod_timer",shell_buf))
+        timer_switch_info();
     else {
         _echo(shell_buf);
         if(cnt)

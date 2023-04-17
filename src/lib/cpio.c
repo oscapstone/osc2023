@@ -117,7 +117,7 @@ char *cpio_load_prog(char *cpio, char *filename){
         cur += aligned_filesize;
 
         if(!strcmp(curfilename, filename)){
-            char *mem = (char*)simple_malloc(filesize);
+            char *mem = (char*)kmalloc(filesize);
             memncpy(mem, curfilecontent, (unsigned long)filesize);
             return mem;
         }

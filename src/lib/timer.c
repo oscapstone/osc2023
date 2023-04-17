@@ -14,6 +14,8 @@ uint64 timer_boot_cnt;
 timer_node t_nodes[TIMER_NUM];
 timer_meta t_meta;
 
+int timer_show_enable;
+
 static void timer_enable(){
     // Enable core0 cntp timer
     put32(CORE0_TIMER_IRQ_CTRL,2);
@@ -114,25 +116,18 @@ void timer_init(){
     INIT_LIST_HEAD(&t_meta.lh);
     t_meta.t_interval = 0;
     t_meta.t_status = 0xffffffff;
-
+    timer_show_enable = 1;
     add_timer(boot_time_callback,NULL,2);
 }
 
-void boot_time_callback()
-{
-    // uint32 core0_irq_src = get32(CORE0_IRQ_SOURCE);
-
-    // if (core0_irq_src & 0x02) {
-        // Set next timer before calling any functions which may interrupt
-    uint32 cntfrq_el0 = read_sysreg(cntfrq_el0);
-    uint64 cntpct_el0 = read_sysreg(cntpct_el0);
-    // timer_dump ++;
-    // just dump two times
-    // if(timer_dump<=2){
+void boot_time_callback(){
+    if(timer_show_enable){
+        uint32 cntfrq_el0 = read_sysreg(cntfrq_el0);
+        uint64 cntpct_el0 = read_sysreg(cntpct_el0);
         uart_printf("[Boot time: %lld seconds...]\r\n", (cntpct_el0 - timer_boot_cnt) / cntfrq_el0);
-        add_timer(boot_time_callback, NULL ,2);
-    // }
-    // }
+    }
+    add_timer(boot_time_callback, NULL ,2);
+
 }
 
 void add_timer(void (*callback)(void *), void *data, uint32 timeval){
@@ -178,4 +173,8 @@ void timer_irq_handler(){
     tn_free(tn);
 
     timer_enable();
+}
+
+void timer_switch_info(){
+    timer_show_enable = !timer_show_enable;
 }

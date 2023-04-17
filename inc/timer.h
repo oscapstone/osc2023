@@ -30,4 +30,5 @@ void boot_time_callback();
 void add_timer(void (*callback)(void *), void *data, uint32 after);
 void timer_irq_add();
 void timer_irq_handler();
+void timer_switch_info();
 #endif

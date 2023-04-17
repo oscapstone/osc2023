@@ -116,7 +116,7 @@ void *alloc_page(){
 void page_allocator_early_init(void *start, void *end){
     buddy_base = (uint64)start;
     buddy_end = (uint64)end;
-    uart_printf("buddy base: %x, buddy end: %x", buddy_base, buddy_end);
+    // uart_printf("buddy base: %x, buddy end: %x", buddy_base, buddy_end);
     frame_ents_size = (buddy_end - buddy_base)/PAGE_SIZE;
 
     frame_ents = simple_malloc(sizeof(frame_ent) * frame_ents_size);
@@ -156,7 +156,7 @@ void page_allocator_init(){
                 break;
         }
     }
-    uart_printf("Updating freelists... There are %d frame entries.\r\n", frame_ents_size);
+    // uart_printf("Updating freelists... There are %d frame entries.\r\n", frame_ents_size);
     // Update freelists
     for (int idx = 0,exp; idx < frame_ents_size; idx += (1<<exp)){
         exp = frame_ents[idx].exp;

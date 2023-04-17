@@ -29,6 +29,7 @@ void _help(int mode){
             "malloc <size>\t: " "allocate a block of memory with size" "\r\n"
             "exec <filename>\t: " "execute user program" "\r\n"
             "chmod_uart\t: " "change uart async/sync mode" "\r\n"
+            "chmod_timer\t: " "change timer show/not to show mode" "\r\n"
             "setTimeout <msg> <sec>\t: " "print @msg after @sec seconds" "\r\n"
         );
     }
@@ -80,7 +81,7 @@ void *_malloc(char *size){
         return NULL;
     }
     uart_printf("Ready to allocate %d size of memory!\r\n",int_size);
-    return simple_malloc(int_size);
+    return kmalloc(int_size);
 }
 
 void _exec(uint64 _initramfs_addr,char *filename){
@@ -91,7 +92,11 @@ void _exec(uint64 _initramfs_addr,char *filename){
     if(mem == NULL)
         return;
     
-    user_sp = (char *)0x10000000;
+    user_sp = kmalloc(PAGE_SIZE);
+    if (user_sp == NULL) {
+        kfree(mem);
+        return;
+    }
     exec_user_proc(user_sp, mem);
 }
 
@@ -129,7 +134,7 @@ int _setTimeout(char *shell_buf){
     char *mem;
 
     len = strlen(msg) + 1;
-    mem = simple_malloc(len);
+    mem = kmalloc(len);
     memncpy(mem ,msg, len);
     add_timer((void(*)(void *))uart_printf, mem, atoi(tsec));
     return 0;
