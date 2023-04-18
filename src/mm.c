@@ -332,6 +332,8 @@ void init_buddy(buddy_t *self)
     self->mem_reserve(self, _fdt.head_addr, _fdt.end_addr);
     //Your simple allocator (startup allocator)
     //No. It's within kernel
+    //kernel init stack
+    self->mem_reserve(self, LOW_MEMORY - PAGE_SIZE, LOW_MEMORY);;
 }
 
 void *alloc_pages(size_t no_pages)
@@ -368,7 +370,7 @@ static void _mem_chunk_pool_append(struct mem_pool *self, int order)
     char *end = (char *)new_page + PAGE_SIZE;
     char *start = (char *)new_page;
     const size_t unit = (0x10 * order + sizeof(mem_chunk_t));
-    for (; start < end; start += unit) {
+    for (; start + unit < end; start += unit) {
         _mem_chunk_push(&(self->free_list[order]), (mem_chunk_t *)start, order);
     }
 }
