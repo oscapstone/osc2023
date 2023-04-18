@@ -6,10 +6,12 @@
 #define PIDMAX 32768
 #define USTACK_SIZE 0x10000
 #define KSTACK_SIZE 0x10000
+#define SIGNAL_MAX  64
 
 extern void  switch_to(void *curr_context, void *next_context);
 extern void* get_current();
 extern void  store_context(void *curr_context);
+extern void  load_context(void *curr_context);
 
 typedef struct thread_context
 {
@@ -30,15 +32,20 @@ typedef struct thread_context
 
 typedef struct thread
 {
-    list_head_t listhead;
+    list_head_t      listhead;
     thread_context_t context;
-    char *data;
-    unsigned int datasize;
-    int iszombie;
-    int pid;
-    int isused;
-    char* stack_alloced_ptr;
-    char* kernel_stack_alloced_ptr;
+    char*            data;
+    unsigned int     datasize;
+    int              iszombie;
+    int              pid;
+    int              isused;
+    char*            stack_alloced_ptr;
+    char*            kernel_stack_alloced_ptr;
+    void             (*signal_handler[SIGNAL_MAX+1])();
+    int              sigcount[SIGNAL_MAX+1];
+    void             (*curr_signal_handler)();
+    int              signal_inProcess;
+    thread_context_t signal_savedContext;
 } thread_t;
 
 void schedule_timer(char *notuse);

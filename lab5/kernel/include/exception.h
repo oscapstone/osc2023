@@ -68,9 +68,9 @@ void irqtask_list_init();
 void el1_interrupt_enable();
 void el1_interrupt_disable();
 
-void el1h_irq_router();
+void el1h_irq_router(trapframe_t* tpf);
 void el0_sync_router(trapframe_t* tpf);
-void el0_irq_64_router();
+void el0_irq_64_router(trapframe_t* tpf);
 
 void invalid_exception_router(); // exception_handler.S
 

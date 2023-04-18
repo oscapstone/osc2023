@@ -6,6 +6,7 @@
 #include "exception.h"
 #include "memory.h"
 #include "mbox.h"
+#include "signal.h"
 
 #include "cpio.h"
 #include "dtb.h"
@@ -13,7 +14,6 @@
 extern void* CPIO_DEFAULT_START;
 extern thread_t *curr_thread;
 
-extern list_head_t *zombie_queue;
 extern thread_t threads[PIDMAX + 1];
 
 int getpid(trapframe_t *tpf)
@@ -53,13 +53,19 @@ int exec(trapframe_t *tpf, const char *name, char *const argv[])
     {
         curr_thread->data[i] = new_data[i];
     }
+
+    //clear signal handler
+    for (int i = 0; i <= SIGNAL_MAX; i++)
+    {
+        curr_thread->signal_handler[i] = signal_default_handler;
+    }
     /*
     __asm__ __volatile__("mov sp, %0\n\t" ::"r"(curr_thread->stack_alloced_ptr + USTACK_SIZE));
     __asm__ __volatile__("msr elr_el1, %0\n\t" ::"r"(curr_thread->data));
     __asm__ __volatile__("eret\n\t");
     */
-    asm("msr sp_el0, %0\n\t" ::"r"(curr_thread->stack_alloced_ptr+USTACK_SIZE));
     tpf->elr_el1 = (unsigned long) curr_thread->data;
+    tpf->sp_el0 = (unsigned long)curr_thread->stack_alloced_ptr + USTACK_SIZE;
     tpf->x0 = 0;
     return 0;
 }
@@ -69,6 +75,12 @@ int fork(trapframe_t *tpf)
     el1_interrupt_enable();
     thread_t *newt = thread_create(curr_thread->data);
     newt->datasize = curr_thread->datasize;
+
+    //copy signal handler
+    for (int i = 0; i <= SIGNAL_MAX;i++)
+    {
+        newt->signal_handler[i] = curr_thread->signal_handler[i];
+    }
 
     int parent_pid = curr_thread->pid;
     thread_t *parent_thread_t = curr_thread;
@@ -141,21 +153,40 @@ int syscall_mbox_call(trapframe_t *tpf, unsigned char ch, unsigned int *mbox)
     return 0;
 }
 
-void kill(trapframe_t *tpf,int pid)
+void kill(trapframe_t *tpf, int pid)
 {
     el1_interrupt_disable();
-    if (pid >= PIDMAX || !threads[pid].isused)
+    if ( pid < 0 || pid >= PIDMAX || !threads[pid].isused)
     {
         el1_interrupt_enable();
         return;
     }
-    list_del_entry(&threads[pid].listhead);
-    curr_thread->iszombie = 1;
-    list_add(&threads[pid].listhead, zombie_queue);
+    threads[pid].iszombie = 1;
     el1_interrupt_enable();
+    schedule();
 }
 
+void signal_register(int signal, void (*handler)())
+{
+    if (signal > SIGNAL_MAX || signal < 0)return;
 
+    curr_thread->signal_handler[signal] = handler;
+}
+
+void signal_kill(int pid, int signal)
+{
+    if (pid > PIDMAX || pid < 0 || !threads[pid].isused)return;
+    //lock();
+    threads[pid].sigcount[signal]++;
+    //unlock();
+}
+
+void sigreturn(trapframe_t *tpf)
+{
+    unsigned long signal_ustack = tpf->sp_el0 % USTACK_SIZE == 0 ? tpf->sp_el0 - USTACK_SIZE : tpf->sp_el0 & (~(USTACK_SIZE - 1));
+    kfree((char*)signal_ustack);
+    load_context(&curr_thread->signal_savedContext);
+}
 
 
 char* get_file_start(char *thefilepath)

@@ -3,10 +3,9 @@
 #include "exception.h"
 #include "memory.h"
 #include "timer.h"
+#include "signal.h"
 
 list_head_t *run_queue;
-list_head_t *wait_queue;
-list_head_t *zombie_queue;
 
 thread_t threads[PIDMAX + 1];
 thread_t *curr_thread;
@@ -17,11 +16,7 @@ void init_thread_sched()
 {
     //el1_interrupt_disable();
     run_queue = kmalloc(sizeof(list_head_t));
-    wait_queue = kmalloc(sizeof(list_head_t));
-    zombie_queue = kmalloc(sizeof(list_head_t));
     INIT_LIST_HEAD(run_queue);
-    INIT_LIST_HEAD(wait_queue);
-    INIT_LIST_HEAD(zombie_queue);
 
     //init pids
     for (int i = 0; i <= PIDMAX; i++)
@@ -63,20 +58,19 @@ void schedule(){
 
 void kill_zombies(){
     //el1_interrupt_disable();
-    //while(!list_empty(zombie_queue))
     list_head_t *curr;
     list_for_each(curr,run_queue)
     {
         if (((thread_t *)curr)->iszombie)
         {
-            list_head_t *prev_curr = curr->prev;
+            //list_head_t *prev_curr = curr->prev;
             list_del_entry(curr);
             kfree(((thread_t *)curr)->stack_alloced_ptr);        // free stack
             kfree(((thread_t *)curr)->kernel_stack_alloced_ptr); // free stack
             //kfree(((thread_t *)curr)->data); // free data (don't free data because of fork)
             ((thread_t *)curr)->iszombie = 0;
             ((thread_t *)curr)->isused = 0;
-            curr = prev_curr;
+            //curr = prev_curr;
         }
     }
     //el1_interrupt_enable();
@@ -127,7 +121,13 @@ thread_t *thread_create(void *start)
     r->kernel_stack_alloced_ptr = kmalloc(KSTACK_SIZE);
     r->context.sp = (unsigned long long )r->stack_alloced_ptr + USTACK_SIZE;
     r->context.fp = r->context.sp;
-
+    r->signal_inProcess = 0;
+    //initial signal handler with signal_default_handler (kill thread)
+    for (int i = 0; i < SIGNAL_MAX;i++)
+    {
+        r->signal_handler[i] = signal_default_handler;
+        r->sigcount[i] = 0;
+    }
     list_add(&r->listhead, run_queue);
     //el1_interrupt_enable();
     return r;
@@ -135,9 +135,7 @@ thread_t *thread_create(void *start)
 
 void thread_exit(){
     //el1_interrupt_disable();
-    //list_del_entry(&curr_thread->listhead);
     curr_thread->iszombie = 1;
-    //list_add(&curr_thread->listhead, zombie_queue);
     schedule();
     //el1_interrupt_enable();
 }

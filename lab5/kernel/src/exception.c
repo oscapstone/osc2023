@@ -6,6 +6,7 @@
 #include "memory.h"
 #include "syscall.h"
 #include "sched.h"
+#include "signal.h"
 
 extern list_head_t *run_queue;
 
@@ -18,7 +19,7 @@ void el1_interrupt_disable(){
     __asm__ __volatile__("msr daifset, 0xf"); // mask all DAIF
 }
 
-void el1h_irq_router(){
+void el1h_irq_router(trapframe_t *tpf){
     // decouple the handler into irqtask queue
     // (1) https://datasheets.raspberrypi.com/bcm2835/bcm2835-peripherals.pdf - Pg.113
     // (2) https://datasheets.raspberrypi.com/bcm2836/bcm2836-peripherals.pdf - Pg.16
@@ -46,6 +47,12 @@ void el1h_irq_router(){
 
         //at least two threads running -> schedule for any timer irq
         if (run_queue->next->next != run_queue) schedule();
+    }
+
+    //only do signal handler when return to user mode
+    if ((tpf->spsr_el1 & 0b1100) == 0)
+    {
+        check_signal(tpf);
     }
 }
 
@@ -86,6 +93,18 @@ void el0_sync_router(trapframe_t *tpf){
     {
         kill(tpf, (int)tpf->x0);
     }
+    else if (syscall_no == 8)
+    {
+        signal_register(tpf->x0, (void (*)())tpf->x1);
+    }
+    else if (syscall_no == 9)
+    {
+        signal_kill(tpf->x0, tpf->x1);
+    }
+    else if (syscall_no == 50)
+    {
+        sigreturn(tpf);
+    }
 
     /*
     unsigned long long spsr_el1;
@@ -98,7 +117,7 @@ void el0_sync_router(trapframe_t *tpf){
     */
 }
 
-void el0_irq_64_router(){
+void el0_irq_64_router(trapframe_t *tpf){
     // decouple the handler into irqtask queue
     // (1) https://datasheets.raspberrypi.com/bcm2835/bcm2835-peripherals.pdf - Pg.113
     // (2) https://datasheets.raspberrypi.com/bcm2836/bcm2836-peripherals.pdf - Pg.16
@@ -126,6 +145,12 @@ void el0_irq_64_router(){
 
         //at least two trhead running -> schedule for any timer irq
         if (run_queue->next->next != run_queue) schedule();
+    }
+
+    //only do signal handler when return to user mode
+    if ((tpf->spsr_el1 & 0b1100) == 0)
+    {
+        check_signal(tpf);
     }
 }
 

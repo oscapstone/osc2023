@@ -24,7 +24,7 @@
     str x0, [sp, 16 * 16]
     mrs x0, sp_el0
     str x0, [sp, 16 * 16 + 8]
-    mov x0, sp
+    ldp x0, x1, [sp, 16 * 0]
 .endm
 
 // load general registers from stack
@@ -127,7 +127,7 @@ el1h_sync:
     eret
 el1h_irq:
     save_all
-    mov x0,5
+    mov x0, sp
     bl el1h_irq_router
     load_all
     eret
@@ -146,13 +146,13 @@ el1h_error_invalid:
 
 el0_sync_64:
     save_all
-    //mov x0,8
+    mov x0, sp
     bl el0_sync_router
     load_all
     eret
 el0_irq_64:
     save_all
-    mov x0,9
+    mov x0, sp
     bl el0_irq_64_router
     load_all
     eret
