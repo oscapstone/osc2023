@@ -56,7 +56,9 @@ int main(void)
     enable_local_all_interrupt();
     //test
     // print_uptime_every2second();
+    init_idle_thread();
 
-    shell_main();
+    create_thread(shell_main_thread);
+    idle_thread();
     return 0;
 }

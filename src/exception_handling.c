@@ -5,11 +5,13 @@
 #include "time_interrupt.h"
 #include "mm.h"
 #include "stdint.h"
+#include "syscall.h"
 struct interrupt_scheduler _interrupt_scheduler;
 //later lab: https://oscapstone.github.io/labs/lab3.html#exception-handling
 int interrupt_cnter;
 void test_enable_interrupt()
 {
+    // if (interrupt_cnter > 0) interrupt_cnter--;
     interrupt_cnter--;
     if (interrupt_cnter == 0) {
         enable_local_all_interrupt();
@@ -123,10 +125,43 @@ void current_irq_exception_router(void)
     //}
     test_enable_interrupt();
 }
-void lower_synchronous_exception_router(void)
+
+
+
+static void syscall_handler(struct trap_frame *tf)
 {
-    uart_write_string("In lower_synchronous_exception_router\n");
-    default_handler();
+    uint64_t syscall_index = tf->gprs[8];
+    task_t *current = get_current_thread();
+    current->tf = tf;
+    if (syscall_index < NUM_syscalls) {
+        (default_syscall_table[syscall_index])(tf);
+    } else {
+        uart_write_string("Invalid syscall index!\n");
+    }
+}
+
+void lower_synchronous_exception_router(struct trap_frame *tf)
+{
+    // uart_write_string("In lower_synchronous_exception_router\n");
+    unsigned long esr = read_sysreg(esr_el1); // cause of that exception
+    unsigned int ec = ESR_ELx_EC(esr);
+    //https://developer.arm.com/documentation/ddi0601/2020-12/AArch64-Registers/ESR-EL1--Exception-Syndrome-Register--EL1-
+    switch (ec)
+    {
+    case ESR_ELx_EC_SVC64:
+        test_enable_interrupt();
+        syscall_handler(tf);
+        disable_interrupt();
+        break;
+    case ESR_ELx_EC_DABT_LOW:
+        uart_write_string("in Data Abort\n");
+        break;
+    case ESR_ELx_EC_IABT_LOW:
+        uart_write_string("in Instruction  Abort\n");
+        break;
+    default:
+        return;
+    }
 }
 void lower_irq_exception_router(void)
 {

@@ -31,6 +31,9 @@ struct task_reg_set {
     uint64_t fp, lr;
     uint64_t sp;
 };
+#define STACK_BASE(start_addr, stack_size) ((char *)(start_addr) + (stack_size))
+//declaration
+struct trap_frame;
 typedef struct task_struct {
     union {
         struct list_head node;
@@ -44,6 +47,8 @@ typedef struct task_struct {
     char *user_stack;
     size_t user_stack_size;
     char *text;
+
+    struct trap_frame *tf;
     
     struct task_reg_set old_reg_set;
 
@@ -54,6 +59,7 @@ typedef struct task_struct {
     //signal handler table
     //TODO
 } task_t;
+extern void init_idle_thread();
 //prepare a template for create_thread
 //Notice that this function Call kmalloc!!!
 extern task_t *new_thread();
@@ -68,7 +74,7 @@ extern void schedule();
 //1. Save current regester set into prev->old_reg_set.
 //2. Load next->old_reg_set into current register set.
 //3. tpidr_el1 := next
-extern void switch_to(struct task_reg_set *prev, struct task_reg_set *next);
+extern inline void switch_to(struct task_reg_set *prev, struct task_reg_set *next);
 //return tpidr_el1
 extern task_t *get_current_thread();
 //responsible for killing zombie threads and try to schedule other runnable thread.
@@ -77,7 +83,17 @@ extern void idle_thread();
 extern void kill_zombies();
 //free freeable resources by it own
 //then put itself into stop queue
-extern void exit();
+extern void _exit(int exitcode);
 extern void thread_demo();
 extern void demo_thread();
+struct trap_frame {
+    //general purpose regiesters
+    //x0 ~ x30
+    uint64_t gprs[31];
+    // uint64_t fp;          // Frame pointer (x29)
+    // uint64_t lr;          // Link register (x30)
+    uint64_t sp;          // elr_el1, store current user stack pointer
+    uint64_t elr_el1;     // Exception link register
+    uint64_t spsr_el1;    // Saved program status register
+};
 #endif

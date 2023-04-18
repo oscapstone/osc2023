@@ -130,7 +130,7 @@ int _fdt_traversal(struct fdt *self, fdt_callback_t cb, void *data)
 static void print_spaces(int n)
 {
     while (n--) {
-        uart_write(' ');
+        kuart_write(' ');
     }
 }
 

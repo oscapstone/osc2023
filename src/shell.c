@@ -106,9 +106,17 @@ static void thread_cmd(int argc, char *argv[])
 {
     demo_thread();
 }
+
+static void demo_fork_test()
+{
+    run_user_prog(fork_test);
+    // _exit(0);
+}
+
 static void fork_cmd(int argc, char *argv[])
 {
-
+    // fork_test();
+    create_thread(demo_fork_test);
 }
 static void help_cmd(int argc, char *argv[])
 {
@@ -309,4 +317,17 @@ void shell_main(void)
         shell_process_cmd(input_buffer, read_cnt);
     }
 
+}
+
+void shell_main_thread(void)
+{
+    size_t read_cnt;
+    char input_buffer[MAX_SHELL_INPUT];
+    while (1) {
+        if (UART_READABLE()) {
+            read_cnt = shell_read_string(input_buffer, MAX_SHELL_INPUT);
+            shell_process_cmd(input_buffer, read_cnt);
+        }
+        schedule();
+    }
 }

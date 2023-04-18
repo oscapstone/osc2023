@@ -8,12 +8,12 @@ void load_kernel(char *dtb_ptr)
     char buf[17] = {0};
     for (int i = 0; i < 16; i++) {
         //don't convert \r
-        buf[i] = _uart_read();
+        buf[i] = _kuart_read();
     }
     unsigned long long kernel_len = hex2ull(buf);
     unsigned long long i, checksum = 0;
     for (i = 0; i < kernel_len; i++) {
-        kernel[i] = _uart_read();
+        kernel[i] = _kuart_read();
         if (i % 8 == 7) {
             checksum += *(unsigned long long *)(kernel + i - 7);
         }
@@ -41,8 +41,8 @@ void main(char *dtb_ptr)
     //wait for python and test uart read function.
     char c;
     do {
-        c = uart_read();
-        uart_write(c);
+        c = kuart_read();
+        kuart_write(c);
     } while (c != 's');
     // uart_write_string("hello world!");
     load_kernel(dtb_ptr);

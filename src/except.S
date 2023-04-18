@@ -13,7 +13,7 @@
 .endm
 
 // save general registers to stack
-.macro save_all
+.macro save_gprs
     sub sp, sp, 32 * 8
     stp x0, x1, [sp ,16 * 0]
     stp x2, x3, [sp ,16 * 1]
@@ -34,7 +34,7 @@
 .endm
 
 // load general registers from stack
-.macro load_all
+.macro load_gprs
     ldp x0, x1, [sp ,16 * 0]
     ldp x2, x3, [sp ,16 * 1]
     ldp x4, x5, [sp ,16 * 2]
@@ -54,6 +54,74 @@
     add sp, sp, 32 * 8
 .endm
 
+.macro kernel_entry el
+    //fill out trap frame
+    sub sp, sp, 16 * 17
+    stp x0, x1, [sp ,16 * 0]
+    stp x2, x3, [sp ,16 * 1]
+    stp x4, x5, [sp ,16 * 2]
+    stp x6, x7, [sp ,16 * 3]
+    stp x8, x9, [sp ,16 * 4]
+    stp x10, x11, [sp ,16 * 5]
+    stp x12, x13, [sp ,16 * 6]
+    stp x14, x15, [sp ,16 * 7]
+    stp x16, x17, [sp ,16 * 8]
+    stp x18, x19, [sp ,16 * 9]
+    stp x20, x21, [sp ,16 * 10]
+    stp x22, x23, [sp ,16 * 11]
+    stp x24, x25, [sp ,16 * 12]
+    stp x26, x27, [sp ,16 * 13]
+    stp x28, x29, [sp ,16 * 14]
+    str x30, [sp, 16 * 15]
+
+    .if \el == 0
+    mrs x0, sp_el0
+    stp x30, x0, [sp, 16 * 15]
+    .else
+    str x30, [sp, 16 * 15]
+    .endif
+
+    mrs x0, elr_el1
+    mrs x1, spsr_el1
+    stp x0, x1, [sp, 16 * 16]
+
+    //copy sp as the first argument to a C function
+    mov x0, sp
+.endm
+
+.macro kernel_exit el
+    //restore trap frame to registers
+    ldp x0, x1, [sp, 16 * 16]
+    msr elr_el1, x0
+    msr spsr_el1, x1
+
+    .if \el ==0
+    ldp x30, x0, [sp, 16 * 15]
+    msr sp_el0, x0
+    .else
+    ldr x30, [sp, 16 * 15]
+    .endif
+
+    ldp x28, x29, [sp ,16 * 14]
+    ldp x26, x27, [sp ,16 * 13]
+    ldp x24, x25, [sp ,16 * 12]
+    ldp x22, x23, [sp ,16 * 11]
+    ldp x20, x21, [sp ,16 * 10]
+    ldp x18, x19, [sp ,16 * 9]
+    ldp x16, x17, [sp ,16 * 8]
+    ldp x14, x15, [sp ,16 * 7]
+    ldp x12, x13, [sp ,16 * 6]
+    ldp x10, x11, [sp ,16 * 5]
+    ldp x8, x9, [sp ,16 * 4]
+    ldp x6, x7, [sp ,16 * 3]
+    ldp x4, x5, [sp ,16 * 2]
+    ldp x2, x3, [sp ,16 * 1]
+    ldp x0, x1, [sp ,16 * 0]
+    add sp, sp, 17 * 16
+
+    eret
+.endm
+
 .macro exception_entry handler
     b \handler // branch to a handler function.
     .align 7 // entry size is 0x80, .align will pad 0
@@ -61,9 +129,9 @@
 .endm	
 
 exception_handler:
-  save_all
+  save_gprs
   bl default_handler
-  load_all
+  load_gprs
   eret
 
 //align directive: https://developer.arm.com/documentation/dui0473/m/directives-reference/align
@@ -97,27 +165,39 @@ exception_vector_table:
 
 .macro handler_template handler_name backbone
 \handler_name:
-  save_all
+  save_gprs
   bl \backbone
-  load_all
+  load_gprs
   eret
 .endm
 
 .macro el1_handler_template handler_name backbone
 \handler_name:
-  save_all
+  save_gprs
   save_el1_context
   bl \backbone
   load_el1_context
-  load_all
+  load_gprs
   eret
 .endm
 
+
 el1_handler_template _current_synchronuous_exception_handler current_synchronous_exception_router
 el1_handler_template _current_irq_exception_handler current_irq_exception_router
-handler_template _lower_synchronous_exception_handler lower_synchronous_exception_router
-handler_template _lower_irq_exception_handler lower_irq_exception_router
+_lower_synchronous_exception_handler:
+  kernel_entry 0
+  bl lower_synchronous_exception_router
+  kernel_exit 0
 
+_lower_irq_exception_handler:
+  kernel_entry 0
+  bl lower_irq_exception_router
+  kernel_exit 0
+
+.global return_from_fork
+return_from_fork:
+    kernel_exit 0
+    eret
 
 .macro globalize symbol
 .global \symbol
@@ -160,3 +240,4 @@ globalize enable_local_dbg_interrupt
 globalize enable_local_all_interrupt
   msr daifclr, 0xf
   ret  
+

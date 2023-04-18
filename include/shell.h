@@ -16,5 +16,6 @@ extern void shell_process_cmd(char *input_buffer, unsigned int input_buffer_size
 extern int run_if_builtin(int argc, char *argv[]);
 extern unsigned int shell_read_string(char *buffer, unsigned int buffer_size);
 extern void shell_main(void);
+extern void shell_main_thread(void);
 extern int shell_parse_argv(char *s, char *argv[], unsigned max_args);
 #endif
