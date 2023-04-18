@@ -58,7 +58,9 @@ void el1h_irq_router(trapframe_t *tpf){
 
 void el0_sync_router(trapframe_t *tpf){
 
-    el1_interrupt_enable();
+    // Basic #3 - Based on System Call Format in Video Player’s Test Program
+
+    el1_interrupt_enable(); // Allow UART input during exception
     unsigned long long syscall_no = tpf->x8;
 
     if (syscall_no == 0)
@@ -105,16 +107,6 @@ void el0_sync_router(trapframe_t *tpf){
     {
         sigreturn(tpf);
     }
-
-    /*
-    unsigned long long spsr_el1;
-    __asm__ __volatile__("mrs %0, SPSR_EL1\n\t" : "=r" (spsr_el1)); // EL1 configuration, spsr_el1[9:6]=4b0 to enable interrupt
-    unsigned long long elr_el1;
-    __asm__ __volatile__("mrs %0, ELR_EL1\n\t" : "=r" (elr_el1));   // ELR_EL1 holds the address if return to EL1
-    unsigned long long esr_el1;
-    __asm__ __volatile__("mrs %0, ESR_EL1\n\t" : "=r" (esr_el1));   // ESR_EL1 holds symdrome information of exception, to know why the exception happens.
-    uart_sendline("[Exception][el0_sync] spsr_el1 : 0x%x, elr_el1 : 0x%x, esr_el1 : 0x%x\n", spsr_el1, elr_el1, esr_el1);
-    */
 }
 
 void el0_irq_64_router(trapframe_t *tpf){

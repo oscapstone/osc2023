@@ -5,42 +5,52 @@
 
 extern thread_t *curr_thread;
 
+/**
+                                                                             (                                                                          )
+    [Signal]       [UserProcess]                                             (                    [ Registered Signal Handler ]                         )     [UserProcess]
+       |                  \                                                  (                   /                             \                        )    /
+       |                   \                                                 (                  /                               \                       )   /
+-------|--------------------[SystemCall]-------------------------------------(-----------------/---------------------------------\----------------------)--/---------------
+       |                                \                     [Signal Check] (-> <is Registered>                                  \                     ) /
+       V                                 \                   /      ^        (                 \                                   \                    )/
+     [Job Pending]                        [Exception Handler]       |        (                  \ [ Default Signal Handler ]-------- [Exception Handler])
+       |                                                            |        (                                                                          )
+        -----------<trigger only if UserProcess do syscall>----------        (               CONTENT SWITCHING FOR SIGNAL HANDLER                       )
+
+**/
+
+
+
 void check_signal(trapframe_t *tpf)
 {
-    //lock();
     if(curr_thread->signal_inProcess) return;
-    //prevent nested running signal handler
+    // Prevent nested running signal handler. No need to handle
     curr_thread->signal_inProcess = 1;
-    //unlock();
     for (int i = 0; i <= SIGNAL_MAX; i++)
     {
         store_context(&curr_thread->signal_savedContext);
         if(curr_thread->sigcount[i]>0)
         {
-            //lock();
             curr_thread->sigcount[i]--;
-            //unlock();
             run_signal(tpf, i);
         }
     }
-    //lock();
     curr_thread->signal_inProcess = 0;
-    //unlock();
 }
 
 void run_signal(trapframe_t *tpf, int signal)
 {
     curr_thread->curr_signal_handler = curr_thread->signal_handler[signal];
 
-    //run default handler in kernel
+    // run default handler in kernel
     if (curr_thread->curr_signal_handler == signal_default_handler)
     {
         signal_default_handler();
         return;
     }
 
+    // run registered handler in userspace
     char *temp_signal_userstack = kmalloc(USTACK_SIZE);
-
     asm("msr elr_el1, %0\n\t"
         "msr sp_el0, %1\n\t"
         "msr spsr_el1, %2\n\t"
@@ -53,7 +63,7 @@ void run_signal(trapframe_t *tpf, int signal)
 void signal_handler_wrapper()
 {
     (curr_thread->curr_signal_handler)();
-    //system call sigreturn
+    // system call sigreturn
     asm("mov x8,50\n\t"
         "svc 0\n\t");
 }
