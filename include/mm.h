@@ -22,7 +22,7 @@ extern void my_bzero(void *src, unsigned long n);
 extern void *simple_malloc(unsigned long long size);
 
 ////////////////////////// buddy system ////////////////////////
-#define PRINT_LOG 1
+// #define PRINT_LOG 0
 #define BUDDY_ORDERS 16
 #define BLK_INVALID (~(unsigned)0)
 #define BLK_INUSE(blk) ( GETBIT((blk).flags, (sizeof(unsigned) << 3)-1) )
@@ -56,6 +56,7 @@ extern buddy_t _buddy;
 extern void *alloc_pages(size_t no_pages);
 extern void free_page(void *addr);
 ///////////////////// dynamic memory allocator //////////////////
+//slab memory
 typedef struct mem_chunk {
     //address of mem_chunk should be aligned to 16.
     //next is defined as (next address of the same order | order) //depreciated
