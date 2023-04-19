@@ -19,6 +19,7 @@ static Thread startup;
 // Some private functions
 
 void thread_q_add(Thread_q *Q, Thread* t){
+	t->prev = NULL;
 	t->next = Q->begin;
 	if(Q->begin != NULL)
 		Q->begin->prev = t;
@@ -31,13 +32,28 @@ void thread_q_add(Thread_q *Q, Thread* t){
 
 Thread* thread_q_pop(Thread_q *Q){
 	Thread* ret = Q->end;
-	uart_puthl(ret);
 	if(ret != NULL){
+		if(Q->begin == Q->end)
+			Q->begin = ret->prev;
 		Q->end = ret->prev;
 		ret->prev = NULL;
+		ret->next = NULL;
 	}
 	return ret;
 }
+
+// FIXME: Use a better algorithm
+Thread* thread_q_delete(Thread_q *Q, Thread* target){
+	Thread* t = NULL;
+	Thread *s = Q->begin;
+	t = thread_q_pop(Q);
+	while(t != s && t != NULL){
+		thread_q_add(Q, t);
+		t = thread_q_pop(Q);
+	}
+	return t;
+}
+
 
 Thread* thread_create(void (*fn)(void*)){
 	Thread *cur = pmalloc(0);	// Get the small size
@@ -50,6 +66,7 @@ Thread* thread_create(void (*fn)(void*)){
 	return cur;
 }
 
+
 void idle(void){
 	while(1){
 		uart_puts("idle()\n");
@@ -60,7 +77,11 @@ void idle(void){
 }
 
 void kill_zombies(void){
-	//TODO
+	Thread *t = thread_q_pop(&deleted);
+	while(t != NULL){
+		pfree(t);
+		t = thread_q_pop(&deleted);
+	}
 	return;
 }
 
@@ -75,9 +96,20 @@ void schedule(){
 	Thread* cur = get_current();
 	if(cur != NULL){
 		switch_to(cur, t);
+	}else{
+		switch_to(&startup, t);
 	}
 	return; // This return may never used
 }
+
+void exit(){
+	Thread *t = get_current();
+	thread_q_delete(&running, t);
+	thread_q_add(&deleted, t);
+	schedule();
+	return;
+}
+
 void foo(void* a){
 	Thread *t = get_current();
 	for(int i = 0; i < 10; i++){
@@ -89,6 +121,7 @@ void foo(void* a){
 		delay(1000000);
 		schedule();
 	}
+	exit();
 	return;
 }
 

@@ -53,6 +53,8 @@ void get_pid(void);
 void kill_zombies(void);
 /// Call shchedule to work
 void schedule();
+/// Move the thread to deaded Q
+void exit();
 
 /// Test 
 void test_thread_queue();
