@@ -7,6 +7,7 @@
 #include "mem_allocator.h"
 #include "ramdisk.h"
 #include "mem_utils.h"
+#include "thread.h"
 
 #define MAX_ULONG       0x7fffffffffffffffll
 
@@ -30,6 +31,8 @@ void kernel_main(void)
 	init_allocator();
 	memory_reserve((void*)0x0, (void*)kernel_end);
 	process_mem_reserve();
+
+	init_thread();
 
 	uart_send_string("Kernel Starts...\r\n");
 	shell_loop();

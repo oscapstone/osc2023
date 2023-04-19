@@ -11,6 +11,7 @@
 #include "timer.h"
 #include "mem_frame.h"
 #include "mem_allocator.h"
+#include "thread.h"
 
 #define MAX_BUFFER_SIZE 256u
 static char buffer[MAX_BUFFER_SIZE];
@@ -30,6 +31,7 @@ void send_help_message(void)
         uart_send_string("demo-frame:\tdemo frame allocation and free\r\n");
         uart_send_string("demo-malloc:\tdemo malloc and free\r\n");
         uart_send_string("show-reserve:\tshow reserved parts\r\n");
+        uart_send_string("demo-thread:\tdemo threading el1\r\n");
 }
 
 void parse_cmd(void)
@@ -69,6 +71,8 @@ void parse_cmd(void)
                 demo_dynamic_allocation();
         } else if (!strcmp(buffer, "show-reserve")) {
                 show_reservation();
+        } else if (!strcmp(buffer, "demo-thread")) {
+                demo_thread(3);
         } else {
                 uart_send_string("Command not found, ");
                 uart_send_string("type 'help' for commands.\r\n");
