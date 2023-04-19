@@ -42,5 +42,6 @@ int preserve(void*, int);
 int pmalloc_init(void);
 
 int smalloc_init(void);
+int sfree(void*);
 
 #endif //MEM_H

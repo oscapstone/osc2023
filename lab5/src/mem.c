@@ -47,16 +47,16 @@ static int split_buddy(int index, int cnt) {
     list_add(cnt, index + k / 2);
 
     // Log
-    uart_puts("Frame split: ");
-    uart_puth(index << 12);
-    uart_puts(", size: ");
-    uart_puti(k);
-    uart_puts(" * 4 KB\n");
-    uart_puts("New frames: ");
-    uart_puth(index << 12);
-    uart_puts(", ");
-    uart_puth((index + k / 2) << 12);
-    uart_puts("\n");
+    //uart_puts("Frame split: ");
+    //uart_puth(index << 12);
+    //uart_puts(", size: ");
+    //uart_puti(k);
+    //uart_puts(" * 4 KB\n");
+    //uart_puts("New frames: ");
+    //uart_puth(index << 12);
+    //uart_puts(", ");
+    //uart_puth((index + k / 2) << 12);
+    //uart_puts("\n");
 
     return 0;
   }
@@ -81,15 +81,15 @@ static int merge_buddy(int index, int v) {
     }
     mem_arr[index] = v + 1;
     // Log
-    uart_puts("Frame merge: ");
-    uart_puth(index << 12);
-    uart_puts(" and ");
-    uart_puth((index + t) << 12);
-    uart_puts("New frame: ");
-    uart_puth(index << 12);
-    uart_puts(", size ");
-    uart_puti(t * 2);
-    uart_puts(" * 4 KB\n");
+    //uart_puts("Frame merge: ");
+    //uart_puth(index << 12);
+    //uart_puts(" and ");
+    //uart_puth((index + t) << 12);
+    //uart_puts("New frame: ");
+    //uart_puth(index << 12);
+    //uart_puts(", size ");
+    //uart_puti(t * 2);
+    //uart_puts(" * 4 KB\n");
     merge_buddy(index, v + 1);
     return 0;
   }
@@ -104,15 +104,15 @@ static int merge_buddy(int index, int v) {
     mem_arr[index - t] = v + 1;
 
     // Log
-    uart_puts("Frame merge: ");
-    uart_puth(index << 12);
-    uart_puts(" and ");
-    uart_puth((index - t) << 12);
-    uart_puts("New frame: ");
-    uart_puth((index - t) << 12);
-    uart_puts(", size ");
-    uart_puti(t * 2);
-    uart_puts(" * 4 KB\n");
+    //uart_puts("Frame merge: ");
+    //uart_puth(index << 12);
+    //uart_puts(" and ");
+    //uart_puth((index - t) << 12);
+    //uart_puts("New frame: ");
+    //uart_puth((index - t) << 12);
+    //uart_puts(", size ");
+    //uart_puti(t * 2);
+    //uart_puts(" * 4 KB\n");
     merge_buddy(index - t, v + 1);
     return 0;
   } else {
@@ -166,9 +166,9 @@ static int list_delete(int cnt, int index) {
       return 0;
     }
   }
-  uart_puth(index << 12);
-  uart_puti(cnt);
-  uart_puts("Cannot find the target node to delete\n");
+  //uart_puth(index << 12);
+  //uart_puti(cnt);
+  //uart_puts("Cannot find the target node to delete\n");
   return 1;
 }
 
@@ -215,14 +215,18 @@ static int list_deletes(int cnt, void *addr) {
       return 0;
     }
   }
-  uart_puth(addr);
-  uart_puti(cnt);
-  uart_puts("Cannot find the target node to delete\n");
+  // Log
+  //uart_puth(addr);
+  //uart_puti(cnt);
+  //uart_puts("Cannot find the target node to delete\n");
   return 1;
 }
 
 // Pop the first item for Slots in free list
 static void *list_pops(int cnt) {
+	// Handle if all page has been allocated
+	if(free_smem[cnt] == NULL || free_smem[cnt]->addr == NULL)
+		gen_slots(cnt);
   int ret = free_smem[cnt]->addr;
   list_deletes(cnt, ret);
   return ret;
@@ -242,9 +246,9 @@ static int gen_slots(int size) {
     list_adds(size, (void *)(mem + i));
   }
   // Log
-  uart_puts("***Slot generate size: ");
-  uart_puti(t * 4);
-  uart_puts(" bytes\n");
+  //uart_puts("***Slot generate size: ");
+  //uart_puti(t * 8);
+  //uart_puts(" bytes\n");
   return 0;
 }
 
@@ -313,9 +317,9 @@ void *pmalloc(int cnt) {
       mem_arr[ret + i] = -1;
     }
     mem_arr[ret] = -2;
-    uart_puts("***PMALLOC without split!: ");
-    uart_puth(ret << 12);
-    uart_puts("\n");
+    //uart_puts("***PMALLOC without split!: ");
+    //uart_puth(ret << 12);
+    //uart_puts("\n");
     return (void *)(ret << 12);
   }
   // Else
@@ -338,9 +342,9 @@ void *pmalloc(int cnt) {
   // Mark as used
   mem_arr[ret] = -2;
   // Log
-  uart_puts("***PMALLOC with split!: ");
-  uart_puth(ret << 12);
-  uart_puts("\n");
+  //uart_puts("***PMALLOC with split!: ");
+  //uart_puth(ret << 12);
+  //uart_puts("\n");
   return (void *)(ret << 12);
 }
 
@@ -367,11 +371,11 @@ int pfree(void *addr) {
       mem_arr[index] = i;
       list_add(i, index);
       // Log
-      uart_puts("***Free index: ");
-      uart_puth(addr);
-      uart_puts(", size: ");
-      uart_puti(c);
-      uart_puts("*4KB\n");
+      //uart_puts("***Free index: ");
+      //uart_puth(addr);
+      //uart_puts(", size: ");
+      //uart_puti(c);
+      //uart_puts("*4KB\n");
       merge_buddy(index, i);
       break;
     }
@@ -391,7 +395,7 @@ int preserve(void *addr, int size) {
   for (int i = 0; i < MEM_MAX; i++) {
     t *= 2;
   }
-  size = size / (t * FRAME_SIZE) + (size % t);
+  size = size / (t * FRAME_SIZE) + (size % (t * FRAME_SIZE) ? 1 : 0);
   size *= t;
   // Mark as used
   for (int i = 0; i < size; i++) {
@@ -406,13 +410,13 @@ int preserve(void *addr, int size) {
     }
   }
   // Log
-  uart_puts("***Reserve from: ");
-  uart_puth(addr);
-  uart_puts(" to: ");
-  uart_puth((index + size) << 12);
-  uart_puts("\n");
+  //uart_puts("***Reserve from: ");
+  //uart_puth(addr);
+  //uart_puts(" to: ");
+  //uart_puth((index + size) << 12);
+  //uart_puts("\n");
 
-  uart_puts("\n");
+  //uart_puts("\n");
   return 0;
 }
 
@@ -421,16 +425,14 @@ int preserve(void *addr, int size) {
  * @size: the size need to be allocated
  **********************************************************************/
 void *smalloc(int size) {
-  size = size / 4 + ((size % 4) ? 1 : 0); // Base 32bits
+  size = size / 8 + ((size % 8) ? 1 : 0); // Base 32bits
   if (size >= SMEM_MAX || size < 0)
     return 0;
-  uart_puti(size);
-  uart_puts("* 4 bytes\n");
+  //uart_puti(size);
+  //uart_puts("* 4 bytes\n");
   return list_pops(size);
 }
 
-/*
-void* sfree(void* addr){
-        return list_delete(size, addr);
+int sfree(void* addr){
+	return list_adds(0, addr);
 }
-*/
