@@ -7,6 +7,8 @@
 #include "terminal.h"
 #include "thread.h"
 #include "uart.h"
+#include "loader.h"
+#include "syscall.h"
 #include <stdint.h>
 
 extern void set_exception_vector_table(void);
@@ -20,9 +22,13 @@ int main(void *dtb_location) {
   preserve(0, 0x5000000);
   preserve(0x8200000, 0x16000);
   smalloc_init();
-  core_timer_enable();
+  //core_timer_enable();
   fdt_find_do(dtb_location, "linux,initrd-start", initrd_fdt_callback);
-  test_thread_queue();
+  uart_puts("test_thread\n");
+  //test_thread_queue();
+  setup_program_loc(fork_test);
+  thread_create(sys_run_program);
+  schedule();
   terminal_run();
 
   return 0;

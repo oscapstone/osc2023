@@ -25,13 +25,22 @@ typedef struct{
 	uint64_t x28;
 	uint64_t fp; // x29, pointer for the frame record to caller.
 	uint64_t lr; // x30, return address
-	uint64_t sp;
+	uint64_t sp; // Stack pointer At el1, store the information of the thread structure and the trap frame.
 } callee_regs;
+
+typedef struct{
+	uint64_t regs[32];	// x0-x30, 16bytes align, exp.S
+	uint64_t spsr_el1;
+	uint64_t elr_el1;
+	uint64_t sp_el0;
+	uint64_t Dummy;		// Align for stack
+}Trap_frame;
 
 // Data structure of threads in kernel.
 typedef struct THread{
 	callee_regs regs;	// NOTE: Always first in this struct
 	uint32_t id;
+	uint64_t sp_el0;	// Store the base_sp at el0
 	enum Thread_status status;
 	struct THread *prev;
 	struct THread *next;
@@ -47,8 +56,6 @@ typedef struct THreadQueue{
 Thread* thread_create(void (*fp)(void*));
 /// Tell scheduler to get running another thread
 void idle(void);
-/// Get the current pid
-void get_pid(void);
 /// Cleanup zombies
 void kill_zombies(void);
 /// Call shchedule to work
@@ -58,4 +65,7 @@ void exit();
 
 /// Test 
 void test_thread_queue();
+
+/// Aux functions
+Thread* thread_q_delete_id(Thread_q*, int );
 #endif // THREAD_H

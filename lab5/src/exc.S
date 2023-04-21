@@ -26,7 +26,7 @@ exception_vector_table:
 	b	exception_handler
 	.align 7
 	
-	b	exception_handler
+	b	__low_syn_handler
 	.align 7
 	b	__low_irq_handler
 	.align 7
@@ -50,7 +50,7 @@ set_exception_vector_table:
 	ret
 
 .macro save_all
-	sub	sp, sp, 16 * 17
+	sub	sp, sp, 16 * 18
 	stp 	x0, x1, [sp ,16 * 0]
 	stp 	x2, x3, [sp ,16 * 1]
 	stp 	x4, x5, [sp ,16 * 2]
@@ -70,9 +70,13 @@ set_exception_vector_table:
 	mrs	x28, spsr_el1
 	mrs	x29, elr_el1
 	stp 	x28, x29, [sp ,16 * 16]
+	mrs	x28, sp_el0	// For fork
+	stp	x28, x0, [sp, 16 * 17]
 .endm
 
 .macro load_all
+	ldp	x28, x0, [sp, 16 * 17]
+	msr	sp_el0, x28
 	ldp 	x28, x29, [sp ,16 * 16]
 	msr	spsr_el1, x28
 	msr	elr_el1, x29
@@ -92,7 +96,7 @@ set_exception_vector_table:
 	ldp 	x26, x27, [sp ,16 * 13]
 	ldp 	x28, x29, [sp ,16 * 14]
 	ldr 	x30, [sp, 16 * 15]
-	add 	sp, sp, 16 * 17
+	add 	sp, sp, 16 * 18
 .endm
 
 exception_handler:
@@ -110,5 +114,19 @@ __irq_handler:
 __low_irq_handler:
 	save_all
 	bl	low_irq_handler
+	load_all
+	eret
+
+__low_syn_handler:
+	save_all
+	mov	x0, sp		// Get the SP
+	bl	low_syn_handler
+	load_all
+	eret
+
+.global load_reg_ret
+.type load_reg_ret, @function
+
+load_reg_ret:
 	load_all
 	eret

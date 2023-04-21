@@ -29,7 +29,8 @@ _start:
 4:
 	//bl	el2_to_el1	// Switch EL1
 	//ldr	x4, =_start	// Reset stack pointer due to EL change
-	//mov	sp, x4
+	//mov	x4, #0x80000
+	mov	sp, x4
 	bl 	main		// Jump to main	
 	b 	1b
 

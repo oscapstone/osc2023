@@ -3,6 +3,8 @@
 #include "heap.h"
 #include "timer.h"
 #include "uart.h"
+#include "thread.h"
+#include "syscall.h"
 
 #if 0
 task_q *head = 0;
@@ -282,4 +284,52 @@ int low_irq_handler(void) {
   // uart_puts("IRQ_HANDLER END\n");
   enable_int();
   return 0;
+}
+
+/**********************************************************************
+ * Low_synchronize_handler (SVC)
+ * @trap_fram: The address of sp which store the x0-x30 and 
+ * 		spsr_el1, elr_el1, sp_el0
+ * NOTE: the rerturn value of each functions are written in the
+ * 	trap_frame, which will be copy back when exit interrupt routine.
+ * ********************************************************************/
+void low_syn_handler(Trap_frame* trap_frame){
+	uint64_t esr;		// Which contain the exception and value
+	uint64_t index;
+	uint64_t *regs = trap_frame->regs;
+	asm volatile("mrs  %[esr], esr_el1;" :[esr] "=r" (esr):);
+	// Check if the exception if from SVC
+	// Need to check 31-26 bit at esr
+	if(((esr >> 26) & 0x7F) == 0x15){
+		index = esr & 0x1FFFFFF; // 24:0 store the index
+		switch(regs[8]){
+		case 0:
+			regs[0] = sys_getpid();
+			break;
+		case 1:
+			regs[0] = sys_uart_read(regs[0], regs[1]);
+			break;
+		case 2:
+			regs[0] = sys_uart_write(regs[0], regs[1]);
+			break;
+		case 3:
+			regs[0] = sys_exec(regs[0], regs[1]);
+			break;
+		case 4:
+			// Need to pass the trap_frame for copying to child
+			//regs[0] = sys_fork(trap_frame); 
+			sys_fork(trap_frame);
+			break;
+		case 5:
+			sys_exit(regs[0]);
+			break;
+		case 6:
+			regs[0] = sys_mbox_call(regs[0], regs[1]);
+			break;
+		case 7:
+			sys_kill(regs[0]);
+			break;
+		}
+	}
+	return;
 }

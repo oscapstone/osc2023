@@ -116,7 +116,7 @@ static int merge_buddy(int index, int v) {
     merge_buddy(index - t, v + 1);
     return 0;
   } else {
-    uart_puts("Frame merge: CANNOT MERGE!\n");
+    //uart_puts("Frame merge: CANNOT MERGE!\n");
   }
   return 1;
 }
