@@ -61,7 +61,7 @@ void kill_zombies(void)
 
 void schedule(void)
 {
-        if (ready_q_front == NULL) return;
+        if (ready_q_front == NULL) asm volatile("b shell_loop");
 
         struct context *next_thread = ready_q_front;
         ready_q_front = next_thread->next;
@@ -91,6 +91,7 @@ void thread_wrapper(void)
         current_thread->dead = 1;
 
         schedule();
+        // TODO: return if all thread is done?
         while (1) {}
 }
 
