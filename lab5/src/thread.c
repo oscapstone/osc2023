@@ -66,7 +66,7 @@ Thread* thread_q_delete(Thread_q *Q, Thread* target){
 	while(t != target && t != NULL){
 		thread_q_add(Q, t);
 		t = thread_q_pop(Q);
-		if(t == s){
+		if(t == s && t != target){
 			return NULL;
 		}
 	}
@@ -80,7 +80,8 @@ Thread* thread_q_delete_id(Thread_q *Q, int id){
 	while(t->id != id && t != NULL){
 		thread_q_add(Q, t);
 		t = thread_q_pop(Q);
-		if(t == s){
+		if(t == s && t->id != id){
+			uart_puts("\nDelete by id fail: ");
 			return NULL;
 		}
 	}
@@ -91,6 +92,7 @@ Thread* thread_q_delete_id(Thread_q *Q, int id){
 Thread* thread_create(void (*fn)(void*)){
 	Thread *cur = pmalloc(0);	// Get the small size
 	cur->child = 0;
+	cur->handler = NULL;
 	cur->regs.lr = fn;
 	cur->regs.sp = ((char*)cur) + 0x1000 - 16;	// The stack will grow lower
 	cur->regs.fp = ((char*)cur) + 0x1000 - 16;	// FIXME:No matter?
@@ -147,13 +149,16 @@ void schedule(){
 }
 
 void exit(){
+	uart_puts("[exit] ");
 	Thread *t = get_current();
+	uart_puts("[exit] ");
 	thread_q_delete(&running, t);
+	uart_puts("[exit] ");
 	thread_q_add(&deleted, t);
-	schedule();
 	uart_puts("[exit] ");
 	uart_puti(t->id);
 	uart_puts("\n");
+	schedule();
 	return;
 }
 

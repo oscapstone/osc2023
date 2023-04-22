@@ -186,6 +186,48 @@ int sys_fork(Trap_frame* trap_frame){
 	return;
 }
 
+void sys_signal(int sig, void (*handler)()){
+	// TODO: Should use a struct to store handlers
+	// But for this lab, only one handler will be inserted
+	Thread *t = get_current();
+	t->handler = handler;
+	return;
+}
+
+static void (*__handler)() = NULL;
+// This function will Run in EL0
+void handler_container(){
+	if(__handler == NULL){
+		uart_puts("NO handler!\n");
+		return;
+	}
+	__handler();
+	__handler = NULL;
+	// The EL0 wapper of the `exit()`
+	uexit();
+}
+
+void posix_kill(int pid, int sig){
+	Thread *t = NULL;
+	t = thread_q_delete_id(&running, pid);
+	if(t == NULL){
+		uart_puti(pid);
+		uart_puts("NO target thread\n");
+		return;
+	}
+	// TODO: Should use a special structure instead of using
+	// static. This implementation need to disable INT.
+	__handler = t->handler;
+	setup_program_loc(handler_container);
+	Thread *h = thread_create(sys_run_program);
+	return;
+
+	
+}
+
+
+//============================================================
+//Test Functions.
 void fork_test(){
     //printf("\nFork Test, pid %d\n", get_pid());
     uart_puts("\nFork Test, Pid ");
@@ -298,3 +340,4 @@ int fork(){
 	);
 	return ret;
 }
+

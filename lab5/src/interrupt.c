@@ -346,6 +346,14 @@ void low_syn_handler(Trap_frame* trap_frame){
 		case 7:
 			sys_kill(regs[0]);
 			break;
+		case 8:
+			sys_signal(regs[0], regs[1]);
+			break;
+		case 9:
+			posix_kill(regs[0], regs[1]);
+			break;
+		default:
+			uart_puts("***UNKNOWN INT***\n");
 		}
 	}
 	return;

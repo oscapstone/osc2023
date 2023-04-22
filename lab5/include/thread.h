@@ -42,6 +42,7 @@ typedef struct THread{
 	uint32_t id;
 	uint32_t child;
 	uint64_t sp_el0;	// Store the base_sp at el0
+	uint64_t handler;
 	enum Thread_status status;
 	struct THread *prev;
 	struct THread *next;

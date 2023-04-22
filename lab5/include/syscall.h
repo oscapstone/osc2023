@@ -20,9 +20,14 @@ int fork();
 void uexit();
 int mbox_call(unsigned char ch, unsigned int *mbox);
 void kill(int pid);
+void sys_signal(int, void (*fn)());
+void posix_kill(int, int);
 
 // TEST
 void fork_test();
 void check_timer();
+
+// Container
+void handler_container();
 
 #endif //SYSCALL_H

@@ -21,16 +21,10 @@ int main(void *dtb_location) {
   enable_int();
   thread_init();
   preserve(0, 0x5000000);
-  preserve(0x8200000, 0x16000);
+  preserve(0x8200000, 0x2000000); // For user program
   smalloc_init();
   fdt_find_do(dtb_location, "linux,initrd-start", initrd_fdt_callback);
   uart_puts("test_thread\n");
-  //test_thread_queue();
-  //setup_program_loc(fork_test);
-  //thread_create(sys_run_program);
-  //schedule();
-  //setup_program_loc(check_timer);
-  //thread_create(sys_run_program);
   core_timer_enable();
   terminal_run_thread();
   //idle();
