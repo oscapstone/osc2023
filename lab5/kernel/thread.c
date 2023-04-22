@@ -91,6 +91,7 @@ void thread_wrapper(void)
         current_thread->dead = 1;
 
         schedule();
+        while (1) {}
 }
 
 /*
@@ -102,6 +103,7 @@ int thread_create(void (*thread_func)(void))
         for (id = 0; id < MAX_NUM_THREAD && threads[id] != NULL; id++);
         if (id >= MAX_NUM_THREAD) {
                 uart_send_string("[ERROR] exceed max number of thread\r\n");
+                while (1) {}
                 return -1;
         }
 
