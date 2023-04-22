@@ -19,6 +19,8 @@ int async_read(void);
 int pmalloc_command(void);
 int smalloc_command(void);
 int pfree_command(void);
+int exec(void);
+int getpid_command(void);
 
 struct command {
   const char *name;

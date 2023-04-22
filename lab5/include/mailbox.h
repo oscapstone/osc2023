@@ -24,4 +24,5 @@ extern volatile unsigned int __attribute__((aligned(16))) mbox[36];
 #define TAG_LAST 0
 
 int mailbox_config(unsigned char);
+int sys_mailbox_config(unsigned char, unsigned int*);
 #endif // MAILBOX_H

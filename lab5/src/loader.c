@@ -11,7 +11,7 @@
  * ***********************************************************************/
 static void* program_loc;
 int run_program(void *loc) {
-  //core_timer_enable();
+  core_timer_enable();
   mini_uart_interrupt_enable();
   asm volatile("mov x1,	0x0;\r\n" // Enable CPU interrupt
                "msr spsr_el1, 	x1;\r\n"
@@ -35,6 +35,7 @@ int setup_program_loc(void* loc){
 }
 
 void sys_run_program(void){
+  core_timer_enable();
   Thread* t = get_current();
   void* sp_el0 = (void*)t->sp_el0;
 	uart_puts("programloc: ");
@@ -52,4 +53,8 @@ void sys_run_program(void){
 	       , [sp] "r" (sp_el0)
   );
   return ;
+}
+
+void* getProgramLo(){
+	return program_loc;
 }

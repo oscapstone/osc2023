@@ -8,6 +8,7 @@
 #include "terminal.h"
 #include "timer.h"
 #include "uart.h"
+#include "thread.h"
 // static char buf[256];
 
 struct command commands[] = {
@@ -71,6 +72,16 @@ struct command commands[] = {
         .help = "Alloc a small memory from buddy system.\n",
         .func = smalloc_command,
     },
+    {
+        .name = "exec",
+        .help = "Execute program by thread.\n",
+        .func = exec,
+    },
+    {
+        .name = "getpid",
+        .help = "get Pid\n",
+        .func = getpid_command,
+    },
 
     // ALWAYS The last item of the array!!!
     {
@@ -100,6 +111,14 @@ int smalloc_command() {
   uart_puth(smalloc(size));
   return 0;
 }
+
+int getpid_command(){
+	uart_puts("getPid :");
+	uart_puti(sys_getpid());
+	uart_puts("\n");
+	return 0;
+}
+
 int pfree_command() {
   char *buf = (char *)malloc(sizeof(char) * 256);
   memset(buf, 0, sizeof(char) * 256);
@@ -197,6 +216,36 @@ int run_loader() {
     // uart_puth(start);
     // uart_puth(*(int*)start);
     run_program(start);
+    return 0;
+  }
+  return 1;
+}
+
+int exec(){
+  char buf[256];
+  memset(buf, 0, 256);
+  char* start = 0;
+  uart_puts("Name:\n");
+  uart_gets(buf);
+  start = (char*)initrd_content_getLo(buf);
+  int size = initrd_content_getSize(buf);
+  char* d = (char*) 0x9000000;
+  // Copy.
+  // If no copy, the adrp instruction in user program will wierd.
+  for(int i = 0; i < size; i ++){
+	  *d++ = *start++;
+  }
+
+  if (size != 0) {
+  setup_program_loc(0x9000000);
+  thread_create(sys_run_program);
+  core_timer_enable();
+  schedule();
+  Thread *t  = get_current();
+  t->status = wait;
+  while(1){
+	  idle();
+  }
     return 0;
   }
   return 1;

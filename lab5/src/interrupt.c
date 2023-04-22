@@ -127,16 +127,28 @@ int core_timer_enable(void) {
   asm volatile("mov	x0, 	1;"
                "msr	cntp_ctl_el0, x0;"   // Enable timer
                "mrs	x0, 	cntfrq_el0;" // Get count fequency
-               "mov	x1,	2;"
-               "mul	x0, 	x0, x1;"
+	       "asr	x0,	x0, 5;"
                "msr	cntp_tval_el0, x0;" // Set expire time
                "mov	x0,	2;"
                "ldr	x1, 	=0x40000040;" // Timer interrupt
                "str	w0,	[x1];"        // Unmask the timer interrupt
+	       "mrs	x0,	cntkctl_el1;"
+	       "orr	x0, 	x0, 	1;"
+	       "msr	cntkctl_el1, 	x0;"
+
   );
   uart_puts(" CORE TIMER INITIAL\n");
   return 0;
 }
+int core_timer_disable(void) {
+  init_timer_Q();
+  asm volatile("mov	x0, 	0;"
+               "msr	cntp_ctl_el0, x0;"   // Enable timer
+  );
+  uart_puts(" CORE TIMER DISABLE\n");
+  return 0;
+}
+
 
 /**************************************************************************
  * Enable mini uart interrupt.
@@ -156,8 +168,10 @@ int mini_uart_interrupt_enable(void) {
 int core_timer_handler(void) {
   timer_walk(1);
   asm volatile("mrs	x0,	cntfrq_el0;" // Get the clock frequency
+	       "asr	x0, 	x0, 	5;"
                "msr	cntp_tval_el0,	x0;" // set tval = cval + x0
   );
+  schedule();
   return 0;
 }
 
@@ -165,20 +179,21 @@ int core_timer_handler(void) {
  * Timer handler which handle the timer interrupt from lower EL
  *************************************************************************/
 int low_core_timer_handler(void) {
-  uart_puts(" Timer handler!\n");
+  //uart_puts(" Timer handler!\n");
   uint64_t time, freq;
   asm volatile("mrs	%[time], cntpct_el0;"
                "mrs	%[freq], cntfrq_el0;"
                : [time] "=r"(time), [freq] "=r"(freq));
-  uart_puts("Current second: ");
-  uart_puthl(time / freq);
-  uart_puts("\n");
+  //uart_puts("Current second: ");
+  //uart_puthl(time / freq);
+  //uart_puts("\n");
   // timer_walk(2);
-  asm volatile("mrs	x0,	cntfrq_el0;" // Get the clock frequency
-               "mov	x1,	2;"
-               "mul	x0, 	x0, x1;"
-               "msr	cntp_tval_el0,	x0;" // set tval = cval + x0
+  freq = freq >> 5;
+  asm volatile(
+               "msr	cntp_tval_el0,	%[freq];" // set tval = cval + x0
+	       :: [freq] "r" (freq)
   );
+  schedule();
   return 0;
 }
 
@@ -298,6 +313,7 @@ void low_syn_handler(Trap_frame* trap_frame){
 	uint64_t index;
 	uint64_t *regs = trap_frame->regs;
 	asm volatile("mrs  %[esr], esr_el1;" :[esr] "=r" (esr):);
+	enable_int();
 	// Check if the exception if from SVC
 	// Need to check 31-26 bit at esr
 	if(((esr >> 26) & 0x7F) == 0x15){
@@ -318,6 +334,7 @@ void low_syn_handler(Trap_frame* trap_frame){
 		case 4:
 			// Need to pass the trap_frame for copying to child
 			//regs[0] = sys_fork(trap_frame); 
+			disable_int();
 			sys_fork(trap_frame);
 			break;
 		case 5:

@@ -26,4 +26,5 @@ int initrd_getLo(void);
 
 // Loading program
 void *initrd_content_getLo(const char *);
+int initrd_content_getSize(const char *);
 #endif // INITRD_H

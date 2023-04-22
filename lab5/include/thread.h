@@ -40,6 +40,7 @@ typedef struct{
 typedef struct THread{
 	callee_regs regs;	// NOTE: Always first in this struct
 	uint32_t id;
+	uint32_t child;
 	uint64_t sp_el0;	// Store the base_sp at el0
 	enum Thread_status status;
 	struct THread *prev;
@@ -62,9 +63,12 @@ void kill_zombies(void);
 void schedule();
 /// Move the thread to deaded Q
 void exit();
+/// Shell thread Init
+void terminal_run_thread();
 
 /// Test 
 void test_thread_queue();
+void thread_init();
 
 /// Aux functions
 Thread* thread_q_delete_id(Thread_q*, int );

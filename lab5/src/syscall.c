@@ -30,6 +30,7 @@ size_t sys_uart_read(char* buf, size_t size){
 	char a;
 	char *pivot = buf;
 	int count = 0;
+	/*
 	a = uart_getc();
 	while(a != 0){
 		*pivot++ = a;
@@ -38,20 +39,46 @@ size_t sys_uart_read(char* buf, size_t size){
 	}
 	*pivot = a;
 	count ++;
+	*/
+	for(int i = 0; i < size; i++){
+		*pivot++ = uart_getc();
+		if(*(pivot- 1) == '\n')
+			break;
+		count ++;
+	}
+	*pivot = 0;
+	/*
+	uart_puts("\n[get]: ");
+	uart_puts(buf);
+	uart_puti(count);
+	uart_puti(size);
+	*/
 	return count;
 }
 
 size_t sys_uart_write(const char* buf, size_t size){
+	/*
+	uart_puts("\n[write]");
+	uart_puth(buf);
+	uart_puti(size);
+	*/
+	const char* t = buf;
 	for(int i = 0; i < size; i ++){
-		uart_putc(*buf++);
+		uart_putc(*t++);
 	}
 	return size;
 }
 
 int sys_exec(const char* name, char* const argv[]){
-	void* start = initrd_content_getLo(name);
+	char* start = (char*)initrd_content_getLo(name);
+	int size = initrd_content_getSize(name);
+	char* dest = getProgramLo() ; // Displacement
+	char* d = dest;
+	for(int i = 0; i < size; i ++){
+		*d++ = *start++;
+	}
 	if(start != 0){
-		run_program(start);
+		run_program(dest);
 		return 0;
 	}
 	return 1;
@@ -64,22 +91,15 @@ void sys_exit(int status){
 }
 
 int sys_mbox_call(unsigned char ch, unsigned int *mbox){
-	  mbox[0] = 7 * 4;
-	  mbox[1] = MAILBOX_REQ;
-	  mbox[2] = ch;
-	  mbox[3] = 4;
-	  mbox[4] = 0;
-	  mbox[5] = 0;
-	  mbox[6] = TAG_LAST;
-	  if(mailbox_config(CHANNEL_PT))
-		  return mbox[5];
-	  return 0;
+	return sys_mailbox_config(ch, mbox);
 }
 
 
 void sys_kill(int pid){
 	Thread *t;
 	t = thread_q_delete_id(&running, pid);
+	if(t == NULL)
+		return;
 	thread_q_add(&deleted, t);
 	return;
 }
@@ -126,6 +146,7 @@ int sys_fork(Trap_frame* trap_frame){
 	
 	// Write child's ID in the x0 of parent
 	trap_frame->regs[0] = child->id;	
+	cur->child = child->id;
 
 	// Copy user stack
 	c  = (char*) trap_frame_child->sp_el0;
@@ -230,6 +251,20 @@ void fork_test(){
     uexit();
 }
 
+void check_timer(){
+	fork();
+	fork();
+	fork();
+	for(int i = 0; i < 1000000; i++){
+		delay(100);
+		uart_puts("Thread id: ");
+		uart_puti(get_pid());
+		uart_puts(", cnt: ");
+		uart_puti(i);
+		uart_puts("\n");
+	}
+	uexit();
+}
 
 // Syscall function for user
 int get_pid(){

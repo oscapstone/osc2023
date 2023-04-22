@@ -23,5 +23,6 @@ void kill(int pid);
 
 // TEST
 void fork_test();
+void check_timer();
 
 #endif //SYSCALL_H
