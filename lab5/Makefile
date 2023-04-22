@@ -5,8 +5,8 @@ SRCS = 		$(wildcard $(SRC_DIR)/*.c)
 SRCSS = 	$(wildcard $(SRC_DIR)/*.S)
 OBJS = 		$(SRCS:$(SRC_DIR)/%.c=$(OBJ_DIR)/%.o)
 OBJSS =		$(SRCSS:$(SRC_DIR)/%.S=$(OBJ_DIR)/%.o)
-CPPFLAGS := 	-Iinclude -MMD -MP -static 
-CFLAGS = 	-Wall -O0 -mgeneral-regs-only -fno-lto -fno-builtin
+CPPFLAGS := 	-Iinclude -MMD -MP -static -fno-inline
+CFLAGS = 	-Wall -O3 -mgeneral-regs-only -fno-lto -fno-builtin 
 LDFLAGS = 	-nostdlib 
 
 CC = /home/elvis/Downloads/arm-gnu-toolchain-12.2.rel1-x86_64-aarch64-none-elf/bin/aarch64-none-elf-gcc
@@ -53,6 +53,8 @@ run_dbg: kernel8.img initramfs.cpio
 run: kernel8.img initramfs.cpio 
 	$(QEMU) -M raspi3 -serial null -serial stdio -initrd initramfs.cpio -dtb bcm2710-rpi-3-b-plus.dtb -kernel $<
 
+run-nom: kernel8.img initramfs.cpio 
+	$(QEMU) -M raspi3 -display none -serial null -serial stdio -initrd initramfs.cpio -dtb bcm2710-rpi-3-b-plus.dtb -kernel $<
 $(OBJ_DIR):
 	mkdir -p $@
 

@@ -210,6 +210,7 @@ void handler_container(){
 void posix_kill(int pid, int sig){
 	Thread *t = NULL;
 	t = thread_q_delete_id(&running, pid);
+	thread_q_add(&running, t);
 	if(t == NULL){
 		uart_puti(pid);
 		uart_puts("NO target thread\n");

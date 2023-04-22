@@ -116,8 +116,8 @@ void idle(void){
 void kill_zombies(void){
 	Thread *t = thread_q_pop(&deleted);
 	while(t != NULL){
-		uart_puts("\nkill zombies: ");
-		uart_puti(t->child);
+		//uart_puts("\nkill zombies: ");
+		//uart_puti(t->child);
 		if(t->child > t->id)
 			sys_kill(t->child);
 		pfree(t);
@@ -128,16 +128,20 @@ void kill_zombies(void){
 
 void schedule(){
 	Thread* t = thread_q_pop(&running);
+	thread_q_add(&running, t);
 	// RR
-	if( t == running.begin == running.end && t->status == wait){
-		sys_kill(t->id);
-		idle();
-	}
 	if(t == NULL){
 		terminal_run_thread();
 		idle();
 	}
-	thread_q_add(&running, t);
+	if( t == running.begin && t == running.end ){
+		if(t->status == wait){
+			thread_q_add(&deleted, thread_q_pop(&running));
+			terminal_run_thread();
+		}
+		//sys_kill(t->id);
+		//idle();
+	}
 	Thread* cur = get_current();
 	if(cur != NULL){
 		switch_to(cur, t);
@@ -149,11 +153,8 @@ void schedule(){
 }
 
 void exit(){
-	uart_puts("[exit] ");
 	Thread *t = get_current();
-	uart_puts("[exit] ");
 	thread_q_delete(&running, t);
-	uart_puts("[exit] ");
 	thread_q_add(&deleted, t);
 	uart_puts("[exit] ");
 	uart_puti(t->id);
