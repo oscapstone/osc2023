@@ -109,6 +109,8 @@ void* malloc(unsigned int size)
 
 void free(void* ptr)
 {
+        // TODO: case that it is bigger than a FRAME_SIZE???????
+
         struct page_header* page =
                 (struct page_header*)((unsigned long)ptr & FRAME_ADDRESS_MASK);
         unsigned int chunk_off = (unsigned long)ptr - (unsigned long)page;
