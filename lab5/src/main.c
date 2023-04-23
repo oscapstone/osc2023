@@ -3,12 +3,12 @@
 #include "heap.h"
 #include "initrd.h"
 #include "interrupt.h"
+#include "loader.h"
 #include "mem.h"
+#include "syscall.h"
 #include "terminal.h"
 #include "thread.h"
 #include "uart.h"
-#include "loader.h"
-#include "syscall.h"
 #include <stdint.h>
 
 extern void set_exception_vector_table(void);
@@ -27,8 +27,8 @@ int main(void *dtb_location) {
   uart_puts("test_thread\n");
   core_timer_enable();
   terminal_run_thread();
-  //idle();
-  //terminal_run();
+  // idle();
+  // terminal_run();
 
   return 0;
 }

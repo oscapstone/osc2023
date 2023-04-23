@@ -9,7 +9,7 @@
  * 2. EL1 -> EL0.
  * 3. Start user program.
  * ***********************************************************************/
-static void* program_loc;
+static void *program_loc;
 int run_program(void *loc) {
   core_timer_enable();
   mini_uart_interrupt_enable();
@@ -29,19 +29,19 @@ int run_program(void *loc) {
   return 0;
 }
 
-int setup_program_loc(void* loc){
-	program_loc = loc;
-	return 0;
+int setup_program_loc(void *loc) {
+  program_loc = loc;
+  return 0;
 }
 
-void sys_run_program(void){
+void sys_run_program(void) {
   core_timer_enable();
-  Thread* t = get_current();
-  void* sp_el0 = (void*)t->sp_el0;
-	uart_puts("programloc: ");
-	uart_puth(program_loc);
-	uart_puth(sp_el0);
-	uart_puts("\n");
+  Thread *t = get_current();
+  void *sp_el0 = (void *)t->sp_el0;
+  uart_puts("programloc: ");
+  uart_puth(program_loc);
+  uart_puth(sp_el0);
+  uart_puts("\n");
   asm volatile("mov x2,	0x0;\r\n" // Enable CPU interrupt
                "msr spsr_el1, 	x2;\r\n"
                "msr sp_el0,	%[sp];\r\n"
@@ -49,12 +49,10 @@ void sys_run_program(void){
                "msr elr_el1,	%[loc];\r\n" // Set the target address
                "eret"
                :
-               : [loc] "r" (program_loc) // input location
-	       , [sp] "r" (sp_el0)
-  );
-  return ;
+               : [loc] "r"(program_loc) // input location
+                 ,
+                 [sp] "r"(sp_el0));
+  return;
 }
 
-void* getProgramLo(){
-	return program_loc;
-}
+void *getProgramLo() { return program_loc; }

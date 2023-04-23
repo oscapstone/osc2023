@@ -26,9 +26,10 @@ int mailbox_config(unsigned char ch) {
   return 0;
 }
 
-int sys_mailbox_config(unsigned char ch, unsigned int *mailbox){
+int sys_mailbox_config(unsigned char ch, unsigned int *mailbox) {
   // We only need 0-27 bit of addr and 28-31 for channel
-  unsigned int r = ((unsigned int)(((unsigned int)mailbox & ~0xf) | (ch & 0xf)));
+  unsigned int r =
+      ((unsigned int)(((unsigned int)mailbox & ~0xf) | (ch & 0xf)));
 
   // Wait until the Mbox is not full
   while (*MAILBOX_STATUS & MAILBOX_FULL) {
@@ -47,4 +48,3 @@ int sys_mailbox_config(unsigned char ch, unsigned int *mailbox){
   }
   return 0;
 }
-
