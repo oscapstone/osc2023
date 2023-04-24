@@ -14,6 +14,7 @@ int pid_history = 0;
 
 void init_thread_sched()
 {
+    lock();
     // init thread freelist and run_queue
     run_queue = kmalloc(sizeof(list_head_t));
     INIT_LIST_HEAD(run_queue);
@@ -30,6 +31,7 @@ void init_thread_sched()
 
     thread_t* idlethread = thread_create(idle);
     curr_thread = idlethread;
+    unlock();
 }
 
 void idle(){
@@ -41,13 +43,16 @@ void idle(){
 }
 
 void schedule(){
+    lock();
     do {
         curr_thread = (thread_t *)curr_thread->listhead.next;
     } while (list_is_head(&curr_thread->listhead, run_queue)); // find a runnable thread
     switch_to(get_current(), &curr_thread->context);
+    unlock();
 }
 
 void kill_zombies(){
+    lock();
     list_head_t *curr;
     list_for_each(curr,run_queue)
     {
@@ -61,6 +66,7 @@ void kill_zombies(){
             ((thread_t *)curr)->isused = 0;
         }
     }
+    unlock();
 }
 
 int exec_thread(char *data, unsigned int filesize)
@@ -90,6 +96,7 @@ int exec_thread(char *data, unsigned int filesize)
 
 thread_t *thread_create(void *start)
 {
+    lock();
     thread_t *r;
     // find usable PID, don't use the previous one
     if( pid_history > PIDMAX ) return 0;
@@ -115,14 +122,16 @@ thread_t *thread_create(void *start)
         r->sigcount[i] = 0;
     }
     list_add(&r->listhead, run_queue);
-
+    unlock();
     return r;
 }
 
 void thread_exit(){
     // thread cannot deallocate the stack while still using it, wait for someone to recycle it.
     // In this lab, idle thread handles this task, instead of parent thread.
+    lock();
     curr_thread->iszombie = 1;
+    unlock();
     schedule();
 }
 

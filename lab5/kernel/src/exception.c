@@ -19,6 +19,20 @@ void el1_interrupt_disable(){
     __asm__ __volatile__("msr daifset, 0xf"); // mask all DAIF
 }
 
+static unsigned long long lock_count = 0;
+void lock()
+{
+    el1_interrupt_disable();
+    lock_count++;
+}
+
+void unlock()
+{
+    lock_count--;
+    if (lock_count == 0)
+        el1_interrupt_enable();
+}
+
 void el1h_irq_router(trapframe_t *tpf){
     // decouple the handler into irqtask queue
     // (1) https://datasheets.raspberrypi.com/bcm2835/bcm2835-peripherals.pdf - Pg.113
@@ -185,7 +199,7 @@ void irqtask_add(void *task_function,unsigned long long priority){
     struct list_head *curr;
 
     // mask the device's interrupt line
-    el1_interrupt_disable();
+    lock();
     // enqueue the processing task to the event queue with sorting.
     list_for_each(curr, task_list)
     {
@@ -201,20 +215,19 @@ void irqtask_add(void *task_function,unsigned long long priority){
         list_add_tail(&the_task->listhead, task_list);
     }
     // unmask the interrupt line
-    el1_interrupt_enable();
+    unlock();
 }
 
 void irqtask_run_preemptive(){
-    el1_interrupt_enable();
     while (!list_empty(task_list))
     {
         // critical section protects new coming node
-        el1_interrupt_disable();
+        lock();
         irqtask_t *the_task = (irqtask_t *)task_list->next;
         // Run new task (early return) if its priority is lower than the scheduled task.
         if (curr_task_priority <= the_task->priority)
         {
-            el1_interrupt_enable();
+            unlock();
             break;
         }
         // get the scheduled task and run it.
@@ -222,12 +235,12 @@ void irqtask_run_preemptive(){
         int prev_task_priority = curr_task_priority;
         curr_task_priority = the_task->priority;
 
-        el1_interrupt_enable();
+        unlock();
         irqtask_run(the_task);
-        el1_interrupt_disable();
+        lock();
 
         curr_task_priority = prev_task_priority;
-        el1_interrupt_enable();
+        unlock();
         s_free(the_task);
     }
 }
@@ -236,4 +249,5 @@ void irqtask_run(irqtask_t* the_task)
 {
     ((void (*)())the_task->task_function)();
 }
+
 

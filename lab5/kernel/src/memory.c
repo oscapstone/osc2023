@@ -295,6 +295,7 @@ void cache_free(void *ptr)
 
 void *kmalloc(unsigned int size)
 {
+    lock();
     memory_sendline("\n\n");
     memory_sendline("================================\r\n");
     memory_sendline("[+] Request kmalloc size: %d\r\n", size);
@@ -303,15 +304,18 @@ void *kmalloc(unsigned int size)
     if (size > (32 << CACHE_IDX_FINAL))
     {
         void *r = page_malloc(size);
+        unlock();
         return r;
     }
     // go for cache
     void *r = cache_malloc(size);
+    unlock();
     return r;
 }
 
 void kfree(void *ptr)
 {
+    lock();
     memory_sendline("\n\n");
     memory_sendline("==========================\r\n");
     memory_sendline("[+] Request kfree 0x%x\r\n", ptr);
@@ -320,10 +324,12 @@ void kfree(void *ptr)
     if ((unsigned long long)ptr % PAGESIZE == 0 && frame_array[((unsigned long long)ptr - BUDDY_MEMORY_BASE) >> 12].cache_order == CACHE_NONE)
     {
         page_free(ptr);
+        unlock();
         return;
     }
     // go for cache
     cache_free(ptr);
+    unlock();
 }
 
 void memory_reserve(unsigned long long start, unsigned long long end)

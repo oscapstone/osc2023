@@ -71,6 +71,7 @@ int exec(trapframe_t *tpf, const char *name, char *const argv[])
 
 int fork(trapframe_t *tpf)
 {
+    lock();
     thread_t *newt = thread_create(curr_thread->data);
     newt->datasize = curr_thread->datasize;
 
@@ -108,6 +109,7 @@ int fork(trapframe_t *tpf)
     newt->context.fp += newt->kernel_stack_alloced_ptr - curr_thread->kernel_stack_alloced_ptr;
     newt->context.sp += newt->kernel_stack_alloced_ptr - curr_thread->kernel_stack_alloced_ptr;
 
+    unlock();
     tpf->x0 = newt->pid;
     return newt->pid;   // pid = new
 
@@ -126,6 +128,7 @@ void exit(trapframe_t *tpf, int status)
 
 int syscall_mbox_call(trapframe_t *tpf, unsigned char ch, unsigned int *mbox)
 {
+    lock();
     unsigned long r = (((unsigned long)((unsigned long)mbox) & ~0xF) | (ch & 0xF));
     do{asm volatile("nop");} while (*MBOX_STATUS & BCM_ARM_VC_MS_FULL);
     *MBOX_WRITE = r;
@@ -135,17 +138,21 @@ int syscall_mbox_call(trapframe_t *tpf, unsigned char ch, unsigned int *mbox)
         if (r == *MBOX_READ)
         {
             tpf->x0 = (mbox[1] == MBOX_REQUEST_SUCCEED);
+            unlock();
             return mbox[1] == MBOX_REQUEST_SUCCEED;
         }
     }
     tpf->x0 = 0;
+    unlock();
     return 0;
 }
 
 void kill(trapframe_t *tpf, int pid)
 {
     if ( pid < 0 || pid >= PIDMAX || !threads[pid].isused) return;
+    lock();
     threads[pid].iszombie = 1;
+    unlock();
     schedule();
 }
 
@@ -158,7 +165,9 @@ void signal_register(int signal, void (*handler)())
 void signal_kill(int pid, int signal)
 {
     if (pid > PIDMAX || pid < 0 || !threads[pid].isused)return;
+    lock();
     threads[pid].sigcount[signal]++;
+    unlock();
 }
 
 void sigreturn(trapframe_t *tpf)

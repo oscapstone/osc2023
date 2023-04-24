@@ -74,4 +74,7 @@ void el0_irq_64_router(trapframe_t* tpf);
 
 void invalid_exception_router(); // exception_handler.S
 
+void lock();
+void unlock();
+
 #endif /*_EXCEPTION_H_*/

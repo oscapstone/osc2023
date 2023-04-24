@@ -2,6 +2,7 @@
 #include "uart1.h"
 #include "memory.h"
 #include "u_string.h"
+#include "exception.h"
 #include <stdint.h>
 
 #define STR(x) #x
@@ -39,12 +40,15 @@ void core_timer_disable()
 }
 
 void core_timer_handler(){
+    lock();
     if (list_empty(timer_event_list))
     {
         set_core_timer_interrupt(10000); // disable timer interrupt (set a very big value)
+        unlock();
         return;
     }
     timer_event_callback((timer_event_t *)timer_event_list->next); // do callback and set new interrupt
+    unlock();
 }
 
 void timer_event_callback(timer_event_t * timer_event){
@@ -95,6 +99,7 @@ void add_timer(void *callback, unsigned long long timeout, char* args, int inTic
 
     // add the timer_event into timer_event_list (sorted)
     struct list_head* curr;
+    lock();
     list_for_each(curr,timer_event_list)
     {
         if(((timer_event_t*)curr)->interrupt_time > the_timer_event->interrupt_time)
@@ -110,6 +115,7 @@ void add_timer(void *callback, unsigned long long timeout, char* args, int inTic
     }
     // set interrupt to first event
     set_core_timer_interrupt_by_tick(((timer_event_t*)timer_event_list->next)->interrupt_time);
+    unlock();
 }
 
 // get cpu tick add some second
