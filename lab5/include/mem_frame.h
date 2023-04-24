@@ -3,7 +3,11 @@
 
 // TODO: get memory size from device tree
 #define MEM_START       (unsigned long)0x0
-#define MEM_END         (unsigned long)0x3C000000
+// TODO(QEMU): choose a proper value of MEM_END
+// #define MEM_END         (unsigned long)0x3C000000
+// #define MEM_END         (unsigned long)0x20000000       // ramdisk
+#define MEM_END         (unsigned long) 0x8000000       // qemu
+
 #define FRAME_SIZE      0x1000
 #define NUM_FRAME       ((MEM_END - MEM_START) / FRAME_SIZE)
 
