@@ -204,10 +204,11 @@ void cpio_exec() {
         if (stringncmp(filename, input, namesize) == 0) {
             
             char *code_loc = ((void*)header) + offset;
+            //unsigned int spsr_val = 0x3c0;
             unsigned int sp_val = 0x600000;
             asm volatile(
-                "msr elr_el1, %0\n\t"       //return address
-                "msr spsr_el1, xzr\n\t"     //PSTATE
+                "msr elr_el1, %0\n\t"
+                "msr spsr_el1, xzr\n\t"
                 "msr sp_el0, %1\n\t"
                 "eret\n\t"
                 :: 

@@ -128,20 +128,19 @@ void ct_enable_fortt() {
 
 }
 
-//core_timer
 void two_test() {
 
     disable_interrupt();
     core_timer_enable();
 
     asm volatile(
-        "mrs x0, cntfrq_el0\n\t"        //get freq
-        "mov x1, 2\n\t"                 //get immd 2
-        "mul x0, x0, x1\n\t"            //freq*2
-        "msr cntp_tval_el0, x0\n\t"     //set core timer
+        "mrs x0, cntfrq_el0\n\t"
+        "mov x1, 2\n\t"
+        "mul x0, x0, x1\n\t"
+        "msr cntp_tval_el0, x0\n\t"
     );
 
-    void (*ct_enable)(void) = ct_enable_fortt;  //infinity time
+    void (*ct_enable)(void) = ct_enable_fortt; 
 
     asm volatile(
         "msr elr_el1, %0\n\t"

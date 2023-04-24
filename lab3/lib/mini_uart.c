@@ -66,8 +66,8 @@ int write_s, write_e;   //write start, write end
 
 void enable_uart_interrupt() { put32(ENABLE_IRQS_1, (1<<29)); }
 void disable_uart_interrupt() { put32(DISABLE_IRQS_1, (1<<29)); }
-void set_transmit_interrupt() { put32(AUX_MU_IER_REG, 0x2); } // ????
-void clear_transmit_interrupt() { put32(AUX_MU_IER_REG, 0x1); } // ????
+void set_transmit_interrupt() { put32(AUX_MU_IER_REG, 0x2); } 
+void clear_transmit_interrupt() { put32(AUX_MU_IER_REG, 0x1); } 
 
 void async_uart_handler() {
     disable_uart_interrupt();
