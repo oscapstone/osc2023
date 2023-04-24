@@ -4,6 +4,6 @@
 void init_ramdisk(void);
 void ramdisk_ls(void);
 void ramdisk_cat(void);
-int ramdisk_load_file_to_adr(char* adr);
+char* ramdisk_find_file(char* filename);
 
 #endif /* RAMDISK_H */

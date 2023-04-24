@@ -8,6 +8,7 @@
 #include "ramdisk.h"
 #include "mem_utils.h"
 #include "thread.h"
+#include "user_process.h"
 
 #define MAX_ULONG       0x7fffffffffffffffll
 
@@ -24,7 +25,7 @@ void kernel_main(void)
 	reset_core_timer_absolute(MAX_ULONG);
 	enable_interrupts_in_el1();
 
-	// TODO: add it back when not using QEMU
+	// TODO(QEMU): add it back when not using QEMU
 	init_ramdisk();
 
 	init_frames();
@@ -33,6 +34,7 @@ void kernel_main(void)
 	process_mem_reserve();
 
 	init_thread();
+	init_user_process();
 
 	uart_send_string("Kernel Starts...\r\n");
 	shell_loop();

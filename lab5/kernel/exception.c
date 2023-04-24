@@ -2,6 +2,7 @@
 #include "uart_async.h"
 #include "utils.h"
 #include "timer.h"
+#include "syscall.h"
 #include "peripherals/exception.h"
 #include "peripherals/mini_uart.h"
 
@@ -40,6 +41,11 @@ void print_exception_info(void)
         uart_send_string("----------------------------------\r\n");
 
         enable_interrupts_in_el1();
+}
+
+void system_call(void)
+{
+        syscall_enterance();
 }
 
 void el0_timer_interrupt()

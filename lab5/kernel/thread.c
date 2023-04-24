@@ -61,7 +61,11 @@ void kill_zombies(void)
 
 void schedule(void)
 {
-        if (ready_q_front == NULL) asm volatile("b shell_loop");
+        if (ready_q_front == NULL) {
+                asm volatile("ldr x0, =_start");
+                asm volatile("mov sp, x0");
+                asm volatile("bl shell_loop");
+        }
 
         struct context *next_thread = ready_q_front;
         ready_q_front = next_thread->next;

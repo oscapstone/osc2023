@@ -5,13 +5,13 @@
 /*
  * Make a mailbox call. Returns 0 on success.
  */
-int mailbox_call(volatile unsigned int *mailbox)
+int mailbox_call(unsigned char ch, volatile unsigned int *mbox)
 {
         /*
          * Combines mailbox address (aligned 16 bytes) and channel number.
          */
         unsigned int msg =
-                    ((unsigned long)mailbox & ~0xF) | (MAILBOX_CH_PROP & 0xF);
+                    ((unsigned long)mbox & ~0xF) | (ch & 0xF);
 
         /*
          * Waits until write is available then writes the address of our message
@@ -26,7 +26,7 @@ int mailbox_call(volatile unsigned int *mailbox)
                  */
                 while (*MAILBOX_STATUS & MAILBOX_EMPTY) { asm volatile("nop"); }
                 if (msg == *MAILBOX_READ) {
-                        return (mailbox[1] != MAILBOX_REQUEST_SUCCEED);
+                        return (mbox[1] != MAILBOX_REQUEST_SUCCEED);
                 }
         }
         return 1;
@@ -43,7 +43,7 @@ void get_board_revision(void)
         mailbox[5] = 0;                           // Clears output buffer
         mailbox[6] = MAILBOX_END_TAG;
 
-        if (mailbox_call(mailbox) == 0) {
+        if (mailbox_call((unsigned char)MAILBOX_CH_PROP, mailbox) == 0) {
                 uart_send_string("Board Revision:\t\t");
                 uart_send_hex_32(mailbox[5]);
                 uart_send_string("\r\n");
@@ -62,7 +62,7 @@ void get_arm_memory(void)
         mailbox[6] = 0;                           // Clears output buffer
         mailbox[7] = MAILBOX_END_TAG;
 
-        if (mailbox_call(mailbox) == 0) {
+        if (mailbox_call((unsigned char)MAILBOX_CH_PROP, mailbox) == 0) {
                 uart_send_string("Memory Base Address:\t");
                 uart_send_hex_32(mailbox[5]);
                 uart_send_string("\r\n");

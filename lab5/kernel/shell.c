@@ -12,9 +12,12 @@
 #include "mem_frame.h"
 #include "mem_allocator.h"
 #include "thread.h"
+#include "syscall.h"
+#include "user_process.h"
 
 #define MAX_BUFFER_SIZE 256u
 static char buffer[MAX_BUFFER_SIZE];
+#define NULL (void*)0xFFFFFFFFFFFFFFFF
 
 void send_help_message(void)
 {
@@ -32,6 +35,8 @@ void send_help_message(void)
         uart_send_string("demo-malloc:\tdemo malloc and free\r\n");
         uart_send_string("show-reserve:\tshow reserved parts\r\n");
         uart_send_string("demo-thread:\tdemo threading el1\r\n");
+        uart_send_string("demo-syscall:\tdemo system call\r\n");
+        uart_send_string("demo-user-proc:\tdemo fork test\r\n");
 }
 
 void parse_cmd(void)
@@ -53,13 +58,7 @@ void parse_cmd(void)
         } else if (!strcmp(buffer, "cat")) {
                 ramdisk_cat();
         } else if (!strcmp(buffer, "exec")) {
-                uart_send_string("[INFO] exec: not implemented");
-                // TODO: not to copy or allocate a place
-                /*
-                if (!ramdisk_load_file_to_adr(USER_PROGRAM_START)) return;
-                reset_core_timer_in_second(2);
-                branch_to_address_el0(USER_PROGRAM_START, USER_STACK_POINTER);
-                */
+                shell_exec();
         } else if (!strcmp(buffer, "demo-async")) {
                 reset_core_timer_in_second(600);
                 branch_to_address_el0(demo_uart_async, USER_STACK_POINTER);
@@ -73,6 +72,10 @@ void parse_cmd(void)
                 show_reservation();
         } else if (!strcmp(buffer, "demo-thread")) {
                 demo_thread(3);
+        } else if (!strcmp(buffer, "demo-syscall")) {
+                demo_syscall();
+        } else if (!strcmp(buffer, "demo-user-proc")) {
+                demo_user_proc();
         } else {
                 uart_send_string("Command not found, ");
                 uart_send_string("type 'help' for commands.\r\n");

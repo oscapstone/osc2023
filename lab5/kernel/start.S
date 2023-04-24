@@ -12,7 +12,7 @@
 _start:
         /*
          * Move device tree address to an empty register
-         * TODO: Remove this line when using bootloader
+         * TODO(BOOTLOADER): Remove this line when using bootloader
          */
         mov     x28, x0
 

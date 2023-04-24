@@ -3,12 +3,14 @@
 #include "device_tree.h"
 #include "mem_utils.h"
 #include "mem_frame.h"
+#include "mem_allocator.h"
 
 #define MAX_NUM_FILE  10
 #define CPIO_HEADER_SIZE 110
+#define NULL (void*)0xFFFFFFFFFFFFFFFF
 
-// TODO: remove this line when not using qemu
-// #define QEMU_DEBUG
+// TODO(QEMU): remove this line when not using qemu
+#define QEMU_DEBUG
 
 struct cpio_newc_header {
         char c_magic[6];
@@ -34,7 +36,6 @@ struct file_list_struct {
         char *content_ptr;
 };
 struct file_list_struct file_list[MAX_NUM_FILE];
-int parsed = 0;
 int file_count = 0;
 
 static struct cpio_newc_header *header_ptr = 0;
@@ -54,7 +55,7 @@ int set_ramdisk_adr(char* node_name, char* prop_name,
         return 1;
 }
 
-void parse(void)
+void init_ramdisk(void)
 {
 #ifdef QEMU_DEBUG
         header_ptr = (struct cpio_newc_header*)0x8000000;
@@ -63,7 +64,8 @@ void parse(void)
 #endif /* QEMU_DEBUG */
 
         // TODO: get initrd-end from device tree
-        memory_reserve(header_ptr, (void*)(header_ptr + 0x800));
+        // TODO(QEMU): need this?
+        // memory_reserve(header_ptr, (void*)(header_ptr + 0x800));
 
         char *ptr = (char*)header_ptr + CPIO_HEADER_SIZE;
         /*
@@ -99,18 +101,10 @@ void parse(void)
                 ptr += CPIO_HEADER_SIZE;
                 file_count++;
         }
-        parsed = 1;
-}
-
-void init_ramdisk(void)
-{
-        parse();
 }
 
 void ramdisk_ls(void)
 {
-        if (!parsed) parse();
-
         for (int i = 0; i < file_count; i++) {
                 uart_send_string(file_list[i].name_ptr);
                 uart_endl();
@@ -119,8 +113,6 @@ void ramdisk_ls(void)
 
 void ramdisk_cat(void)
 {
-        if (!parsed) parse();
-
         char filename[100];
         uart_send_string("Filename: ");
         uart_readline(filename, 100);
@@ -146,16 +138,10 @@ void ramdisk_cat(void)
 }
 
 /*
- * Return 1 on success, 0 on failure.
+ * Return 0xFFFFFFFFFFFFFFFF (NULL) on failure. Return address on success.
  */
-int ramdisk_load_file_to_adr(char* target_adr)
+char* ramdisk_find_file(char* filename)
 {
-        if (!parsed) parse();
-
-        char filename[100];
-        uart_send_string("Filename: ");
-        uart_readline(filename, 100);
-
         int found = 0;
         int i;
         for (i = 0; i < file_count; i++) {
@@ -163,7 +149,7 @@ int ramdisk_load_file_to_adr(char* target_adr)
                         if (file_list[i].type == 'd') {
                                 uart_send_string(filename);
                                 uart_send_string(": Is a directory\r\n");
-                                return 0;
+                                return NULL;
                         }
                         found = 1;
                         break;
@@ -172,16 +158,9 @@ int ramdisk_load_file_to_adr(char* target_adr)
         if (!found) {
                 uart_send_string(filename);
                 uart_send_string(": No such file or directory\r\n");
-                return 0;
+                return NULL;
         }
 
-        int len = string_hex_to_int((file_list[i].header_ptr)->c_filesize, 8);
         char *src_adr = file_list[i].content_ptr;
-        uart_send_string("File size: ");
-        uart_send_int(len);
-        uart_send_string(" bytes\r\n");
-
-        memcpy(target_adr, src_adr, len);
-        uart_send_string("Finished loading...\r\n");
-        return 1;
+        return src_adr;
 }

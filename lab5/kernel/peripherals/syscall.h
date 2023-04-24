@@ -1,0 +1,13 @@
+#ifndef PERIPHERALS_SYSCALL_H
+#define PERIPHERALS_SYSCALL_H
+
+#define SYSCALL_NUM_GET_PID     0
+#define SYSCALL_NUM_UART_READ   1
+#define SYSCALL_NUM_UART_WRITE  2
+#define SYSCALL_NUM_EXEC        3
+#define SYSCALL_NUM_FORK        4
+#define SYSCALL_NUM_EXIT        5
+#define SYSCALL_NUM_MBOX_CALL   6
+#define SYSCALL_NUM_KILL        7
+
+#endif /* PERIPHERALS_SYSCALL_H */
