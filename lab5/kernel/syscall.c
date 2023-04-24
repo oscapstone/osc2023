@@ -132,7 +132,7 @@ void demo_getpid(void)
         uart_send_int(getpid());
         uart_endl();
 
-        exit();
+        exit(0);
 }
 
 void demo_syscall(void)
