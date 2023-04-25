@@ -73,9 +73,7 @@ size_t sys_uart_write(const char *buf, size_t size) {
 int sys_exec(const char *name, char *const argv[]) {
   char *start = (char *)initrd_content_getLo(name);
   int size = initrd_content_getSize(name);
-  char *dest = getProgramLo(); // Displacement
-  // FIXME: Should use pmalloc to get the location
-  dest = dest + 0x1000000;
+  char *dest = (char*)pmalloc(6);
   setup_program_loc(dest);
   char *d = dest;
   for (int i = 0; i < size; i++) {
@@ -138,6 +136,7 @@ int sys_fork(Trap_frame *trap_frame) {
   cur->regs.sp = trap_frame;
   child->regs.sp = (((void *)trap_frame) - ((void *)cur) + ((void *)child));
   child->regs.fp = (char *)child + 0x1000 - 16;
+  child->handler = cur->handler;
   // Setup the return value for child
   Trap_frame *trap_frame_child = child->regs.sp;
 
@@ -220,6 +219,8 @@ void posix_kill(int pid, int sig) {
   }
   // TODO: Should use a special structure instead of using
   // static. This implementation need to disable INT.
+  if(t->handler == NULL)
+	  return;
   __handler = t->handler;
   setup_program_loc(handler_container);
   Thread *h = thread_create(sys_run_program);

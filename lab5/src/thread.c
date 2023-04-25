@@ -65,6 +65,7 @@ Thread *thread_q_delete(Thread_q *Q, Thread *target) {
     thread_q_add(Q, t);
     t = thread_q_pop(Q);
     if (t == s && t != target) {
+	    thread_q_add(Q, t);
       return NULL;
     }
   }
@@ -79,7 +80,8 @@ Thread *thread_q_delete_id(Thread_q *Q, int id) {
     thread_q_add(Q, t);
     t = thread_q_pop(Q);
     if (t == s && t->id != id) {
-      uart_puts("\nDelete by id fail: ");
+	thread_q_add(Q, t);
+      //uart_puts("\nDelete by id fail: ");
       return NULL;
     }
   }
