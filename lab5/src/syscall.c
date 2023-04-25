@@ -5,8 +5,9 @@
 #include "thread.h"
 #include "time.h"
 #include "uart.h"
+//FIXME: should disable INT in the critical section.
 
-// From switch.S
+//k From switch.S
 extern Thread *get_current();
 
 // From exp.S
@@ -73,12 +74,15 @@ int sys_exec(const char *name, char *const argv[]) {
   char *start = (char *)initrd_content_getLo(name);
   int size = initrd_content_getSize(name);
   char *dest = getProgramLo(); // Displacement
+  // FIXME: Should use pmalloc to get the location
+  dest = dest + 0x1000000;
+  setup_program_loc(dest);
   char *d = dest;
   for (int i = 0; i < size; i++) {
     *d++ = *start++;
   }
-  if (start != 0) {
-    run_program(dest);
+  if (size != 0) {
+    sys_run_program();
     return 0;
   }
   return 1;
