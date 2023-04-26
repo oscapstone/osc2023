@@ -55,9 +55,7 @@ int timeout() {
 	return 1;
 }
 
-void user_program(unsigned char* addr) {
-//	core_timer_enable();
-//	mini_uart_interrupt_enable();
+void user_program(unsigned char* addr) {	
     asm volatile (
         // EL1 to EL0
         "mov x1, #0x0;"
@@ -74,8 +72,8 @@ void main()
     uart_init();
     heap_init();
     core_timer_enable();
-    mini_uart_interrupt_enable();
 	uart_a_puts("Hello", 5);
+	
     while(1) {
 	i = 0;
     memset(buffer, sizeof(buffer));
@@ -116,6 +114,8 @@ void main()
 	} else if (strncmp(buffer, "alloc", 5)==0) {
 		malloc(8);
 	} else if (strncmp(buffer, "run", 3)==0) {
+		disable_int();
+		mini_uart_interrupt_enable();
 		i = 0;
       	memset(buffer, sizeof(buffer));
 		ch = buffer;
@@ -124,6 +124,7 @@ void main()
     	unsigned char* addr = initrd_cat(buffer);
 		user_program(*addr);
 	} else if (strncmp(buffer, "set timer", 9)==0) {
+		enable_int();
 		timeout();
 	}
     }

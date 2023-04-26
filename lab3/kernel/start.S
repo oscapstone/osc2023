@@ -4,7 +4,6 @@
 
 // save general registers to stack
 .macro save_all
-//    sub sp, sp, 32 * 8
     sub	sp, sp, 16 * 17
     stp x0, x1, [sp ,16 * 0]
     stp x2, x3, [sp ,16 * 1]
@@ -48,7 +47,6 @@
     ldp x26, x27, [sp ,16 * 13]
     ldp x28, x29, [sp ,16 * 14]
     ldr x30, [sp, 16 * 15]
-//    add sp, sp, 32 * 8
     add 	sp, sp, 16 * 17
 .endm
 
@@ -96,7 +94,7 @@ __irq_handler:
 exception_vector_table:
     b exception_handler // branch to a handler function.
     .align 7 // entry size is 0x80, .align will pad 0
-    b exception_handler
+    b __irq_handler
     .align 7
     b exception_handler
     .align 7
@@ -105,7 +103,7 @@ exception_vector_table:
 
     b exception_handler
     .align 7
-    b exception_handler
+    b __irq_handler
     .align 7
     b exception_handler
     .align 7
@@ -123,7 +121,7 @@ exception_vector_table:
 
     b exception_handler
     .align 7
-    b exception_handler
+    b __irq_handler
     .align 7
     b exception_handler
     .align 7

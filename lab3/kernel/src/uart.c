@@ -11,21 +11,33 @@ static int tx = 0;
 static int count;
 
 int uart_receive_handler(){
-	uart_puts("receive\n");
+	uart_puts("Receive\n");
+    uart_puts("Characters: ");
+    
 	if(rx >= max_len - 1)
 		rx %= max_len;
-  	read_buf[rx++] = (char)(*AUX_MU_IO);
+  	read_buf[rx] = (char)(*AUX_MU_IO);
+
+    uart_putc(read_buf[rx++]);
+    uart_puts("\n");
+
 	return 0;
 }
 
 int uart_transmit_handler(){
-	uart_puts("transmit\n");
+	uart_puts("Transmit\n");
+    uart_puts("Characters: ");
+    uart_putc(write_buf[count]);
+    uart_puts("\n");
+
 	if(tx >= 0) {
 		*AUX_MU_IO = write_buf[count++];     // Write to buffer
         tx--;
     }
-	else
+	else {
   		*AUX_MU_IER &= 0x01;    // Transmition done disable transmit interrupt. 
+    }
+
 	return 0;
 }
 
@@ -75,7 +87,7 @@ void uart_init()
     *AUX_MU_CNTL = 0;
     *AUX_MU_LCR = 3;       // 8 bits
     *AUX_MU_MCR = 0;
-    *AUX_MU_IER = 0x3;
+    *AUX_MU_IER = 0x0;
     *AUX_MU_IIR = 0xc6;    // disable interrupts
     *AUX_MU_BAUD = 270;    // 115200 baud
     *AUX_MU_CNTL = 3;      // enable Tx, Rx
@@ -141,4 +153,25 @@ void uart_hex(unsigned int d) {
         n+=n>9?0x37:0x30;
         uart_send(n);
     }
+}
+
+void l2s_r(char **p, long int i) {
+
+  char d = (i % 10) + '0';
+  if (i >= 10)
+    l2s_r(p, i / 10);
+  *((*p)++) = d;
+}
+
+void uart_puti(unsigned int i) {
+  static char buf[24];
+  char *p = buf;
+  if (i < 0) {
+    *p++ = '-';
+    i = 0 - i;
+  }
+  l2s_r(&p, i);
+  *p = '\0';
+  uart_puts(buf);
+  return;
 }
