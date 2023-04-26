@@ -27,12 +27,13 @@ struct _page_frame_node
 };
 
 void init_page_frame();
+void *my_malloc(int req_size);
 int get_page_from_free_list(int req_size, int who);
 void add_to_free_list(page_frame_node *head_node, int index);
 void remove_from_free_list(page_frame_node *free_list_node);
 void put_back_to_free_list(int num_of_redundant_page, int index);
 int free_page_frame(int index);
-int merge_buddy(int index, int buddy, int order);
+int merge_buddy(int *index, int buddy, int order);
 void debug();
 
 #endif /*_PAGE_ALLOC_H */

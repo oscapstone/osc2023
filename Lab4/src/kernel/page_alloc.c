@@ -3,10 +3,12 @@
 #include "stddef.h"
 #include "stdlib.h"
 #include "reserve_mem.h"
+#include "dynamic_alloc.h"
 
 page_frame_node free_list[MAX_ORDER + 1];
 // int frame_array[TOTAL_NUM_PAGE]; // Why NOT use? no malloc to allocate new link list node
 page_frame_node frame_array[TOTAL_NUM_PAGE];
+extern reserved_memory_block RMarray[100];
 
 // initialize frame_array and free_list
 void init_page_frame()
@@ -54,15 +56,22 @@ void init_page_frame()
     return;
 }
 
+void *my_malloc(int req_size)
+{
+    int ret = -1;
+    if (req_size < MAX_POOL_SIZE)
+        return get_chunk(req_size);
+    else
+        ret = get_page_from_free_list(req_size, -1);
+
+    if (ret == -1)
+        return NULL;
+
+    return frame_array[ret].addr;
+}
+
 int get_page_from_free_list(int req_size, int who)
 {
-    // int req_num_of_page = -1;
-    // if (req_size % MIN_PAGE_SIZE != 0)
-    //     req_num_of_page = req_size / MIN_PAGE_SIZE + 1;
-    // else
-    //     req_num_of_page = req_size / MIN_PAGE_SIZE;
-
-    // calculate req_order
     int req_order = -1;
     for (int i = 0; i <= MAX_ORDER; i++)
     {
@@ -112,11 +121,6 @@ int get_page_from_free_list(int req_size, int who)
         frame_array[alloc_index + i].allocated_order = alloc_order;
     }
 
-    // // release redundant page (put back to free_list)
-    // int num_of_redundant_page = (1 << alloc_order) - req_num_of_page;
-    // if (num_of_redundant_page != 0)
-    //     put_back_to_free_list(num_of_redundant_page, alloc_index + req_num_of_page);
-
     // check the page if contains reserved memory
     unsigned long start = (unsigned long)frame_array[alloc_index].addr;
     unsigned long end = start + MIN_PAGE_SIZE * (1 << req_order);
@@ -124,7 +128,7 @@ int get_page_from_free_list(int req_size, int who)
     if (RM_index != 0)
     {
         // Need to change the page allocated
-        int new_alloc_index = get_page_from_free_list(req_size, -1);
+        int new_alloc_index = get_page_from_free_list(req_size, who);
         free_page_frame(alloc_index);
         alloc_index = new_alloc_index;
     }
@@ -132,7 +136,6 @@ int get_page_from_free_list(int req_size, int who)
 #ifdef DEBUG
     debug();
 #endif
-
     frame_array[alloc_index].chunk_order = who;
     return alloc_index;
 }
@@ -191,8 +194,11 @@ int free_page_frame(int index)
     if (frame_array[buddy_index].val == allocated_order)
     {
         // can merge
-        int merged_order = merge_buddy(index, buddy_index, allocated_order);
-        add_to_free_list(&free_list[merged_order], index);
+        int merged_order = merge_buddy(&index, buddy_index, allocated_order);
+        if (buddy_index < index)
+            add_to_free_list(&free_list[merged_order], buddy_index);
+        else
+            add_to_free_list(&free_list[merged_order], index);
     }
     else
     {
@@ -217,36 +223,44 @@ int free_page_frame(int index)
 }
 
 // return merged order, YES modify frame_array
-int merge_buddy(int index, int buddy, int order)
+int merge_buddy(int *index, int buddy, int order)
 {
     if (order == MAX_ORDER)
         return order;
 
-    printf("===============index = %d, buddy = %d, order = %d================================\n", index, buddy, order);
-    page_frame_node *iter = free_list[order].next;
-    while (iter->index != buddy)
+    if (buddy < *index)
     {
-        printf("iter->index = %d\n", iter->index);
-        iter = iter->next;
+        *index = buddy;
+        buddy = *index; // Find itself
     }
 
+    page_frame_node *iter = free_list[order].next;
+    while (iter->index != buddy)
+        iter = iter->next;
+
     remove_from_free_list(iter);
-    frame_array[index].val = order + 1;
+
+    frame_array[*index].val = order + 1;
     for (int i = 1; i < (1 << (order + 1)); i++)
     {
         frame_array[i].val = FREE_BUDDY;
     }
-    int new_buddy = index ^ (1 << (order + 1));
 
-    if (new_buddy < index)
+    if (order + 1 == MAX_ORDER)
+        return order + 1;
+
+    int new_buddy = *index ^ (1 << (order + 1));
+    if (new_buddy < *index)
     {
-        int tmp = index;
-        index = new_buddy;
-        new_buddy = index;
+        *index = new_buddy;
+        new_buddy = *index; // Find itself
     }
 
-    if (frame_array[index].val == frame_array[new_buddy].val)
+    if (frame_array[*index].val == frame_array[new_buddy].val)
+    {
+        frame_array[buddy].val = FREE_BUDDY;
         return merge_buddy(index, new_buddy, order + 1);
+    }
     else
         return order + 1;
 }
@@ -268,7 +282,7 @@ void debug()
     }
     printf("**\n");
     printf("** DEBUGGING frame_array\n");
-    for (int i = 0; i < 20; i++)
+    for (int i = 2045; i < 2045 + 20; i++)
     {
         printf("frame_array[%d].addr = %p\n", i, frame_array[i].addr);
         printf("frame_array[%d].val = %d\n", i, frame_array[i].val);

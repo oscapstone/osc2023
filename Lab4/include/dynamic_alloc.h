@@ -10,7 +10,7 @@
 typedef struct _chunk
 {
     int index; // const
-    int size; 
+    int size;
     void *addr; // const
     int val;
     int belong_page;
@@ -23,12 +23,13 @@ typedef struct _pool_list
 } pool_list;
 
 void init_pool();
-int get_chunk(int req_size);
+void *get_chunk(int req_size);
 int roundup_size(int size);
 void split_page(int frame_index, int req_pool_index);
 int remove_a_chunk_from_pool(int req_pool_index);
 int free_chunk(int index);
 void put_back_to_pool(int pool_index, int chunk_index);
 void debug_pool();
+void free(void *addr);
 
 #endif /*_DYNAMIC_ALLOC_H */

@@ -8,6 +8,7 @@ extern page_frame_node frame_array[TOTAL_NUM_PAGE];
 pool_list pool[33]; // 1, 2, 4, 6, 8, 16, 32
 chunk chunk_array[3000];
 int global_chunk_index = -1;
+int record_chunk_index = -1;
 
 void init_pool()
 {
@@ -23,7 +24,7 @@ chunk *new_chunk()
     return &chunk_array[global_chunk_index];
 }
 
-int get_chunk(int req_size)
+void *get_chunk(int req_size)
 {
     int req_pool_index = roundup_size(req_size); // req_pool_index * MIN_CHUNK_SIZE = req_size
 
@@ -31,20 +32,22 @@ int get_chunk(int req_size)
     {
         // empty pool on req_size
         int frame_index = get_page_from_free_list(MIN_PAGE_SIZE, req_pool_index);
+        record_chunk_index = global_chunk_index;
         split_page(frame_index, req_pool_index);
     }
 
     int index = remove_a_chunk_from_pool(req_pool_index);
     if (index == -1)
-        return -1;
+        return NULL;
 
-    return index;
+    void *addr = chunk_array[index].addr;
+    return addr;
 }
 
 void split_page(int frame_index, int req_pool_index)
 {
     int split_size = (req_pool_index * MIN_CHUNK_SIZE);
-    for (int i = 0; i < MIN_PAGE_SIZE / split_size; i++)
+    for (int i = 0; i < (MIN_PAGE_SIZE / split_size); i++)
     {
         chunk *new = new_chunk();
         new->size = split_size;
@@ -58,10 +61,6 @@ void split_page(int frame_index, int req_pool_index)
 int remove_a_chunk_from_pool(int req_pool_index)
 {
     chunk *alloc_chunk = container_of(pool[req_pool_index].list.next, chunk, list);
-    printf("** GET chunk\n");
-    printf("size = %d\n", alloc_chunk->size);
-    printf("addr = %p\n", alloc_chunk->addr);
-    printf("val = %d\n", alloc_chunk->val);
     list_del_init(pool[req_pool_index].list.next);
     alloc_chunk->val = ALLOCATED;
     return alloc_chunk->index;
@@ -124,6 +123,7 @@ void put_back_to_pool(int pool_index, int chunk_index)
             if (tmp_addr_long >> 12 == page_id)
                 break;
         }
+        chunk *first_chunk_in_page = list_entry(iter, chunk, list);
         for (int i = 0; i < count; i++)
         {
             chunk *tmp = list_entry(iter, chunk, list);
@@ -135,8 +135,7 @@ void put_back_to_pool(int pool_index, int chunk_index)
             iter->next = iter;
             iter = tmp_next;
         }
-        chunk *tmp = list_entry(iter, chunk, list);
-        free_page_frame(tmp->belong_page);
+        free_page_frame(first_chunk_in_page->belong_page);
     }
 
     return;
@@ -144,13 +143,6 @@ void put_back_to_pool(int pool_index, int chunk_index)
 
 int free_chunk(int index)
 {
-    // Check if is OK to free
-    if (index >= global_chunk_index || chunk_array[index].val != ALLOCATED)
-    {
-        printf("This chunk is Not Allocated yet\n");
-        return -1;
-    }
-
     // free the page
     int pool_index = chunk_array[index].size / MIN_CHUNK_SIZE;
     put_back_to_pool(pool_index, index);
@@ -160,7 +152,6 @@ int free_chunk(int index)
 
 void free(void *addr)
 {
-
     // Check addr is in which page frame
     unsigned long addr_long = (unsigned long)addr;
     int frame_index = (addr_long - FREE_MEM_START) / MIN_PAGE_SIZE;
@@ -168,17 +159,28 @@ void free(void *addr)
     if (frame_array[frame_index].val != ALLOCATED)
     {
         printf("This page is Not Allocated yet\n");
-        return -1;
+        return;
     }
 
     if (frame_array[frame_index].chunk_order != -1)
     {
-        // used to allocate chunks
-        printf("USED for chunk");
+        // used to allocate chunks, find chunk index
+        unsigned long frame_start_addr = (unsigned long)frame_array[frame_index].addr;
+        int chunk_index = ((addr_long - frame_start_addr) / (frame_array[frame_index].chunk_order * MIN_CHUNK_SIZE)) + record_chunk_index + 1;
+        // Check if is OK to free
+        if (chunk_index >= global_chunk_index || chunk_array[chunk_index].val != ALLOCATED)
+        {
+            printf("This chunk is Not Allocated yet\n");
+            return;
+        }
+
+        free_chunk(chunk_index);
+        return;
     }
     else
     {
         free_page_frame(frame_index);
+        return;
     }
 }
 
@@ -226,7 +228,12 @@ void debug_pool()
     printf("** DEBUGGING chunk\n");
     for (int i = 0; i < 20; i++)
     {
+        printf("chunk_array[%d].index = %d\n", i, chunk_array[i].index);
+        printf("chunk_array[%d].size = %d\n", i, chunk_array[i].size);
+        printf("chunk_array[%d].addr = %p\n", i, chunk_array[i].addr);
         printf("chunk_array[%d].val = %d\n", i, chunk_array[i].val);
+        printf("chunk_array[%d].belong_page= %d\n", i, chunk_array[i].belong_page);
+        printf("\n");
     }
     printf("**\n");
 }

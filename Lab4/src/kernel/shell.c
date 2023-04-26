@@ -6,12 +6,13 @@
 #include "timer.h"
 #include "page_alloc.h"
 #include "dynamic_alloc.h"
+#include "test_mem_alloc.h"
 
 extern void *_dtb_ptr;
 extern char *cpioDest;
 extern char read_buffer[100];
-extern page_frame_node frame_array[TOTAL_NUM_PAGE];
-extern chunk chunk_array[3000];
+// extern page_frame_node frame_array[TOTAL_NUM_PAGE];
+// extern chunk chunk_array[3000];
 
 #define COMMAND_BUFFER 50
 #define FILENAME_BUFFER 20
@@ -34,7 +35,7 @@ void shell_main(char *command)
         uart_send_string("asynr\t: [test] asynchronous read\n");
         uart_send_string("asynw\t: [test] asynchronous write\n");
         uart_send_string("setTimeout\t: Usage: setTimeout <Message> <Seconds>\n");
-        uart_send_string("alloc\t:\n");
+        uart_send_string("alloc\t: [test] malloc and free\n");
     }
     else if (!strcmp(command, "hello"))
     {
@@ -167,100 +168,7 @@ void shell_main(char *command)
     }
     else if (!memcmp(command, "alloc", 5))
     {
-        if (command[5] != ' ' || command[6] == '\0')
-        {
-            printf("Usage: alloc <size in bytes>\n");
-            return;
-        }
-
-        char argv_buffer[ARGV_BUFFER];
-        memset(argv_buffer, '\0', ARGV_BUFFER);
-        int i = 6;
-        while (command[i] != '\0')
-        {
-            argv_buffer[i - 6] = command[i];
-            i++;
-        }
-        int size;
-        size = atoi(argv_buffer);
-
-        if (size > MAX_POOL_SIZE)
-        {
-            // alloc pages
-            int frame_index = get_page_from_free_list(size, -1);
-            void *addr = frame_array[frame_index].addr;
-            if (addr == NULL)
-                printf("FAIL\n");
-            else
-            {
-                printf("SUCCESS\n");
-                printf("Get frame index %d\n", frame_index);
-                printf("Get addr 0x%p\n", addr);
-            }
-        }
-        else if (size <= MAX_POOL_SIZE)
-        {
-            // alloc chunk
-            int chunk_index = get_chunk(size);
-            void *addr = chunk_array[chunk_index].addr;
-            if (addr == NULL)
-                printf("FAIL\n");
-            else
-            {
-                printf("SUCCESS\n");
-                printf("Get chunk index %d\n", chunk_index);
-                printf("Get addr 0x%p\n", addr);
-            }
-        }
-        debug();
-        debug_pool();
-    }
-    else if (!memcmp(command, "freeFrame", 9))
-    {
-        if (command[9] != ' ' || command[10] == '\0')
-        {
-            printf("Usage: free <frame_array index>\n");
-            return;
-        }
-
-        char argv_buffer[ARGV_BUFFER];
-        memset(argv_buffer, '\0', ARGV_BUFFER);
-        int i = 10;
-        while (command[i] != '\0')
-        {
-            argv_buffer[i - 10] = command[i];
-            i++;
-        }
-        int index;
-        index = atoi(argv_buffer);
-
-        if (free_page_frame(index) == 0)
-            debug();
-    }
-    else if (!memcmp(command, "freeChunk", 9))
-    {
-        if (command[9] != ' ' || command[10] == '\0')
-        {
-            printf("Usage: freeChunk <chunk_array index>\n");
-            return;
-        }
-
-        char argv_buffer[ARGV_BUFFER];
-        memset(argv_buffer, '\0', ARGV_BUFFER);
-        int i = 10;
-        while (command[i] != '\0')
-        {
-            argv_buffer[i - 10] = command[i];
-            i++;
-        }
-        int index;
-        index = atoi(argv_buffer);
-
-        if (free_chunk(index) == 0)
-        {
-            debug();
-            debug_pool();
-        }
+        test_mem_alloc();
     }
     else if (!memcmp(command, "debug", 5))
     {
