@@ -2,9 +2,7 @@
 #define MEMORY_H
 
 #include "list.h"
-#include "stdint.h"
-
-#define DEMO 1
+#include "type.h"
 
 #define MAX_ORDER 16
 
@@ -53,6 +51,7 @@ void * allocate_chunk(uint32_t size);
 /* free */
 void free_frame(void * address);
 void free_chunk(void * address);
+void free(void * address);
 
 /* malloc */
 void * malloc(uint32_t size);

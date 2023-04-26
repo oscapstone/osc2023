@@ -2,9 +2,7 @@
 #define MEMORY_H
 
 #include "list.h"
-#include "stdint.h"
-
-#define DEMO 1
+#include "type.h"
 
 #define MAX_ORDER 16
 

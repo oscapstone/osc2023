@@ -1,6 +1,7 @@
 #include "cpio.h"
 #include "malloc.h"
 #include "exec.h"
+#include "sched.h"
 
 extern char *cpio_start;
 
@@ -36,7 +37,8 @@ int exec_file(char *thefilepath)
 
         if(!strcmp(thefilepath, filepath))
         {
-            execute(filedata);
+            // uart_printf("dbg: thread_exec\n");
+            thread_exec(filedata, filesize);
             break;
         }
 

@@ -214,9 +214,11 @@ void uart_async_putc(char c) {
         enable_uart_tx_interrupt();
     }
 
+    disable_interrupt();
     tx_buffer[tx_bf_w_idx] = c;
     tx_bf_w_idx++;
     tx_bf_w_idx %= MAX_BUF_SIZE;
+    enable_interrupt();
 
     enable_uart_tx_interrupt();
 }
@@ -227,9 +229,11 @@ char uart_async_getc() {
         enable_uart_rx_interrupt();
     }
 
+    disable_interrupt();
     char c = rx_buffer[rx_bf_r_idx];
     rx_bf_r_idx++;
     rx_bf_r_idx %= MAX_BUF_SIZE;
+    enable_interrupt();
 
     return c;
 }

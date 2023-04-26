@@ -159,7 +159,7 @@ void test_preemption() {
 
 /* shell */
 void shell(void) {
-    uart_puts("! Welcome Lab4 !\n");
+    uart_puts("! Welcome Lab5 !\n");
 
     char command[32];
     int idx = 0;
@@ -256,6 +256,10 @@ void shell(void) {
         }
         else if (strcmp("mmc", command) == 0) {
             chunk_slot_allocator_test();
+        }
+        // Lab 5
+        else if (strcmp("play", command) == 0) {
+            exec_file("syscall.img");
         }
         else {
             uart_puts("unknown\n");

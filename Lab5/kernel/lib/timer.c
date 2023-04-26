@@ -1,13 +1,19 @@
 #include "timer.h"
-#include "malloc.h"
+#include "memory.h"
 #include "list.h"
 #include "uart.h"
 #include "interrupt.h"
+#include "type.h"
 
 #define STR(x)        #x
 #define XSTR(x)       STR(x)
 
-extern list_head_t * timer_event_head;
+list_head_t * timer_event_head;
+
+void init_timer_list() {
+    timer_event_head = malloc(sizeof(list_head_t));
+    INIT_LIST_HEAD(timer_event_head);
+}
 
 void core_timer_interrupt_enable() {
     asm volatile(
@@ -63,6 +69,7 @@ void enable_core_timer() {
 }
 
 void core_timer_handler() {
+    enter_critical();
     if (list_empty(timer_event_head)) {
         // core_timer_interrupt_disable();
         core_timer_interrupt_disable_alternative();
@@ -70,15 +77,17 @@ void core_timer_handler() {
     else {
         pop_timer();
     }
+    exit_critical();
 }
 
 void add_timer(timer_callback_t callback, char * msg, unsigned long long expire_time) {
-    timer_event_t * new_event = (timer_event_t *)simple_malloc(sizeof(timer_event_t));
+    timer_event_t * new_event = (timer_event_t *)malloc(sizeof(timer_event_t));
     new_event->expire_time = expire_time;
     new_event->callback = callback;
-    new_event->args = msg;
+    new_event->args = malloc(strlen(msg) + 1);
+    strcpy(new_event->args, msg);
 
-    disable_interrupt();
+    enter_critical();
     list_head_t * iter;
     int not_insert_flag = 1;
     list_for_each(iter, timer_event_head) {
@@ -94,28 +103,31 @@ void add_timer(timer_callback_t callback, char * msg, unsigned long long expire_
     }
     
     set_core_timer_interrupt_to_first();
-    enable_interrupt();
+    exit_critical();
 
     core_timer_interrupt_enable();
 }
 
 void pop_timer() {
-    timer_event_t * first = (timer_event_t *) list_entry(timer_event_head->next, timer_event_t, listhead);
-    disable_interrupt();
+    timer_event_t * first = (timer_event_t *)timer_event_head->next;
     list_del_entry(timer_event_head->next);
-    enable_interrupt();
     first->callback(first->args);
     if (list_empty(timer_event_head)) {
-        core_timer_interrupt_disable();
+        core_timer_interrupt_disable_alternative();
     }
     else {
-        disable_interrupt();
         set_core_timer_interrupt_to_first();
-        enable_interrupt();
     }
 }
 
 void set_core_timer_interrupt_to_first() {
-    unsigned long long min_expired_time = ((timer_event_t *) list_entry(timer_event_head->next, timer_event_t, listhead))->expire_time;
+    unsigned long long min_expired_time = ((timer_event_t *)timer_event_head->next)->expire_time;
     set_core_timer_interrupt(min_expired_time);
-} 
+}
+
+void set_cpu_timer_up() {
+    uint64_t tmp;
+    asm volatile("mrs %0, cntkctl_el1" : "=r"(tmp));
+    tmp |= 1;
+    asm volatile("msr cntkctl_el1, %0" : : "r"(tmp));
+}

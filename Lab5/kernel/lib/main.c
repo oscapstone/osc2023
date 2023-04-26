@@ -9,10 +9,6 @@
 
 extern char* dtb_base;
 
-/* timer */
-LIST_HEAD(timer_event_head_item);
-list_head_t * timer_event_head = &timer_event_head_item;
-
 /* task */
 LIST_HEAD(task_head_item);
 list_head_t * task_head = &task_head_item;
@@ -20,24 +16,26 @@ list_head_t * task_head = &task_head_item;
 void main(char *arg)
 {
     dtb_base = arg;
+
     fdt_traverse(initramfs_callback);   // find cpio
 
-    // initialize timer event list head
-    INIT_LIST_HEAD(timer_event_head);
-
-    // initialize task list head
     INIT_LIST_HEAD(task_head);
-
-    // initialize uart async index
+    
     init_uart_async_index();
-
-    enable_core_timer();
+    uart_init();
+    init_memory();
+    init_timer_list();
+    set_cpu_timer_up();
     core_timer_interrupt_disable_alternative();
     core_timer_interrupt_enable();
-    uart_init();
     enable_uart_interrupt();
     enable_interrupt();
+    init_sched_thread();
+    enable_core_timer();
 
-    init_memory();
-    shell();
+    /* Lab 5 */
+    exec_file("syscall.img");
+
+    // shell();
+
 }

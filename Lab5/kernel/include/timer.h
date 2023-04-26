@@ -15,6 +15,7 @@ typedef struct timer_event
     char *args;
 } timer_event_t;
 
+void init_timer_list();
 void enable_core_timer();
 void core_timer_handler();
 void add_timer(timer_callback_t callback, char * msg, unsigned long long expire_time);
@@ -27,5 +28,6 @@ void core_timer_interrupt_disable_alternative();
 unsigned long long get_clock_freq();
 unsigned long long get_current_tick();
 unsigned long long get_clock_time();
+void set_cpu_timer_up();
 
 #endif

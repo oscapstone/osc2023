@@ -1,7 +1,7 @@
 #include "malloc.h"
 #include "uart.h"
 #include "list.h"
-#include "stdint.h"
+#include "type.h"
 #include "memory.h"
 
 extern char __text_start;

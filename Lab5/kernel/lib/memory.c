@@ -1,7 +1,7 @@
 #include "malloc.h"
 #include "uart.h"
 #include "list.h"
-#include "stdint.h"
+#include "type.h"
 #include "memory.h"
 
 extern char __text_start;
@@ -49,9 +49,7 @@ void memory_reserve(void * start, void * end) {
     start = (void *)((uint64_t) start / PAGE_SIZE * PAGE_SIZE);
     end = (void *)(((uint64_t) end + PAGE_SIZE - 1) / PAGE_SIZE * PAGE_SIZE);
 
-#ifdef DEMO
-    uart_printf("start: %d, end: %d has been reserved\n", (uint64_t)start, (uint64_t)end);
-#endif
+    uart_printf("start: %x, end: %x has been reserved\n", (uint64_t)start, (uint64_t)end);
 
     for (void *tmp = start; tmp < end; tmp = (void *)((uint64_t) tmp + PAGE_SIZE)) {
         frame_entries[address2idx(tmp)].status = ALLOCATED;
@@ -273,6 +271,21 @@ void free_chunk(void * address) {
     uart_printf("Freeing %x chunk of size %d in page %d\n", address, chunk_slot_size[size_idx], page_idx);
     uart_printf("--------------------------------------------\n");
 #endif
+}
+
+
+void free(void * address) {
+    int idx = address2idx(address);
+
+    if (frame_entries[idx].status == FREE) {    // The page is FREE
+        return;
+    }
+    else {
+        if (chunk_entries[idx].status == FREE) // Freeing whole page
+            free_frame(address);
+        else                                // Freeing chunk
+            free_chunk(address);
+    }
 }
 
 /* malloc */

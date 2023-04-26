@@ -46,3 +46,61 @@ int cpio_newc_parse_header(struct cpio_newc_header *this_header_pointer, char **
 
     return 0;
 }
+
+char* get_file_start(char *thefilepath)
+{
+    char *filepath;
+    char *filedata;
+    unsigned int filesize;
+    struct cpio_newc_header *header_pointer = (struct cpio_newc_header *)cpio_start;
+
+    while (header_pointer != 0)
+    {
+        int error = cpio_newc_parse_header(header_pointer, &filepath, &filesize, &filedata, &header_pointer);
+        //if parse header error
+        if (error)
+        {
+            uart_puts("error");
+            break;
+        }
+
+        if (strcmp(thefilepath, filepath) == 0)
+        {
+            return filedata;
+        }
+
+        //if this is TRAILER!!! (last of file)
+        if (header_pointer == 0)
+            uart_printf("execfile: %s: No such file or directory\r\n", thefilepath);
+    }
+    return 0;
+}
+
+unsigned int get_file_size(char *thefilepath)
+{
+    char *filepath;
+    char *filedata;
+    unsigned int filesize;
+    struct cpio_newc_header *header_pointer = (struct cpio_newc_header *)cpio_start;
+
+    while (header_pointer != 0)
+    {
+        int error = cpio_newc_parse_header(header_pointer, &filepath, &filesize, &filedata, &header_pointer);
+        //if parse header error
+        if (error)
+        {
+            uart_puts("error");
+            break;
+        }
+
+        if (strcmp(thefilepath, filepath) == 0)
+        {
+            return filesize;
+        }
+
+        //if this is TRAILER!!! (last of file)
+        if (header_pointer == 0)
+            uart_printf("execfile: %s: No such file or directory\r\n", thefilepath);
+    }
+    return 0;
+}

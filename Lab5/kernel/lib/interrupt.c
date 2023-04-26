@@ -2,7 +2,9 @@
 #include "timer.h"
 #include "task.h"
 #include "interrupt.h"
+#include "sched.h"
 
+extern list_head_t * ready_queue;
 
 void enable_interrupt() {
     asm volatile("msr DAIFClr, 0xf");
@@ -35,32 +37,82 @@ void irq_handler(unsigned long long x0) {
         add_task(core_timer_handler, TIMER_IRQ_PRIORITY);
         pop_task();
         core_timer_interrupt_enable();
+
+        if (ready_queue->next->next != ready_queue) {
+            schedule();
+        }
     }
 }
 
 void invalid_exception_handler(unsigned long long x0) {
     uart_printf("invalid handler 0x%x\n", x0);
+    uart_getc(); // halt
 }
 
-void sync_el0_64_handler() {
-    unsigned long long spsr, elr, esr;
-    asm volatile(
-        "mrs %0, spsr_el1\n\t":"=r"(spsr):
-    );
-    asm volatile(
-        "mrs %0, elr_el1\n\t":"=r"(elr):
-    );
-    asm volatile(
-        "mrs %0, esr_el1 \n\t":"=r"(esr):
-    );
-    uart_printf("spsr_el1: %d, elr_el1: %d, esr_el1: %d\n", spsr, elr, esr);
+void sync_el0_64_handler(trapframe_t * tpf) {
+    enable_interrupt();
+    unsigned long long syscall_no = tpf->x8;
+    // uart_printf("dbg: sync_el0_64_handler start, syscall_no = %d\n", syscall_no);
+
+    switch (syscall_no) {
+    case 0:
+        get_pid(tpf);
+        break;
+    case 1:
+        uart_read(tpf, (char *)tpf->x0, tpf->x1);
+        break;
+    case 2:
+        uart_write(tpf, (char *)tpf->x0, tpf->x1);
+        break;
+    case 3:
+        exec(tpf, (char *)tpf->x0, (char **)tpf->x1);
+        break;
+    case 4:
+        fork(tpf);
+        break;
+    case 5:
+        exit(tpf, tpf->x0);
+        break;
+    case 6:
+        syscall_mbox_call(tpf, (unsigned char)tpf->x0, (unsigned int *)tpf->x1);
+        break;
+    case 7:
+        kill(tpf, (int)tpf->x0);
+        break;
+    case 8:
+        signal_register(tpf->x0, (signal_handler_t)tpf->x1);
+        break;
+    case 9:
+        signal_kill(tpf->x0, tpf->x1);
+        break;
+    case 50:
+        signal_return(tpf);
+        break;
+    }
+    // uart_printf("dbg: sync_el0_64_handler start\n");
 }
 
-
-void set_cpacr_el1(){
+void set_cpacr_el1() {
     asm volatile(
         "mov x1, (3 << 20)\n\t"
         "msr CPACR_EL1, x1\n\t"
     );
 }
 
+static unsigned long long lock_count = 0;
+
+void enter_critical() {
+    disable_interrupt();
+    lock_count++;
+}
+
+void exit_critical() {
+    lock_count--;
+    if (lock_count < 0) {
+        uart_printf("lock error !!!\r\n");
+        while(1);
+    }
+    if (lock_count == 0) {
+        enable_interrupt();
+    }
+}
