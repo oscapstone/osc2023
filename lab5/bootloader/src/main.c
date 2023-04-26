@@ -1,15 +1,37 @@
-#include "uart1.h"
+#include "uart.h"
+#include "mbox.h"
 #include "shell.h"
+#include "string.h"
+#include "system.h"
 
-extern char* _bootloader_relocated_addr;
-extern unsigned long long __code_size;
+extern char* _code_relocate_place;
+extern unsigned long long  __code_size;
 extern unsigned long long _start;
-char* _dtb;
+extern char* _dtb;
 
-int relocated_flag = 1;
+void code_relocate(char * addr);
 
-/* Copies codeblock from _start to addr */
-void code_relocate(char* addr)
+int relocate=1;
+
+void main(char* arg)
+{
+    _dtb = arg;
+    char* reloc_place = (char*)&_code_relocate_place;
+
+    if(relocate) // only do relocate once
+    {
+        relocate = 0;
+        code_relocate(reloc_place);
+    }
+
+    // set up serial console
+    uart_init();
+
+    shell();
+}
+
+// relocate code and jump to there
+void code_relocate(char * addr)
 {
     unsigned long long size = (unsigned long long)&__code_size;
     char* start = (char *)&_start;
@@ -18,31 +40,5 @@ void code_relocate(char* addr)
         addr[i] = start[i];
     }
 
-    ((void (*)(char*))addr)(_dtb);
-}
-
-/* x0-x7 are argument registers.
-   x0 is now used for dtb */
-void main(char* arg){
-    _dtb = arg;
-    char* relocated_ptr = (char*)&_bootloader_relocated_addr;
-
-    /* Relocate once only */
-    if (relocated_flag)
-    {
-        relocated_flag = 0;
-        code_relocate(relocated_ptr);
-    }
-
-    char input_buffer[CMD_MAX_LEN];
-
-    uart_init();
-    cli_print_banner();
-
-    while(1){
-        cli_cmd_clear(input_buffer, CMD_MAX_LEN);
-        uart_puts("# ");
-        cli_cmd_read(input_buffer);
-        cli_cmd_exec(input_buffer);
-    }
+    ((void (*)(char*))addr)(_dtb);  //jump to new place
 }

@@ -1,113 +1,63 @@
+#include "uart.h"
+#include "string.h"
 #include "shell.h"
-#include "uart1.h"
-#include "power.h"
-#include "utils.h"
+#include "mbox.h"
+#include "system.h"
 
-#define SHIFT_ADDR 0x100000
-
-extern char* _dtb;
-extern char _start[];
-
-struct CLI_CMDS cmd_list[CLI_MAX_CMD]=
+void shell()
 {
-    {.command="loadimg", .help="load image via uart1"},
-    {.command="help", .help="print all available commands"},
-    {.command="reboot", .help="reboot the device"}
-};
-
-void cli_cmd_clear(char* buffer, int length)
-{
-    for(int i=0; i<length; i++)
-    {
-        buffer[i] = '\0';
-    }
-};
-
-void cli_cmd_read(char* buffer)
-{
-    char c='\0';
-    int idx = 0;
+    char cmd[MAX_BUF_SIZE];
+    print_system_messages();
+    uart_puts("Welcome, this is bootloader. Try to load kernel with uart with protocol in system.c(load_kernel)");
     while(1)
     {
-        if ( idx >= CMD_MAX_LEN ) break;
-
-        c = uart_recv();
-        if ( c == '\n')
-        {
-            uart_puts("\r\n");
-            break;
-        }
-        if ( c > 16 && c < 32 ) continue;
-        if ( c > 127 ) continue;
-        buffer[idx++] = c;
-        uart_send(c);
+        uart_printf("# ");
+        uart_gets(cmd);
+        do_cmd(cmd);
     }
 }
 
-void cli_cmd_exec(char* buffer)
+void do_cmd(char* cmd)
 {
-    if (strcmp(buffer, "loadimg") == 0) {
-        do_cmd_loadimg();
-    } else if (strcmp(buffer, "help") == 0) {
-        do_cmd_help();
-    } else if (strcmp(buffer, "reboot") == 0) {
-        do_cmd_reboot();
-    } else if (*buffer){
-        uart_puts(buffer);
-        uart_puts(": command not found\r\n");
-    }
-}
-
-void cli_print_banner()
-{
-    uart_puts("\r\n");
-    uart_puts("=======================================\r\n");
-    uart_puts("    NYCU-OSC 2023 Lab2 - Bootloader    \r\n");
-    uart_puts("=======================================\r\n");
-}
-
-void do_cmd_help()
-{
-    for(int i = 0; i < CLI_MAX_CMD; i++)
+    if(strcmp(cmd,"help")==0)
     {
-        uart_puts(cmd_list[i].command);
-        uart_puts("\t\t: ");
-        uart_puts(cmd_list[i].help);
-        uart_puts("\r\n");
+        uart_puts("help       : print this help menu");
+        uart_puts("hello      : print Hello World!");
+        uart_puts("reboot     : reboot the device");
+        uart_puts("load_kernel   : load kernel code from uart to 0x80000 and jump to it!");
     }
-}
-
-/* Overwrite image file into _start,
-   Please make sure this current code has been relocated. */
-void do_cmd_loadimg()
-{
-    char* bak_dtb = _dtb;
-    char c;
-    unsigned long long kernel_size = 0;
-    char* kernel_start = (char*) (&_start);
-    uart_puts("Please upload the image file.\r\n");
-    for (int i=0; i<8; i++)
+    else if(strcmp(cmd,"hello")==0)
     {
-        c = uart_getc();
-        kernel_size += c<<(i*8);
+        uart_puts("Hello World!");
     }
-    for (int i=0; i<kernel_size; i++)
+    else if(strcmp(cmd,"reboot")==0)
     {
-        c = uart_getc();
-        kernel_start[i] = c;
+        reboot();
+    }else if(strcmp(cmd,"load_kernel")==0)
+    {
+        load_kernel();
+    }else
+    {
+        uart_puts("Unknown command!");
     }
-    uart_puts("Image file downloaded successfully.\r\n");
-    uart_puts("Point to new kernel ...\r\n");
-
-    ((void (*)(char*))kernel_start)(bak_dtb);
 }
 
-void do_cmd_reboot()
+void print_system_messages()
 {
-    uart_puts("Reboot in 5 seconds ...\r\n\r\n");
-    volatile unsigned int* rst_addr = (unsigned int*)PM_RSTC;
-    *rst_addr = PM_PASSWORD | 0x20;
-    volatile unsigned int* wdg_addr = (unsigned int*)PM_WDOG;
-    *wdg_addr = PM_PASSWORD | 5;
-}
+    unsigned int board_revision;
+    get_board_revision(&board_revision);
+    uart_printf("Board revision is : 0x");
+    uart_hex(board_revision);
+    uart_puts("");
+    
+    unsigned int arm_mem_base_addr;
+    unsigned int arm_mem_size;
 
+    get_arm_memory_info(&arm_mem_base_addr,&arm_mem_size);
+    uart_printf("ARM memory base address in bytes : 0x");
+    uart_hex(arm_mem_base_addr);
+    uart_puts("");
+    uart_printf("ARM memory size in bytes : 0x");
+    uart_hex(arm_mem_size);
+    uart_puts("");
+}

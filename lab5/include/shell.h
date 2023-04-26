@@ -4,5 +4,6 @@
 void shell();
 void do_cmd(char* cmd);
 void print_system_messages();
+void thread_tester();
 
 #endif
