@@ -1,5 +1,16 @@
 #include "signal.h"
 
+/*
+1. user process executes a signal-generating instruction
+2. saving its current context onto the kernel stack
+3. If the user process has registered a signal handler for the raised signal
+4. kernel sets the user process's PC to the address of the signal handler 
+and sets the user process's SP to the user stack for the signal handler
+5. The user process executes the signal handler code.
+6. When the signal handler returns, the kernel restores 
+the user process's saved context and resumes execution of the user process. 
+*/
+
 void check_signal(trapframe_t *tpf)
 {
     lock();
@@ -13,6 +24,7 @@ void check_signal(trapframe_t *tpf)
     unlock();
     for (int i = 0; i <= SIGNAL_MAX; i++)
     {
+        // perform handler, user process may enter kernel mode -> save original context
         store_context(&curr_thread->signal_saved_context);
         if(curr_thread->sigcount[i]>0)
         {
@@ -38,6 +50,7 @@ void run_signal(trapframe_t* tpf,int signal)
         return;
     }
 
+    // during execution, the handler requires a user stack.
     char *temp_signal_userstack = kmalloc(USTACK_SIZE);
 
     asm("msr elr_el1, %0\n\t"
