@@ -230,7 +230,7 @@ int exec() {
   start = (char *)initrd_content_getLo(buf);
   int size = initrd_content_getSize(buf);
   char *dest = (char *)pmalloc(6); // Get the largest size
-  char* d = dest;
+  char *d = dest;
   // Copy.
   // If no copy, the adrp instruction in user program will wierd.
   for (int i = 0; i < size; i++) {

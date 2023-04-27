@@ -5,9 +5,9 @@
 #include "thread.h"
 #include "time.h"
 #include "uart.h"
-//FIXME: should disable INT in the critical section.
+// FIXME: should disable INT in the critical section.
 
-//k From switch.S
+// k From switch.S
 extern Thread *get_current();
 
 // From exp.S
@@ -17,6 +17,9 @@ extern void load_reg_ret(void);
 // From thread.c
 extern Thread_q *running, deleted;
 
+/********************************************************************
+ * Systemcall getpid()
+ ********************************************************************/
 int sys_getpid(void) {
   Thread *ret = get_current();
   // Log
@@ -27,20 +30,14 @@ int sys_getpid(void) {
   return ret->id;
 }
 
+/*************************************************************************
+ * System call Read()
+ ***********************************************************************/
 size_t sys_uart_read(char *buf, size_t size) {
   char a;
   char *pivot = buf;
   int count = 0;
-  /*
-  a = uart_getc();
-  while(a != 0){
-          *pivot++ = a;
-          a = uart_getc();
-          count++;
-  }
-  *pivot = a;
-  count ++;
-  */
+  // If get '\n' break
   for (int i = 0; i < size; i++) {
     *pivot++ = uart_getc();
     if (*(pivot - 1) == '\n')
@@ -57,6 +54,9 @@ size_t sys_uart_read(char *buf, size_t size) {
   return count;
 }
 
+/***********************************************************************
+ * System call write
+ **********************************************************************/
 size_t sys_uart_write(const char *buf, size_t size) {
   /*
   uart_puts("\n[write]");
@@ -70,10 +70,16 @@ size_t sys_uart_write(const char *buf, size_t size) {
   return size;
 }
 
+/**********************************************************************
+ * Execute the target program
+ * @name: name of the program in initramfs
+ * @argv: Not implement yet
+ ********************************************************************/
 int sys_exec(const char *name, char *const argv[]) {
   char *start = (char *)initrd_content_getLo(name);
   int size = initrd_content_getSize(name);
-  char *dest = (char*)pmalloc(6);
+  // Get memory for user program.
+  char *dest = (char *)pmalloc(6);
   setup_program_loc(dest);
   char *d = dest;
   for (int i = 0; i < size; i++) {
@@ -86,16 +92,28 @@ int sys_exec(const char *name, char *const argv[]) {
   return 1;
 }
 
+/**********************************************************************
+ * system call exit()
+ * call the `exit()` in therad.h
+ ********************************************************************/
 void sys_exit(int status) {
   // Currently not implement the status
   exit();
   return 0;
 }
 
+/************************************************************************
+ * system call mbox
+ ***********************************************************************/
 int sys_mbox_call(unsigned char ch, unsigned int *mbox) {
   return sys_mailbox_config(ch, mbox);
 }
 
+/************************************************************************
+ * kill systemcall. Move thread from running Q to delete Q
+ *
+ * @pid: the ID of target thread
+ ***********************************************************************/
 void sys_kill(int pid) {
   Thread *t;
   t = thread_q_delete_id(&running, pid);
@@ -105,6 +123,11 @@ void sys_kill(int pid) {
   return;
 }
 
+/************************************************************************
+ * Fork
+ * @trap_frame: The SP which point to the current storage of current
+ * 		regs which need to copy to child.
+ ***********************************************************************/
 int sys_fork(Trap_frame *trap_frame) {
   Thread *cur = get_current();
   // Child need to load regs from its trap_frame
@@ -112,11 +135,12 @@ int sys_fork(Trap_frame *trap_frame) {
   // Copy entire struct from parent -> child
   char *c = (char *)child;
   char *f = (char *)cur;
-  // Copy stacks...
+  // Copy kernel stacks...
   for (int i = sizeof(Thread); i < 0x1000; i++) {
     *(c + i) = *(f + i);
   }
   // Copy callee regs
+  // NOTE: the memrory layout of the callee_regs is at the begin of thread
   for (int i = 0; i < sizeof(callee_regs); i++) {
     *(c + i) = *(f + i);
   }
@@ -132,16 +156,25 @@ int sys_fork(Trap_frame *trap_frame) {
   uart_puthl(child);
   */
 
+  // Setup the half of handler (maybe useless)
   child->regs.lr = load_reg_ret;
+  // Setup stack pointer
   cur->regs.sp = trap_frame;
+
+  // Should at the same offset to the cur.
   child->regs.sp = (((void *)trap_frame) - ((void *)cur) + ((void *)child));
   child->regs.fp = (char *)child + 0x1000 - 16;
+
+  // Copy the handler from parent
   child->handler = cur->handler;
+
   // Setup the return value for child
   Trap_frame *trap_frame_child = child->regs.sp;
 
+  // Set the x0 and Base fp (EL1) (duplicate)
   trap_frame_child->regs[0] = 0;
   trap_frame_child->regs[29] = child->regs.fp;
+
   // Get the displacement of userspace stack
   trap_frame_child->sp_el0 =
       (char *)trap_frame->sp_el0 - (char *)cur->sp_el0 + (char *)child->sp_el0;
@@ -153,28 +186,10 @@ int sys_fork(Trap_frame *trap_frame) {
   // Copy user stack
   c = (char *)trap_frame_child->sp_el0;
   f = (char *)trap_frame->sp_el0;
-  /*
-  uart_puthl(c);
-          uart_puts(".");
-  uart_puthl(f);
-          uart_puts(".");
-  uart_puthl(cur->sp_el0);
-          uart_puts(".");
-          */
   while (f != (char *)cur->sp_el0) {
     *c++ = *f++;
   }
   *c = *f;
-
-  Trap_frame *trap_child = child->regs.sp;
-  /*
-  for(int i = 0; i < 35; i ++){
-          uart_puthl(trap_frame->regs[i]);
-          uart_puts(" vs ");
-          uart_puthl(trap_child->regs[i]);
-          uart_puts("\n");
-  }
-  */
 
   // LOG
   /*
@@ -187,6 +202,12 @@ int sys_fork(Trap_frame *trap_frame) {
   return;
 }
 
+/*************************************************************************
+ * Setup the handler for specific signal
+ *
+ * @signal: the  pointer of custom handler function.
+ * @sig: the target signal.
+ ************************************************************************/
 void sys_signal(int sig, void (*handler)()) {
   // TODO: Should use a struct to store handlers
   // But for this lab, only one handler will be inserted
@@ -195,8 +216,18 @@ void sys_signal(int sig, void (*handler)()) {
   return;
 }
 
+/*************************************************************************
+ * __handler store the handler pointer
+ ************************************************************************/
 static void (*__handler)() = NULL;
-// This function will Run in EL0
+
+/************************************************************************
+ * The container function of the POSIX signal handler which provide
+ * prologue and the epilogue of the handler.
+ *
+ * NOTE: Need uexit() to leave EL0 and this handler.
+ * NOTE: the handle should run in EL0
+ ************************************************************************/
 void handler_container() {
   if (__handler == NULL) {
     uart_puts("NO handler!\n");
@@ -208,6 +239,12 @@ void handler_container() {
   uexit();
 }
 
+/**************************************************************************
+ * Implementation of the POSIX signal
+ *
+ * @pid: The id of the Target thread
+ * @sig: Which signal want to send
+ *************************************************************************/
 void posix_kill(int pid, int sig) {
   Thread *t = NULL;
   t = thread_q_delete_id(&running, pid);
@@ -219,8 +256,9 @@ void posix_kill(int pid, int sig) {
   }
   // TODO: Should use a special structure instead of using
   // static. This implementation need to disable INT.
-  if(t->handler == NULL)
-	  return;
+  if (t->handler == NULL)
+    return;
+  // Setup the pointer which handler_container will execuate.
   __handler = t->handler;
   setup_program_loc(handler_container);
   Thread *h = thread_create(sys_run_program);
@@ -295,7 +333,14 @@ void fork_test() {
   uexit();
 }
 
-// Syscall function for user
+//========================================================================
+// Wrapper funtion for user to call. Which contain the svc and x8
+//========================================================================
+
+/*************************************************************************
+ * Getpid
+ * @return: return the pid of the current thread
+ ************************************************************************/
 int get_pid() {
   uint32_t ret;
   asm volatile("mov x8, 0;"
@@ -306,6 +351,9 @@ int get_pid() {
   return ret;
 }
 
+/*************************************************************************
+ * Exit, the end of the thread, which should be called at the end of thread
+ * **********************************************************************/
 void uexit() {
 
   asm volatile("mov	x8, 5;"
@@ -313,6 +361,9 @@ void uexit() {
   return;
 }
 
+/*************************************************************************
+ * Fork, fork the current thread
+ ************************************************************************/
 int fork() {
   int ret;
   asm volatile("mov	x8, 4;"
