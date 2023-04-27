@@ -3,190 +3,473 @@
 !_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
 !_TAG_PROGRAM_NAME	Exuberant Ctags	//
 !_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
-!_TAG_PROGRAM_VERSION	5.9~svn20110310	//
+!_TAG_PROGRAM_VERSION	5.8	//
 ARMGNU	Makefile	/^ARMGNU ?= aarch64-none-elf$/;"	m
-ARMGNU	initramfs/Makefile	/^ARMGNU ?= aarch64-none-elf$/;"	m
+ARMGNU	bootloader/Makefile	/^ARMGNU ?= aarch64-none-elf$/;"	m
+ASMOPS	Makefile	/^ASMOPS = -Iinclude $/;"	m
+ASMOPS	bootloader/Makefile	/^ASMOPS = -Iinclude $/;"	m
 ASM_FILES	Makefile	/^ASM_FILES = $(wildcard $(SRC_DIR)\/*.S)$/;"	m
-AUX_ENABLES	include/peripherals/mini_uart.h	6;"	d
-AUX_MU_BAUD_REG	include/peripherals/mini_uart.h	11;"	d
-AUX_MU_CNTL_REG	include/peripherals/mini_uart.h	7;"	d
-AUX_MU_IER_REG	include/peripherals/mini_uart.h	8;"	d
-AUX_MU_IIR_REG	include/peripherals/mini_uart.h	12;"	d
-AUX_MU_IO_REG	include/peripherals/mini_uart.h	14;"	d
-AUX_MU_LCR_REG	include/peripherals/mini_uart.h	9;"	d
-AUX_MU_LSR_REG	include/peripherals/mini_uart.h	13;"	d
-AUX_MU_MCR_REG	include/peripherals/mini_uart.h	10;"	d
-AUX_MU_MSR_REG	include/peripherals/mini_uart.h	15;"	d
-AUX_MU_SCRATCH_REG	include/peripherals/mini_uart.h	16;"	d
-AUX_MU_STAT_REG	include/peripherals/mini_uart.h	17;"	d
+ASM_FILES	bootloader/Makefile	/^ASM_FILES = $(wildcard $(SRC_DIR)\/*.S)$/;"	m
+AUX_ENABLE	bootloader/include/uart.h	/^#define AUX_ENABLE /;"	d
+AUX_ENABLE	include/uart.h	/^#define AUX_ENABLE /;"	d
+AUX_IRQ	include/exception.h	/^#define AUX_IRQ /;"	d
+AUX_MU_BAUD	bootloader/include/uart.h	/^#define AUX_MU_BAUD /;"	d
+AUX_MU_BAUD	include/uart.h	/^#define AUX_MU_BAUD /;"	d
+AUX_MU_CNTL	bootloader/include/uart.h	/^#define AUX_MU_CNTL /;"	d
+AUX_MU_CNTL	include/uart.h	/^#define AUX_MU_CNTL /;"	d
+AUX_MU_IER	bootloader/include/uart.h	/^#define AUX_MU_IER /;"	d
+AUX_MU_IER	include/uart.h	/^#define AUX_MU_IER /;"	d
+AUX_MU_IIR	bootloader/include/uart.h	/^#define AUX_MU_IIR /;"	d
+AUX_MU_IIR	include/uart.h	/^#define AUX_MU_IIR /;"	d
+AUX_MU_IO	bootloader/include/uart.h	/^#define AUX_MU_IO /;"	d
+AUX_MU_IO	include/uart.h	/^#define AUX_MU_IO /;"	d
+AUX_MU_LCR	bootloader/include/uart.h	/^#define AUX_MU_LCR /;"	d
+AUX_MU_LCR	include/uart.h	/^#define AUX_MU_LCR /;"	d
+AUX_MU_LSR	bootloader/include/uart.h	/^#define AUX_MU_LSR /;"	d
+AUX_MU_LSR	include/uart.h	/^#define AUX_MU_LSR /;"	d
+AUX_MU_MCR	bootloader/include/uart.h	/^#define AUX_MU_MCR /;"	d
+AUX_MU_MCR	include/uart.h	/^#define AUX_MU_MCR /;"	d
+AUX_MU_MSR	bootloader/include/uart.h	/^#define AUX_MU_MSR /;"	d
+AUX_MU_MSR	include/uart.h	/^#define AUX_MU_MSR /;"	d
+AUX_MU_SCRATCH	bootloader/include/uart.h	/^#define AUX_MU_SCRATCH /;"	d
+AUX_MU_SCRATCH	include/uart.h	/^#define AUX_MU_SCRATCH /;"	d
+AUX_MU_STAT	bootloader/include/uart.h	/^#define AUX_MU_STAT /;"	d
+AUX_MU_STAT	include/uart.h	/^#define AUX_MU_STAT /;"	d
+AddNewTimerEvents	src/timer.c	/^void AddNewTimerEvents(timer_event_t *timerEvent)$/;"	f
+BACK_SPACE	bootloader/include/shell.h	/^    BACK_SPACE = 8,$/;"	e	enum:SPECIAL_CHARACTER
+BACK_SPACE	include/shell.h	/^    BACK_SPACE = '\\177',$/;"	e	enum:SPECIAL_CHARACTER
 BUILD_DIR	Makefile	/^BUILD_DIR = build$/;"	m
-CC	Makefile	/^CC = $(ARMGNU)-gcc$/;"	m
-CC	initramfs/Makefile	/^CC = $(ARMGNU)-gcc$/;"	m
-CFLAGS	Makefile	/^CFLAGS = -Wall -O3 -g$/;"	m
-CFLAGS	initramfs/Makefile	/^CFLAGS = -Wall -O3$/;"	m
-CPIO	Makefile	/^CPIO = initramfs.cpio$/;"	m
-CPPFLAGS	Makefile	/^CPPFLAGS = -Iinclude -MMD -MP -static$/;"	m
-CPPFLAGS	initramfs/Makefile	/^CPPFLAGS = -Iinclude -MMD -MP -static$/;"	m
+BUILD_DIR	bootloader/Makefile	/^BUILD_DIR = build$/;"	m
+CARRIAGE_RETURN	bootloader/include/shell.h	/^    CARRIAGE_RETURN = 13,$/;"	e	enum:SPECIAL_CHARACTER
+CARRIAGE_RETURN	include/shell.h	/^    CARRIAGE_RETURN = 13,$/;"	e	enum:SPECIAL_CHARACTER
+COMMAND_H	bootloader/include/command.h	/^#define COMMAND_H$/;"	d
+COMMAND_H	include/command.h	/^#define COMMAND_H$/;"	d
+COPS	Makefile	/^COPS = -Wall -nostdlib -nostartfiles -ffreestanding -Iinclude #-D__DEBUG$/;"	m
+COPS	bootloader/Makefile	/^COPS = -Wall -nostdlib -nostartfiles -ffreestanding -Iinclude$/;"	m
+CORE0_IRQ_SRC	include/exception.h	/^#define CORE0_IRQ_SRC /;"	d
+CORE0_TIMER_IRQ_CTRL	src/timer.S	/^#define CORE0_TIMER_IRQ_CTRL 0x40000040$/;"	d
+CPACR_EL1_FPEN	include/sysregs.h	/^#define CPACR_EL1_FPEN /;"	d
+CPACR_EL1_VALUE	include/sysregs.h	/^#define CPACR_EL1_VALUE /;"	d
+CPIO_ALIGNMENT	include/cpio.h	/^#define CPIO_ALIGNMENT /;"	d
+CPIO_FOOTER_MAGIC	include/cpio.h	/^#define CPIO_FOOTER_MAGIC /;"	d
+CPIO_HEADER_MAGIC	include/cpio.h	/^#define CPIO_HEADER_MAGIC /;"	d
 C_FILES	Makefile	/^C_FILES = $(wildcard $(SRC_DIR)\/*.c)$/;"	m
-DTB	Makefile	/^DTB = bcm2710-rpi-3-b-plus.dtb$/;"	m
-END_TAG	include/peripherals/mailbox.h	35;"	d
-END_TAG	include/peripherals/mini_uart.h	28;"	d
-END_TAG	include/peripherals/tag.h	9;"	d
-ENV_HDR	Makefile	/^ENV_HDR = -initrd initramfs.cpio -dtb bcm2710-rpi-3-b-plus.dtb$/;"	m
-FDT_BEGIN_NODE	src/dtb.c	6;"	d	file:
-FDT_END	src/dtb.c	14;"	d	file:
-FDT_END_NODE	src/dtb.c	8;"	d	file:
-FDT_NOP	src/dtb.c	12;"	d	file:
-FDT_PROP	src/dtb.c	10;"	d	file:
-GET_ARM_MEMORY	include/peripherals/mailbox.h	30;"	d
-GET_BOARD_REVISION	include/peripherals/mailbox.h	29;"	d
-GET_BOARD_REVISION	include/peripherals/mini_uart.h	23;"	d
-GET_BOARD_REVISION	include/peripherals/tag.h	4;"	d
-GPCLR0	include/peripherals/gpio.h	8;"	d
-GPFSEL1	include/peripherals/gpio.h	6;"	d
-GPPUD	include/peripherals/gpio.h	9;"	d
-GPPUDCLK0	include/peripherals/gpio.h	10;"	d
-GPSET0	include/peripherals/gpio.h	7;"	d
-LD	Makefile	/^LD = $(ARMGNU)-ld$/;"	m
-LD	initramfs/Makefile	/^LD = $(ARMGNU)-ld$/;"	m
-LDFLAGS	Makefile	/^LDFLAGS = -nostdlib $/;"	m
-LDFLAGS	initramfs/Makefile	/^LDFLAGS = -nostdlib $/;"	m
-MAX_CMD	src/main.c	7;"	d	file:
-MAX_CMD	src/shell.c	5;"	d	file:
-MBOX_CH_BTNS	include/peripherals/mailbox.h	24;"	d
-MBOX_CH_COUNT	include/peripherals/mailbox.h	26;"	d
-MBOX_CH_FB	include/peripherals/mailbox.h	20;"	d
-MBOX_CH_LEDS	include/peripherals/mailbox.h	23;"	d
-MBOX_CH_POWER	include/peripherals/mailbox.h	19;"	d
-MBOX_CH_PROP	include/peripherals/mailbox.h	27;"	d
-MBOX_CH_TOUCH	include/peripherals/mailbox.h	25;"	d
-MBOX_CH_VCHIQ	include/peripherals/mailbox.h	22;"	d
-MBOX_CH_VUART	include/peripherals/mailbox.h	21;"	d
-MBOX_CONFIG	include/peripherals/mailbox.h	10;"	d
-MBOX_EMPTY	include/peripherals/mailbox.h	14;"	d
-MBOX_FULL	include/peripherals/mailbox.h	13;"	d
-MBOX_POLL	include/peripherals/mailbox.h	7;"	d
-MBOX_READ	include/peripherals/mailbox.h	6;"	d
-MBOX_REQUEST	include/peripherals/mailbox.h	16;"	d
-MBOX_RESPONSE	include/peripherals/mailbox.h	12;"	d
-MBOX_SENDER	include/peripherals/mailbox.h	8;"	d
-MBOX_STATUS	include/peripherals/mailbox.h	9;"	d
-MBOX_TAG_GETSERIAL	include/peripherals/mailbox.h	38;"	d
-MBOX_TAG_LAST	include/peripherals/mailbox.h	39;"	d
-MBOX_WRITE	include/peripherals/mailbox.h	11;"	d
-MMIO_BASE	include/peripherals/mailbox.h	4;"	d
-OBJCOPY	Makefile	/^OBJCOPY = $(ARMGNU)-objcopy$/;"	m
-OBJCOPY	initramfs/Makefile	/^OBJCOPY = $(ARMGNU)-objcopy$/;"	m
-OBJ_FILES	Makefile	/^OBJ_FILES = $(C_FILES:$(SRC_DIR)\/%.c=$(BUILD_DIR)\/%.o)$/;"	m
-PBASE	include/peripherals/gpio.h	4;"	d
-PBASE	include/peripherals/mini_uart.h	4;"	d
-PM_PASSWORD	include/peripherals/mini_uart.h	19;"	d
-PM_RSTC	include/peripherals/mini_uart.h	20;"	d
-PM_WDOG	include/peripherals/mini_uart.h	21;"	d
-REQUEST_CODE	include/peripherals/mailbox.h	31;"	d
-REQUEST_CODE	include/peripherals/mini_uart.h	24;"	d
-REQUEST_CODE	include/peripherals/tag.h	5;"	d
-REQUEST_FAILED	include/peripherals/mailbox.h	33;"	d
-REQUEST_FAILED	include/peripherals/mini_uart.h	26;"	d
-REQUEST_FAILED	include/peripherals/tag.h	7;"	d
-REQUEST_SUCCEED	include/peripherals/mailbox.h	32;"	d
-REQUEST_SUCCEED	include/peripherals/mini_uart.h	25;"	d
-REQUEST_SUCCEED	include/peripherals/tag.h	6;"	d
+C_FILES	bootloader/Makefile	/^C_FILES = $(wildcard $(SRC_DIR)\/*.c)$/;"	m
+DEP_FILES	Makefile	/^DEP_FILES = $(OBJ_FILES:%.o=%.d)$/;"	m
+DEP_FILES	bootloader/Makefile	/^DEP_FILES = $(OBJ_FILES:%.o=%.d)$/;"	m
+DISABLE_IRQS_1	include/exception.h	/^#define DISABLE_IRQS_1	/;"	d
+ENABLE_IRQS_1	include/exception.h	/^#define ENABLE_IRQS_1 /;"	d
+EOF	include/cpio.h	/^    EOF = 1$/;"	e	enum:cpio_parse_header_result
+ERROR_INVALID_EL0_32	include/entry.h	/^#define ERROR_INVALID_EL0_32 /;"	d
+ERROR_INVALID_EL0_64	include/entry.h	/^#define ERROR_INVALID_EL0_64 /;"	d
+ERROR_INVALID_EL1h	include/entry.h	/^#define ERROR_INVALID_EL1h /;"	d
+ERROR_INVALID_EL1t	include/entry.h	/^#define ERROR_INVALID_EL1t /;"	d
+FIND_BUDDY_PFN	include/mm.h	/^#define FIND_BUDDY_PFN(/;"	d
+FIND_LBUDDY_PFN	include/mm.h	/^#define FIND_LBUDDY_PFN(/;"	d
+FIQ_INVALID_EL0_32	include/entry.h	/^#define FIQ_INVALID_EL0_32 /;"	d
+FIQ_INVALID_EL0_64	include/entry.h	/^#define FIQ_INVALID_EL0_64 /;"	d
+FIQ_INVALID_EL1h	include/entry.h	/^#define FIQ_INVALID_EL1h /;"	d
+FIQ_INVALID_EL1t	include/entry.h	/^#define FIQ_INVALID_EL1t /;"	d
+Free	include/mm.h	/^    Free, $/;"	e	enum:booking_status
+GPCLR0	bootloader/include/gpio.h	/^#define GPCLR0 /;"	d
+GPCLR0	include/gpio.h	/^#define GPCLR0 /;"	d
+GPEDS0	bootloader/include/gpio.h	/^#define GPEDS0 /;"	d
+GPEDS0	include/gpio.h	/^#define GPEDS0 /;"	d
+GPEDS1	bootloader/include/gpio.h	/^#define GPEDS1 /;"	d
+GPEDS1	include/gpio.h	/^#define GPEDS1 /;"	d
+GPFSEL0	bootloader/include/gpio.h	/^#define GPFSEL0 /;"	d
+GPFSEL0	include/gpio.h	/^#define GPFSEL0 /;"	d
+GPFSEL1	bootloader/include/gpio.h	/^#define GPFSEL1 /;"	d
+GPFSEL1	include/gpio.h	/^#define GPFSEL1 /;"	d
+GPFSEL2	bootloader/include/gpio.h	/^#define GPFSEL2 /;"	d
+GPFSEL2	include/gpio.h	/^#define GPFSEL2 /;"	d
+GPFSEL3	bootloader/include/gpio.h	/^#define GPFSEL3 /;"	d
+GPFSEL3	include/gpio.h	/^#define GPFSEL3 /;"	d
+GPFSEL4	bootloader/include/gpio.h	/^#define GPFSEL4 /;"	d
+GPFSEL4	include/gpio.h	/^#define GPFSEL4 /;"	d
+GPFSEL5	bootloader/include/gpio.h	/^#define GPFSEL5 /;"	d
+GPFSEL5	include/gpio.h	/^#define GPFSEL5 /;"	d
+GPHEN0	bootloader/include/gpio.h	/^#define GPHEN0 /;"	d
+GPHEN0	include/gpio.h	/^#define GPHEN0 /;"	d
+GPHEN1	bootloader/include/gpio.h	/^#define GPHEN1 /;"	d
+GPHEN1	include/gpio.h	/^#define GPHEN1 /;"	d
+GPIO_H	bootloader/include/gpio.h	/^#define GPIO_H$/;"	d
+GPIO_H	include/gpio.h	/^#define GPIO_H$/;"	d
+GPLEV0	bootloader/include/gpio.h	/^#define GPLEV0 /;"	d
+GPLEV0	include/gpio.h	/^#define GPLEV0 /;"	d
+GPLEV1	bootloader/include/gpio.h	/^#define GPLEV1 /;"	d
+GPLEV1	include/gpio.h	/^#define GPLEV1 /;"	d
+GPPUD	bootloader/include/gpio.h	/^#define GPPUD /;"	d
+GPPUD	include/gpio.h	/^#define GPPUD /;"	d
+GPPUDCLK0	bootloader/include/gpio.h	/^#define GPPUDCLK0 /;"	d
+GPPUDCLK0	include/gpio.h	/^#define GPPUDCLK0 /;"	d
+GPPUDCLK1	bootloader/include/gpio.h	/^#define GPPUDCLK1 /;"	d
+GPPUDCLK1	include/gpio.h	/^#define GPPUDCLK1 /;"	d
+GPSET0	bootloader/include/gpio.h	/^#define GPSET0 /;"	d
+GPSET0	include/gpio.h	/^#define GPSET0 /;"	d
+GPSET1	bootloader/include/gpio.h	/^#define GPSET1 /;"	d
+GPSET1	include/gpio.h	/^#define GPSET1 /;"	d
+HCR_EL2_VALUE	include/sysregs.h	/^#define HCR_EL2_VALUE	/;"	d
+HCR_RW	include/sysregs.h	/^#define HCR_RW	/;"	d
+INITRAMFS_ADDR	include/cpio.h	/^#define INITRAMFS_ADDR /;"	d
+INIT_LIST_HEAD	include/list.h	/^static inline void INIT_LIST_HEAD(struct list_head *list)$/;"	f
+IRQ_INVALID_EL0_32	include/entry.h	/^#define IRQ_INVALID_EL0_32 /;"	d
+IRQ_INVALID_EL0_64	include/entry.h	/^#define IRQ_INVALID_EL0_64 /;"	d
+IRQ_INVALID_EL1h	include/entry.h	/^#define IRQ_INVALID_EL1h /;"	d
+IRQ_INVALID_EL1t	include/entry.h	/^#define IRQ_INVALID_EL1t /;"	d
+IRQ_PENDING_1	include/exception.h	/^#define IRQ_PENDING_1 /;"	d
+InitalizeNewTimerEvent	src/timer.c	/^void InitalizeNewTimerEvent(timer_event_t *timerEvent, void (*callback)(timer_event_t *), char *args, uint64_t duration, uint64_t registerTime)$/;"	f
+LINE_FEED	bootloader/include/shell.h	/^    LINE_FEED = 10,$/;"	e	enum:SPECIAL_CHARACTER
+LINE_FEED	include/shell.h	/^    LINE_FEED = 10,$/;"	e	enum:SPECIAL_CHARACTER
+LIST_HEAD	include/list.h	/^#define LIST_HEAD(/;"	d
+LIST_HEAD_INIT	include/list.h	/^#define LIST_HEAD_INIT(/;"	d
+LOW_MEMORY	include/mm.h	/^#define LOW_MEMORY /;"	d
+MATH_H	bootloader/include/math.h	/^#define MATH_H$/;"	d
+MATH_H	include/math.h	/^#define MATH_H$/;"	d
+MAX_ALLOCATAED_OBJ_SIZE	include/mm.h	/^#define MAX_ALLOCATAED_OBJ_SIZE /;"	d
+MAX_BUFFER_LEN	bootloader/include/shell.h	/^#define MAX_BUFFER_LEN /;"	d
+MAX_BUFFER_LEN	include/shell.h	/^#define MAX_BUFFER_LEN /;"	d
+MAX_KMALLOC_ODER	include/mm.h	/^#define MAX_KMALLOC_ODER /;"	d
+MAX_OBJ_ALLOCTOR_NUM	include/mm.h	/^#define MAX_OBJ_ALLOCTOR_NUM /;"	d
+MAX_ORDER	include/mm.h	/^#define MAX_ORDER /;"	d
+MAX_ORDER_SIZE	include/mm.h	/^#define MAX_ORDER_SIZE /;"	d
+MIN_ALLOCATAED_OBJ_SIZE	include/mm.h	/^#define MIN_ALLOCATAED_OBJ_SIZE /;"	d
+MIN_KMALLOC_ORDER	include/mm.h	/^#define MIN_KMALLOC_ORDER /;"	d
+MMIO_BASE	bootloader/include/gpio.h	/^#define MMIO_BASE /;"	d
+MMIO_BASE	include/base.h	/^#define MMIO_BASE /;"	d
+NEW_LINE	bootloader/include/shell.h	/^    NEW_LINE = 1001,$/;"	e	enum:SPECIAL_CHARACTER
+NEW_LINE	include/shell.h	/^    NEW_LINE = 1001,$/;"	e	enum:SPECIAL_CHARACTER
+NULL	include/cpio.h	/^#define NULL /;"	d
+NULL	include/types.h	/^#define NULL /;"	d
+OBJ_FILES	Makefile	/^OBJ_FILES = $(C_FILES:$(SRC_DIR)\/%.c=$(BUILD_DIR)\/%_c.o)$/;"	m
+OBJ_FILES	bootloader/Makefile	/^OBJ_FILES = $(C_FILES:$(SRC_DIR)\/%.c=$(BUILD_DIR)\/%_c.o)$/;"	m
+OK	include/cpio.h	/^    OK = 0,$/;"	e	enum:cpio_parse_header_result
+PAGE_FRMAME_NUM	include/mm.h	/^#define PAGE_FRMAME_NUM /;"	d
+PAGE_SHIFT	include/mm.h	/^#define PAGE_SHIFT /;"	d
+PAGE_SIZE	include/mm.h	/^#define PAGE_SIZE /;"	d
+PFN_MASK	include/mm.h	/^#define PFN_MASK /;"	d
+PHY_ADDR_TO_PFN	include/mm.h	/^#define PHY_ADDR_TO_PFN(/;"	d
+PM_PASSWORD	bootloader/include/uart.h	/^#define PM_PASSWORD /;"	d
+PM_PASSWORD	include/uart.h	/^#define PM_PASSWORD /;"	d
+PM_RSTC	bootloader/include/uart.h	/^#define PM_RSTC /;"	d
+PM_RSTC	include/uart.h	/^#define PM_RSTC /;"	d
+PM_WDOG	bootloader/include/uart.h	/^#define PM_WDOG /;"	d
+PM_WDOG	include/uart.h	/^#define PM_WDOG /;"	d
+REGULAR_INPUT	bootloader/include/shell.h	/^    REGULAR_INPUT = 1000,$/;"	e	enum:SPECIAL_CHARACTER
+REGULAR_INPUT	include/shell.h	/^    REGULAR_INPUT = 1000,$/;"	e	enum:SPECIAL_CHARACTER
+SCTLR_D_CACHE_DISABLED	include/sysregs.h	/^#define SCTLR_D_CACHE_DISABLED /;"	d
+SCTLR_EE_LITTLE_ENDIAN	include/sysregs.h	/^#define SCTLR_EE_LITTLE_ENDIAN /;"	d
+SCTLR_EOE_LITTLE_ENDIAN	include/sysregs.h	/^#define SCTLR_EOE_LITTLE_ENDIAN /;"	d
+SCTLR_I_CACHE_DISABLED	include/sysregs.h	/^#define SCTLR_I_CACHE_DISABLED /;"	d
+SCTLR_MMU_DISABLED	include/sysregs.h	/^#define SCTLR_MMU_DISABLED /;"	d
+SCTLR_MMU_ENABLED	include/sysregs.h	/^#define SCTLR_MMU_ENABLED /;"	d
+SCTLR_RESERVED	include/sysregs.h	/^#define SCTLR_RESERVED /;"	d
+SCTLR_VALUE_MMU_DISABLED	include/sysregs.h	/^#define SCTLR_VALUE_MMU_DISABLED	/;"	d
+SHELL_H	bootloader/include/shell.h	/^#define SHELL_H$/;"	d
+SHELL_H	include/shell.h	/^#define SHELL_H$/;"	d
+SPECIAL_CHARACTER	bootloader/include/shell.h	/^enum SPECIAL_CHARACTER$/;"	g
+SPECIAL_CHARACTER	include/shell.h	/^enum SPECIAL_CHARACTER$/;"	g
+SPSR_EL0t	include/sysregs.h	/^#define SPSR_EL0t /;"	d
+SPSR_EL1_VALUE	include/sysregs.h	/^#define SPSR_EL1_VALUE /;"	d
+SPSR_EL1h	include/sysregs.h	/^#define SPSR_EL1h /;"	d
+SPSR_EL1t	include/sysregs.h	/^#define SPSR_EL1t /;"	d
+SPSR_EL2_VALUE	include/sysregs.h	/^#define SPSR_EL2_VALUE /;"	d
+SPSR_EL2h	include/sysregs.h	/^#define SPSR_EL2h /;"	d
+SPSR_EL2t	include/sysregs.h	/^#define SPSR_EL2t /;"	d
+SPSR_MASK_A	include/sysregs.h	/^#define SPSR_MASK_A /;"	d
+SPSR_MASK_ALL	include/sysregs.h	/^#define SPSR_MASK_ALL /;"	d
+SPSR_MASK_D	include/sysregs.h	/^#define SPSR_MASK_D /;"	d
+SPSR_MASK_F	include/sysregs.h	/^#define SPSR_MASK_F /;"	d
+SPSR_MASK_I	include/sysregs.h	/^#define SPSR_MASK_I /;"	d
+SPSR_VALUE	include/sysregs.h	/^#define SPSR_VALUE	/;"	d
 SRC_DIR	Makefile	/^SRC_DIR = src$/;"	m
-TAG_REQUEST_CODE	include/peripherals/mailbox.h	34;"	d
-TAG_REQUEST_CODE	include/peripherals/mini_uart.h	27;"	d
-TAG_REQUEST_CODE	include/peripherals/tag.h	8;"	d
-VIDEOCORE_MBOX	include/peripherals/mailbox.h	5;"	d
-Welcome	src/main.c	/^void Welcome(){$/;"	f
-_CPIO_H	include/cpio.h	2;"	d
-_DTB_H	include/dtb.h	4;"	d
-_MAILBOX_H	include/peripherals/mailbox.h	2;"	d
-_MINI_UART_H	include/mini_uart.h	2;"	d
-_P_GPIO_H	include/peripherals/gpio.h	2;"	d
-_P_MINI_UART	include/peripherals/mini_uart.h	2;"	d
-_SHELL_H	include/shell.h	2;"	d
-_TAG_H	include/peripherals/tag.h	2;"	d
-_UTILS_H	include/utils.h	2;"	d
-_start	initramfs/usr.S	/^_start:$/;"	l
-_start	src/boot.S	/^_start:$/;"	l
-address	src/dtb.c	/^    uint64_t address; $/;"	m	struct:__anon3	file:
-atoi	src/utils.c	/^int atoi(char * c){$/;"	f
-boot_cpuid_phys	src/dtb.c	/^    uint32_t boot_cpuid_phys; $/;"	m	struct:__anon2	file:
-bswap_32	src/dtb.c	/^uint32_t bswap_32(uint32_t num) {$/;"	f
-bswap_64	src/dtb.c	/^uint64_t bswap_64(uint64_t num) {$/;"	f
-buf_clear	src/shell.c	/^void buf_clear(char *buf){$/;"	f
-c_check	src/cpio.c	/^    char	   c_check[8];$/;"	m	struct:__anon1	file:
-c_devmajor	src/cpio.c	/^    char	   c_devmajor[8];$/;"	m	struct:__anon1	file:
-c_devminor	src/cpio.c	/^    char	   c_devminor[8];$/;"	m	struct:__anon1	file:
-c_filesize	src/cpio.c	/^    char	   c_filesize[8];$/;"	m	struct:__anon1	file:
-c_gid	src/cpio.c	/^    char	   c_gid[8];$/;"	m	struct:__anon1	file:
-c_ino	src/cpio.c	/^    char	   c_ino[8];$/;"	m	struct:__anon1	file:
-c_magic	src/cpio.c	/^    char	   c_magic[6];$/;"	m	struct:__anon1	file:
-c_mode	src/cpio.c	/^    char	   c_mode[8];$/;"	m	struct:__anon1	file:
-c_mtime	src/cpio.c	/^    char	   c_mtime[8];$/;"	m	struct:__anon1	file:
-c_namesize	src/cpio.c	/^    char	   c_namesize[8];$/;"	m	struct:__anon1	file:
-c_nlink	src/cpio.c	/^    char	   c_nlink[8];$/;"	m	struct:__anon1	file:
-c_rdevmajor	src/cpio.c	/^    char	   c_rdevmajor[8];$/;"	m	struct:__anon1	file:
-c_rdevminor	src/cpio.c	/^    char	   c_rdevminor[8];$/;"	m	struct:__anon1	file:
-c_uid	src/cpio.c	/^    char	   c_uid[8];$/;"	m	struct:__anon1	file:
-callback_initramfs	src/cpio.c	/^int callback_initramfs(void * addr){$/;"	f
-cancel_reset	src/mini_uart.c	/^void cancel_reset() {$/;"	f
-cat_list	src/cpio.c	/^void cat_list () {$/;"	f
-cmd_task	src/shell.c	/^enum cmd_task {$/;"	g	file:
-cpio_t	src/cpio.c	/^} cpio_t;$/;"	t	typeref:struct:__anon1	file:
-dtb_list	src/dtb.c	/^void dtb_list(void *dtb) {$/;"	f
-exception_entry	src/shell.c	/^void exception_entry() {$/;"	f
-exception_handler	src/boot.S	/^exception_handler:$/;"	l
-exception_vector_table	src/boot.S	/^exception_vector_table:$/;"	l
-exec_prog	src/shell.c	/^void exec_prog(char * addr){$/;"	f
-exp	src/utils.c	/^int exp(int i, int j){$/;"	f
-fdt_header	src/dtb.c	/^} fdt_header;$/;"	t	typeref:struct:__anon2	file:
-fdt_prop	src/dtb.c	/^}fdt_prop;$/;"	t	typeref:struct:__anon4	file:
-fdt_reserve_entry	src/dtb.c	/^} fdt_reserve_entry;$/;"	t	typeref:struct:__anon3	file:
-find_dtb	src/dtb.c	/^int find_dtb(void *dtb, const char* name, int name_len, void (*func)(void*)){$/;"	f
-from_el2_to_el1	src/boot.S	/^from_el2_to_el1:$/;"	l
-get_initramfs	src/cpio.c	/^int get_initramfs(){$/;"	f
-hello	src/shell.c	/^    hello,$/;"	e	enum:cmd_task	file:
-help	src/shell.c	/^    help,$/;"	e	enum:cmd_task	file:
-hex2bin	src/utils.c	/^int hex2bin(char *s, int n){$/;"	f
-initrd_list	src/cpio.c	/^void initrd_list()$/;"	f
-kernel_main	src/main.c	/^void kernel_main(void *dtb)$/;"	f
-last_comp_version	src/dtb.c	/^    uint32_t last_comp_version; $/;"	m	struct:__anon2	file:
-len	src/dtb.c	/^    uint32_t len;$/;"	m	struct:__anon4	file:
-load_prog	src/cpio.c	/^unsigned int * load_prog (void * prog) {$/;"	f
-magic	src/dtb.c	/^    uint32_t magic;$/;"	m	struct:__anon2	file:
-mbox	src/mini_uart.c	/^volatile unsigned int  __attribute__((aligned(16))) mbox[36];$/;"	v
-mbox_call	src/mini_uart.c	/^void mbox_call(unsigned char ch)$/;"	f
-mem	src/cpio.c	/^static void *mem = 0x8000000;$/;"	v	file:
-memcmp	src/mini_uart.c	/^int memcmp(void *s1, void *s2, int n)$/;"	f
-nameoff	src/dtb.c	/^    uint32_t nameoff; $/;"	m	struct:__anon4	file:
-oct2bin	src/utils.c	/^int oct2bin(char *s, int n)$/;"	f
-off_dt_strings	src/dtb.c	/^    uint32_t off_dt_strings; $/;"	m	struct:__anon2	file:
-off_dt_struct	src/dtb.c	/^    uint32_t off_dt_struct; $/;"	m	struct:__anon2	file:
-off_mem_rsvmap	src/dtb.c	/^    uint32_t off_mem_rsvmap; $/;"	m	struct:__anon2	file:
-parse	src/main.c	/^	parse$/;"	e	enum:stat	file:
-parse_cmd	src/shell.c	/^unsigned int parse_cmd(char *cmd, void *dtb){$/;"	f
-print_initramfs	src/cpio.c	/^void print_initramfs(){$/;"	f
-read	src/main.c	/^	read,$/;"	e	enum:stat	file:
-reboot	src/shell.c	/^    reboot$/;"	e	enum:cmd_task	file:
-reset	src/mini_uart.c	/^void reset(int tick) {                 \/\/ reboot after watchdog timer expire$/;"	f
-set	src/mini_uart.c	/^void set(long addr, unsigned int value) {$/;"	f
-set_exception_vector_table	src/boot.S	/^set_exception_vector_table:$/;"	l
-shell_input	src/shell.c	/^void shell_input(char *cmd){$/;"	f
-simple_malloc	src/utils.c	/^void* simple_malloc(void **now, int size) {$/;"	f
-size	src/dtb.c	/^    uint64_t size;$/;"	m	struct:__anon3	file:
-size_dt_strings	src/dtb.c	/^    uint32_t size_dt_strings; $/;"	m	struct:__anon2	file:
-size_dt_struct	src/dtb.c	/^    uint32_t size_dt_struct;$/;"	m	struct:__anon2	file:
-stat	src/main.c	/^enum stat {$/;"	g	file:
-str_comp	src/shell.c	/^int str_comp(char *x, char *y){$/;"	f
-totalsize	src/dtb.c	/^    uint32_t totalsize; $/;"	m	struct:__anon2	file:
-uart_getc	src/mini_uart.c	/^char uart_getc() {$/;"	f
-uart_hex	src/mini_uart.c	/^void uart_hex(unsigned int d) {$/;"	f
-uart_hexdump	src/mini_uart.c	/^void uart_hexdump(unsigned int d) {$/;"	f
-uart_hexlong	src/mini_uart.c	/^void uart_hexlong(unsigned long d) {$/;"	f
-uart_init	src/mini_uart.c	/^void uart_init ( void ) {$/;"	f
-uart_int	src/utils.c	/^void uart_int(int i){$/;"	f
-uart_puts	src/mini_uart.c	/^void uart_puts(char *s) {$/;"	f
-uart_puts_l	src/mini_uart.c	/^void uart_puts_l(char *s, int l) {$/;"	f
-uart_send	src/mini_uart.c	/^void uart_send(char c) {$/;"	f
-version	src/dtb.c	/^    uint32_t version;$/;"	m	struct:__anon2	file:
+SRC_DIR	bootloader/Makefile	/^SRC_DIR = src$/;"	m
+STRING_H	bootloader/include/string.h	/^#define STRING_H$/;"	d
+STRING_H	include/string.h	/^#define STRING_H$/;"	d
+SYNC_INVALID_EL0_32	include/entry.h	/^#define SYNC_INVALID_EL0_32 /;"	d
+SYNC_INVALID_EL0_64	include/entry.h	/^#define SYNC_INVALID_EL0_64 /;"	d
+SYNC_INVALID_EL1h	include/entry.h	/^#define SYNC_INVALID_EL1h /;"	d
+SYNC_INVALID_EL1t	include/entry.h	/^#define SYNC_INVALID_EL1t /;"	d
+S_FRAME_SIZE	include/entry.h	/^#define S_FRAME_SIZE /;"	d
+Serial	bootloader/kernel2Uart.py	/^from serial import Serial$/;"	i
+TIMER_EN	src/timer.S	/^#define TIMER_EN        (1<<0)$/;"	d
+TIMER_INTEN	src/timer.S	/^#define TIMER_INTEN     (1<<1)$/;"	d
+Taken	include/mm.h	/^    Taken$/;"	e	enum:booking_status
+UART_H	bootloader/include/uart.h	/^#define UART_H$/;"	d
+UART_H	include/uart.h	/^#define UART_H$/;"	d
+UART_READ_BUFFER	src/uart.c	/^char UART_READ_BUFFER[MAX_BUFFER_LEN], UART_TRANSMIT_BUFFER[MAX_BUFFER_LEN];$/;"	v
+UART_TRANSMIT_BUFFER	src/uart.c	/^char UART_READ_BUFFER[MAX_BUFFER_LEN], UART_TRANSMIT_BUFFER[MAX_BUFFER_LEN];$/;"	v
+UNKNOWN	bootloader/include/shell.h	/^    UNKNOWN = -1,$/;"	e	enum:SPECIAL_CHARACTER
+UNKNOWN	include/shell.h	/^    UNKNOWN = -1,$/;"	e	enum:SPECIAL_CHARACTER
+UpdateTimerEvents	src/timer.c	/^void UpdateTimerEvents(uint64_t system_time)$/;"	f
+_BASE_H	include/base.h	/^#define	_BASE_H$/;"	d
+_BOOT_H	include/utils.h	/^#define	_BOOT_H$/;"	d
+_ENTRY_H	include/entry.h	/^#define _ENTRY_H$/;"	d
+_EXCE_H	include/exception.h	/^#define	_EXCE_H$/;"	d
+_KERNEL_TYPES_H	include/types.h	/^#define _KERNEL_TYPES_H$/;"	d
+_LIB_CPIO_H_	include/cpio.h	/^#define _LIB_CPIO_H_$/;"	d
+_LIST_H	include/list.h	/^#define _LIST_H$/;"	d
+_MM_H	include/mm.h	/^#define _MM_H$/;"	d
+_SYSREGS_H	include/sysregs.h	/^#define _SYSREGS_H$/;"	d
+_TIMER_H	include/timer.h	/^#define	_TIMER_H$/;"	d
+__TFP_PRINTF__	bootloader/include/printf.h	/^#define __TFP_PRINTF__$/;"	d
+__TFP_PRINTF__	include/printf.h	/^#define __TFP_PRINTF__$/;"	d
+__init_kmalloc	src/mm.c	/^void __init_kmalloc()$/;"	f
+__init_obj_alloc	src/mm.c	/^void __init_obj_alloc(obj_allocator_t *obj_allocator_p, int objsize)$/;"	f
+__init_obj_page	src/mm.c	/^void __init_obj_page(page_t *page_p) $/;"	f
+__list_add	include/list.h	/^static inline void __list_add(struct list_head *new,$/;"	f
+__list_del	include/list.h	/^static inline void __list_del(struct list_head * prev, struct list_head * next)$/;"	f
+_start	bootloader/src/start.S	/^_start:$/;"	l
+_start	rootfs/test_svc.S	/^_start:$/;"	l
+_start	src/start.S	/^_start:$/;"	l
+a2d	bootloader/src/printf.c	/^static int a2d(char ch)$/;"	f	file:
+a2d	src/printf.c	/^static int a2d(char ch)$/;"	f	file:
+a2i	bootloader/src/printf.c	/^static char a2i(char ch, char** src,int base,int* nump)$/;"	f	file:
+a2i	src/printf.c	/^static char a2i(char ch, char** src,int base,int* nump)$/;"	f	file:
+add_timer	src/timer.c	/^void add_timer(void (*callback)(timer_event_t *), char *args, uint64_t duration)$/;"	f
+align_up	src/cpio.c	/^static unsigned long align_up(unsigned long n, unsigned long align)$/;"	f	file:
+argparse	bootloader/kernel2Uart.py	/^import argparse$/;"	i
+args	bootloader/kernel2Uart.py	/^args = parser.parse_args()$/;"	v
+args	include/timer.h	/^    char args[30]; \/\/ input message in requirement$/;"	m	struct:timer_event
+atoi	bootloader/src/string.c	/^int atoi (const char * str) {$/;"	f
+atoi	src/string.c	/^int atoi (const char * str) {$/;"	f
+booking_status	include/mm.h	/^enum booking_status {$/;"	g
+bookkeep	src/mm.c	/^page_t bookkeep[PAGE_FRMAME_NUM];$/;"	v
+buddy_block_alloc	src/mm.c	/^struct page *buddy_block_alloc(int order) $/;"	f
+buddy_block_free	src/mm.c	/^void buddy_block_free(struct page* block) $/;"	f
+c_check	include/cpio.h	/^    char c_check[8];      \/* Checksum. *\/$/;"	m	struct:cpio_header
+c_devmajor	include/cpio.h	/^    char c_devmajor[8];   \/* Major dev number. *\/$/;"	m	struct:cpio_header
+c_devminor	include/cpio.h	/^    char c_devminor[8];   \/* Minor dev number. *\/$/;"	m	struct:cpio_header
+c_filesize	include/cpio.h	/^    char c_filesize[8];   \/* File size. *\/$/;"	m	struct:cpio_header
+c_gid	include/cpio.h	/^    char c_gid[8];        \/* Group ID. *\/$/;"	m	struct:cpio_header
+c_ino	include/cpio.h	/^    char c_ino[8];        \/* "i-node" number. *\/$/;"	m	struct:cpio_header
+c_magic	include/cpio.h	/^    char c_magic[6];      \/* Magic header '070701'. *\/$/;"	m	struct:cpio_header
+c_mode	include/cpio.h	/^    char c_mode[8];       \/* The mode specifies	both the regular permissions and the file type. *\/$/;"	m	struct:cpio_header
+c_mtime	include/cpio.h	/^    char c_mtime[8];      \/* Modification time. *\/$/;"	m	struct:cpio_header
+c_namesize	include/cpio.h	/^    char c_namesize[8];   \/* Length of filename in bytes. *\/$/;"	m	struct:cpio_header
+c_nlink	include/cpio.h	/^    char c_nlink[8];      \/* Number of hard links. *\/$/;"	m	struct:cpio_header
+c_rdevmajor	include/cpio.h	/^    char c_rdevmajor[8];$/;"	m	struct:cpio_header
+c_rdevminor	include/cpio.h	/^    char c_rdevminor[8];$/;"	m	struct:cpio_header
+c_uid	include/cpio.h	/^    char c_uid[8];        \/* User ID. *\/$/;"	m	struct:cpio_header
+callback	include/timer.h	/^    void (*callback)(struct timer_event *);$/;"	m	struct:timer_event
+clear_bss	src/start.S	/^clear_bss:$/;"	l
+clear_loop	src/start.S	/^clear_loop:  $/;"	l
+command_controller	bootloader/src/shell.c	/^void command_controller ( enum SPECIAL_CHARACTER input_parse, char c, char buffer[], int * counter )$/;"	f
+command_controller	src/shell.c	/^void command_controller ( enum SPECIAL_CHARACTER input_parse, char c, char buffer[], int * counter )$/;"	f
+command_cpio_ls	src/command.c	/^void command_cpio_ls(void *initramfs_addr) {$/;"	f
+command_cpio_svc	src/command.c	/^void command_cpio_svc() $/;"	f
+command_current_el	src/command.c	/^void command_current_el()$/;"	f
+command_getCpioFile	src/command.c	/^void command_getCpioFile(void *initramfs_addr, char *buf)$/;"	f
+command_hello	bootloader/src/command.c	/^void command_hello ()$/;"	f
+command_hello	src/command.c	/^void command_hello ()$/;"	f
+command_help	bootloader/src/command.c	/^void command_help ()$/;"	f
+command_help	src/command.c	/^void command_help ()$/;"	f
+command_loadkernel	bootloader/src/command.c	/^void command_loadkernel() $/;"	f
+command_not_found	bootloader/src/command.c	/^void command_not_found (char * s) $/;"	f
+command_not_found	src/command.c	/^void command_not_found (char * s) $/;"	f
+command_reboot	bootloader/src/command.c	/^void command_reboot ()$/;"	f
+command_reboot	src/command.c	/^void command_reboot ()$/;"	f
+command_timestamp	bootloader/src/command.c	/^void command_timestamp ()$/;"	f
+command_timestamp	src/command.c	/^void command_timestamp ()$/;"	f
+commnad_coreTimerOff	src/command.c	/^void commnad_coreTimerOff()$/;"	f
+commnad_coreTimerOn	src/command.c	/^void commnad_coreTimerOn()$/;"	f
+coomand_setTimeout	src/command.c	/^void coomand_setTimeout(char *buf)$/;"	f
+core_timer_disable	src/timer.S	/^core_timer_disable:$/;"	l
+core_timer_enable	src/timer.S	/^core_timer_enable:$/;"	l
+core_timer_handler	src/timer.S	/^core_timer_handler:$/;"	l
+cpio_get_file	src/cpio.c	/^void *cpio_get_file(void *archive, const char *name, unsigned long *size)$/;"	f
+cpio_header	include/cpio.h	/^struct cpio_header {$/;"	s
+cpio_info	include/cpio.h	/^struct cpio_info {$/;"	s
+cpio_ls	src/cpio.c	/^void cpio_ls(void *archive) {$/;"	f
+cpio_parse_header	src/cpio.c	/^int cpio_parse_header(struct cpio_header *archive,$/;"	f
+cpio_parse_header_result	include/cpio.h	/^enum cpio_parse_header_result$/;"	g
+cpio_strncmp	src/cpio.c	/^static int cpio_strncmp(const char *a, const char *b, unsigned long n)$/;"	f	file:
+curr_page	include/mm.h	/^    struct page *curr_page;$/;"	m	struct:object_allocator	typeref:struct:object_allocator::page
+disable_interrupt	src/entry.S	/^disable_interrupt:$/;"	l
+disable_irq	src/entry.S	/^disable_irq:$/;"	l
+disable_irq_persist	src/entry.S	/^disable_irq_persist:$/;"	l
+disable_uart_read_interrupt	src/uart.c	/^void disable_uart_read_interrupt()$/;"	f
+disable_uart_transmit_interrupt	src/uart.c	/^void disable_uart_transmit_interrupt()$/;"	f
+dumpTimerEvent	src/timer.c	/^void dumpTimerEvent(timer_event_t *timerEvent)$/;"	f
+dump_buddy	src/mm.c	/^void dump_buddy()$/;"	f
+dump_obj_alloc	src/mm.c	/^void dump_obj_alloc(obj_allocator_t *obj_allocator_p)$/;"	f
+dumpyTimerEventList	src/timer.c	/^void dumpyTimerEventList()$/;"	f
+duration	include/timer.h	/^    uint64_t duration, remainingTime;$/;"	m	struct:timer_event
+el1_entry	src/start.S	/^el1_entry:$/;"	l
+empty	include/mm.h	/^    struct list_head empty;$/;"	m	struct:object_allocator	typeref:struct:object_allocator::list_head
+enable_interrupt	src/entry.S	/^enable_interrupt:$/;"	l
+enable_irq	src/entry.S	/^enable_irq:$/;"	l
+enable_irq_persist	src/entry.S	/^enable_irq_persist:$/;"	l
+enable_uart_interrupt	src/uart.c	/^void enable_uart_interrupt()$/;"	f
+enable_uart_read_interrupt	src/uart.c	/^void enable_uart_read_interrupt()$/;"	f
+enable_uart_transmit_interrupt	src/uart.c	/^void enable_uart_transmit_interrupt()$/;"	f
+entry_error_messages	src/exception.c	/^const char *entry_error_messages[] = {$/;"	v
+err_hang	src/entry.S	/^err_hang: b err_hang/;"	l
+error_invalid_el0_32	src/entry.S	/^error_invalid_el0_32:$/;"	l
+error_invalid_el0_64	src/entry.S	/^error_invalid_el0_64:$/;"	l
+error_invalid_el1h	src/entry.S	/^error_invalid_el1h:$/;"	l
+error_invalid_el1t	src/entry.S	/^error_invalid_el1t:$/;"	l
+exception_vector_table	src/entry.S	/^exception_vector_table:$/;"	l
+file_count	include/cpio.h	/^    unsigned int file_count;$/;"	m	struct:cpio_info
+fiq_invalid_el0_32	src/entry.S	/^fiq_invalid_el0_32:$/;"	l
+fiq_invalid_el0_64	src/entry.S	/^fiq_invalid_el0_64:$/;"	l
+fiq_invalid_el1h	src/entry.S	/^fiq_invalid_el1h:$/;"	l
+fiq_invalid_el1t	src/entry.S	/^fiq_invalid_el1t:$/;"	l
+free	include/mm.h	/^    struct list_head *free; $/;"	m	struct:page	typeref:struct:page::list_head
+free_area	src/mm.c	/^free_area_t free_area[MAX_ORDER + 1];$/;"	v
+free_area_init	src/mm.c	/^void free_area_init()$/;"	f
+free_area_struct	include/mm.h	/^typedef struct free_area_struct {$/;"	s
+free_area_t	include/mm.h	/^} free_area_t;$/;"	t	typeref:struct:free_area_struct
+freelist	include/mm.h	/^    struct list_head freelist;    $/;"	m	struct:free_area_struct	typeref:struct:free_area_struct::list_head
+ftoa	bootloader/src/string.c	/^void ftoa(float n, char* res, int afterpoint) $/;"	f
+ftoa	src/string.c	/^void ftoa(float n, char* res, int afterpoint) $/;"	f
+full	include/mm.h	/^    struct list_head full;$/;"	m	struct:object_allocator	typeref:struct:object_allocator::list_head
+get_el	src/utils.S	/^get_el:$/;"	l
+get_system_time	src/timer.c	/^uint64_t get_system_time()$/;"	f
+i2a	bootloader/src/printf.c	/^static void i2a (int num, char * bf)$/;"	f	file:
+i2a	src/printf.c	/^static void i2a (int num, char * bf)$/;"	f	file:
+init_logo	bootloader/src/main.c	/^char * init_logo = "\\n\\$/;"	v
+init_printf	bootloader/src/printf.c	/^void init_printf(void* putp,void (*putf) (void*,char))$/;"	f
+init_printf	src/printf.c	/^void init_printf(void* putp,void (*putf) (void*,char))$/;"	f
+input_buffer_overflow_message	bootloader/src/command.c	/^void input_buffer_overflow_message ( char cmd[] )$/;"	f
+input_buffer_overflow_message	src/command.c	/^void input_buffer_overflow_message ( char cmd[] )$/;"	f
+int16_t	include/types.h	/^typedef signed short int int16_t;$/;"	t
+int32_t	include/types.h	/^typedef signed int int32_t;$/;"	t
+int64_t	include/types.h	/^typedef signed long int int64_t;$/;"	t
+int8_t	include/types.h	/^typedef signed char int8_t;$/;"	t
+irq_exc_handler	src/entry.S	/^irq_exc_handler:$/;"	l
+irq_exc_router	src/exception.c	/^void irq_exc_router()$/;"	f
+irq_invalid_el0_32	src/entry.S	/^irq_invalid_el0_32:$/;"	l
+irq_invalid_el0_64	src/entry.S	/^irq_invalid_el0_64:$/;"	l
+irq_invalid_el1t	src/entry.S	/^irq_invalid_el1t:$/;"	l
+isTimerMultiplexingEventIRQ	src/timer.c	/^int isTimerMultiplexingEventIRQ = 0; \/\/ used for irq routing in exception.c$/;"	v
+itoa	bootloader/src/string.c	/^void itoa (int x, char str[], int d) $/;"	f
+itoa	src/string.c	/^void itoa (int x, char str[], int d) $/;"	f
+kernel_raw	bootloader/kernel2Uart.py	/^        kernel_raw = fd.read()$/;"	v
+kfree	src/mm.c	/^void kfree(void *addr) $/;"	f
+kmalloc	src/mm.c	/^void *kmalloc(int size)$/;"	f
+length	bootloader/kernel2Uart.py	/^        length = len(kernel_raw)$/;"	v
+li2a	bootloader/src/printf.c	/^static void li2a (long num, char * bf)$/;"	f	file:
+li2a	src/printf.c	/^static void li2a (long num, char * bf)$/;"	f	file:
+list	include/mm.h	/^    struct list_head list;$/;"	m	struct:page	typeref:struct:page::list_head
+list	include/timer.h	/^    struct list_head list;$/;"	m	struct:timer_event	typeref:struct:timer_event::list_head
+list_add	include/list.h	/^static inline void list_add(struct list_head *new, struct list_head *head)$/;"	f
+list_add_tail	include/list.h	/^static inline void list_add_tail(struct list_head *new, struct list_head *head)$/;"	f
+list_del	include/list.h	/^static inline void list_del(struct list_head *entry)$/;"	f
+list_empty	include/list.h	/^static inline int list_empty(const struct list_head *head)$/;"	f
+list_for_each	include/list.h	/^#define list_for_each(/;"	d
+list_head	include/list.h	/^struct list_head {$/;"	s
+main	bootloader/src/main.c	/^int main()$/;"	f
+main	src/main.c	/^int main()$/;"	f
+master	src/start.S	/^master:  $/;"	l
+max_path_sz	include/cpio.h	/^    unsigned int max_path_sz;$/;"	m	struct:cpio_info
+mm_init	src/mm.c	/^void mm_init()$/;"	f
+next	include/list.h	/^	struct list_head *next, *prev;$/;"	m	struct:list_head	typeref:struct:list_head::list_head
+notValid	include/cpio.h	/^    notValid = -1,$/;"	e	enum:cpio_parse_header_result
+nr_free	include/mm.h	/^    int nr_free;$/;"	m	struct:free_area_struct
+obj_alloc	include/mm.h	/^    struct object_allocator *obj_alloc; $/;"	m	struct:page	typeref:struct:page::object_allocator
+obj_alloc_pool	src/mm.c	/^obj_allocator_t obj_alloc_pool[MAX_OBJ_ALLOCTOR_NUM];$/;"	v
+obj_allocate	src/mm.c	/^void *obj_allocate(int token) {$/;"	f
+obj_allocator_t	include/mm.h	/^} obj_allocator_t;$/;"	t	typeref:struct:object_allocator
+obj_free	src/mm.c	/^void obj_free(void *obj_addr) {$/;"	f
+obj_per_page	include/mm.h	/^    int obj_per_page;   $/;"	m	struct:object_allocator
+obj_used	include/mm.h	/^    int obj_used;      $/;"	m	struct:object_allocator
+obj_used	include/mm.h	/^    int obj_used;   $/;"	m	struct:page
+object_allocator	include/mm.h	/^typedef struct object_allocator {$/;"	s
+objsize	include/mm.h	/^    int objsize;        $/;"	m	struct:object_allocator
+order	include/mm.h	/^    int order;$/;"	m	struct:page
+page	include/mm.h	/^typedef struct page {$/;"	s
+page_init	src/mm.c	/^void page_init() $/;"	f
+page_t	include/mm.h	/^} page_t;$/;"	t	typeref:struct:page
+page_used	include/mm.h	/^    int page_used;  $/;"	m	struct:object_allocator
+parse	bootloader/src/shell.c	/^enum SPECIAL_CHARACTER parse ( char c )$/;"	f
+parse	src/shell.c	/^enum SPECIAL_CHARACTER parse ( char c )$/;"	f
+parse_hex_str	src/cpio.c	/^static unsigned long parse_hex_str(char *s, unsigned int max_len)$/;"	f	file:
+parser	bootloader/kernel2Uart.py	/^parser = argparse.ArgumentParser(description='NCTU.OSDI.Lab course')$/;"	v
+partial	include/mm.h	/^    struct list_head partial;$/;"	m	struct:object_allocator	typeref:struct:object_allocator::list_head
+pfn	include/mm.h	/^    int pfn; \/\/ page frame number$/;"	m	struct:page
+phy_addr	include/mm.h	/^    uint64_t phy_addr;$/;"	m	struct:page
+pop_block_from_free_area	src/mm.c	/^void pop_block_from_free_area(page_t *poped_block, free_area_t *fa) {$/;"	f
+pow	bootloader/src/math.c	/^int pow(int base, int exponent)$/;"	f
+pow	src/math.c	/^int pow(int base, int exponent)$/;"	f
+prev	include/list.h	/^	struct list_head *next, *prev;$/;"	m	struct:list_head	typeref:struct:list_head::
+prevUpdatedTime	include/timer.h	/^    uint64_t registerTime, prevUpdatedTime;$/;"	m	struct:timer_event
+print_pstate_interrupt_mask_bits	src/exception.c	/^void print_pstate_interrupt_mask_bits()$/;"	f
+print_timeoutEventInfo	src/timer.c	/^void print_timeoutEventInfo(timer_event_t *timeout_event)$/;"	f
+print_timestamp	src/exception.c	/^void print_timestamp()$/;"	f
+printf	bootloader/include/printf.h	/^#define printf /;"	d
+printf	include/printf.h	/^#define printf /;"	d
+proc_hang	src/start.S	/^proc_hang:  $/;"	l
+pseudo_main	src/start.S	/^pseudo_main:  $/;"	l
+push_block_to_free_area	src/mm.c	/^void push_block_to_free_area(page_t *pushed_block, free_area_t *fa, int order) $/;"	f
+putc	bootloader/src/uart.c	/^void putc ( void* p, char c)$/;"	f
+putc	src/uart.c	/^void putc ( void* p, char c)$/;"	f
+putcf	bootloader/src/printf.c	/^typedef void (*putcf) (void*,char);$/;"	t	file:
+putcf	src/printf.c	/^typedef void (*putcf) (void*,char);$/;"	t	file:
+putchw	bootloader/src/printf.c	/^static void putchw(void* putp,putcf putf,int n, char z, char* bf)$/;"	f	file:
+putchw	src/printf.c	/^static void putchw(void* putp,putcf putf,int n, char z, char* bf)$/;"	f	file:
+putcp	bootloader/src/printf.c	/^static void putcp(void* p,char c)$/;"	f	file:
+putcp	src/printf.c	/^static void putcp(void* p,char c)$/;"	f	file:
+read_transmit_asynchronous_procoessing	src/shell.c	/^char read_transmit_asynchronous_procoessing(char buffer[], int * buffer_counter)$/;"	f
+registerTime	include/timer.h	/^    uint64_t registerTime, prevUpdatedTime;$/;"	m	struct:timer_event
+register_obj_allocator	src/mm.c	/^int register_obj_allocator(int objsize) $/;"	f
+remainingTime	include/timer.h	/^    uint64_t duration, remainingTime;$/;"	m	struct:timer_event
+reverse	bootloader/src/string.c	/^void reverse ( char * s )$/;"	f
+reverse	src/string.c	/^void reverse ( char * s )$/;"	f
+setNextTimerEventInterrupt	src/timer.c	/^void setNextTimerEventInterrupt()$/;"	f
+shell_start	bootloader/src/shell.c	/^void shell_start () $/;"	f
+shell_start	src/shell.c	/^void shell_start () $/;"	f
+show_invalid_entry_message	src/exception.c	/^void show_invalid_entry_message(int type, unsigned long esr, unsigned long address)$/;"	f
+size_t	include/types.h	/^typedef unsigned int size_t;$/;"	t
+sprintf	bootloader/include/printf.h	/^#define sprintf /;"	d
+sprintf	include/printf.h	/^#define sprintf /;"	d
+stdout_putf	bootloader/src/printf.c	/^static putcf stdout_putf;$/;"	v	file:
+stdout_putf	src/printf.c	/^static putcf stdout_putf;$/;"	v	file:
+stdout_putp	bootloader/src/printf.c	/^static void* stdout_putp;$/;"	v	file:
+stdout_putp	src/printf.c	/^static void* stdout_putp;$/;"	v	file:
+strcmp	bootloader/src/string.c	/^int strcmp ( char * s1, char * s2 )$/;"	f
+strcmp	src/string.c	/^int strcmp ( char * s1, char * s2 )$/;"	f
+strlen	bootloader/src/string.c	/^int strlen ( char * s )$/;"	f
+strlen	src/string.c	/^int strlen ( char * s )$/;"	f
+strncmp	src/string.c	/^int strncmp(const char *a, const char *b, unsigned long n)$/;"	f
+strset	bootloader/src/string.c	/^void strset (char * s1, int c, int size )$/;"	f
+strset	src/string.c	/^void strset (char * s1, int c, int size )$/;"	f
+sync_exc_handler	src/entry.S	/^sync_exc_handler:$/;"	l
+sync_exc_router	src/exception.c	/^void sync_exc_router(unsigned long spsr, unsigned long elr, unsigned long esr)$/;"	f
+sync_invalid_el0_32	src/entry.S	/^sync_invalid_el0_32:$/;"	l
+sync_invalid_el0_64	src/entry.S	/^sync_invalid_el0_64:$/;"	l
+sync_invalid_el1h	src/entry.S	/^sync_invalid_el1h:$/;"	l
+sync_invalid_el1t	src/entry.S	/^sync_invalid_el1t:$/;"	l
+sync_svc_handler	src/exception.c	/^void sync_svc_handler(unsigned long spsr, unsigned long elr, unsigned long esr)$/;"	f
+test	src/timer.c	/^void test() {$/;"	f
+tfp_format	bootloader/src/printf.c	/^void tfp_format(void* putp,putcf putf,char *fmt, va_list va)$/;"	f
+tfp_format	src/printf.c	/^void tfp_format(void* putp,putcf putf,char *fmt, va_list va)$/;"	f
+tfp_printf	bootloader/src/printf.c	/^void tfp_printf(char *fmt, ...)$/;"	f
+tfp_printf	src/printf.c	/^void tfp_printf(char *fmt, ...)$/;"	f
+tfp_sprintf	bootloader/src/printf.c	/^void tfp_sprintf(char* s,char *fmt, ...)$/;"	f
+tfp_sprintf	src/printf.c	/^void tfp_sprintf(char* s,char *fmt, ...)$/;"	f
+timerEvents_irq_handler	src/timer.c	/^void timerEvents_irq_handler() {$/;"	f
+timer_event	include/timer.h	/^typedef struct timer_event {$/;"	s
+timer_event_t	include/timer.h	/^} timer_event_t;$/;"	t	typeref:struct:timer_event
+timer_list	src/timer.c	/^struct list_head timer_list;$/;"	v	typeref:struct:list_head
+timer_list_init	src/timer.c	/^void timer_list_init()$/;"	f
+uart_getc	bootloader/src/uart.c	/^char uart_getc() {$/;"	f
+uart_getc	src/uart.c	/^char uart_getc() {$/;"	f
+uart_init	bootloader/src/uart.c	/^void uart_init()$/;"	f
+uart_init	src/uart.c	/^void uart_init()$/;"	f
+uart_irq_handler	src/uart.c	/^void uart_irq_handler()$/;"	f
+uart_puts	bootloader/src/uart.c	/^void uart_puts(char *s)$/;"	f
+uart_puts	src/uart.c	/^void uart_puts(char *s)$/;"	f
+uart_read_idx	src/uart.c	/^int uart_read_idx, uart_transmit_idx;$/;"	v
+uart_send	bootloader/src/uart.c	/^void uart_send(unsigned int c)$/;"	f
+uart_send	src/uart.c	/^void uart_send(unsigned int c)$/;"	f
+uart_transmit_idx	src/uart.c	/^int uart_read_idx, uart_transmit_idx;$/;"	v
+ui2a	bootloader/src/printf.c	/^static void ui2a(unsigned int num, unsigned int base, int uc,char * bf)$/;"	f	file:
+ui2a	src/printf.c	/^static void ui2a(unsigned int num, unsigned int base, int uc,char * bf)$/;"	f	file:
+uint16_t	include/types.h	/^typedef unsigned short int uint16_t;$/;"	t
+uint32_t	include/types.h	/^typedef unsigned int uint32_t;$/;"	t
+uint64_t	include/types.h	/^typedef unsigned long int uint64_t;$/;"	t
+uint8_t	include/types.h	/^typedef unsigned char uint8_t;$/;"	t
+uli2a	bootloader/src/printf.c	/^static void uli2a(unsigned long int num, unsigned int base, int uc,char * bf)$/;"	f	file:
+uli2a	src/printf.c	/^static void uli2a(unsigned long int num, unsigned int base, int uc,char * bf)$/;"	f	file:
+used	include/mm.h	/^    int used;$/;"	m	struct:page

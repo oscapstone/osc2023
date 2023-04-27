@@ -1,11 +1,11 @@
 #ifndef SHELL_H
 #define SHELL_H
 
-#define MAX_BUFFER_LEN 256
+#define MAX_BUFFER_LEN 128
 
 enum SPECIAL_CHARACTER
 {
-    BACK_SPACE = '\177',
+    BACK_SPACE = 8,
     LINE_FEED = 10,
     CARRIAGE_RETURN = 13,
     
@@ -18,7 +18,6 @@ enum SPECIAL_CHARACTER
 };
 
 void shell_start ();
-char read_transmit_asynchronous_procoessing(char buffer[], int * buffer_counter);
 enum SPECIAL_CHARACTER parse ( char );
 void command_controller ( enum SPECIAL_CHARACTER, char c, char [], int *);
 
