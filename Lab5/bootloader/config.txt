@@ -1,0 +1,4 @@
+kernel_address=0x80000
+kernel=boot.img
+arm_64bit=1
+
