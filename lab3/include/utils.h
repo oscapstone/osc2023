@@ -1,10 +1,6 @@
-#ifndef _UTILS_H
-#define _UTILS_H
+#ifndef	_BOOT_H
+#define	_BOOT_H
 
-int oct2bin(char *s, int n);
-int hex2bin(char *s, int n);
-void uart_int(int i);
-int atoi(char * c);
-void* simple_malloc(void **now, int size);
+extern int get_el ( void );
 
-#endif
+#endif  /*_BOOT_H */
