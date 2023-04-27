@@ -1,0 +1,11 @@
+{
+    "files.associations": {
+        "mailbox.h": "c",
+        "array": "c",
+        "string_view": "c",
+        "initializer_list": "c",
+        "utility": "c",
+        "mini_uart.h": "c",
+        "devicetree.h": "c"
+    }
+}
