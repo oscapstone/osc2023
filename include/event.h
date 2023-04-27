@@ -16,8 +16,8 @@ struct k_event_queue {
 };
 void k_event_queue_init();
 void k_event_init(struct k_event* event, void (*cb)(void *, uint32_t));
-void k_event_submit(struct k_event* event, void *ptr, uint32_t ptr_len, uint64_t pri);
-void k_event_queue_push(struct k_event_queue* que, struct k_event *event, uint64_t pri);
+void k_event_submit(struct k_event* event, void *ptr, uint32_t ptr_len, long long pri);
+void k_event_queue_push(struct k_event_queue* que, struct k_event *event, long long pri);
 void k_event_queue_pop();
 struct k_event* k_event_queue_front();
 #endif

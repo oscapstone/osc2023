@@ -4,11 +4,12 @@
 #include "utils.h"
 #include "cpio/cpio.h"
 #include "dtb/dtb.h"
-#include "mem.h"
+#include "mem/mem.h"
 #include "time.h"
 #include "interrupt.h"
 #include "ds/heap.h"
-#include "demo.h"
+#include "test/demo.h"
+#include "mem/page.h"
 
 
 #define SHELL_BUFSIZE 64
@@ -63,7 +64,7 @@ unsigned int _setTimeout_cb(char *arg) {
     for(char *ch = num; *ch != '\0'; ch++) {
         t = t * 10 + *ch - '0';
     }
-    k_timeout_submit(&msg, arg, t);
+    k_timeout_submit(&msg, buf, t);
     return 0;
 }
 
@@ -169,6 +170,27 @@ unsigned int _test_uart_cb(char *arg) {
     }
     return 0;
 }
+void *ptr[128];
+static unsigned int k_malloc_cnt = 0;
+unsigned int str_to_int(char *arg) {
+    unsigned int ret = 0;
+    while(*arg != '\0') {
+        if(*arg >= '0' && *arg <= '9') {
+            ret = ret * 10 + (*arg - '0');
+        }
+        arg ++;
+    }
+    return ret;
+}
+unsigned int _kmalloc(char *arg) {
+    uart_send_string(arg);
+    uint32_t sz = str_to_int(arg);
+    ptr[++k_malloc_cnt] = kmalloc(sz);
+}
+unsigned int _kfree(char *arg) {
+    unsigned int x = str_to_int(arg);
+    kfree(ptr[x]);
+}
 struct CmdNode cmds[] = {
     {
         .comm = "hello",
@@ -213,6 +235,30 @@ struct CmdNode cmds[] = {
     {
         .comm = "setTimeout",
         .cb = _setTimeout_cb
+    }, 
+    {
+        .comm = "demo_page",
+        .cb = demo_page
+    }, 
+    {
+        .comm = "test_simple_alloc",
+        .cb = test_simple_alloc
+    },
+    {
+        .comm = "test_random",
+        .cb = test_random
+    },
+    {
+        .comm = "test_kmalloc",
+        .cb = test_kmalloc
+    },
+    {
+        .comm = "kmalloc",
+        .cb = _kmalloc
+    },
+    {
+        .comm = "kfree",
+        .cb = _kfree
     }
 };
 
@@ -265,7 +311,9 @@ const char shell_beg[] = "______________________\r\n"
 void get_initramfs_addr(char *name, char *prop_name, char *data) {
     if(strncmp(name, "chosen", 6) == 0) {
         if(strncmp(prop_name, "linux,initrd-start", 18) == 0) {
-            set_initramfs_addr(ntohi(*(unsigned int*)(data)));
+            unsigned long long x = ntohi(*(unsigned int*)(data));
+            set_initramfs_addr(x);
+            memory_reserve(x, x + 0x10000);
         }
     }
 }
@@ -276,14 +324,22 @@ void print_msg(void *arg) {
 
 void kernel_main(void* dtb_addr) {
     // uart_send_string("fucked\r\n");
+    smem_init();
     fdt_param_init(dtb_addr);
-    fdt_traverse(&get_initramfs_addr);
     k_event_queue_init();
     demo_init();
     uart_init();
+    k_timeout_init(&msg, &print_msg);
     enable_interrupt();
     enable_aux_interrupt();
-    k_timeout_init(&msg, &print_msg);
+    // frame_init(0x3c000000);
+    fdt_traverse(&set_init_mem_region);
+    kmalloc_init();
+    // memory_reserve(0, 0x10000000);
+    memory_reserve(0, 0x1000);
+    memory_reserve(0x80000, 0x150000);
+    memory_reserve(dtb_addr, dtb_addr + 40000);
+    fdt_traverse(&get_initramfs_addr);
     uart_send_string(shell_beg);
     uart_send_string("# ");
 

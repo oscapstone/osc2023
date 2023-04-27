@@ -3,7 +3,7 @@
 #include "peripherals/gpio.h"
 #include "lock.h"
 #include "interrupt.h"
-#include "mem.h"
+#include "mem/mem.h"
 #include "event.h"
 
 #define QUEUE_FULL 1
@@ -14,7 +14,7 @@
 static char hex_char[] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
 static int uart_func;
 
-static char rx_copy_buf[256];
+static char rx_copy_buf[1024];
 
 struct k_event uart_recv_event;
 
@@ -43,7 +43,7 @@ void disable_transmit_interrupt() {
 unsigned int uart_pop(struct Uart_MSG_Queue *que, unsigned int *res) {
     // this operation of pop and push msg queue need to be atomic respect to uart transmission
     if(que->size == 0) {
-        enable_aux_interrupt();
+        // enable_aux_interrupt();
         return QUEUE_EMPTY;
     }
     que->size -= 1;
@@ -58,7 +58,9 @@ unsigned int uart_pop(struct Uart_MSG_Queue *que, unsigned int *res) {
 unsigned int uart_push(struct Uart_MSG_Queue *que, char val) {
     // this operation of pop and push msg queue need to be atomic
     if(que->size == UART_QUEUE_SIZE) {
-        return QUEUE_FULL;
+        unsigned int res;
+        uart_pop(que, &res);
+        _putchar(res & 0xff);
     }
     que->size += 1;
     que->buf[que->end] = val;

@@ -1,5 +1,5 @@
 #include "lock.h"
-#include "mem.h"
+#include "mem/mem.h"
 #include "peripherals/mini_uart.h"
 #include "interrupt.h"
 

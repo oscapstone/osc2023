@@ -49,8 +49,8 @@ master:
     mov sp, x1
 
 // clear bss section
-    adr x0, _bss_begin
-    adr x1, _bss_end
+    ldr x0, =_bss_begin
+    ldr x1, =_bss_end
     sub x1, x1, x0
     bl __memzero
 
@@ -173,7 +173,7 @@ core_timer_enable:
     orr x0, x0, #1
     orr x0, x0, #8
     orr x0, x0, #256
-    orr x0, x0,#512
+    orr x0, x0, #512
     msr cntkctl_el1, x0
     mov x0, 1
     msr cntp_ctl_el0, x0 // enable

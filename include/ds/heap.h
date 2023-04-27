@@ -1,7 +1,7 @@
 #ifndef __HEAP_H
 #define __HEAP_H
 #include "type.h"
-#include "mem.h"
+#include "mem/mem.h"
 
 #define DS_HEAP_MAX_LEN 256
 struct ds_heap_node {

@@ -13,4 +13,5 @@ SECTIONS
     _bss_end = .;
     _stack_begin = 0x98000;
     _heap_begin = . + 0x1000;
+    _heap_end = . + 0x1010000;
 }

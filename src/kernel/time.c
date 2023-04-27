@@ -8,7 +8,7 @@ callabck with certain timeout
 #include "time.h"
 #include "peripherals/mini_uart.h"
 #include "type.h"
-#include "mem.h"
+#include "mem/mem.h"
 #include "ds/heap.h"
 #include "interrupt.h"
 #include "utils.h"
@@ -44,6 +44,7 @@ void k_timeout_queue_push(struct k_timeout_queue *que, struct k_timeout *time) {
     // push timeout object into heap
     // remainder: heap will copy every thing in the struct
     int flag = interrupt_disable_save();
+    // disable_interrupt();
     ds_heap_push(&(que->heap), time, sizeof(struct k_timeout), time->endtick);
     struct k_timeout *f = ds_heap_front(&(que->heap));
     uint64_t x = f->endtick;
@@ -51,15 +52,19 @@ void k_timeout_queue_push(struct k_timeout_queue *que, struct k_timeout *time) {
     asm volatile(
         "msr cntp_cval_el0, %0\n":"=r"(x)
     );
+    // enable_interrupt();
     interrupt_enable_restore(flag);
 }
 void k_timeout_queue_pop() {
     // atomic pop for time_queue
     int flag = interrupt_disable_save();
+    // disable_interrupt();
     ds_heap_pop(&(time_queue.heap));
+    // enable_interrupt();
     interrupt_enable_restore(flag);
 }
 struct k_timeout* k_timeout_queue_front() {
+    // disable_interrupt();
     int flag = interrupt_disable_save();
     struct k_timeout *f;
     if(time_queue.heap.size == 0) {
@@ -69,5 +74,6 @@ struct k_timeout* k_timeout_queue_front() {
     f = ds_heap_front(&(time_queue.heap));
 ret:
     interrupt_enable_restore(flag);
+    // enable_interrupt();
     return f;
 }

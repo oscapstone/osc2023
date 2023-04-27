@@ -2,6 +2,11 @@
 #ifndef _UTILS_H
 #define _UTILS_H
 
+#include <stddef.h>
+
+#define container_of(ptr, type, mem) ({\
+    void *__mptr = (void *)ptr;\
+    ((type *)(__mptr - offsetof(type, mem)));})
 
 extern void delay(unsigned long long);
 extern void write_reg_32(unsigned long, unsigned int);

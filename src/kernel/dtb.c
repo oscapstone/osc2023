@@ -2,7 +2,7 @@
 #include "type.h"
 #include "utils.h"
 #include "peripherals/mini_uart.h"
-#include "mem.h"
+#include "mem/mem.h"
 
 
 #define FDT_BEGIN_NODE 0x00000001
@@ -10,6 +10,7 @@
 #define FDT_PROP 0x00000003
 #define FDT_NOP 0x00000004
 #define FDT_END 0x00000009
+
 
 struct fdt_header header;
 char *base_addr;

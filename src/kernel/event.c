@@ -18,7 +18,7 @@ void k_event_init(struct k_event* event, void (*cb)(void *, uint32_t)) {
     event->cb = cb;
 }
 
-void k_event_submit(struct k_event* event, void *ptr, uint32_t ptr_len, uint64_t pri) {
+void k_event_submit(struct k_event* event, void *ptr, uint32_t ptr_len, long long pri) {
     // submit event;
     if(ptr != NULL) {
         event->ptr = (void *)simple_malloc(ptr_len);
@@ -30,7 +30,7 @@ void k_event_submit(struct k_event* event, void *ptr, uint32_t ptr_len, uint64_t
     k_event_queue_push(&event_queue, event, pri);
 }
 
-void k_event_queue_push(struct k_event_queue* que, struct k_event *event, uint64_t pri) {
+void k_event_queue_push(struct k_event_queue* que, struct k_event *event, long long pri) {
     int flag = interrupt_disable_save();
     // don't need to consider the data inside ptr, since in ds_heap_push it only copy pointer value.
     // which means that it only 8 bytes!!!
@@ -82,7 +82,7 @@ void event_queue_handle() {
         irqhandler_dec();
         k_event_queue_pop();
         if(irqhandler_cnt_get() == 0) {
-            event_queue.cur_max_event_pri = -0xffffffffffffffff;
+            event_queue.cur_max_event_pri = -0x7fffffffffffffff;
         }
     }
 }

@@ -3,7 +3,7 @@
 #include "peripherals/base.h"
 #include "peripherals/mini_uart.h"
 #include "utils.h"
-#include "demo.h"
+#include "test/demo.h"
 #include "time.h"
 #include "type.h"
 #include "event.h"
@@ -67,11 +67,13 @@ void time_interrupt_handler() {
     struct k_timeout *t;
     uint64_t tick;
     while(1) {
+        // uart_send_string("xxxx\r\n");
         asm volatile("mrs %0, cntpct_el0\n":"=r"(tick));
         t = k_timeout_queue_front();
         if(t == NULL) {
+            uint64_t x = 0x3f3f3f3fLL;
             asm volatile(
-                "ldr x0, =0xffffffffffff\n"
+                "ldr x0, =0xffffffffff\n"
                 "msr cntp_cval_el0, x0\n"
             );
             break;
