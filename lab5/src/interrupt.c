@@ -333,6 +333,7 @@ void low_syn_handler(Trap_frame *trap_frame) {
       // regs[0] = sys_fork(trap_frame);
       disable_int();
       sys_fork(trap_frame);
+      enable_int();
       break;
     case 5:
       sys_exit(regs[0]);
