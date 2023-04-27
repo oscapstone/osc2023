@@ -135,7 +135,7 @@ void dump_buddy()
 {
     uart_puts("\n---------Buddy Debug---------\n");
     uart_puts("***Freelist(free_area) Debug***");
-    for (int i = MAX_ORDER; i >= 0; i--) {
+    for (int i = MAX_ORDER-1; i >= 0; i--) {
         uart_puts("\nOrder-");
 	uart_puti(i);
 	uart_puts("\n\r");
@@ -479,10 +479,11 @@ void put_memory_reserve(unsigned start, unsigned end){
 	mem_reserved[i].offset = (end - start);
 }
 
-struct page * reserve_memory_block(reserved_t * reserved){
+struct page* reserve_memory_block(reserved_t * reserved){
 	int order = round_up_to_order((reserved->offset) >> PAGE_SHIFT);
 	uart_puts("A reserve a page with order ");
 	uart_puti(order);
+
 	struct list_head * curr = free_area[MAX_ORDER].freelist.next;
 	while (((page_t *)curr)->phy_addr != reserved->start) {
 		curr = curr->next;
@@ -491,8 +492,7 @@ struct page * reserve_memory_block(reserved_t * reserved){
 	uart_hex(((page_t *)curr)->phy_addr);
 	uart_puts("\n");
 
-	struct page * target = (page_t *)curr;
-
+	struct page* target = (page_t *)curr;
 	for(int j = MAX_ORDER; j > order; j--){
 		int downward_buddy_pfn = FIND_BUDDY_PFN(target->pfn, j-1);
 		uart_puts("\nDownward buddy pfn: ");

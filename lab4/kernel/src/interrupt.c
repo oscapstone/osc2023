@@ -1,10 +1,11 @@
 #include "uart.h"
 #include "interrupt.h"
+#include "exc.h"
 
 int core_timer_enable(void){
 	init_timer_Q();
 	asm volatile(
-	"mov x0, #1;"
+		"mov x0, #1;"
     	"msr cntp_ctl_el0, x0;" // enable
     	"mrs x0, cntfrq_el0;"
     	"msr cntp_tval_el0, x0;" // set expired time
@@ -24,9 +25,9 @@ int core_timer_handler(void){
 		"mrs	%[freq], cntfrq_el0;"
 		: [time] "=r" (time), [freq] "=r" (freq)
 	);
-//	uart_puts("Time: ");
-//	uart_hex(time/freq);
-//    uart_puts("s\n");
+	uart_puts("Time: ");
+	uart_puti(time/freq);
+    uart_puts("s\n");
     timer_walk(2);
 	asm volatile(
 		"mrs x0, cntfrq_el0;"
@@ -38,7 +39,7 @@ int core_timer_handler(void){
 
 int mini_uart_interrupt_enable(void){
 	*IRQS1 |= (1<<29);	// Enable mini uart interrupt, connect the GPU IRQ to CORE0's IRQ
-	*AUX_MU_IER = 0x1;
+	*AUX_MU_IER = 0x1;  // Enable aux rx interrupt
 	return 0;
 }
 
@@ -83,14 +84,23 @@ int enable_int(void) {
 }
 
 int irq_handler(void){
-//	disable_int();
-	if(*IRQ_PEND_1 & (1 << 29))
+	disable_int();
+	if (*IRQ_PEND_1 & (1 << 29)) {
 		uart_handler();
-	else
-//	else if(*CORE0_IRQ_SOURCE & 0x2)
+	}
+	else if (*CORE0_IRQ_SOURCE & 0x2) {
 		core_timer_handler();
+	}
+	else {
+		asm volatile(
+			"mrs     x0, esr_el1;"
+    		"mrs     x1, elr_el1;"
+    		"mrs     x2, spsr_el1;"
+    		"bl 	 exc_handler;"
+		);
+	}
 
 	uart_puts("IRQ_HANDLER END\n\n");
-//	enable_int();
+	enable_int();
 	return 0;
 }

@@ -1,3 +1,11 @@
+/************************************************************************
+ * Timer queue, which is the basic data type of the timer-queue.
+ *
+ * The 0 is test the item is used, 1 or 0
+ * The first is the remain seconds this timer should be.
+ * The second is the call back function.
+ ***********************************************************************/
+
 typedef struct{
 	unsigned char used;
 	int remain;

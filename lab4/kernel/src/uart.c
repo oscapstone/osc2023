@@ -11,21 +11,33 @@ static int tx = 0;
 static int count;
 
 int uart_receive_handler(){
-	uart_puts("receive\n");
+	uart_puts("Receive\n");
+    uart_puts("Characters: ");
+    
 	if(rx >= max_len - 1)
 		rx %= max_len;
-  	read_buf[rx++] = (char)(*AUX_MU_IO);
+  	read_buf[rx] = (char)(*AUX_MU_IO);
+
+    uart_putc(read_buf[rx++]);
+    uart_puts("\n");
+
 	return 0;
 }
 
 int uart_transmit_handler(){
-	uart_puts("transmit\n");
+	uart_puts("Transmit\n");
+    uart_puts("Characters: ");
+    uart_putc(write_buf[count]);
+    uart_puts("\n");
+
 	if(tx >= 0) {
 		*AUX_MU_IO = write_buf[count++];     // Write to buffer
         tx--;
     }
-	else
+	else {
   		*AUX_MU_IER &= 0x01;    // Transmition done disable transmit interrupt. 
+    }
+
 	return 0;
 }
 
@@ -75,7 +87,7 @@ void uart_init()
     *AUX_MU_CNTL = 0;
     *AUX_MU_LCR = 3;       // 8 bits
     *AUX_MU_MCR = 0;
-    *AUX_MU_IER = 0x3;
+    *AUX_MU_IER = 0x0;
     *AUX_MU_IIR = 0xc6;    // disable interrupts
     *AUX_MU_BAUD = 270;    // 115200 baud
     *AUX_MU_CNTL = 3;      // enable Tx, Rx

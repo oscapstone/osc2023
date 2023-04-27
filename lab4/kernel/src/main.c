@@ -57,8 +57,6 @@ int timeout() {
 }
 
 void user_program(unsigned char* addr) {
-//	core_timer_enable();
-//	mini_uart_interrupt_enable();
     asm volatile (
         // EL1 to EL0
         "mov x1, #0x0;"
@@ -74,18 +72,21 @@ void main()
 { 
     uart_init();
     heap_init();
+//	core_timer_enable();
 
-	/*
 	mem_reserved_init();
 	// For Heap and Code Section
 	put_memory_reserve(0x80000, 0xA0000);
 	// For Initramfs.cpio
-	//put_memory_reserve(0x8000000, 0x8001000);
+	put_memory_reserve(0x8000000, 0x8001000);
 	
 	dump_mem_reserved();
-	apply_memory_reserve();
-	*/
 
+	page_init();
+	free_area_init();
+	dump_buddy();
+	apply_memory_reserve();
+	
     while(1) {
 	i = 0;
     memset(buffer, sizeof(buffer));
@@ -126,6 +127,8 @@ void main()
 	} else if (strncmp(buffer, "alloc", 5)==0) {
 		malloc(8);
 	} else if (strncmp(buffer, "run", 3)==0) {
+	//	disable_int();
+	//	mini_uart_interrupt_enable();
 		i = 0;
       	memset(buffer, sizeof(buffer));
 		ch = buffer;
@@ -134,6 +137,7 @@ void main()
     	unsigned char* addr = initrd_cat(buffer);
 		user_program(*addr);
 	} else if (strncmp(buffer, "set timer", 9)==0) {
+	//	enable_int();
 		timeout();
 	} else if (strncmp(buffer, "ma", 2)==0) {
 		mm_init();

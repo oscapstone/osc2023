@@ -4,11 +4,12 @@
 #define PAGE_SHIFT	12
 #define PAGE_SIZE	(1 << PAGE_SHIFT) // 4KB per page frame
 
-#define PAGE_FRAME_NUM	4096
-#define MAX_ORDER	9
+#define PAGE_FRAME_NUM	(HIGH_MEMORY - LOW_MEMORY) / PAGE_SIZE
+#define MAX_ORDER	6
 #define MAX_ORDER_SIZE	(1 << MAX_ORDER)
 
-#define LOW_MEMORY	0x100000
+#define LOW_MEMORY	0x00000000
+#define HIGH_MEMORY 0x3C000000
 
 #define FIND_BUDDY_PFN(pfn, order) ((pfn) ^ (1 << order))
 #define FIND_LBUDDY_PFN(pfn, order) ((pfn) & (~(1 << order)))
