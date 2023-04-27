@@ -18,6 +18,9 @@
     stp x26, x27, [sp ,16 * 13]
     stp x28, x29, [sp ,16 * 14]
     str x30, [sp, 16 * 15]
+
+	mrs x27, SP_EL0
+	str x27, [sp ,16 * 15 + 8]
 	mrs x28, SPSR_EL1
 	mrs x29, ELR_EL1
 	stp x28, x29, [sp, 16 * 16]
@@ -27,6 +30,9 @@
 	ldp x0, x1, [sp ,16 * 16]
 	msr SPSR_EL1, x0
 	msr ELR_EL1, x1
+	ldr x2, [sp ,16 * 15 + 8]
+	msr SP_EL0, x2
+
     ldp x0, x1, [sp ,16 * 0]		//load pair of registers from sp+16*0
     ldp x2, x3, [sp ,16 * 1]
     ldp x4, x5, [sp ,16 * 2]
@@ -49,7 +55,6 @@
 exception_handler:
     save_all
     bl	 	exception_entry			//for now , just print register info
-	bl		core_timer_enable
     load_all
     eret
 
@@ -75,7 +80,7 @@ exception_vector_table:
 	b 	exception_handler
 	.align 7
 
-	b 	exception_handler
+	b 	EL0_SVC_interrupt
 	.align 7
 	b 	EL0_check_interrupt
 	.align 7
@@ -109,5 +114,18 @@ EL0_check_interrupt:
 EL1_check_interrupt:
 	save_all
 	bl		EL1_check_interrupt_source
+	load_all
+	eret
+
+EL0_SVC_interrupt:
+	save_all
+	mov		x0,sp							//save sp to trap_frame , otherwise sp will grow in handler
+	bl		EL0_SVC_handler
+	load_all
+	eret
+
+.global to_child
+.type to_child , @function
+to_child:
 	load_all
 	eret

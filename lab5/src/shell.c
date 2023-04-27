@@ -7,6 +7,10 @@
 #include "check_interrupt.h"
 #include "timer.h"
 #include "buddy.h"
+#include "thread.h"
+#include "system_call.h"
+
+extern void from_EL1_to_EL0();
 
 void shell_input(char* command)
 {
@@ -39,9 +43,9 @@ void shell_option(char* command,char* ramdisk)
 		uart_send_string("ls\t\t: show file name\r\n");
 		uart_send_string("cat\t\t: show file content\r\n");
 		uart_send_string("alloc\t\t: show allocate example\r\n");
-		uart_send_string("run\t\t: run an function in EL0\r\n");
-		uart_send_string("async_io\t\t: show async_io process\r\n");
 		uart_send_string("timer\t\t: show timer-multiplexing process\r\n");
+		uart_send_string("thread\t\t: show basic1\r\n");
+		uart_send_string("exec\t\t: show basic2\r\n");
 	}
 	else if(!strcmp(command,"hello"))
 	{
@@ -75,25 +79,6 @@ void shell_option(char* command,char* ramdisk)
 		uart_hex(string2);
 		uart_send_string("\r\n");
 	}
-	else if(!strcmp(command,"run"))
-	{
-		char* prog_start = find_prog(ramdisk,"program.img");
-		exec_in_EL0(prog_start);
-	}
-	else if(!strcmp(command,"async_io"))
-	{
-		enable_interrupt();
-		mini_uart_enable();
-		send_async_string("this is async_io\r\n");
-		core_timer_enable();
-		void (*func)();
-		func = recv_async_string;
-		sleep(func,6);
-		func = core_timer_disable;
-		sleep(func,12);											//time will end in (start time + 12) second later
-		func = disable_interrupt;
-		sleep(func,12);
-	}
 	else if(!strcmp(command,"timer"))
 	{
 		enable_interrupt();										//interrupt mask clear
@@ -106,6 +91,22 @@ void shell_option(char* command,char* ramdisk)
 		sleep(func,12);											//time will end in (start time + 12) second later
 		func = disable_interrupt;
 		sleep(func,12);											//interrupt mask set
+	}
+	else if(!strcmp(command,"thread"))
+	{
+		void (*fun)();
+		fun = &foo;
+		for(int i=0;i<3;i++)
+		{
+			Thread(fun);
+		}
+		idle();
+	}
+	else if(!strcmp(command,"exec"))
+	{
+		from_EL1_to_EL0();
+		Thread(fork_test);
+		schedule();
 	}
 	else
 	{

@@ -24,11 +24,10 @@ struct thread
 {
 	struct registers reg;		//save callee-saved register's address
 	struct thread *next;
-	struct thread *prev;
 	int tid;
-	int child_id;
 	char* status;
 	char stack[0x10000];
+	char* kernel_stack;
 };
 
 #endif
@@ -44,4 +43,5 @@ void push_idle();
 void repush_idle();
 int get_tid();
 void clear_thread_list();
+void foo();
 void exit();

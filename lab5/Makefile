@@ -13,7 +13,7 @@ OBJ = $(patsubst %.c, $(OBJ_DIR)/%.o, $(notdir $(SRC)))
 OBJ += $(patsubst %.S, $(OBJ_DIR)/%.o, $(notdir $(ASM)))
 
 
-FLAG = -Wall -nostdlib -I include -c
+FLAG = -Wall -nostdlib -I include -c -g
 
 .PHONY: all
 

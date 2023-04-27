@@ -30,9 +30,8 @@ int Thread(void (*func)())
 			thd->reg.FP = ((int)(thd->stack + 0x10000) & 0xFFFFFFF0);
 			thd->reg.LR = func;
 			thd->reg.SP = ((int)(thd->stack + 0x10000) & 0xFFFFFFF0);
+			thd->kernel_stack = ((int)(d_alloc(0x10000) + 0x10000) & 0xFFFFFFF0);
 			thd->status = "RUN";
-			struct thread *tmp = get_current();
-			thd->prev = tmp;
 			thread_list[i] = thd;
 			break;
 		}
@@ -107,7 +106,7 @@ again:
 	}
 	else
 	{
-		uart_send_string("else\n");
+		uart_send_string("status unknow\n");
 	}
 	return;
 }
@@ -174,6 +173,25 @@ void clear_thread_list()
 		}
 	}
 	return;
+}
+
+void foo()
+{
+    for(int i=0;i<10;i++)
+    {
+        uart_send_string("Thread id: ");
+        uart_int(get_tid());
+        uart_send_string(" ");
+        uart_int(i);
+        uart_send_string("\r\n");
+        for(int i=0;i<200000000;i++)
+        {
+            asm volatile("nop");
+        }
+        schedule();
+    }
+    exit();
+    return;
 }
 
 void exit()				//end of a thread

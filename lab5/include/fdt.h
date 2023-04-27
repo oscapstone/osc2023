@@ -46,5 +46,5 @@ void memresv_block_info(char* fdt,int offset);
 void struct_block_info(char* fdt,int struct_offset,int string_offset);
 void string_block_info(char* fdt,int offset);
 void fdt_info(char* fdt_origin);
-void fdt_api(char* fdt_origin,void(*func)(char* value),char* keyword);
+char* fdt_api(char* fdt_origin,char* (*func)(char* value),char* keyword);
 #endif

@@ -3,6 +3,8 @@
 #include "mini_uart.h"
 #include "string.h"
 
+#define null 0
+
 uint32_t to_little_endian_32(uint32_t data)
 {
 	uint32_t tmp;
@@ -176,7 +178,7 @@ void fdt_info(char* fdt_origin)
 	return;
 }
 
-void fdt_api(char* fdt_origin,void(*func)(char* value),char* keyword)
+char* fdt_api(char* fdt_origin,char* (*func)(char* value),char* keyword)
 {
 	fdt_header *fdt = (fdt_header*)fdt_origin;
 	to_little_endian_header(fdt);
@@ -216,7 +218,7 @@ void fdt_api(char* fdt_origin,void(*func)(char* value),char* keyword)
 					char* prop_name = (char*)fdt+string_offset+prop.nameoff;	//(string block + nameoff)
 					if(!strcmp(prop_name,keyword))	//if find keyword
 					{
-						func((char*)now);	
+						return func((char*)now);	
 					}
 					now += prop.len;									//eat property's value
 					padding = ((4-(prop.len%4))+4)%4;
@@ -232,5 +234,7 @@ void fdt_api(char* fdt_origin,void(*func)(char* value),char* keyword)
 					break;
 		}
 	}
-	return;
+	return null;
 }
+
+

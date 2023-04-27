@@ -25,7 +25,7 @@ setup_EL1:
 		bl	from_EL2_to_EL1
 
 El1_start:
-		mov		sp,#0x40000		//put EL1 stack start from 0x40000	
+		mov		sp,#0x40000		//put EL1 stack start from 0x40000
 
 master:
 		mov		x0,x27
@@ -39,3 +39,13 @@ from_EL2_to_EL1:
 		msr		SPSR_EL2,x0		//Saved Program Status Register (EL2) , saved process state when an exception is taken to EL2
 		msr		ELR_EL2,LR		//Exception Link Register (EL2) , when taking an exception to EL2, holds the address to return to
 		ERET					//exception return , will load from ELR_EL2 -> PC
+
+.global from_EL1_to_EL0
+.type from_EL1_to_EL0 , @function
+from_EL1_to_EL0:
+		mov		x0,0x0			//open interrupt
+		msr		SPSR_EL1,x0
+		mov		x0,#0x50000
+		msr		SP_EL0,x0
+		msr		ELR_EL1,LR
+		ERET
