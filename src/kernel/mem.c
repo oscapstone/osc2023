@@ -10,3 +10,7 @@ void *simple_malloc(uint32_t size) {
     cur_mem_offset += offset;
     return (cur_mem_offset - offset);
 }
+
+void free(void *ptr) {
+    return;
+}

@@ -28,5 +28,6 @@ typedef struct Cpio_newc_header {
 void list_files();
 unsigned int cat_file(const char *file);
 void set_initramfs_addr(uint32_t addr);
+unsigned int load_program(const char *file);
 
 #endif

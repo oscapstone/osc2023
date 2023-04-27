@@ -15,6 +15,10 @@
 #define AUX_MU_CNTL_REG (PBASE + 0x00215060)
 #define AUX_MU_STAT_REG (PBASE + 0x00215064)
 #define AUX_MU_BAUD_REG (PBASE + 0x00215068)
+#define UART_QUEUE_SIZE (1024)
+
+#define UART_ASYNC 0
+#define UART_DEFAULT 1
 
 void uart_init();
 char uart_recv();
@@ -23,4 +27,22 @@ void uart_send_string(const char *c);
 void uart_send_u32(unsigned int u32);
 void uart_send_u64(unsigned long u64);
 void uart_send_n(const char *c, unsigned long long n);
+void uart_send_dec(unsigned long dec);
+void uart_int_trans_handler();
+void uart_int_recv_handler();
+void enable_aux_interrupt();
+void disable_aux_interrupt();
+char async_uart_recv(void);
+void async_uart_send(char c);
+void async_uart_send_seting(const char *buf);
+void uart_switch_func(unsigned int func);
+struct Uart_MSG_Queue {
+    unsigned int size;
+    unsigned int begin;
+    unsigned int end;
+    char buf[UART_QUEUE_SIZE];
+};
+
+// static struct Uart_MSG_Queue txbuf;
+// static struct Uart_MSG_Queue rxbuf;
 #endif

@@ -13,3 +13,11 @@ delay:
     subs x0, x0, #1
     bne delay
     ret 
+
+.global delay_test
+delay_test:
+    subs x0, x0, #1
+    mov x1, 0x65
+    bne delay
+    // bl uart_send
+    ret 

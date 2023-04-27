@@ -1,5 +1,6 @@
 #include "power.h"
 #include "utils.h"
+#include "peripherals/mini_uart.h"
 
 
 void reset(int tick) {                 // reboot after watchdog timer expire

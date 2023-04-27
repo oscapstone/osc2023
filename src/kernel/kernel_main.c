@@ -4,7 +4,12 @@
 #include "utils.h"
 #include "cpio/cpio.h"
 #include "dtb/dtb.h"
-#include "mem.h"
+#include "mem/mem.h"
+#include "time.h"
+#include "interrupt.h"
+#include "ds/heap.h"
+#include "test/demo.h"
+#include "mem/page.h"
 
 
 #define SHELL_BUFSIZE 64
@@ -12,13 +17,21 @@
 #define EXIT 255
 #define NOT_FOUND 1
 
+#define ARRAY_SIZE(arr, type) (sizeof(arr) / sizeof(type))
 
-// char buf[SHELL_BUFSIZE];
 const char hello_world[] = "Hello World!";
 const char help_menu[] = "help   \t: print this help menu\r\nhello  \t: print Hello World!\r\ninfo   \t: print machine info\r\nreboot\t: reboot machine\r\nls    \t: list files\r\ncat   \t: show file content";
+// char buf[SHELL_BUFSIZE];
 
-char *history[100];
+struct k_timeout msg;
+char *history[10];
 int history_cnt = 0;
+struct CmdNode {
+    char *comm;
+    unsigned int (*cb)(char *args);
+};
+
+struct ds_heap heap;
 
 void split_comm_arg(char *buf, char **comm, char **arg) {
     *comm = buf;
@@ -31,6 +44,226 @@ void split_comm_arg(char *buf, char **comm, char **arg) {
         *arg += 1;
     }
 }
+unsigned int _hello_cb(char *args) {
+    uart_send_string(hello_world);
+    uart_send_string("\r\n");
+    return 0;
+}
+
+unsigned int _help_cb(char *args) {
+    uart_send_string(help_menu);
+    uart_send_string("\r\n");
+    return 0;
+}
+
+unsigned int _setTimeout_cb(char *arg) {
+    char *buf;
+    char *num;
+    split_comm_arg(arg, &buf, &num);
+    int t = 0;
+    for(char *ch = num; *ch != '\0'; ch++) {
+        t = t * 10 + *ch - '0';
+    }
+    k_timeout_submit(&msg, buf, t);
+    return 0;
+}
+
+unsigned int _test_heap(char *arg) {
+    unsigned int x = arg[0] - '0';
+    if(x == 0) {
+        while(heap.size) {
+            uart_send_dec(*(unsigned int*)ds_heap_front(&heap));
+            uart_send_string("\r\n");
+            ds_heap_pop(&heap);
+        }
+        return 0;
+    }
+    ds_heap_push(&heap, &x, sizeof(unsigned int), x);
+    return 0;
+}
+unsigned int _info_cb(char *arg) {
+    mbox_buf[0] = 7 * 4;
+    mbox_buf[1] = 0;
+    mbox_buf[2] = MBOX_GET_BOARD_REVISION;
+    mbox_buf[3] = 4;
+    mbox_buf[4] = 0;
+    mbox_buf[5] = 0;
+    mbox_buf[6] = 0;
+    mbox_buf[7] = 0;
+    if(mbox_call_func(MBOX_CH_PROPERTY_TAG)) {
+        uart_send_string("BOARD REVISION: 0x");
+        uart_send_u32(mbox_buf[5]);
+        uart_send_string("\r\n");
+    } else {
+        uart_send_string("Error when gather info!!\r\n");            
+    }
+    mbox_buf[0] = 8 * 4;
+    mbox_buf[1] = 0;
+    mbox_buf[2] = MBOX_GET_ARM_MEMORY;
+    mbox_buf[3] = 8;
+    mbox_buf[4] = 0;
+    mbox_buf[5] = 0;
+    mbox_buf[6] = 0;
+    mbox_buf[7] = 0;
+    if(mbox_call_func(MBOX_CH_PROPERTY_TAG)) {
+        uart_send_string("Base Address(in bytes): 0x");
+        uart_send_u32(mbox_buf[5]);
+        uart_send_string("\r\n");
+        uart_send_string("Size(in bytes): 0x");
+        uart_send_u32(mbox_buf[6]);
+        uart_send_string("\r\n");
+    } else {
+        uart_send_string("Error when gather info!!\r\n");            
+    }
+    return 0;
+}
+
+unsigned int _reboot_cb(char *arg) {
+    uart_send_string("Reboot in 100 ticks\r\n");
+    reset(100);
+    return EXIT;
+}
+
+unsigned int _ls_cb(char *arg) {
+    list_files();
+    return 0;
+}
+
+unsigned int _cat_cb(char *arg) {
+    cat_file(arg);
+    return 0;
+}
+
+unsigned int _load_cb(char *arg) {
+    load_program(arg);
+    return 0;
+}
+
+unsigned _history_cb(char *arg) {
+    int x = history_cnt;
+    if(x > 10) {
+        x = 10;
+    }
+    for(int i = 0; i < x; i ++) {
+        uart_send_string(history[i]);
+        uart_send_string("\r\n");
+    }
+    return 0;
+}
+
+unsigned int _test_uart_cb(char *arg) {
+    enable_aux_interrupt();
+    char buf[32];
+    memset(buf, 0, 32);
+    char c;
+    int i = 0;
+    while(1) {
+        c = async_uart_recv();
+        if(c == 255) continue;
+        if(c == '\r') {
+            async_uart_send('\r');
+            async_uart_send('\n');
+            break;
+        }
+        async_uart_send(c);
+        buf[i++] = c;
+    }
+    return 0;
+}
+void *ptr[128];
+static unsigned int k_malloc_cnt = 0;
+unsigned int str_to_int(char *arg) {
+    unsigned int ret = 0;
+    while(*arg != '\0') {
+        if(*arg >= '0' && *arg <= '9') {
+            ret = ret * 10 + (*arg - '0');
+        }
+        arg ++;
+    }
+    return ret;
+}
+unsigned int _kmalloc(char *arg) {
+    uart_send_string(arg);
+    uint32_t sz = str_to_int(arg);
+    ptr[++k_malloc_cnt] = kmalloc(sz);
+}
+unsigned int _kfree(char *arg) {
+    unsigned int x = str_to_int(arg);
+    kfree(ptr[x]);
+}
+struct CmdNode cmds[] = {
+    {
+        .comm = "hello",
+        .cb = _hello_cb
+    },
+    {
+        .comm = "help",
+        .cb = _help_cb
+    }, 
+    {
+        .comm = "info",
+        .cb = _info_cb
+    },
+    {
+        .comm = "reboot",
+        .cb = _reboot_cb
+    },
+    {
+        .comm = "ls",
+        .cb = _ls_cb
+    }, 
+    {
+        .comm = "cat",
+        .cb = _cat_cb
+    },
+    {
+        .comm = "load",
+        .cb = _load_cb
+    },
+    {
+        .comm = "history",
+        .cb = _history_cb
+    },
+    {
+        .comm = "test_uart",
+        .cb = _test_uart_cb
+    },
+    {
+        .comm = "test_heap",
+        .cb = _test_heap
+    },
+    {
+        .comm = "setTimeout",
+        .cb = _setTimeout_cb
+    }, 
+    {
+        .comm = "demo_page",
+        .cb = demo_page
+    }, 
+    {
+        .comm = "test_simple_alloc",
+        .cb = test_simple_alloc
+    },
+    {
+        .comm = "test_random",
+        .cb = test_random
+    },
+    {
+        .comm = "test_kmalloc",
+        .cb = test_kmalloc
+    },
+    {
+        .comm = "kmalloc",
+        .cb = _kmalloc
+    },
+    {
+        .comm = "kfree",
+        .cb = _kfree
+    }
+};
+
+
+
 
 int handle_input(char *buf) {
     // uart_send_string(buf);
@@ -50,88 +283,16 @@ int handle_input(char *buf) {
     char *arg;
     split_comm_arg(buf, &comm, &arg);
     if(tot_len == 0) return 0;
-    int cond = strncmp(comm, "hello", 5);
-    if(cond == 0) {
-        uart_send_string(hello_world);
-        uart_send_string("\r\n");
-        return 0;
-    }
-
-    cond = strncmp(comm, "help", 4);
-    if(cond == 0) {
-        uart_send_string(help_menu);
-        uart_send_string("\r\n");
-        return 0;
-    }
-
-    cond = strncmp(comm, "info", 4);
-
-    if(cond == 0) {
-        mbox_buf[0] = 7 * 4;
-        mbox_buf[1] = 0;
-        mbox_buf[2] = MBOX_GET_BOARD_REVISION;
-        mbox_buf[3] = 4;
-        mbox_buf[4] = 0;
-        mbox_buf[5] = 0;
-        mbox_buf[6] = 0;
-        mbox_buf[7] = 0;
-        if(mbox_call_func(MBOX_CH_PROPERTY_TAG)) {
-            uart_send_string("BOARD REVISION: 0x");
-            uart_send_u32(mbox_buf[5]);
-            uart_send_string("\r\n");
-        } else {
-            uart_send_string("Error when gather info!!\r\n");            
+    int cond;
+    int sz = ARRAY_SIZE(cmds, struct CmdNode);
+    for(int i = 0; i < sz; i ++) {
+        cond = strncmp(cmds[i].comm, comm, 64);
+        if(cond == 0) {
+            return cmds[i].cb(arg);
         }
-        mbox_buf[0] = 8 * 4;
-        mbox_buf[1] = 0;
-        mbox_buf[2] = MBOX_GET_ARM_MEMORY;
-        mbox_buf[3] = 8;
-        mbox_buf[4] = 0;
-        mbox_buf[5] = 0;
-        mbox_buf[6] = 0;
-        mbox_buf[7] = 0;
-        if(mbox_call_func(MBOX_CH_PROPERTY_TAG)) {
-            uart_send_string("Base Address(in bytes): 0x");
-            uart_send_u32(mbox_buf[5]);
-            uart_send_string("\r\n");
-            uart_send_string("Size(in bytes): 0x");
-            uart_send_u32(mbox_buf[6]);
-            uart_send_string("\r\n");
-        } else {
-            uart_send_string("Error when gather info!!\r\n");            
-        }
-        return 0;
     }
 
-    cond = strncmp(comm, "reboot", 6);
-    if(cond == 0) {
-        uart_send_string("Reboot in 100 ticks\r\n");
-        reset(100);
-        return EXIT;
-    }
-    cond = strncmp(comm, "ls", 2);
-    if(cond == 0) {
-        list_files();
-        return 0;
-    }
 
-    cond = strncmp(comm, "cat", 3);
-    if(cond == 0) {
-        cat_file(arg);
-        return 0;
-    }
-    cond = strncmp(comm, "history", 3);
-    if(cond == 0) {
-        int x = history_cnt;
-        if(x > 100) {
-            x = 100;
-        }
-        for(int i = 0; i < x; i ++) {
-            uart_send_string(history[i]);
-            uart_send_string("\r\n");
-        }
-        return 0;
-    }
     uart_send_string("Command not Found!\r\n");
     return NOT_FOUND;
 }
@@ -150,31 +311,48 @@ const char shell_beg[] = "______________________\r\n"
 void get_initramfs_addr(char *name, char *prop_name, char *data) {
     if(strncmp(name, "chosen", 6) == 0) {
         if(strncmp(prop_name, "linux,initrd-start", 18) == 0) {
-            set_initramfs_addr(ntohi(*(unsigned int*)(data)));
+            unsigned long long x = ntohi(*(unsigned int*)(data));
+            set_initramfs_addr(x);
+            memory_reserve(x, x + 0x10000);
         }
     }
 }
 
+void print_msg(void *arg) {
+    uart_send_string(arg);
+}
+
 void kernel_main(void* dtb_addr) {
+    // uart_send_string("fucked\r\n");
+    smem_init();
     fdt_param_init(dtb_addr);
-    fdt_traverse(&get_initramfs_addr);
+    k_event_queue_init();
+    demo_init();
     uart_init();
+    k_timeout_init(&msg, &print_msg);
+    enable_interrupt();
+    enable_aux_interrupt();
+    // frame_init(0x3c000000);
+    fdt_traverse(&set_init_mem_region);
+    kmalloc_init();
+    // memory_reserve(0, 0x10000000);
+    memory_reserve(0, 0x1000);
+    memory_reserve(0x80000, 0x150000);
+    memory_reserve(dtb_addr, dtb_addr + 40000);
+    fdt_traverse(&get_initramfs_addr);
     uart_send_string(shell_beg);
     uart_send_string("# ");
 
-	// while (1) {
-	// 	uart_send(uart_recv());
-	// }
 
     char cur;
 
-    char *buf = simple_malloc(64);
+    char *buf = simple_malloc(256);
 
     int idx = 0;
     memset(buf, 0, 64);
     while(1) {
         cur = uart_recv();
-        // uart_send(cur - 12);
+        if(cur == 255) continue;
         if(cur == 127 || cur == 8) {
             if(idx == 0) continue;
             idx --;
@@ -184,15 +362,14 @@ void kernel_main(void* dtb_addr) {
             continue;
         }
         if(cur == 13) {
-            // uart_send_string("Enter Inputed:(");
             uart_send_string("\r\n");
             buf[idx] = '\0';
             int code = handle_input(buf);
             if(code == EXIT) {
                 return;
             }
-            history[history_cnt++ % 100] = buf;
-            buf = simple_malloc(64);
+            // history[history_cnt++ % 100] = buf;
+            // buf = simple_malloc(256);
             idx = 0;
             memset(buf, 0, 64);
             uart_send_string("# ");
