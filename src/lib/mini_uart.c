@@ -7,6 +7,8 @@
 
 #define BUFSIZE 0x100
 
+static void uart_irq_fini(void);
+
 static int uart_sync_mode;
 
 typedef char (*recvfp)(void);
@@ -263,7 +265,7 @@ void uart_irq_add(){
         return;
 
     disable_RW_interrupt();
-    if(add_task((void (*)(void *))uart_irq_handler, NULL, UART_PRIO))
+    if(irq_add_task((void (*)(void *))uart_irq_handler, NULL,uart_irq_fini, UART_PRIO))
         enable_RW_interrupt();
 }
 void uart_irq_handler(void){
@@ -291,6 +293,21 @@ void uart_irq_handler(void){
     }
 
      if (r_head != (r_tail + 1) % BUFSIZE) {
+        ier = ier | 0x01;
+    }
+
+    if (w_head != w_tail) {
+        ier = ier | 0x02;
+    }
+
+    put32(AUX_MU_IER_REG, ier);
+}
+
+static void uart_irq_fini(){
+    uint32 ier = get32(AUX_MU_IER_REG);
+    ier &= ~(0x03);
+
+    if (r_head != (r_tail + 1) % BUFSIZE) {
         ier = ier | 0x01;
     }
 

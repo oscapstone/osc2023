@@ -1,18 +1,6 @@
 #ifndef _SYSCALL_H
 #define _SYSCALL_H
 
-#define read_sysreg(r) ({                       \
-    uint64 __val;                               \
-    asm volatile("mrs %0, " #r : "=r" (__val)); \
-    __val;                                      \
-})
-
-#define write_sysreg(r, v) {                \
-    uint64 __val = (uint64)(v);             \
-    asm volatile("msr " #r ", %x0"          \
-             : : "rZ" (__val));             \
-}
-
 typedef struct {
     unsigned int iss:25, // Instruction specific syndrome
                  il:1,   // Instruction length bit

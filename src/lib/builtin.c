@@ -12,6 +12,13 @@
 #include <mm.h>
 #include <timer.h>
 
+static void timeout_print(char *str)
+{
+    uart_printf("%s\r\n", str);
+
+    kfree(str);
+}
+
 void _help(int mode){
     uart_printf(
         "help\t: "   "print this help menu" "\r\n"
@@ -136,6 +143,6 @@ int _setTimeout(char *shell_buf){
     len = strlen(msg) + 1;
     mem = kmalloc(len);
     memncpy(mem ,msg, len);
-    add_timer((void(*)(void *))uart_printf, mem, atoi(tsec));
+    timer_add_after((void(*)(void *))timeout_print, mem, atoi(tsec));
     return 0;
 }

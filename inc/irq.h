@@ -20,7 +20,7 @@ typedef struct{
     uint32 i_status;
 } irq_meta;
 
-int add_task(void (*callback)(void *), void *data, uint32 priority);
+int irq_add_task(void (*task)(void *), void *data, void (*fini)(void), uint32 priority);
 void irq_init();
 void default_exception_handler(uint32 n);
 void irq_handler();
