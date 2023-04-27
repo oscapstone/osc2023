@@ -39,7 +39,6 @@ void EL0_SVC_handler(struct trap_frame *tf)
 				disable_interrupt();
 				tf->reg[0] = fork(tf);
 				enable_interrupt();
-				return;
 				break;
 			case 5:
 				exit();								//use previous exit
@@ -109,16 +108,16 @@ int exec(char *name,char *argv)
 
 int fork(struct trap_frame *tf)
 {
-	uart_send_string("???\r\n");
 	char *thd = get_current();
 	int ctid = Thread(to_child);							//create new child thread
 	char *child_copy = thread_list[ctid];					//for child copy
-	struct thread *parent = thd;
 	int gap = (int)child_copy - (int)thd;					//parent & child gap
 	for(int i=0;i<sizeof(struct thread) - sizeof(char*);i++)//avoid change kernel_stack pointer
 	{
 		child_copy[i] = thd[i];								//copy whole thread data to child , include stack
 	}
+
+	struct thread *parent = thd;
 	for(int i=0;i<0x10000;i++)
 	{
 		thread_list[ctid]->kernel_stack[i] = parent->kernel_stack[i];	//copy whole kernel_stack
@@ -139,14 +138,13 @@ int fork(struct trap_frame *tf)
 	thread_list[ctid]->reg.LR = to_child;					//return to child & load register
 	thread_list[ctid]->reg.FP = ((uint64_t)thread_list[ctid]->kernel_stack + 0x10000) & 0xFFFFFFF0;
 	thread_list[ctid]->next = null;
+
+	//for user_thread
 	c_tf->SPSR_EL1 = 0;										//open interrupt & jump back to EL0
 	c_tf->reg[0] = 0;										//child's return value
 	c_tf->SP_EL0 += gap;									//update sp_el0
-	c_tf->reg[29] = thread_list[ctid]->reg.FP;
+	c_tf->reg[29] += gap;
 
-	uart_send_string("ctf1 : ");
-	uart_hex_64(c_tf->ELR_EL1);
-	uart_send_string("\r\n");
 	return ctid;
 }
 
@@ -215,7 +213,7 @@ void fork_test()
         test_exit();
     }
     else
-	{	
+	{
 		uart_send_string("parent here, pid: ");
 		uart_int(test_get_pid());
 		uart_send_string(", child ");
@@ -248,6 +246,14 @@ int test_fork()
 void test_exit()
 {
 	asm volatile("mov x8, 5;"
+				 "svc 0;"
+				);
+	return;
+}
+
+void test_exec()
+{
+	asm volatile("mov x8, 3;"
 				 "svc 0;"
 				);
 	return;

@@ -43,9 +43,8 @@ from_EL2_to_EL1:
 .global from_EL1_to_EL0
 .type from_EL1_to_EL0 , @function
 from_EL1_to_EL0:
+		msr		ELR_EL1,x19
 		mov		x0,0x0			//open interrupt
 		msr		SPSR_EL1,x0
-		mov		x0,#0x50000
-		msr		SP_EL0,x0
-		msr		ELR_EL1,LR
+		msr		SP_EL0,x20
 		ERET

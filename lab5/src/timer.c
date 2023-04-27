@@ -7,12 +7,18 @@ void core_timer_enable()
 		"mov     x0,1;"
     	"msr     CNTP_CTL_EL0,x0;"	//bit0 : timer enabled , bit1 : IMASK(1: won't trigger interrupt)
     	"mrs     x0,CNTFRQ_EL0;"	//frequency of the system
+		"asr	 x0,x0,5;"
     	"msr     CNTP_TVAL_EL0,x0;"	//on a write of this register , CNTP_CVAL_EL0 is set to (CNTPCT_EL0 + timer value)
 									//timer value for thr EL1 physical timer , if(CNTP_CTL_EL0[0] is 1)->timer met when (CNTPCT_EL0-CNTP_CVAL_EL0) >= 0
 		"ldr     x1,=0x40000040;"	//core0 timers interrupt control address : 0x40000040
 		"mov     x0,2;"				//bit1 : IRQ enable
 		"str     w0,[x1];"
 	);
+	uint64_t tmp;
+	asm volatile("mrs %0, cntkctl_el1" : "=r"(tmp));
+	tmp |= 1;
+	asm volatile("msr cntkctl_el1, %0" : : "r"(tmp));
+
 	return;
 }
 

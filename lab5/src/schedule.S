@@ -19,11 +19,11 @@ switch_to:
     ldp fp, lr, [x1, 16 * 5]
     ldr x9, [x1, 16 * 6]
     mov sp,  x9
-    msr tpidr_el0, x1
+    msr tpidr_el1, x1
     ret
 
 .global get_current
 .type get_current , @function
 get_current:
-	mrs x0, tpidr_el0
+	mrs x0, tpidr_el1
     ret

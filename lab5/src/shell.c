@@ -42,10 +42,10 @@ void shell_option(char* command,char* ramdisk)
 		uart_send_string("board\t\t: show board revision\r\n");
 		uart_send_string("ls\t\t: show file name\r\n");
 		uart_send_string("cat\t\t: show file content\r\n");
-		uart_send_string("alloc\t\t: show allocate example\r\n");
 		uart_send_string("timer\t\t: show timer-multiplexing process\r\n");
 		uart_send_string("thread\t\t: show basic1\r\n");
 		uart_send_string("exec\t\t: show basic2\r\n");
+		uart_send_string("video\t\t: show basic3\r\n");
 	}
 	else if(!strcmp(command,"hello"))
 	{
@@ -69,15 +69,6 @@ void shell_option(char* command,char* ramdisk)
 	else if(!strcmp(command,"cat"))
 	{
 		cat();
-	}
-	else if(!strcmp(command,"alloc"))
-	{
-		char* string = memalloc(8);
-		uart_hex(string);
-		uart_send_string("\r\n");
-		char* string2 = memalloc(5);
-		uart_hex(string2);
-		uart_send_string("\r\n");
 	}
 	else if(!strcmp(command,"timer"))
 	{
@@ -104,8 +95,12 @@ void shell_option(char* command,char* ramdisk)
 	}
 	else if(!strcmp(command,"exec"))
 	{
-		from_EL1_to_EL0();
-		Thread(fork_test);
+		Thread(from_EL1_to_EL0);				
+		schedule();
+	}
+	else if(!strcmp(command,"video"))
+	{
+		Thread(from_EL1_to_EL0);
 		schedule();
 	}
 	else

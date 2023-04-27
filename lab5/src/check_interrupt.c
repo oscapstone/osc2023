@@ -62,11 +62,11 @@ void EL0_core_timer_handler()
 	asm volatile
 	(
 		"mrs     x0,CNTFRQ_EL0;"
-    	"mov     x1,2;"
-    	"mul     x0,x0,x1;"            //set time = 2 sec
+		"asr	 x0,x0,5;"
     	"msr     CNTP_TVAL_EL0,x0;"    //set new timeout
 	);
-	print_time();
+	schedule();
+	//print_time();
 	return;
 }
 

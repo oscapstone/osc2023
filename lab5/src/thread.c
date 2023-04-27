@@ -1,5 +1,6 @@
 #include "thread.h"
 #include "buddy.h"
+#include "system_call.h"
 
 #define null 0
 
@@ -27,10 +28,12 @@ int Thread(void (*func)())
 		{
 			thd->next = null;
 			thd->tid = i;
-			thd->reg.FP = ((int)(thd->stack + 0x10000) & 0xFFFFFFF0);
 			thd->reg.LR = func;
-			thd->reg.SP = ((int)(thd->stack + 0x10000) & 0xFFFFFFF0);
-			thd->kernel_stack = ((int)(d_alloc(0x10000) + 0x10000) & 0xFFFFFFF0);
+			thd->reg.x19 = fork_test;			//EL1 switch_to use
+			thd->reg.x20 = ((uint64_t)(thd->stack + 0x10000) & 0xFFFFFFF0);				//for user_stack
+			thd->kernel_stack = ((uint64_t)(d_alloc(0x10000) + 0x10000) & 0xFFFFFFF0);
+			thd->reg.SP = thd->kernel_stack;	//set EL1 kernel_stack
+			thd->reg.FP = thd->kernel_stack;
 			thd->status = "RUN";
 			thread_list[i] = thd;
 			break;
@@ -201,3 +204,22 @@ void exit()				//end of a thread
 	schedule();
 	return;
 }
+/*
+void video()
+{
+	char* prog_start = find_prog(ramdisk_start,"syscall.img");
+	if(prog_start != null)
+    {
+        int size = find_prog_size(ramdisk_start,"syscall.img");
+        char* start = d_alloc(0x20000 + size);
+        char* code = start + 0x10000;                       //address to put copy program
+        for(int i=0;i<size;i++)
+        {
+            code[i] = prog_start[i];                        //copy
+        }
+        struct thread *thd = get_current();
+        exec_in_EL0(code,(char*)(thd->stack + 0x10000));    //jump to EL0 , bl to program & set SP_EL0 on thread's stack
+    }
+
+}
+*/
