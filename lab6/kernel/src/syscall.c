@@ -47,95 +47,64 @@ size_t uartwrite(trapframe_t *tpf, const char buf[], size_t size)
     return i;
 }
 
-//In this lab, you won’t have to deal with argument passing
 int exec(trapframe_t *tpf, const char *name, char *const argv[])
 {
-    kfree(curr_thread->data);
-    curr_thread->datasize = get_file_size((char *)name);
-    char *new_data = get_file_start((char *)name);
-    curr_thread->data = kmalloc(curr_thread->datasize);
+    char        *program_addr = get_file_start((char*)name);
+    unsigned int program_size = get_file_size((char*)name);
 
-    //remap code
-    mappages(PHYS_TO_VIRT(curr_thread->context.ttbr0_el1), 0x0, curr_thread->datasize, (size_t)VIRT_TO_PHYS(curr_thread->data));
-
-    for (unsigned int i = 0; i < curr_thread->datasize; i++)
-    {
-        curr_thread->data[i] = new_data[i];
+    curr_thread->datasize = program_size;
+    for (unsigned int i = 0; i < curr_thread->datasize; i++) {
+        curr_thread->data[i] = program_addr[i];
     }
 
-    // inital signal handler
-    for (int i = 0; i <= SIGNAL_MAX; i++)
-    {
+    for (int i = 0; i <= SIGNAL_MAX; i++) {
         curr_thread->signal_handler[i] = signal_default_handler;
     }
 
-    tpf->elr_el1 = 0;
-    tpf->sp_el0 = 0xfffffffff000;
-    tpf->x0 = 0;
+    tpf->elr_el1 = USER_KERNEL_BASE;
+    tpf->sp_el0  = USER_KERNEL_BASE + USTACK_SIZE;
     return 0;
 }
 
 int fork(trapframe_t *tpf)
 {
     lock();
-    thread_t *newt = thread_create(curr_thread->data, curr_thread->datasize);
-
-    //copy signal handler
-    for (int i = 0; i <= SIGNAL_MAX;i++)
-    {
-        newt->signal_handler[i] = curr_thread->signal_handler[i];
-    }
-
-    mappages(newt->context.ttbr0_el1, 0x3C000000L, 0x3000000L, 0x3C000000L);
-    mappages(newt->context.ttbr0_el1, 0x3F000000L, 0x1000000L, 0x3F000000L);
-    mappages(newt->context.ttbr0_el1, 0x40000000L, 0x40000000L, 0x40000000L);
-
-    // remap code and stack
-    mappages(newt->context.ttbr0_el1, 0xffffffffb000, 0x4000, (size_t)VIRT_TO_PHYS(newt->stack_alloced_ptr));
-    mappages(newt->context.ttbr0_el1, 0x0, newt->datasize, (size_t)VIRT_TO_PHYS(newt->data));
-
-    int parent_pid = curr_thread->pid;
-
-    //copy data into new process
-    for (int i = 0; i < newt->datasize; i++)
-    {
-        newt->data[i] = curr_thread->data[i];
-    }
-
-    //copy user stack into new process
-    for (int i = 0; i < USTACK_SIZE; i++)
-    {
-        newt->stack_alloced_ptr[i] = curr_thread->stack_alloced_ptr[i];
-    }
-
-    //copy stack into new process
-    for (int i = 0; i < KSTACK_SIZE; i++)
-    {
-        newt->kernel_stack_alloced_ptr[i] = curr_thread->kernel_stack_alloced_ptr[i];
-    }
+    int pid = curr_thread->pid;
+    thread_t *p_thread = curr_thread;
+    thread_t *c_thread = thread_create(curr_thread->data, curr_thread->datasize);
 
     store_context(get_current());
 
-    //for child
-    if( parent_pid != curr_thread->pid)
+    if (curr_thread->pid == pid)
     {
-        goto child;
+        for (int i = 0; i < p_thread->datasize; i++) {
+            c_thread->data[i] = p_thread->data[i];
+        }
+        for (int i = 0; i < USTACK_SIZE; i++) {
+            c_thread->stack_alloced_ptr[i] = p_thread->stack_alloced_ptr[i];
+        }
+        for (int i = 0; i < KSTACK_SIZE; i++) {
+            c_thread->kernel_stack_alloced_ptr[i] = p_thread->kernel_stack_alloced_ptr[i];
+        }
+        for(int i = 0; i <= SIGNAL_MAX; i++) {
+            c_thread->signal_handler[i] = p_thread->signal_handler[i];
+        }
+
+        mappages(c_thread->context.ttbr0_el1, USER_KERNEL_BASE, c_thread->datasize, (size_t)VIRT_TO_PHYS(c_thread->data));
+        mappages(c_thread->context.ttbr0_el1, USER_STACK_BASE , USTACK_SIZE, (size_t)VIRT_TO_PHYS(c_thread->stack_alloced_ptr));
+        mappages(c_thread->context.ttbr0_el1, PERIPHERAL_START, PERIPHERAL_END-PERIPHERAL_START, PERIPHERAL_START);
+
+        void* temp_ttbr0_el1 = c_thread->context.ttbr0_el1;
+        c_thread->context = p_thread->context;
+        c_thread->context.ttbr0_el1 = temp_ttbr0_el1;
+
+        c_thread->context.sp += c_thread->kernel_stack_alloced_ptr - p_thread->kernel_stack_alloced_ptr;
+        c_thread->context.fp += c_thread->kernel_stack_alloced_ptr - p_thread->kernel_stack_alloced_ptr;
+        unlock();
+        return c_thread->pid;
+    } else {
+        return 0;
     }
-
-    void *temp_ttbr0_el1 = newt->context.ttbr0_el1;
-    newt->context = curr_thread->context;
-    newt->context.ttbr0_el1 = VIRT_TO_PHYS(temp_ttbr0_el1);
-    newt->context.fp += newt->kernel_stack_alloced_ptr - curr_thread->kernel_stack_alloced_ptr; // move fp
-    newt->context.sp += newt->kernel_stack_alloced_ptr - curr_thread->kernel_stack_alloced_ptr; // move kernel sp
-
-    unlock();
-
-    tpf->x0 = newt->pid;
-    return newt->pid;
-
-child:
-    tpf->x0 = 0;
-    return 0;           // pid = 0
 }
 
 void exit(trapframe_t *tpf, int status)
@@ -146,14 +115,10 @@ void exit(trapframe_t *tpf, int status)
 int syscall_mbox_call(trapframe_t *tpf, unsigned char ch, unsigned int *mbox_user)
 {
     lock();
-
     unsigned int size_of_mbox = mbox_user[0];
     memcpy((char *)pt, mbox_user, size_of_mbox);
     mbox_call(MBOX_TAGS_ARM_TO_VC, (unsigned int)((unsigned long)&pt));
     memcpy(mbox_user, (char *)pt, size_of_mbox);
-
-    tpf->x0 = 8;
-
     unlock();
     return 0;
 }

@@ -161,6 +161,54 @@ void el0_irq_64_router(trapframe_t *tpf){
 }
 
 
+void dump_exception_router(unsigned long num, unsigned long esr, unsigned long elr, unsigned long spsr, unsigned long type) {
+    uart_sendline("dump exception router\n");
+    uart_sendline("number: %d\n", num);
+    switch(type) {
+        case 0: uart_sendline("Synchronous: "); break;
+        case 1: uart_sendline("IRQ: "); break;
+        case 2: uart_sendline("FIQ: "); break;
+        case 3: uart_sendline("SError: "); break;
+    }
+    // decode exception type (some, not all. See ARM DDI0487B_b chapter D10.2.28)
+    switch(esr>>26) {
+        case 0b000000: uart_sendline("Unknown"); break;
+        case 0b000001: uart_sendline("Trapped WFI/WFE"); break;
+        case 0b001110: uart_sendline("Illegal execution"); break;
+        case 0b010101: uart_sendline("System call"); break;
+        case 0b100000: uart_sendline("Instruction abort, lower EL"); break;
+        case 0b100001: uart_sendline("Instruction abort, same EL"); break;
+        case 0b100010: uart_sendline("Instruction alignment fault"); break;
+        case 0b100100: uart_sendline("Data abort, lower EL"); break;
+        case 0b100101: uart_sendline("Data abort, same EL"); break;
+        case 0b100110: uart_sendline("Stack alignment fault"); break;
+        case 0b101100: uart_sendline("Floating point"); break;
+        default: uart_sendline("Unknown"); break;
+    }
+    // decode data abort cause
+    if(esr>>26==0b100100 || esr>>26==0b100101) {
+        uart_sendline(", ");
+        switch((esr>>2)&0x3) {
+            case 0: uart_sendline("Address size fault"); break;
+            case 1: uart_sendline("Translation fault"); break;
+            case 2: uart_sendline("Access flag fault"); break;
+            case 3: uart_sendline("Permission fault"); break;
+        }
+        switch(esr&0x3) {
+            case 0: uart_sendline(" at level 0"); break;
+            case 1: uart_sendline(" at level 1"); break;
+            case 2: uart_sendline(" at level 2"); break;
+            case 3: uart_sendline(" at level 3"); break;
+        }
+    }
+    uart_sendline("\n");
+    // dump registers
+    uart_sendline("ESR_EL1 %x, %x\n", esr>>32, esr);
+    uart_sendline("ELR_EL1 %x, %x\n", elr>>32, elr);
+    uart_sendline("SPSR_EL1 %x, %x\n", spsr>>32, spsr);
+}
+
+
 void invalid_exception_router(unsigned long long x0){
     //uart_sendline("invalid exception : 0x%x\r\n",x0);
     //while(1);

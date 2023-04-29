@@ -73,6 +73,7 @@ void el1h_irq_router(trapframe_t* tpf);
 void el0_sync_router(trapframe_t* tpf);
 void el0_irq_64_router(trapframe_t* tpf);
 
+void dump_exception_router(unsigned long num, unsigned long esr, unsigned long elr, unsigned long spsr, unsigned long type);
 void invalid_exception_router(); // exception_handler.S
 
 void lock();

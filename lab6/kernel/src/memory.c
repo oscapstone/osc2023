@@ -3,6 +3,7 @@
 #include "uart1.h"
 #include "exception.h"
 #include "dtb.h"
+#include "mmu.h"
 
 extern char  _heap_top;
 static char* htop_ptr = &_heap_top;
@@ -96,7 +97,7 @@ void init_allocator()
     memory_sendline("\r\n* Startup Allocation *\r\n");
     memory_sendline("buddy system: usable memory region: 0x%x ~ 0x%x\n", BUDDY_MEMORY_BASE, BUDDY_MEMORY_BASE + BUDDY_MEMORY_PAGE_COUNT * PAGESIZE);
     dtb_find_and_store_reserved_memory(); // find spin tables in dtb
-    memory_reserve(PHYS_TO_VIRT(0x1000), PHYS_TO_VIRT(0x5000)); // // PGD's page frame at 0x1000 // PUD's page frame at 0x2000 PMD 0x3000-0x5000
+    memory_reserve(PHYS_TO_VIRT(kernel_pgd_addr), PHYS_TO_VIRT(kernel_pgd_addr+0x4000+512*512*2*8)); // // PGD's page frame at 0x1000 // PUD's page frame at 0x2000 PMD 0x3000-0x5000
     memory_reserve((unsigned long long)&_start, (unsigned long long)&_end); // kernel
     memory_reserve((unsigned long long)&_heap_top, (unsigned long long)&_stack_top);  // heap & stack -> simple allocator
     memory_reserve((unsigned long long)CPIO_DEFAULT_START, (unsigned long long)CPIO_DEFAULT_END);

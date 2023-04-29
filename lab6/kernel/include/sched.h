@@ -9,6 +9,7 @@
 #define SIGNAL_MAX  64
 
 extern void  switch_to(void *curr_context, void *next_context);
+extern void  switch_pgd(unsigned long pgd);
 extern void* get_current();
 extern void  store_context(void *curr_context);
 extern void  load_context(void *curr_context);

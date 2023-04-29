@@ -1,4 +1,4 @@
-_heap_stack_size = 8M;
+_heap_stack_size = 256M;
 #heap size 0x800000
 
 # 0x080000   _start

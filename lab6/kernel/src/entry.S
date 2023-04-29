@@ -122,7 +122,7 @@ el1t_error_invalid:
 el1h_sync:
     save_all
     mov x0,4
-    bl invalid_exception_router
+    bl dump_exception_router
     load_all
     eret
 el1h_irq:
