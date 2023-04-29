@@ -1,3 +1,5 @@
+.vscode
+.vscode/*
 **/*.o
 **/*.dtb
 .DS_Store
