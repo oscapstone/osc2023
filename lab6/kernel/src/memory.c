@@ -166,7 +166,8 @@ void page_free(void* ptr)
     memory_sendline("        Before\r\n");
     dump_page_info();
     target_frame_ptr->used = FRAME_FREE;
-    while(coalesce(target_frame_ptr)==0); // merge buddy iteratively
+    frame_t* temp;
+    while ((temp = coalesce(target_frame_ptr)) != (frame_t *)-1)target_frame_ptr = temp;
     list_add(&target_frame_ptr->listhead, &frame_freelist[target_frame_ptr->val]);
     memory_sendline("        After\r\n");
     dump_page_info();
@@ -188,25 +189,26 @@ frame_t* get_buddy(frame_t *frame)
     return &frame_array[frame->idx ^ (1 << frame->val)];
 }
 
-int coalesce(frame_t *frame_ptr)
+frame_t* coalesce(frame_t *frame_ptr)
 {
     frame_t *buddy = get_buddy(frame_ptr);
     // frame is the boundary
     if (frame_ptr->val == FRAME_IDX_FINAL)
-        return -1;
+        return (frame_t*)-1;
 
     // Order must be the same: 2**i + 2**i = 2**(i+1)
     if (frame_ptr->val != buddy->val)
-        return -1;
+        return (frame_t*)-1;
 
     // buddy is in used
     if (buddy->used == FRAME_ALLOCATED)
-        return -1;
+        return (frame_t*)-1;
 
     list_del_entry((struct list_head *)buddy);
     frame_ptr->val += 1;
+    buddy->val += 1;
     memory_sendline("    coalesce detected, merging 0x%x, 0x%x, -> val = %d\r\n", frame_ptr->idx, buddy->idx, frame_ptr->val);
-    return 0;
+    return buddy < frame_ptr ? buddy : frame_ptr;
 }
 
 void dump_page_info(){

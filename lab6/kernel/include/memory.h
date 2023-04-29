@@ -50,7 +50,7 @@ typedef struct frame
 void     init_allocator();
 frame_t *release_redundant(frame_t *frame);
 frame_t *get_buddy(frame_t *frame);
-int      coalesce(frame_t *frame_ptr);
+frame_t *coalesce(frame_t *frame_ptr);
 
 void dump_page_info();
 void dump_cache_info();
