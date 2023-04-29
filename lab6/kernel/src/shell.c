@@ -235,7 +235,7 @@ void do_cmd_thread_tester()
 {
     for (int i = 0; i < 5; ++i)
     { // N should > 2
-        thread_create(foo);
+        thread_create(foo, 0x1000);
     }
     idle();
 }
