@@ -13,7 +13,8 @@ _heap_stack_size = 8M;
 
 SECTIONS
 {
-    . = 0x80000;
+    . = 0xffff000000000000;
+    . += 0x80000;
     _start = .;
     .text : { *(.text.boot) *(.text) }
     .rodata : { *(.rodata) }

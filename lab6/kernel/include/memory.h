@@ -1,6 +1,7 @@
 #ifndef _MEMORY_H_
 #define _MEMORY_H_
 
+#include "bcm2837/rpi_mmu.h"
 #include "u_list.h"
 
 /* Lab2 */
@@ -8,7 +9,7 @@ void* s_allocator(unsigned int size);
 void  s_free(void* ptr);
 
 /* Lab4 */
-#define BUDDY_MEMORY_BASE       0x0     // 0x10000000 - 0x20000000 (SPEC) -> Advanced #3 for all memory region
+#define BUDDY_MEMORY_BASE       PHYS_TO_VIRT(0x0)     // 0x10000000 - 0x20000000 (SPEC) -> Advanced #3 for all memory region
 #define BUDDY_MEMORY_PAGE_COUNT 0x3C000 // let BUDDY_MEMORY use 0x0 ~ 0x3C000000 (SPEC)
 #define PAGESIZE    0x1000     // 4KB
 #define MAX_PAGES   0x10000    // 65536 (Entries), PAGESIZE * MAX_PAGES = 0x10000000 (SPEC)

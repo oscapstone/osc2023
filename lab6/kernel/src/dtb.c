@@ -1,3 +1,4 @@
+#include "bcm2837/rpi_mmu.h"
 #include "dtb.h"
 #include "uart1.h"
 #include "u_string.h"
@@ -118,11 +119,11 @@ void dtb_callback_initramfs(uint32_t node_type, char *name, void *value, uint32_
     // linux,initrd-start will be assigned by start.elf based on config.txt
     if (node_type == FDT_PROP && strcmp(name,"linux,initrd-start") == 0)
     {
-        CPIO_DEFAULT_START = (void *)(unsigned long long)uint32_endian_big2lttle(*(uint32_t*)value);
+        CPIO_DEFAULT_START = (void *)(unsigned long long)PHYS_TO_VIRT(uint32_endian_big2lttle(*(uint32_t*)value));
     }
     if (node_type == FDT_PROP && strcmp(name, "linux,initrd-end") == 0)
     {
-        CPIO_DEFAULT_END = (void *)(unsigned long long)uint32_endian_big2lttle(*(uint32_t *)value);
+        CPIO_DEFAULT_END = (void *)(unsigned long long)PHYS_TO_VIRT(uint32_endian_big2lttle(*(uint32_t *)value));
     }
 }
 
@@ -142,8 +143,8 @@ void dtb_find_and_store_reserved_memory()
     // reserve memory which is defined by dtb
     while (reverse_entry->address != 0 || reverse_entry->size != 0)
     {
-        unsigned long long start = uint64_endian_big2lttle(reverse_entry->address);
-        unsigned long long end = uint64_endian_big2lttle(reverse_entry->size) + start;
+        unsigned long long start = PHYS_TO_VIRT(uint64_endian_big2lttle(reverse_entry->address));
+        unsigned long long end   = uint64_endian_big2lttle(reverse_entry->size) + start;
         memory_reserve(start, end);
         reverse_entry++;
     }

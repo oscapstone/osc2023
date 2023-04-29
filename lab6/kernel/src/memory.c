@@ -339,9 +339,9 @@ void memory_reserve(unsigned long long start, unsigned long long end)
     start -= start % PAGESIZE; // floor (align 0x1000)
     end = end % PAGESIZE ? end + PAGESIZE - (end % PAGESIZE) : end; // ceiling (align 0x1000)
 
-    memory_sendline("Reserved Memory: ");
-    memory_sendline("start 0x%x ~ ", start);
-    memory_sendline("end 0x%x\r\n",end);
+    uart_sendline("Reserved Memory: ");
+    uart_sendline("start 0x%x ~ ", start);
+    uart_sendline("end 0x%x\r\n",end);
 
     // delete page from free list
     for (int order = FRAME_IDX_FINAL; order >= 0; order--)

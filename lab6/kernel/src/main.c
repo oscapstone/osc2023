@@ -12,7 +12,7 @@ char* dtb_ptr;
 void main(char* arg){
     char input_buffer[CMD_MAX_LEN];
 
-    dtb_ptr = arg;
+    dtb_ptr = PHYS_TO_VIRT(arg);
     traverse_device_tree(dtb_ptr, dtb_callback_initramfs); // get initramfs location from dtb
 
     init_allocator();

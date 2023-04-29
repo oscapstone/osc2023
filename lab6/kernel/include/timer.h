@@ -1,9 +1,10 @@
 #ifndef _TIMER_H_
 #define _TIMER_H_
 
+#include "bcm2837/rpi_mmu.h"
 #include "u_list.h"
 
-#define CORE0_TIMER_IRQ_CTRL 0x40000040
+#define CORE0_TIMER_IRQ_CTRL PHYS_TO_VIRT(0x40000040)
 
 void core_timer_enable();
 void core_timer_disable();

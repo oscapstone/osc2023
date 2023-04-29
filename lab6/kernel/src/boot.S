@@ -1,11 +1,53 @@
 /* ARMv8 Assembly */
 
+#include "mmu.h"
 .section ".text.boot"
 
 .global _start
 
 _start:
     bl from_el2_to_el1
+
+    // set paging configuration (up : 0xffff000000000000 low : 0x0000000000000000)
+    ldr x4, = TCR_CONFIG_DEFAULT
+    msr tcr_el1, x4
+
+    // Set Used Memory Attributes
+    ldr x4, =( \
+        (MAIR_DEVICE_nGnRnE << (MAIR_IDX_DEVICE_nGnRnE * 8)) | \
+        (MAIR_NORMAL_NOCACHE << (MAIR_IDX_NORMAL_NOCACHE * 8)) \
+    )
+    msr mair_el1, x4
+
+    // set and enable MMU
+    mov x4, 0x1000 // PGD's page frame at 0x1000
+    mov x1, 0x2000 // PUD's page frame at 0x2000
+
+    ldr x2, = BOOT_PGD_ATTR
+    orr x2, x1, x2 // combine the physical address of next level page with attribute.
+    str x2, [x4]
+
+    ldr x2, = BOOT_PUD_ATTR
+    mov x3, 0x00000000
+    orr x3, x2, x3
+    str x3, [x1]    // 1st 1GB mapped by the 1st entry of PUD
+    mov x3, 0x40000000
+    orr x3, x2, x3
+    str x3, [x1, 8] // 2nd 1GB mapped by the 2nd entry of PUD
+
+    msr ttbr0_el1, x4 // load PGD to the bottom translation-based register.
+    msr ttbr1_el1, x4 // also load PGD to the upper translation based register.
+
+    mov sp, 0x3c000000 // use temperary stack
+    bl set_2M_kernel_mmu
+
+    mrs x2, sctlr_el1
+    orr x2 , x2, 1
+    msr sctlr_el1, x2 // enable MMU, cache remains disabled
+
+    // indirect branch to the upper virtual address
+    ldr x2, =set_exception_vector_table
+    br x2
 
 set_exception_vector_table:
     adr x1, exception_vector_table // vbar_el1: Vector Base Address Register (EL1)
