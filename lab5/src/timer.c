@@ -18,7 +18,6 @@ void core_timer_enable()
 	asm volatile("mrs %0, cntkctl_el1" : "=r"(tmp));
 	tmp |= 1;
 	asm volatile("msr cntkctl_el1, %0" : : "r"(tmp));
-
 	return;
 }
 

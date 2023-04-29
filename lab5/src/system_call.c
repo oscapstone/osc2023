@@ -10,11 +10,13 @@
 
 extern struct thread *get_current();
 extern char* ramdisk_start;
-extern struct thread *thread_list[100];
+extern struct thread *thread_list[65536];
 extern void to_child();
+extern void from_EL1_to_EL0();
 
 void EL0_SVC_handler(struct trap_frame *tf)
 {
+	core_timer_enable();
 	uint64_t esr_el1;
 	asm volatile("mrs %0, ESR_EL1;" : "=r" (esr_el1));
 	if(esr_el1>>26 == 0b010101)							//SVC instruction execution in AArch64 state
@@ -31,9 +33,7 @@ void EL0_SVC_handler(struct trap_frame *tf)
 				tf->reg[0] = uart_write(tf->reg[0],tf->reg[1]);
 				break;
 			case 3:
-				char* name = tf->reg[0];
-				char* argv = tf->reg[1];
-				tf->reg[0] = exec(name,argv);
+				tf->reg[0] = exec(tf->reg[0],tf->reg[1]);
 				break;
 			case 4:
 				disable_interrupt();
@@ -44,13 +44,10 @@ void EL0_SVC_handler(struct trap_frame *tf)
 				exit();								//use previous exit
 				break;
 			case 6:
-				unsigned char ch = tf->reg[0];
-				unsigned int *mbox = tf->reg[1];
-				tf->reg[0] = mbox_call(mbox,ch);	//use previous mbox_call
+				tf->reg[0] = mbox_call(tf->reg[1],tf->reg[0]);	//use previous mbox_call
 				break;
 			case 7:
-				int pid = tf->reg[0];
-				kill(pid);
+				kill(tf->reg[0]);
 				break;
 			default:
 				break;
@@ -71,6 +68,10 @@ int uart_read(char* buffer,int size)
 	for(int i=0;i<size;i++)
 	{
 		*buffer = uart_recv();
+		if(*buffer == '\n')
+		{
+			break;
+		}
 		buffer++;
 		count++;	
 	}
@@ -91,17 +92,22 @@ int uart_write(char* buffer,int size)
 int exec(char *name,char *argv)
 {
 	char* prog_start = find_prog(ramdisk_start,name);
+	char* code = null;
 	if(prog_start != null)
 	{
 		int size = find_prog_size(ramdisk_start,name);
-		char* start = d_alloc(0x20000 + size);
-		char* code = start + 0x10000;						//address to put copy program
+		code = d_alloc(size);
 		for(int i=0;i<size;i++)
 		{
-			code[i] = prog_start[i];						//copy
+			code[i] = prog_start[i];
 		}
+		void* prog = (void*)code;
 		struct thread *thd = get_current();
-		exec_in_EL0(code,(char*)(thd->stack + 0x10000));	//jump to EL0 , bl to program & set SP_EL0 on thread's stack
+		char* stack = (uint64_t)(thd->stack + 0x10000) & 0xFFFFFFF0;
+		asm volatile("mov x19,%0;"
+					 "mov x20,%1;" : "=r" (prog), "=r" (stack)
+					);
+		from_EL1_to_EL0();
 	}
 	return 0;
 }
@@ -144,6 +150,7 @@ int fork(struct trap_frame *tf)
 	c_tf->reg[0] = 0;										//child's return value
 	c_tf->SP_EL0 += gap;									//update sp_el0
 	c_tf->reg[29] += gap;
+	core_timer_enable();
 
 	return ctid;
 }
@@ -157,6 +164,10 @@ void kill(int pid)
 
 void fork_test()
 {
+	for(int i=0;i<1000000000;i++)
+	{
+		asm volatile("nop;");
+	}
 	uart_send_string("Fork Test, pid ");
 	uart_int(test_get_pid());
 	uart_send_string("\r\n");

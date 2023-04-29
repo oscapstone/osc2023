@@ -45,3 +45,4 @@ int get_tid();
 void clear_thread_list();
 void foo();
 void exit();
+void* video_prog();

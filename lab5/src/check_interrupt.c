@@ -63,10 +63,10 @@ void EL0_core_timer_handler()
 	(
 		"mrs     x0,CNTFRQ_EL0;"
 		"asr	 x0,x0,5;"
-    	"msr     CNTP_TVAL_EL0,x0;"    //set new timeout
+    	"msr     CNTP_TVAL_EL0,x0;"		//set new timeout
 	);
-	schedule();
-	//print_time();
+	schedule();							//use timer interrupt to switch_to next thread (RR)
+	print_time();
 	return;
 }
 
@@ -77,8 +77,9 @@ void EL1_core_timer_handler()
 		"mrs     x0,CNTFRQ_EL0;"
     	"msr     CNTP_TVAL_EL0,x0;"    //set new timeout , plus 1 sec
 	);
-	print_time();
-	one_sec_pass();
+//	schedule();
+//	print_time();
+	//one_sec_pass();
 	return;
 }
 

@@ -1,13 +1,16 @@
 #include "thread.h"
 #include "buddy.h"
 #include "system_call.h"
+#include "ramdisk.h"
+#include "timer.h"
 
 #define null 0
 
 extern void switch_to(struct thread *thd1 , struct thread *thd2);
 extern struct thread* get_current();
+extern char* ramdisk_start;
 
-struct thread *thread_list[100];
+struct thread *thread_list[65536];
 struct thread *run_queue = null;
 
 void init_thread()
@@ -22,17 +25,18 @@ void init_thread()
 int Thread(void (*func)())
 {
 	struct thread *thd = d_alloc(sizeof(struct thread));
-	for(int i=0;i<100;i++)
+	for(int i=0;i<65536;i++)
 	{
 		if(thread_list[i] == null)				//find empty thread
 		{
 			thd->next = null;
 			thd->tid = i;
-			thd->reg.LR = func;
-			thd->reg.x19 = fork_test;			//EL1 switch_to use
-			thd->reg.x20 = ((uint64_t)(thd->stack + 0x10000) & 0xFFFFFFF0);				//for user_stack
+			thd->reg.x19 = fork_test;
+			//thd->reg.x19 = video_prog();										//EL1 switch_to use
+			thd->reg.x20 = ((uint64_t)(thd->stack + 0x10000) & 0xFFFFFFF0);		//for user_stack
 			thd->kernel_stack = ((uint64_t)(d_alloc(0x10000) + 0x10000) & 0xFFFFFFF0);
-			thd->reg.SP = thd->kernel_stack;	//set EL1 kernel_stack
+			thd->reg.LR = func;
+			thd->reg.SP = thd->kernel_stack;									//set EL1 kernel_stack
 			thd->reg.FP = thd->kernel_stack;
 			thd->status = "RUN";
 			thread_list[i] = thd;
@@ -116,10 +120,11 @@ again:
 
 void kill_zombies()
 {
-	for(int i=1;i<100;i++)
+	for(int i=1;i<65536;i++)
 	{
 		if(thread_list[i] != null && thread_list[i]->status == "DEAD")
 		{
+			d_free(thread_list[i]->kernel_stack);
 			d_free(thread_list[i]);
 			thread_list[i] = null;
 		}
@@ -167,10 +172,11 @@ int get_tid()
 
 void clear_thread_list()
 {
-	for(int i=0;i<100;i++)
+	for(int i=0;i<65536;i++)
 	{
 		if(thread_list[i] != null)
 		{
+			d_free(thread_list[i]->kernel_stack);
 			d_free(thread_list[i]);
 			thread_list[i] = null;
 		}
@@ -204,22 +210,20 @@ void exit()				//end of a thread
 	schedule();
 	return;
 }
-/*
-void video()
+
+void* video_prog()
 {
 	char* prog_start = find_prog(ramdisk_start,"syscall.img");
+	char* code = null;
 	if(prog_start != null)
     {
         int size = find_prog_size(ramdisk_start,"syscall.img");
-        char* start = d_alloc(0x20000 + size);
-        char* code = start + 0x10000;                       //address to put copy program
+        code = d_alloc(size);
         for(int i=0;i<size;i++)
         {
-            code[i] = prog_start[i];                        //copy
+            code[i] = prog_start[i];
         }
-        struct thread *thd = get_current();
-        exec_in_EL0(code,(char*)(thd->stack + 0x10000));    //jump to EL0 , bl to program & set SP_EL0 on thread's stack
     }
-
+	void* prog = (void*)code;
+	return prog;
 }
-*/

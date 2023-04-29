@@ -25,7 +25,7 @@ setup_EL1:
 		bl	from_EL2_to_EL1
 
 El1_start:
-		mov		sp,#0x40000		//put EL1 stack start from 0x40000
+		mov		sp,#0x7000000	//put EL1 stack start from 0x7000000
 
 master:
 		mov		x0,x27
@@ -47,4 +47,6 @@ from_EL1_to_EL0:
 		mov		x0,0x0			//open interrupt
 		msr		SPSR_EL1,x0
 		msr		SP_EL0,x20
+		bl		enable_interrupt
+		bl		core_timer_enable
 		ERET

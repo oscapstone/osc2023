@@ -93,9 +93,9 @@ void shell_option(char* command,char* ramdisk)
 		}
 		idle();
 	}
-	else if(!strcmp(command,"exec"))
+	else if(!strcmp(command,"exec"))		//need to change thread's LR to fork_test
 	{
-		Thread(from_EL1_to_EL0);				
+		Thread(from_EL1_to_EL0);		
 		schedule();
 	}
 	else if(!strcmp(command,"video"))

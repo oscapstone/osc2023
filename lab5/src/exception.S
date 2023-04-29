@@ -64,7 +64,7 @@ exception_handler:
 exception_vector_table:
 	b 	exception_handler			// branch to a handler function.
 	.align 7 						// entry size is 0x80 : 2^7
-	b 	EL1_check_interrupt
+	b 	exception_handler
 	.align 7
 	b 	exception_handler
 	.align 7
