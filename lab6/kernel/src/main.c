@@ -1,13 +1,12 @@
 #include "uart1.h"
 #include "shell.h"
-#include "memory.h"
-#include "u_string.h"
 #include "dtb.h"
+
+#include "memory.h"
 #include "exception.h"
+#include "irqtask.h"
 #include "timer.h"
 #include "sched.h"
-
-char* dtb_ptr;
 
 void main(char* arg){
     char input_buffer[CMD_MAX_LEN];
@@ -18,7 +17,7 @@ void main(char* arg){
     init_allocator();
 
     uart_init();
-    irqtask_list_init();
+    irqtask_init_list();
     timer_list_init();
 
     init_thread_sched();

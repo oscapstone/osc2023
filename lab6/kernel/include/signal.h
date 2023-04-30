@@ -1,8 +1,6 @@
 #ifndef _SIGNAL_H_
 #define _SIGNAL_H_
 
-#include "exception.h"
-
 #define	SIGHUP		1	/* Hangup (POSIX).  */
 #define	SIGINT		2	/* Interrupt (ANSI).  */
 #define	SIGQUIT		3	/* Quit (POSIX).  */
@@ -39,9 +37,11 @@
 #define SIGSYS		31	/* Bad system call.  */
 #define SIGUNUSED	31
 
+#include "exception.h"
+
 void signal_default_handler();
 void check_signal(trapframe_t *tpf);
-void run_signal(trapframe_t *tpf, int signal);
+void run_signal(trapframe_t* tpf,int signal);
 void signal_handler_wrapper();
 
-#endif
+#endif /* _SIGNAL_H_ */

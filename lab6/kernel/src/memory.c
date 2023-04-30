@@ -1,19 +1,18 @@
 #include "memory.h"
-#include "u_list.h"
+#include "list.h"
 #include "uart1.h"
 #include "exception.h"
 #include "dtb.h"
+#include "cpio.h"
 #include "mmu.h"
 
-extern char  _heap_top;
-static char* htop_ptr = &_heap_top;
+extern char  _heap_start;
+static char* htop_ptr = &_heap_start;
 
-extern char  _start;
-extern char  _end;
+extern char  _kernel_start;
+extern char  _kernel_end;
+extern char  _stack_end;
 extern char  _stack_top;
-extern char* CPIO_DEFAULT_START;
-extern char* CPIO_DEFAULT_END;
-extern char* dtb_ptr;
 
 #ifdef DEBUG
     #define memory_sendline(fmt, args ...) uart_sendline(fmt, ##args)
@@ -97,9 +96,9 @@ void init_allocator()
     memory_sendline("\r\n* Startup Allocation *\r\n");
     memory_sendline("buddy system: usable memory region: 0x%x ~ 0x%x\n", BUDDY_MEMORY_BASE, BUDDY_MEMORY_BASE + BUDDY_MEMORY_PAGE_COUNT * PAGESIZE);
     dtb_find_and_store_reserved_memory(); // find spin tables in dtb
-    memory_reserve(PHYS_TO_VIRT(kernel_pgd_addr), PHYS_TO_VIRT(kernel_pgd_addr+0x4000+512*512*2*8)); // // PGD's page frame at 0x1000 // PUD's page frame at 0x2000 PMD 0x3000-0x5000
-    memory_reserve((unsigned long long)&_start, (unsigned long long)&_end); // kernel
-    memory_reserve((unsigned long long)&_heap_top, (unsigned long long)&_stack_top);  // heap & stack -> simple allocator
+    memory_reserve(PHYS_TO_VIRT(MMU_PGD_ADDR), PHYS_TO_VIRT(MMU_PTE_ADDR+0x2000)); // // PGD's page frame at 0x1000 // PUD's page frame at 0x2000 PMD 0x3000-0x5000
+    memory_reserve((unsigned long long)&_kernel_start, (unsigned long long)&_kernel_end); // kernel
+    memory_reserve((unsigned long long)&_stack_end, (unsigned long long)&_stack_top);  // heap & stack -> simple allocator
     memory_reserve((unsigned long long)CPIO_DEFAULT_START, (unsigned long long)CPIO_DEFAULT_END);
 }
 

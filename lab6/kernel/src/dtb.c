@@ -1,13 +1,11 @@
 #include "bcm2837/rpi_mmu.h"
 #include "dtb.h"
 #include "uart1.h"
-#include "u_string.h"
+#include "string.h"
 #include "cpio.h"
 #include "memory.h"
 
-void* CPIO_DEFAULT_START;
-void* CPIO_DEFAULT_END;
-extern char* dtb_ptr;
+char* dtb_ptr;
 
 //stored as big endian
 struct fdt_header {

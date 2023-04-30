@@ -2,7 +2,7 @@
 #define _SYSCALL_H_
 
 #include "exception.h"
-#include <stddef.h>
+#include "stddef.h"
 
 int    getpid(trapframe_t *tpf);
 size_t uartread(trapframe_t *tpf, char buf[], size_t size);
@@ -18,6 +18,6 @@ void   signal_kill(int pid, int signal);
 void   sigreturn(trapframe_t *tpf);
 
 unsigned int get_file_size(char *thefilepath);
-char *get_file_start(char *thefilepath);
+char        *get_file_start(char *thefilepath);
 
 #endif /* _SYSCALL_H_*/

@@ -1,4 +1,4 @@
-#include "u_string.h"
+#include "string.h"
 #include <stddef.h>
 
 unsigned int vsprintf(char *dst, char* fmt, __builtin_va_list args)
@@ -201,6 +201,17 @@ void *memset(void *s, int c, size_t n)
   }
 
   return s;
+}
+
+char* strchr (register const char *s, int c)
+{
+  do {
+    if (*s == c)
+      {
+        return (char*)s;
+      }
+  } while (*s++);
+  return (0);
 }
 
 char* str_SepbySpace(char* head)

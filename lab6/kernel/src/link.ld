@@ -1,37 +1,21 @@
-_heap_stack_size = 256M;
-#heap size 0x800000
-
-# 0x080000   _start
-#            text, rodata, bss
-#            heap+stack // simple allocator
-# 0x880000   _end
-# 0x3000000  bootloader
-# 0x3100000  _end
-# 0x8000000  initramfs
-# 0x10000000 buddy_system
-# 0x20000000 _end
-
 SECTIONS
 {
     . = 0xffff000000000000;
     . += 0x80000;
-    _start = .;
-    .text : { *(.text.boot) *(.text) }
-    .rodata : { *(.rodata) }
-    .data : { *(.data) }
-    .bss : {
-        _bss_top = .;
-        *(.bss) 
+    .text : { KEEP(*(.text.boot)) *(.text .text.* .gnu.linkonce.t*) }
+    .rodata : { *(.rodata .rodata.* .gnu.linkonce.r*) }
+    PROVIDE(_data = .);
+    .data : { *(.data .data.* .gnu.linkonce.d*) }
+    .bss (NOLOAD) : {
+        . = ALIGN(16);
+        __bss_start = .;
+        *(.bss .bss.*)
+        *(COMMON)
+        __bss_end = .;
     }
-    _bss_size = SIZEOF(.bss) >> 3;
-    .heap : {
-        . = ALIGN(8);
-        _heap_top = .;
-    } 
-    . = . + _heap_stack_size;
-    .stack : {
-        . = ALIGN(8);
-        _stack_top = .;
-    }
+    _heap_start = .;
     _end = .;
+
+   /DISCARD/ : { *(.comment) *(.gnu*) *(.note*) *(.eh_frame*) }
 }
+__bss_size = (__bss_end - __bss_start) >> 3;

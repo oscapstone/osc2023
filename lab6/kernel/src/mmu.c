@@ -1,7 +1,7 @@
 #include "bcm2837/rpi_mmu.h"
 #include "mmu.h"
 #include "memory.h"
-#include "u_string.h"
+#include "string.h"
 // PGD's page frame at 0x1000
 // PUD's page frame at 0x2000
 // two-level translation (1G) -> three-level translation (2MB)

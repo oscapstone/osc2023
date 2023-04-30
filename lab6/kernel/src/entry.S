@@ -122,13 +122,13 @@ el1t_error_invalid:
 el1h_sync:
     save_all
     mov x0,4
-    bl dump_exception_router
+    bl invalid_exception_router
     load_all
     eret
 el1h_irq:
     save_all
-    mov x0, sp
-    bl el1h_irq_router
+    mov x0, sp // trapframe
+    bl irq_router
     load_all
     eret
 el1h_fiq_invalid:
@@ -146,14 +146,14 @@ el1h_error_invalid:
 
 el0_sync_64:
     save_all
-    mov x0, sp
-    bl el0_sync_router
+    mov x0, sp // trapframe
+    bl sync_64_router
     load_all
     eret
 el0_irq_64:
     save_all
-    mov x0, sp
-    bl el0_irq_64_router
+    mov x0, sp // trapframe
+    bl irq_router
     load_all
     eret
 el0_fiq_invalid_64:

@@ -1,11 +1,13 @@
-#ifndef	_EXCEPTION_H_
-#define	_EXCEPTION_H_
+#ifndef _EXCEPTION_H_
+#define _EXCEPTION_H_
 
-#include "bcm2837/rpi_mmu.h"
-#include "u_list.h"
+#include "bcm2837/rpi_irq.h"
 
-#define UART_IRQ_PRIORITY  1
-#define TIMER_IRQ_PRIORITY 0
+#define CORE0_INTERRUPT_SOURCE ((volatile unsigned int *)(PHYS_TO_VIRT(0x40000060)))
+
+#define IRQ_PENDING_1_AUX_INT (1<<29)
+#define INTERRUPT_SOURCE_GPU (1<<8)
+#define INTERRUPT_SOURCE_CNTPNSIRQ (1<<1)
 
 typedef struct trapframe
 {
@@ -43,40 +45,23 @@ typedef struct trapframe
     unsigned long spsr_el1;
     unsigned long elr_el1;
     unsigned long sp_el0;
-
 } trapframe_t;
 
-typedef struct irqtask
+void sync_64_router(trapframe_t *tpf);
+void irq_router(trapframe_t *tpf);
+void invalid_exception_router();
+
+static inline void el1_interrupt_enable()
 {
-    struct list_head listhead;
-    unsigned long long priority; // store priority (smaller number is more preemptive)
-    void *task_function;         // task function pointer
-} irqtask_t;
+    __asm__ __volatile__("msr daifclr, 0xf");
+}
 
-void irqtask_add(void *task_function, unsigned long long priority);
-void irqtask_run(irqtask_t *the_task);
-void irqtask_run_preemptive();
-void irqtask_list_init();
-
-// https://github.com/Tekki/raspberrypi-documentation/blob/master/hardware/raspberrypi/bcm2836/QA7_rev3.4.pdf p16
-#define CORE0_INTERRUPT_SOURCE ((volatile unsigned int*)(PHYS_TO_VIRT(0x40000060)))
-
-#define INTERRUPT_SOURCE_CNTPNSIRQ (1<<1)
-#define INTERRUPT_SOURCE_GPU (1<<8)
-
-#define IRQ_PENDING_1_AUX_INT (1<<29)
-
-void el1_interrupt_enable();
-void el1_interrupt_disable();
-
-void el1h_irq_router(trapframe_t* tpf);
-void el0_sync_router(trapframe_t* tpf);
-void el0_irq_64_router(trapframe_t* tpf);
-
-void dump_exception_router(unsigned long num, unsigned long esr, unsigned long elr, unsigned long spsr, unsigned long type);
-void invalid_exception_router(); // exception_handler.S
+static inline void el1_interrupt_disable()
+{
+    __asm__ __volatile__("msr daifset, 0xf");
+}
 
 void lock();
 void unlock();
 
-#endif /*_EXCEPTION_H_*/
+#endif /* _EXCEPTION_H_ */

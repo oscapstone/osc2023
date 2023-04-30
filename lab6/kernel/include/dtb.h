@@ -12,6 +12,8 @@
 #define FDT_NOP 0x00000004
 #define FDT_END 0x00000009
 
+extern char* dtb_ptr;
+
 typedef void (*dtb_callback)(uint32_t node_type, char *name, void *value, uint32_t name_size);
 
 uint32_t uint32_endian_big2lttle(uint32_t data);

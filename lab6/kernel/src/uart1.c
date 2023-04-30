@@ -3,7 +3,7 @@
 #include "bcm2837/rpi_irq.h"
 #include "uart1.h"
 #include "exception.h"
-#include "u_string.h"
+#include "string.h"
 
 //implement first in first out buffer with a read index and a write index
 char uart_tx_buffer[VSPRINT_MAX_BUF_SIZE]={};
@@ -134,7 +134,6 @@ int  uart_puts(char* fmt, ...) {
     __builtin_va_end(args);
     return count;
 }
-
 
 // AUX_MU_IER_REG -> BCM2837-ARM-Peripherals.pdf - Pg.12
 void uart_interrupt_enable(){

@@ -2,7 +2,7 @@
 #define _MEMORY_H_
 
 #include "bcm2837/rpi_mmu.h"
-#include "u_list.h"
+#include "list.h"
 
 /* Lab2 */
 void* s_allocator(unsigned int size);

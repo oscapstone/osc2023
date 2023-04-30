@@ -1,31 +1,22 @@
-#include "bcm2837/rpi_mbox.h"
 #include "syscall.h"
+#include "cpio.h"
 #include "sched.h"
+#include "stddef.h"
 #include "uart1.h"
-#include "u_string.h"
 #include "exception.h"
 #include "memory.h"
 #include "mbox.h"
 #include "signal.h"
 #include "mmu.h"
-#include "cpio.h"
-#include "dtb.h"
+#include "string.h"
 
-extern void* CPIO_DEFAULT_START;
-extern thread_t *curr_thread;
-extern thread_t threads[PIDMAX + 1];
-
-// trap is like a shared buffer for user space and kernel space
-// Because general-purpose registers are used for both arguments and return value,
-// We may receive the arguments we need, and overwrite them with return value.
-
-int getpid(trapframe_t *tpf)
+int getpid(trapframe_t* tpf)
 {
     tpf->x0 = curr_thread->pid;
     return curr_thread->pid;
 }
 
-size_t uartread(trapframe_t *tpf, char buf[], size_t size)
+size_t uartread(trapframe_t *tpf,char buf[], size_t size)
 {
     int i = 0;
     for (int i = 0; i < size;i++)
@@ -36,7 +27,7 @@ size_t uartread(trapframe_t *tpf, char buf[], size_t size)
     return i;
 }
 
-size_t uartwrite(trapframe_t *tpf, const char buf[], size_t size)
+size_t uartwrite(trapframe_t *tpf,const char buf[], size_t size)
 {
     int i = 0;
     for (int i = 0; i < size; i++)
@@ -47,64 +38,97 @@ size_t uartwrite(trapframe_t *tpf, const char buf[], size_t size)
     return i;
 }
 
-int exec(trapframe_t *tpf, const char *name, char *const argv[])
+//In this lab, you won’t have to deal with argument passing
+int exec(trapframe_t *tpf,const char *name, char *const argv[])
 {
-    char        *program_addr = get_file_start((char*)name);
-    unsigned int program_size = get_file_size((char*)name);
+    kfree(curr_thread->data);
+    curr_thread->datasize = get_file_size((char *)name);
+    char *new_data = get_file_start((char *)name);
+    curr_thread->data = kmalloc(curr_thread->datasize);
 
-    curr_thread->datasize = program_size;
-    for (unsigned int i = 0; i < curr_thread->datasize; i++) {
-        curr_thread->data[i] = program_addr[i];
+    //remap code
+    mappages(PHYS_TO_VIRT(curr_thread->context.pgd), 0x0, curr_thread->datasize, (size_t)VIRT_TO_PHYS(curr_thread->data));
+
+    for (unsigned int i = 0; i < curr_thread->datasize; i++)
+    {
+        curr_thread->data[i] = new_data[i];
     }
 
-    for (int i = 0; i <= SIGNAL_MAX; i++) {
+    //clear signal handler
+    for (int i = 0; i <= SIGNAL_MAX; i++)
+    {
         curr_thread->signal_handler[i] = signal_default_handler;
     }
 
-    tpf->elr_el1 = USER_KERNEL_BASE;
-    tpf->sp_el0  = USER_KERNEL_BASE + USTACK_SIZE;
+    tpf->elr_el1 = 0;
+    tpf->sp_el0 = 0xfffffffff000;
+    tpf->x0 = 0;
     return 0;
 }
 
 int fork(trapframe_t *tpf)
 {
     lock();
-    int pid = curr_thread->pid;
-    thread_t *p_thread = curr_thread;
-    thread_t *c_thread = thread_create(curr_thread->data, curr_thread->datasize);
+    thread_t *newt = thread_create(curr_thread->data,curr_thread->datasize);
 
-    store_context(get_current());
-
-    if (curr_thread->pid == pid)
+    //copy signal handler
+    for (int i = 0; i <= SIGNAL_MAX;i++)
     {
-        for (int i = 0; i < p_thread->datasize; i++) {
-            c_thread->data[i] = p_thread->data[i];
-        }
-        for (int i = 0; i < USTACK_SIZE; i++) {
-            c_thread->stack_alloced_ptr[i] = p_thread->stack_alloced_ptr[i];
-        }
-        for (int i = 0; i < KSTACK_SIZE; i++) {
-            c_thread->kernel_stack_alloced_ptr[i] = p_thread->kernel_stack_alloced_ptr[i];
-        }
-        for(int i = 0; i <= SIGNAL_MAX; i++) {
-            c_thread->signal_handler[i] = p_thread->signal_handler[i];
-        }
-
-        mappages(c_thread->context.ttbr0_el1, USER_KERNEL_BASE, c_thread->datasize, (size_t)VIRT_TO_PHYS(c_thread->data));
-        mappages(c_thread->context.ttbr0_el1, USER_STACK_BASE , USTACK_SIZE, (size_t)VIRT_TO_PHYS(c_thread->stack_alloced_ptr));
-        mappages(c_thread->context.ttbr0_el1, PERIPHERAL_START, PERIPHERAL_END-PERIPHERAL_START, PERIPHERAL_START);
-
-        void* temp_ttbr0_el1 = c_thread->context.ttbr0_el1;
-        c_thread->context = p_thread->context;
-        c_thread->context.ttbr0_el1 = temp_ttbr0_el1;
-
-        c_thread->context.sp += c_thread->kernel_stack_alloced_ptr - p_thread->kernel_stack_alloced_ptr;
-        c_thread->context.fp += c_thread->kernel_stack_alloced_ptr - p_thread->kernel_stack_alloced_ptr;
-        unlock();
-        return c_thread->pid;
-    } else {
-        return 0;
+        newt->signal_handler[i] = curr_thread->signal_handler[i];
     }
+
+    mappages(newt->context.pgd, 0x3C000000L, 0x3000000L, 0x3C000000L);
+    mappages(newt->context.pgd, 0x3F000000L, 0x1000000L, 0x3F000000L);
+    mappages(newt->context.pgd, 0x40000000L, 0x40000000L, 0x40000000L);
+
+    // remap code and stack
+    mappages(newt->context.pgd, 0xffffffffb000, 0x4000, (size_t)VIRT_TO_PHYS(newt->stack_alloced_ptr));
+    mappages(newt->context.pgd, 0x0, newt->datasize, (size_t)VIRT_TO_PHYS(newt->data));
+
+    //在這段page被蓋爁
+    int parent_pid = curr_thread->pid;
+
+    //copy data into new process
+    for (int i = 0; i < newt->datasize; i++)
+    {
+        newt->data[i] = curr_thread->data[i];
+    }
+
+    //copy user stack into new process
+    for (int i = 0; i < USTACK_SIZE; i++)
+    {
+        newt->stack_alloced_ptr[i] = curr_thread->stack_alloced_ptr[i];
+    }
+
+    //copy stack into new process
+    for (int i = 0; i < KSTACK_SIZE; i++)
+    {
+        newt->kernel_stack_alloced_ptr[i] = curr_thread->kernel_stack_alloced_ptr[i];
+    }
+
+    //在這段page被蓋爁
+    
+    store_context(get_current());
+    //for child
+    if( parent_pid != curr_thread->pid)
+    {
+        goto child;
+    }
+
+    void *temp_pgd = newt->context.pgd;
+    newt->context = curr_thread->context;
+    newt->context.pgd = VIRT_TO_PHYS(temp_pgd);
+    newt->context.fp += newt->kernel_stack_alloced_ptr - curr_thread->kernel_stack_alloced_ptr; // move fp
+    newt->context.sp += newt->kernel_stack_alloced_ptr - curr_thread->kernel_stack_alloced_ptr; // move kernel sp
+
+    unlock();
+
+    tpf->x0 = newt->pid;
+    return newt->pid;
+
+child:
+    tpf->x0 = 0;
+    return 0;
 }
 
 void exit(trapframe_t *tpf, int status)
@@ -114,19 +138,27 @@ void exit(trapframe_t *tpf, int status)
 
 int syscall_mbox_call(trapframe_t *tpf, unsigned char ch, unsigned int *mbox_user)
 {
+    //mbox_user = (unsigned int *)(curr_thread->stack_alloced_ptr + USTACK_SIZE - (0xfffffffff000 - (size_t)mbox));
     lock();
+
     unsigned int size_of_mbox = mbox_user[0];
     memcpy((char *)pt, mbox_user, size_of_mbox);
     mbox_call(MBOX_TAGS_ARM_TO_VC, (unsigned int)((unsigned long)&pt));
     memcpy(mbox_user, (char *)pt, size_of_mbox);
+
+    tpf->x0 = 8;
     unlock();
     return 0;
 }
 
-void kill(trapframe_t *tpf, int pid)
+void kill(trapframe_t *tpf,int pid)
 {
-    if ( pid < 0 || pid >= PIDMAX || !threads[pid].isused) return;
     lock();
+    if (pid >= PIDMAX || pid < 0  || !threads[pid].isused)
+    {
+        unlock();
+        return;
+    }
     threads[pid].iszombie = 1;
     unlock();
     schedule();
@@ -134,13 +166,15 @@ void kill(trapframe_t *tpf, int pid)
 
 void signal_register(int signal, void (*handler)())
 {
-    if (signal > SIGNAL_MAX || signal < 0) return;
+    if (signal > SIGNAL_MAX || signal < 0)return;
+
     curr_thread->signal_handler[signal] = handler;
 }
 
 void signal_kill(int pid, int signal)
 {
     if (pid > PIDMAX || pid < 0 || !threads[pid].isused)return;
+
     lock();
     threads[pid].sigcount[signal]++;
     unlock();
@@ -150,8 +184,10 @@ void sigreturn(trapframe_t *tpf)
 {
     unsigned long signal_ustack = tpf->sp_el0 % USTACK_SIZE == 0 ? tpf->sp_el0 - USTACK_SIZE : tpf->sp_el0 & (~(USTACK_SIZE - 1));
     kfree((char*)signal_ustack);
-    load_context(&curr_thread->signal_savedContext);
+    load_context(&curr_thread->signal_saved_context);
 }
+
+
 
 
 char* get_file_start(char *thefilepath)
@@ -164,21 +200,9 @@ char* get_file_start(char *thefilepath)
     while (header_pointer != 0)
     {
         int error = cpio_newc_parse_header(header_pointer, &filepath, &filesize, &filedata, &header_pointer);
-        //if parse header error
-        if (error)
-        {
-            uart_puts("error");
-            break;
-        }
-
-        if (strcmp(thefilepath, filepath) == 0)
-        {
-            return filedata;
-        }
-
-        //if this is TRAILER!!! (last of file)
-        if (header_pointer == 0)
-            uart_puts("execfile: %s: No such file or directory\r\n", thefilepath);
+        if (error) break;
+        if (strcmp(thefilepath, filepath) == 0) return filedata;
+        if (header_pointer == 0) uart_puts("execfile: %s: No such file or directory\r\n", thefilepath);
     }
     return 0;
 }
@@ -193,21 +217,9 @@ unsigned int get_file_size(char *thefilepath)
     while (header_pointer != 0)
     {
         int error = cpio_newc_parse_header(header_pointer, &filepath, &filesize, &filedata, &header_pointer);
-        //if parse header error
-        if (error)
-        {
-            uart_puts("error");
-            break;
-        }
-
-        if (strcmp(thefilepath, filepath) == 0)
-        {
-            return filesize;
-        }
-
-        //if this is TRAILER!!! (last of file)
-        if (header_pointer == 0)
-            uart_puts("execfile: %s: No such file or directory\r\n", thefilepath);
+        if (error) break;
+        if (strcmp(thefilepath, filepath) == 0) return filesize;
+        if (header_pointer == 0) uart_puts("execfile: %s: No such file or directory\r\n", thefilepath);
     }
     return 0;
 }

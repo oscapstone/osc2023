@@ -4,13 +4,13 @@
 #include "mbox.h"
 #include "power.h"
 #include "cpio.h"
-#include "u_string.h"
+#include "string.h"
 #include "dtb.h"
 #include "memory.h"
 #include "timer.h"
 #include "sched.h"
 
-#define CLI_MAX_CMD 13
+#define CLI_MAX_CMD 9
 
 extern int   uart_recv_echo_flag;
 extern char* dtb_ptr;
@@ -23,13 +23,9 @@ struct CLI_CMDS cmd_list[CLI_MAX_CMD]=
     {.command="exec", .help="execute a command, replacing current image with a new image"},
     {.command="hello", .help="print Hello World!"},
     {.command="help", .help="print all available commands"},
-    {.command="s_allocator", .help="simple allocator in heap session"},
-    {.command="thread_tester", .help="thread tester with dummy function - foo()"},
     {.command="info", .help="get device information via mailbox"},
     {.command="ls", .help="list directory contents"},
-    {.command="memory_tester", .help="memory testcase generator, allocate and free"},
     {.command="setTimeout", .help="setTimeout [MESSAGE] [SECONDS]"},
-    {.command="set2sAlert", .help="set core timer interrupt every 2 second"},
     {.command="reboot", .help="reboot the device"}
 };
 
@@ -73,19 +69,11 @@ void cli_cmd_exec(char* buffer)
         do_cmd_help();
     } else if (strcmp(cmd, "info") == 0) {
         do_cmd_info();
-    } else if (strcmp(cmd, "s_allocator") == 0) {
-        do_cmd_s_allocator();
-    } else if (strcmp(cmd, "thread_tester") == 0) {
-        do_cmd_thread_tester();
     } else if (strcmp(cmd, "ls") == 0) {
         do_cmd_ls(argvs);
-    } else if (strcmp(cmd, "memory_tester") == 0) {
-        do_cmd_memory_tester();
     } else if (strcmp(cmd, "setTimeout") == 0) {
         char* sec = str_SepbySpace(argvs);
         do_cmd_setTimeout(argvs, sec);
-    } else if (strcmp(cmd, "set2sAlert") == 0) {
-        do_cmd_set2sAlert();
     } else if (strcmp(cmd, "reboot") == 0) {
         do_cmd_reboot();
     }
@@ -95,7 +83,7 @@ void cli_print_banner()
 {
     uart_puts("\r\n");
     uart_puts("=======================================\r\n");
-    uart_puts("  Welcome to NYCU-OSC 2023 Lab5 Shell  \r\n");
+    uart_puts("  Welcome to NYCU-OSC 2023 Lab6 Shell  \r\n");
     uart_puts("=======================================\r\n");
 }
 
@@ -109,20 +97,12 @@ void do_cmd_cat(char* filepath)
     while(header_ptr!=0)
     {
         int error = cpio_newc_parse_header(header_ptr, &c_filepath, &c_filesize, &c_filedata, &header_ptr);
-        //if parse header error
-        if(error)
-        {
-            uart_puts("cpio parse error");
-            break;
-        }
-
+        if(error) break;
         if(strcmp(c_filepath, filepath)==0)
         {
             uart_puts("%s", c_filedata);
             break;
         }
-
-        //if this is TRAILER!!! (last of file)
         if(header_ptr==0) uart_puts("cat: %s: No such file or directory\n", filepath);
     }
 }
@@ -153,20 +133,13 @@ void do_cmd_exec(char* filepath)
     while(header_ptr!=0)
     {
         int error = cpio_newc_parse_header(header_ptr, &c_filepath, &c_filesize, &c_filedata, &header_ptr);
-        //if parse header error
-        if(error)
-        {
-            uart_puts("cpio parse error");
-            break;
-        }
+        if(error) break;
 
         if(strcmp(c_filepath, filepath)==0)
         {
             uart_recv_echo_flag = 0; // syscall.img has different mechanism on uart I/O.
-            exec_thread(c_filedata, c_filesize);
+            thread_exec(c_filedata, c_filesize);
         }
-
-        //if this is TRAILER!!! (last of file)
         if(header_ptr==0) uart_puts("cat: %s: No such file or directory\n", filepath);
     }
 
@@ -215,31 +188,6 @@ void do_cmd_info()
     }
 }
 
-void do_cmd_s_allocator()
-{
-    //test malloc
-    char* test1 = s_allocator(0x18);
-    memcpy(test1,"test malloc1",sizeof("test malloc1"));
-    uart_puts("%s\n",test1);
-
-    char* test2 = s_allocator(0x20);
-    memcpy(test2,"test malloc2",sizeof("test malloc2"));
-    uart_puts("%s\n",test2);
-
-    char* test3 = s_allocator(0x28);
-    memcpy(test3,"test malloc3",sizeof("test malloc3"));
-    uart_puts("%s\n",test3);
-}
-
-void do_cmd_thread_tester()
-{
-    for (int i = 0; i < 5; ++i)
-    { // N should > 2
-        thread_create(foo, 0x1000);
-    }
-    idle();
-}
-
 void do_cmd_ls(char* workdir)
 {
     char* c_filepath;
@@ -250,83 +198,14 @@ void do_cmd_ls(char* workdir)
     while(header_ptr!=0)
     {
         int error = cpio_newc_parse_header(header_ptr, &c_filepath, &c_filesize, &c_filedata, &header_ptr);
-        //if parse header error
-        if(error)
-        {
-            uart_puts("cpio parse error");
-            break;
-        }
-
-        //if this is not TRAILER!!! (last of file)
+        if(error) break;
         if(header_ptr!=0) uart_puts("%s\n", c_filepath);
     }
-}
-
-void do_cmd_memory_tester()
-{
-/*
-    char *p1 = kmalloc(0x820);
-    char *p2 = kmalloc(0x900);
-    char *p3 = kmalloc(0x2000);
-    char *p4 = kmalloc(0x3900);
-    kfree(p3);
-    kfree(p4);
-    kfree(p1);
-    kfree(p2);
-*/
-    char *a = kmalloc(0x10);
-    char *b = kmalloc(0x100);
-    char *c = kmalloc(0x1000);
-
-    kfree(a);
-    kfree(b);
-    kfree(c);
-
-    a = kmalloc(32);
-    char *aa = kmalloc(50);
-    b = kmalloc(64);
-    char *bb = kmalloc(64);
-    c = kmalloc(128);
-    char *cc = kmalloc(129);
-    char *d = kmalloc(256);
-    char *dd = kmalloc(256);
-    char *e = kmalloc(512);
-    char *ee = kmalloc(999);
-
-    char *f = kmalloc(0x2000);
-    char *ff = kmalloc(0x2000);
-    char *g = kmalloc(0x2000);
-    char *gg = kmalloc(0x2000);
-    char *h = kmalloc(0x2000);
-    char *hh = kmalloc(0x2000);
-
-    kfree(a);
-    kfree(aa);
-    kfree(b);
-    kfree(bb);
-    kfree(c);
-    kfree(cc);
-    kfree(dd);
-    kfree(d);
-    kfree(e);
-    kfree(ee);
-
-    kfree(f);
-    kfree(ff);
-    kfree(g);
-    kfree(gg);
-    kfree(h);
-    kfree(hh);
 }
 
 void do_cmd_setTimeout(char* msg, char* sec)
 {
     add_timer(uart_sendline,atoi(sec),msg,0);
-}
-
-void do_cmd_set2sAlert()
-{
-    add_timer(timer_set2sAlert,2,"2sAlert",0);
 }
 
 void do_cmd_reboot()

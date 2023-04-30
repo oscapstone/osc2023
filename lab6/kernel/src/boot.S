@@ -1,22 +1,20 @@
-/* ARMv8 Assembly */
-
 #include "mmu.h"
+
 .section ".text.boot"
 
 .global _start
 
 _start:
+    // Switch from EL2 to EL1 .
     bl from_el2_to_el1
 
+set_mmu_configuration:
     // set paging configuration (up : 0xffff000000000000 low : 0x0000000000000000)
     ldr x4, = TCR_CONFIG_DEFAULT
     msr tcr_el1, x4
 
     // Set Used Memory Attributes
-    ldr x4, =( \
-        (MAIR_DEVICE_nGnRnE << (MAIR_IDX_DEVICE_nGnRnE * 8)) | \
-        (MAIR_NORMAL_NOCACHE << (MAIR_IDX_NORMAL_NOCACHE * 8)) \
-    )
+    ldr x4, =((MAIR_DEVICE_nGnRnE << (MAIR_IDX_DEVICE_nGnRnE * 8)) | (MAIR_NORMAL_NOCACHE << (MAIR_IDX_NORMAL_NOCACHE * 8)))
     msr mair_el1, x4
 
     // set and enable MMU
@@ -38,7 +36,7 @@ _start:
     msr ttbr0_el1, x4 // load PGD to the bottom translation-based register.
     msr ttbr1_el1, x4 // also load PGD to the upper translation based register.
 
-    mov sp, 0x3c000000 // use temperary stack
+    mov sp, 0x3c000000
     bl set_2M_kernel_mmu
 
     mrs x2, sctlr_el1
@@ -50,22 +48,24 @@ _start:
     br x2
 
 set_exception_vector_table:
-    adr x1, exception_vector_table // vbar_el1: Vector Base Address Register (EL1)
-    msr vbar_el1, x1               //           Holds the exception base address for any exception that is taken to EL1.
+    adr x1, exception_vector_table
+    msr vbar_el1, x1
 
 setup_stack:
-    ldr     x1, =_stack_top
-    mov     sp, x1                 // sp = x1
+    // set top of stack at 0xffff00003c000000 (last usable memory)
+    movz x3, 0x0000
+    movk x3, 0x3c00, lsl 16
+    movk x3, 0xffff, lsl 48
+    mov  sp, x3
 
 setup_bss:
-    ldr     x1, =_bss_top          // load 32bits to x1 from _bss_top
-    ldr     w2, =_bss_size         // load 64bits to w2 from _bss_size
-
+    ldr     x1, =__bss_start
+    ldr     w2, =__bss_size
 init_bss:
     cbz     w2, run_main
-    str     xzr, [x1], #8          // store xzr to addr[x1], then x1=x1+8
+    str     xzr, [x1], #8
     sub     w2, w2, #1
-    cbnz    w2, init_bss           // branch if w2 != 0
+    cbnz    w2, init_bss
 
 run_main:
     ldr     x1, =dtb_ptr

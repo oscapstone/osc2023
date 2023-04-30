@@ -1,5 +1,5 @@
-#ifndef _U_LIST_H_
-#define _U_LIST_H_
+#ifndef LIST_H
+#define LIST_H
 
 /*
  * Circular doubly linked list implementation.
@@ -10,7 +10,7 @@
  * generate better code by using them directly rather than
  * using the generic single-entry routines.
  *
- * https://github.com/torvalds/linux/blob/master/include/linux/list.
+ * https://github.com/torvalds/linux/blob/master/include/linux/list.h
  * https://elixir.bootlin.com/linux/latest/source/scripts/kconfig/list.h#L24
  */
 
@@ -134,4 +134,4 @@ static inline int list_size(const struct list_head *head)
 	return i;
 }
 
-#endif /* _U_LIST_H_ */
+#endif
