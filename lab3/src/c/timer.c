@@ -7,8 +7,15 @@
 struct list_head user_timer_list;
 extern int user_timer;
 
-void timer_router(unsigned long cntpct, unsigned long cntfrq)
+void timer_router()
 {
+    unsigned long cntpct;
+    unsigned long cntfrq;
+    asm volatile(
+        "mrs %0, cntpct_el0 \n\t"
+        "mrs %1, cntfrq_el0 \n\t"
+        : "=r"(cntpct), "=r"(cntfrq)
+        :);
     if (user_timer)
         handle_due_timeout();
     else

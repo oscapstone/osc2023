@@ -25,7 +25,8 @@
 
 #include "gpio.h"
 #include "uart.h"
-
+#include "queue.h"
+struct queue uart_write, uart_read;
 /**
  * Set baud rate and characteristics (115200 8N1) and map to GPIO
  */
@@ -75,28 +76,36 @@ void init_uart()
  */
 void uart_send(unsigned int c)
 {
-    /* Wait until we can send */
-    do
+    // /* Wait until we can send */
+    // do
+    // {
+
+    //     asm volatile("nop");
+
+    // } while (!(*AUX_MU_LSR & 0x20));
+
+    // /* write the character to the buffer */
+    // *AUX_MU_IO = c;
+
+    // if (c == '\n')
+    // {
+    //     do
+    //     {
+
+    //         asm volatile("nop");
+
+    //     } while (!(*AUX_MU_LSR & 0x20));
+
+    //     *AUX_MU_IO = '\r';
+    // }
+    int was_empty = 0;
+    if (queue_empty(&uart_write))
     {
-
-        asm volatile("nop");
-
-    } while (!(*AUX_MU_LSR & 0x20));
-
-    /* write the character to the buffer */
-    *AUX_MU_IO = c;
-
-    if (c == '\n')
-    {
-        do
-        {
-
-            asm volatile("nop");
-
-        } while (!(*AUX_MU_LSR & 0x20));
-
-        *AUX_MU_IO = '\r';
+        was_empty = 1;
     }
+    queue_push(&uart_write, c); // push to write queue, drop if buffer full
+    if (was_empty)
+        *AUX_MU_IER |= 2; // enable interrupt (2: I can transmit to uart, 1: I can receive from uart)
 }
 
 /**
@@ -105,20 +114,26 @@ void uart_send(unsigned int c)
 char uart_getc()
 {
 
-    char r;
+    // char r;
 
-    /* wait until something is in the buffer */
-    do
+    // /* wait until something is in the buffer */
+    // do
+    // {
+
+    //     asm volatile("nop");
+
+    // } while (!(*AUX_MU_LSR & 0x01));
+
+    // /* read it and return */
+    // r = (char)(*AUX_MU_IO);
+    // /* convert carrige return to newline
+    //    because pressing enter only sends \r */
+    // return r == '\r' ? '\n' : r;
+    while (queue_empty(&uart_read))
     {
-
         asm volatile("nop");
-
-    } while (!(*AUX_MU_LSR & 0x01));
-
-    /* read it and return */
-    r = (char)(*AUX_MU_IO);
-    /* convert carrige return to newline 
-       because pressing enter only sends \r */
+    }
+    char r = queue_pop(&uart_read);
     return r == '\r' ? '\n' : r;
 }
 
@@ -167,8 +182,8 @@ void uart_puts(char *s)
     {
         /* convert newline to carrige return + newline */
 
-        //if(*s=='\n')
-        //    uart_send('\r');
+        // if(*s=='\n')
+        //     uart_send('\r');
 
         uart_send(*s++);
     }
@@ -177,4 +192,24 @@ void uart_puts(char *s)
 void putc(void *p, char c)
 {
     uart_send(c);
+}
+
+void mini_uart_handler()
+{
+    if (*AUX_MU_IIR & 2)
+    { // can transmit
+        char c = queue_pop(&uart_write);
+        *AUX_MU_IO = c;
+        if (queue_empty(&uart_write))
+        {
+            *AUX_MU_IER &= ~2; // disable transmit interrupt
+        }
+    }
+    else if (*AUX_MU_IIR & 4)
+    { // can receive
+        if (queue_full(&uart_read))
+            return;
+        char r = (char)(*AUX_MU_IO);
+        queue_push(&uart_read, r);
+    }
 }

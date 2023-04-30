@@ -60,7 +60,7 @@ exception_vector_table:
     .align 7
     b svc_handler           // Synchronous
     .align 7
-    b timer_handler         // IRQ
+    b irq_hander         // IRQ
     .align 7
     b invalid_handler       // FIQ
     .align 7
@@ -70,7 +70,7 @@ exception_vector_table:
     .align 7
     b svc_handler           // Synchronous
     .align 7
-    b invalid_handler       // IRQ
+    b irq_hander       // IRQ
     .align 7 
     b invalid_handler       // FIQ
     .align 7 
@@ -108,3 +108,9 @@ invalid_handler:
 .global return_to_el1
 return_to_el1:
     svc 4
+
+irq_hander:
+    save_regs
+    bl  irq_router
+    load_regs
+    eret

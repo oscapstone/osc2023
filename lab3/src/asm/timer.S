@@ -77,8 +77,6 @@ core_timer_disable:
 timer_handler:
     save_regs
 
-    mrs x0, cntpct_el0
-    mrs x1, cntfrq_el0
     bl  timer_router
     
     load_regs
