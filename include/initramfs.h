@@ -1,5 +1,8 @@
 #ifndef _INITRAMFS_H
 #define _INITRAMFS_H
+#include "stdint.h"
+#include "utils.h"
+// #define INIT_KSIZE 0x4000
 extern char *cpio_addr, *cpio_end;
 //struct __attribute__((__packed__)) cpio_newc_header {
 struct cpio_newc_header {
@@ -23,11 +26,9 @@ struct initramfs {
     char *addr;
     void (*ls)(struct initramfs *self, char *path);
     void (*cat)(struct initramfs *self, char *path);
+    char *(*file_content)(struct initramfs *self, char *path, size_t *fsize);
     int (*exec)(struct initramfs *self, char *argv[]);
 };
 extern struct initramfs _initramfs;
 extern void init_initramfs(struct initramfs *fs);
-extern void _cpio_ls(struct initramfs *self, char *path);
-extern void _cpio_cat(struct initramfs *self, char *path);
-extern int _cpio_exec(struct initramfs *self, char *argv[]);
 #endif

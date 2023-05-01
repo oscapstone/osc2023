@@ -17,9 +17,9 @@ void *simple_malloc(unsigned long long size) {
         return NULL;
     }
     char *ret = & __heap_start + allocated;
-    disable_local_all_interrupt();
+    disable_interrupt();
     allocated += size;
-    enable_local_all_interrupt();
+    test_enable_interrupt();
     return ret;
 }
 
@@ -97,14 +97,13 @@ static void _buddy_unlink_blk(struct buddy *self, bd_blk_t *blk, int order)
 
 void *_buddy_alloc_pages(struct buddy *self, size_t page_no)
 {
-    disable_local_all_interrupt();
+    
 #ifdef PRINT_LOG
     uart_write_string("---------------------------------------------\nCall Buddy Allocate pages:");
     uart_write_no(page_no);
     uart_write_string("\n");
 #endif
     if (page_no == 0) {
-        enable_local_all_interrupt();
         return NULL;
     }
     //align to closet power of 2
@@ -112,9 +111,9 @@ void *_buddy_alloc_pages(struct buddy *self, size_t page_no)
     //page_cnt is in power of 2
     unsigned request_order = ul_log2(page_cnt);
     if (request_order >= BUDDY_ORDERS) {
-        enable_local_all_interrupt();
         return NULL;
     }
+    disable_interrupt();
 #ifdef PRINT_LOG
     uart_write_string("Request order: ");
     uart_write_no(request_order);
@@ -132,7 +131,7 @@ void *_buddy_alloc_pages(struct buddy *self, size_t page_no)
     }
     if (blk == NULL) {
         //cannot find a large enough free block
-        enable_local_all_interrupt();
+        test_enable_interrupt();
         return NULL;
     }
     int index = (blk - self->blk_meta);
@@ -157,7 +156,7 @@ void *_buddy_alloc_pages(struct buddy *self, size_t page_no)
     _buddy_blk_show(self, blk);
 #endif
     ///////////////////////////////////////////////////////////////
-    enable_local_all_interrupt();
+    test_enable_interrupt();
     return index2addr(self, index);
 }
 
@@ -165,7 +164,7 @@ void *_buddy_alloc_pages(struct buddy *self, size_t page_no)
 
 void _buddy_free(struct buddy *self, void *addr)
 {
-    disable_local_all_interrupt();
+    disable_interrupt();
     int index = addr2index(self, addr);
     //no double free
     bd_blk_t *blk = &(self->blk_meta[index]);
@@ -176,7 +175,7 @@ void _buddy_free(struct buddy *self, void *addr)
     _buddy_blk_show(self, blk);
 #endif
     if (BLK_ISFREE(*blk)) {
-        enable_local_all_interrupt();
+        test_enable_interrupt();
         return;
     }
     //set blk as a free block
@@ -225,7 +224,7 @@ void _buddy_free(struct buddy *self, void *addr)
     uart_write_string("Push Merged Free block: \n");
     _buddy_blk_show(self, blk);
 #endif
-    enable_local_all_interrupt();
+    test_enable_interrupt();
 }
 
 //top-down allocate block
@@ -286,7 +285,7 @@ static void _buddy_internal_mem_reserve(struct buddy *self, int start, int end, 
 
 void _buddy_mem_reserve(struct buddy *self, char *start, char *end)
 {
-    disable_local_all_interrupt();
+    disable_interrupt();
     if (start < self->pool || end > alignToNextPowerOf2(self->pool_end))
         return;
     //find start index
@@ -296,7 +295,7 @@ void _buddy_mem_reserve(struct buddy *self, char *start, char *end)
     int end_index = ceil((end - self->pool), PAGE_SIZE);
     end_index = min(end_index, (1 << (BUDDY_ORDERS)));
     _buddy_internal_mem_reserve(self, start_index, end_index, 0, BUDDY_ORDERS-1);
-    enable_local_all_interrupt();
+    test_enable_interrupt();
 }
 extern char _proc_start, _proc_end;
 
@@ -332,6 +331,8 @@ void init_buddy(buddy_t *self)
     self->mem_reserve(self, _fdt.head_addr, _fdt.end_addr);
     //Your simple allocator (startup allocator)
     //No. It's within kernel
+    //kernel init stack
+    self->mem_reserve(self, LOW_MEMORY - PAGE_SIZE, LOW_MEMORY);;
 }
 
 void *alloc_pages(size_t no_pages)
@@ -368,22 +369,22 @@ static void _mem_chunk_pool_append(struct mem_pool *self, int order)
     char *end = (char *)new_page + PAGE_SIZE;
     char *start = (char *)new_page;
     const size_t unit = (0x10 * order + sizeof(mem_chunk_t));
-    for (; start < end; start += unit) {
+    for (; start + unit < end; start += unit) {
         _mem_chunk_push(&(self->free_list[order]), (mem_chunk_t *)start, order);
     }
 }
 void *_mem_pool_malloc(struct mem_pool *self, size_t size)
 {
-    disable_local_all_interrupt();
+    disable_interrupt();
     int order = ceil(size, 0x10);
 #ifdef PRINT_LOG
-    uart_write_string("Call mem pool malloc: ");
+    uart_write_string("Call mem pool kmalloc: ");
     uart_write_no(size);
     uart_write_string("\n");
 #endif
     if (order >= self->chunk_orders) {
         //request size larger than max chunk size
-        enable_local_all_interrupt();
+        test_enable_interrupt();
         return NULL;
     }
     if (self->free_list[order] == NULL)
@@ -394,13 +395,13 @@ void *_mem_pool_malloc(struct mem_pool *self, size_t size)
     uart_write_no_hex((unsigned long long)ret);
     uart_write_string("\n");
 #endif
-    enable_local_all_interrupt();
+    test_enable_interrupt();
     return ret;
 }
 
 void _mem_pool_free(struct mem_pool *self, void *addr)
 {
-    disable_local_all_interrupt();
+    disable_interrupt();
     // mem_chunk_t *header = (mem_chunk_t *)container_of(addr, mem_chunk_t, data);
     mem_chunk_t *header = (mem_chunk_t *)((char *)addr - sizeof(mem_chunk_t));
 #ifdef PRINT_LOG
@@ -410,7 +411,7 @@ void _mem_pool_free(struct mem_pool *self, void *addr)
 #endif
     int order = GET_CHUNK_ORDER(header);
     _mem_chunk_push(&(self->free_list[order]), header, order);
-    enable_local_all_interrupt();
+    test_enable_interrupt();
 }
 
 void init_mem_pool(mem_pool_t *self)
@@ -424,12 +425,12 @@ void init_mem_pool(mem_pool_t *self)
     self->free = _mem_pool_free;
 }
 
-void *malloc(size_t size)
+void *kmalloc(size_t size)
 {
     return _mem_pool.malloc(&_mem_pool, size);
 }
 
-void free(void *addr)
+void kfree(void *addr)
 {
     _mem_pool.free(&_mem_pool, addr);
 }
@@ -463,11 +464,11 @@ void test_buddy()
 
 void test_mem_pool()
 {
-    void *p1 = malloc(16);
-    void *p2 = malloc(16);
-    void *p3 = malloc(32);
+    void *p1 = kmalloc(16);
+    void *p2 = kmalloc(16);
+    void *p3 = kmalloc(32);
     // void *p4 = alloc_pages(16);
-    free(p1);
-    free(p3);
-    free(p2);
+    kfree(p1);
+    kfree(p3);
+    kfree(p2);
 }

@@ -35,8 +35,9 @@ run_user_program:
     //https://developer.arm.com/documentation/ddi0595/2021-06/AArch64-Registers/SPSR-EL1--Saved-Program-Status-Register--EL1-
     //https://willendless.github.io/%E4%BD%93%E7%B3%BB%E7%BB%93%E6%9E%84/2021/03/11/ARM%E6%9E%B6%E6%9E%843/ 1.2.2
     //DAIF = 0b1111, others fields are 0
-    mov x2, #0x3c0
-    //mov x2, #0x0
+    //mov x2, #0x3c0
+    //allow interrupt
+    mov x2, #0x0
     msr spsr_el1, x2
     msr elr_el1, x0 //text address of Program
     msr sp_el0, x1  //stack address of Program

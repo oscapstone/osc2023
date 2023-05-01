@@ -22,7 +22,7 @@ extern void my_bzero(void *src, unsigned long n);
 extern void *simple_malloc(unsigned long long size);
 
 ////////////////////////// buddy system ////////////////////////
-#define PRINT_LOG 1
+// #define PRINT_LOG 0
 #define BUDDY_ORDERS 16
 #define BLK_INVALID (~(unsigned)0)
 #define BLK_INUSE(blk) ( GETBIT((blk).flags, (sizeof(unsigned) << 3)-1) )
@@ -55,18 +55,16 @@ extern void init_buddy(buddy_t *self);
 extern buddy_t _buddy;
 extern void *alloc_pages(size_t no_pages);
 extern void free_page(void *addr);
-// #define alloc_pages(no_pages) _buddy.alloc_pages(&_buddy, (no_pages))
-// #define free_page(addr) (_buddy.free((&_buddy), (addr)))
-// #define free_page_addr(addr) _buddy.free(&_buddy, (addr))
 ///////////////////// dynamic memory allocator //////////////////
+//slab memory
 typedef struct mem_chunk {
-    //address of mem_chunk should be aligned to 8.
+    //address of mem_chunk should be aligned to 16.
     //next is defined as (next address of the same order | order) //depreciated
     struct mem_chunk *next;
     size_t order;
     char data[0];
 } mem_chunk_t;
-#define CHUNK_ORDERS 8
+#define CHUNK_ORDERS 64
 // #define SET_CHUNK_ORDER(chunk, order) ((chunk)->next = (mem_chunk_t *)(((uint64_t)((chunk)->next) & ~(CHUNK_ORDERS-1)) | ((order) & (CHUNK_ORDERS-1))))
 #define SET_CHUNK_ORDER(chunk, set_order) ((chunk)->order = (set_order))
 // #define GET_CHUNK_ORDER(chunk) ((uint64_t)((chunk)->next) & (CHUNK_ORDERS-1))
@@ -87,8 +85,8 @@ extern void init_mem_pool(mem_pool_t* self);
 extern mem_pool_t _mem_pool;
 // #define malloc(size) _mem_pool.malloc(&_mem_pool, (size))
 // #define free(addr) _mem_pool.free(&_mem_pool.free, (addr))
-extern void *malloc(size_t size);
-extern void free(void *addr);
+extern void *kmalloc(size_t size);
+extern void kfree(void *addr);
 extern void test_buddy();
 extern void test_mem_pool();
 

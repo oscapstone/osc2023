@@ -1,4 +1,5 @@
 #include "utils.h"
+#include "stdint.h"
 #pragma GCC push_options
 #pragma GCC optimize ("unroll-loops")
 void delay(unsigned int t) {
@@ -11,6 +12,12 @@ void *memcpy(void *dest, const void *src, unsigned int len)
 {
   char *d = dest;
   const char *s = src;
+  // while (len > 8) {
+  //   *(uint64_t *)d = *(uint64_t *)s;
+  //   d += 8;
+  //   s += 8;
+  //   len -= 8;
+  // }
   while (len--)
     *d++ = *s++;
   return dest;

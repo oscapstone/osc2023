@@ -3,6 +3,7 @@
 #include "utils.h"
 #include "mmio.h"
 #include "list.h"
+#include "stdint.h"
 //https://github.com/Tekki/raspberrypi-documentation/blob/master/hardware/raspberrypi/bcm2836/QA7_rev3.4.pdf p7
 //https://datasheets.raspberrypi.com/bcm2836/bcm2836-peripherals.pdf 4.6
 #define CORE0_TIMER_IRQ_CTRL ((volatile unsigned int *)(0x40000040))
@@ -27,12 +28,12 @@ typedef struct timer_task_node {
     unsigned long long run_at;
     timer_interrupt_callback_t callback;
     void *data;
-    struct timer_task_node *next, *prev;
+    list_t node;
 } timer_task_t;
 struct timer_task_scheduler {
     //member variable
     //  doubled-linked-list queue head sorted by run_at in increasing order
-    timer_task_t *head;
+    list_t head;
     //  size
     size_t qsize;
 
@@ -54,10 +55,13 @@ struct timer_task_scheduler {
     //  return 1 if timer was added successfully, 0 if timer has expired or has problem on inserting to queue
     int (*add_timer_second) (struct timer_task_scheduler *self, timer_interrupt_callback_t callback, void *data, size_t duration);
     void (*interval_run_second)(struct timer_task_scheduler *self, timer_interrupt_callback_t callback, void *data, size_t duration);
+    int (*add_timer_tick) (struct timer_task_scheduler *self, timer_interrupt_callback_t callback, void *data, size_t ticks);
+    void (*interval_run_tick)(struct timer_task_scheduler *self, timer_interrupt_callback_t callback, void *data, size_t duration);//duration is in ticks
 };
 extern void timer_task_scheduler_init(struct timer_task_scheduler *self);
 extern struct timer_task_scheduler _timer_task_scheduler;
 extern void print_uptime_every2second();
 extern void notify(void *arg);
 extern void sleep_timer(void *arg);
+extern void enable_el0_access_pcnter();
 #endif
