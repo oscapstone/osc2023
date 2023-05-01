@@ -54,6 +54,8 @@ struct timer_task_scheduler {
     //  return 1 if timer was added successfully, 0 if timer has expired or has problem on inserting to queue
     int (*add_timer_second) (struct timer_task_scheduler *self, timer_interrupt_callback_t callback, void *data, size_t duration);
     void (*interval_run_second)(struct timer_task_scheduler *self, timer_interrupt_callback_t callback, void *data, size_t duration);
+    int (*add_timer_tick) (struct timer_task_scheduler *self, timer_interrupt_callback_t callback, void *data, size_t ticks);
+    void (*interval_run_tick)(struct timer_task_scheduler *self, timer_interrupt_callback_t callback, void *data, size_t duration);//duration is in ticks
 };
 extern void timer_task_scheduler_init(struct timer_task_scheduler *self);
 extern struct timer_task_scheduler _timer_task_scheduler;

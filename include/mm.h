@@ -64,7 +64,7 @@ typedef struct mem_chunk {
     size_t order;
     char data[0];
 } mem_chunk_t;
-#define CHUNK_ORDERS 16
+#define CHUNK_ORDERS 64
 // #define SET_CHUNK_ORDER(chunk, order) ((chunk)->next = (mem_chunk_t *)(((uint64_t)((chunk)->next) & ~(CHUNK_ORDERS-1)) | ((order) & (CHUNK_ORDERS-1))))
 #define SET_CHUNK_ORDER(chunk, set_order) ((chunk)->order = (set_order))
 // #define GET_CHUNK_ORDER(chunk) ((uint64_t)((chunk)->next) & (CHUNK_ORDERS-1))

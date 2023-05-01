@@ -1,5 +1,6 @@
 .global switch_to
 switch_to:
+    msr daifset, 0xf
     stp x19, x20, [x0, 16 * 0]
     stp x21, x22, [x0, 16 * 1]
     stp x23, x24, [x0, 16 * 2]
@@ -18,6 +19,7 @@ switch_to:
     ldr x9, [x1, 16 * 6]
     mov sp,  x9
     msr tpidr_el1, x1
+    msr daifclr, 0xf
     ret
 
 .global get_current_ctx

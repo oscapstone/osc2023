@@ -108,6 +108,22 @@ void _timer_interrupt_handler(struct timer_task_scheduler *self)
     }
 }
 
+/*
+add_timer_second
+    @param1: callback
+    @param2: data
+    @param3: duration in seconds
+    return 1 if timer was added successfully, 0 if timer has expired or has problem on inserting to queue
+*/
+int _add_timer_tick(struct timer_task_scheduler *self, timer_interrupt_callback_t callback, void *data, size_t ticks)
+{
+    timer_task_t *task = (timer_task_t *)kmalloc(sizeof(timer_task_t));
+    task->callback = callback;
+    task->data = data;
+    unsigned long long cur_ticks = get_timer_ticks();
+    task->run_at = cur_ticks + ticks;
+    return self->insert(self, task);
+}
 
 /*
 add_timer_second
@@ -119,7 +135,7 @@ add_timer_second
 int _add_timer_second(struct timer_task_scheduler *self, timer_interrupt_callback_t callback, void *data, size_t duration)
 {
     unsigned long long freq = get_timer_freq();
-    timer_task_t *task = (timer_task_t *)simple_malloc(sizeof(timer_task_t));
+    timer_task_t *task = (timer_task_t *)kmalloc(sizeof(timer_task_t));
     task->callback = callback;
     task->data = data;
     unsigned long long cur_ticks = get_timer_ticks();
@@ -133,20 +149,38 @@ struct interval_data {
     void *data;
     size_t duration;
 };
-void timer_interval_callback(void *data)
+void timer_interval_callback_second(void *data)
 {
     struct interval_data *real_routine = (struct interval_data *)data;
     real_routine->callback(real_routine->data);
-    real_routine->scheduler->add_timer_second(real_routine->scheduler, timer_interval_callback, real_routine, real_routine->duration);
+    real_routine->scheduler->add_timer_second(real_routine->scheduler, timer_interval_callback_second, real_routine, real_routine->duration);
 }
+
+void timer_interval_callback_tick(void *data)
+{
+    struct interval_data *real_routine = (struct interval_data *)data;
+    real_routine->callback(real_routine->data);
+    real_routine->scheduler->add_timer_tick(real_routine->scheduler, timer_interval_callback_tick, real_routine, real_routine->duration);
+}
+
+void _interval_run_tick(struct timer_task_scheduler *self, timer_interrupt_callback_t callback, void *data, size_t duration)
+{
+    struct interval_data *real_routine = (struct interval_data *)kmalloc(sizeof(struct interval_data));
+    real_routine->callback = callback;
+    real_routine->data = data;
+    real_routine->scheduler = self;
+    real_routine->duration = duration;//in ticks
+    self->add_timer_tick(self, timer_interval_callback_tick, real_routine, duration);
+}
+
 void _interval_run_second(struct timer_task_scheduler *self, timer_interrupt_callback_t callback, void *data, size_t duration)
 {
-    struct interval_data *real_routine = (struct interval_data *)simple_malloc(sizeof(struct interval_data));
+    struct interval_data *real_routine = (struct interval_data *)kmalloc(sizeof(struct interval_data));
     real_routine->callback = callback;
     real_routine->data = data;
     real_routine->scheduler = self;
     real_routine->duration = duration;
-    self->add_timer_second(self, timer_interval_callback, real_routine, duration);
+    self->add_timer_second(self, timer_interval_callback_second, real_routine, duration);
 }
 
 void dbg_print_uptime()
@@ -178,6 +212,8 @@ void timer_task_scheduler_init(struct timer_task_scheduler *self)
     self->timer_interrupt_handler = _timer_interrupt_handler;
     self->add_timer_second = _add_timer_second;
     self->interval_run_second = _interval_run_second;
+    self->add_timer_tick = _add_timer_tick;
+    self->interval_run_tick = _interval_run_tick;
 }
 
 

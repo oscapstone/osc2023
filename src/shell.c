@@ -118,6 +118,23 @@ static void fork_cmd(int argc, char *argv[])
     // fork_test();
     create_thread(demo_fork_test);
 }
+
+static void kill_shell()
+{
+    kill(1);
+}
+
+static void demo_kill()
+{
+    run_user_prog(kill_shell);
+}
+
+static void kill_cmd(int argc, char *argv[])
+{
+    //kill shell
+    create_thread(demo_kill);
+}
+
 static void help_cmd(int argc, char *argv[])
 {
     for (size_t i = 0; i < shell_cmd_cnt; i++) {
@@ -134,6 +151,7 @@ struct shell_cmd cmd_list[] = {
     {.name="dtb", .help="print device tree properties\n", .func=dtb_cmd},
     {.name="help", .help="print this help menu\n", .func=help_cmd},
     {.name="fork", .help="test_fork\n", .func=fork_cmd},
+    {.name="kill", .help="kill shell\n", .func=kill_cmd},
     {.name="hello", .help="print Hello World!\n", .func=hello_cmd},
     {.name="async", .help="read and write a line asynchronously\n", .func=async_cmd},
     {.name="buddy", .help="test buddy system\n", .func=buddy_cmd},

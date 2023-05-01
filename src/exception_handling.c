@@ -11,8 +11,8 @@ struct interrupt_scheduler _interrupt_scheduler;
 int interrupt_cnter;
 void test_enable_interrupt()
 {
-    // if (interrupt_cnter > 0) interrupt_cnter--;
-    interrupt_cnter--;
+    if (interrupt_cnter > 0) interrupt_cnter--;
+    // interrupt_cnter--;
     if (interrupt_cnter == 0) {
         enable_local_all_interrupt();
     }
@@ -72,7 +72,7 @@ struct interrupt_task_node *fetch_next(struct interrupt_scheduler *self, int *pr
 }
 
 //Decouple the Interrupt Handlers
-void current_irq_exception_router(void)
+void irq_router(void)
 {
     disable_interrupt();
     int new_prior = -1;
@@ -126,7 +126,10 @@ void current_irq_exception_router(void)
     test_enable_interrupt();
 }
 
-
+void current_irq_exception_router(void)
+{
+    irq_router();
+}
 
 static void syscall_handler(struct trap_frame *tf)
 {
@@ -149,9 +152,7 @@ void lower_synchronous_exception_router(struct trap_frame *tf)
     switch (ec)
     {
     case ESR_ELx_EC_SVC64:
-        test_enable_interrupt();
         syscall_handler(tf);
-        disable_interrupt();
         break;
     case ESR_ELx_EC_DABT_LOW:
         uart_write_string("in Data Abort\n");
@@ -165,8 +166,9 @@ void lower_synchronous_exception_router(struct trap_frame *tf)
 }
 void lower_irq_exception_router(void)
 {
-    uart_write_string("In lower_irq_exception_router\n");
-    default_handler();
+    // uart_write_string("In lower_irq_exception_router\n");
+    // default_handler();
+    irq_router();
 }
 
 void _insert_qbin(struct interrupt_scheduler *self, list_t *head, struct interrupt_task_node *task)
@@ -178,11 +180,11 @@ void _insert_qbin(struct interrupt_scheduler *self, list_t *head, struct interru
 void _add_task(struct interrupt_scheduler *self, interrupt_handler_t handler, void *data, unsigned priority)
 {
     //avoid re-entrance
-    disable_interrupt();
     struct interrupt_task_node *new_node = (struct interrupt_task_node *)simple_malloc(sizeof(struct interrupt_task_node));
     new_node->handler = handler;
     new_node->data = data;
     INIT_LIST_HEAD(&(new_node->list));
+    disable_interrupt();
     _insert_qbin(self, self->qbins + priority, new_node);
     test_enable_interrupt();
 }

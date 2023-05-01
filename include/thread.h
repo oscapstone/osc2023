@@ -3,6 +3,7 @@
 #include "stdint.h"
 #include "types.h"
 #include "list.h"
+#include "time_interrupt.h"
 
 #define TASK_RUNNING            0
 #define TASK_INTERRUPTIBLE      1
@@ -32,6 +33,8 @@ struct task_reg_set {
     uint64_t sp;
 };
 #define STACK_BASE(start_addr, stack_size) ((char *)(start_addr) + (stack_size))
+#define MAX_TASK_CNT 0X1000
+extern pid_t pid_cnter;
 //declaration
 struct trap_frame;
 typedef struct task_struct {
@@ -59,6 +62,7 @@ typedef struct task_struct {
     //signal handler table
     //TODO
 } task_t;
+extern task_t *tid2task[MAX_TASK_CNT];
 extern void init_idle_thread();
 //prepare a template for create_thread
 //Notice that this function Call kmalloc!!!
@@ -96,4 +100,5 @@ struct trap_frame {
     uint64_t elr_el1;     // Exception link register
     uint64_t spsr_el1;    // Saved program status register
 };
+extern void time_reschedule(void *data);
 #endif

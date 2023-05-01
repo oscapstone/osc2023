@@ -40,8 +40,10 @@ int main(void)
     }
     dump_hex(&cpio_addr, 8);
     init_initramfs(&_initramfs);
+    //meory init
     init_buddy(&_buddy);
     init_mem_pool(&_mem_pool);
+
     init_note();
     print_hw_info();
     uart_write_string("text section starts at: ");
@@ -57,6 +59,9 @@ int main(void)
     //test
     // print_uptime_every2second();
     init_idle_thread();
+    size_t freq = get_timer_freq();
+    _timer_task_scheduler.interval_run_tick(&_timer_task_scheduler, (timer_interrupt_callback_t)time_reschedule, NULL, freq >> 5);
+    // _timer_task_scheduler.interval_run_tick(&_timer_task_scheduler, (timer_interrupt_callback_t)write_uptime, NULL, freq >> 5);
 
     create_thread(shell_main_thread);
     idle_thread();

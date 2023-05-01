@@ -78,7 +78,8 @@
     mrs x0, sp_el0
     stp x30, x0, [sp, 16 * 15]
     .else
-    str x30, [sp, 16 * 15]
+    mrs x0, sp_el1
+    stp x30, x0, [sp, 16 * 15]
     .endif
 
     mrs x0, elr_el1
@@ -99,7 +100,8 @@
     ldp x30, x0, [sp, 16 * 15]
     msr sp_el0, x0
     .else
-    ldr x30, [sp, 16 * 15]
+    ldp x30, x0, [sp, 16 * 15]
+    msr sp_el1, x0
     .endif
 
     ldp x28, x29, [sp ,16 * 14]
@@ -163,27 +165,19 @@ exception_vector_table:
   exception_entry exception_handler
   exception_entry exception_handler
 
-.macro handler_template handler_name backbone
-\handler_name:
-  save_gprs
-  bl \backbone
-  load_gprs
-  eret
-.endm
-
-.macro el1_handler_template handler_name backbone
-\handler_name:
+_current_irq_exception_handler:
   save_gprs
   save_el1_context
-  bl \backbone
+  bl current_irq_exception_router
   load_el1_context
   load_gprs
   eret
-.endm
 
+_current_synchronuous_exception_handler:
+  kernel_entry 1
+  bl current_synchronous_exception_router
+  kernel_exit 1
 
-el1_handler_template _current_synchronuous_exception_handler current_synchronous_exception_router
-el1_handler_template _current_irq_exception_handler current_irq_exception_router
 _lower_synchronous_exception_handler:
   kernel_entry 0
   bl lower_synchronous_exception_router

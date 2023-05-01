@@ -93,6 +93,17 @@ void syscall_kill(struct trap_frame *tf)
     int pid = tf->gprs[0];
     //TODO
     //You don’t need to implement this system call if you prefer to kill a process using the POSIX Signal stated in Advanced Exercise 1.
+    task_t *t = tid2task[pid];
+    disable_interrupt();
+    if (t->exit_state | t->state == TASK_RUNNING) {
+        list_del(t);
+        list_add_tail(t, &stop_queue);
+    }
+    test_enable_interrupt();
+    t->exit_code = 9;
+    t->state = 0;
+    t->exit_state = EXIT_ZOMBIE;
+    // schedule();
 }
 
 void syscall_signal(struct trap_frame *tf)

@@ -3,7 +3,11 @@
 #include "exception.h"
 #include "uart.h"
 #include "list.h"
+#include "exception.h"
+
 pid_t pid_cnter;
+task_t *tid2task[MAX_TASK_CNT];
+
 LIST_HEAD(running_queue);
 LIST_HEAD(waiting_queue);
 LIST_HEAD(stop_queue);
@@ -14,14 +18,14 @@ static void real_thread()
     _exit(0);
 }
 
-task_t *new_thread()
+task_t *_new_thread()
 {
     task_t *new_thread_ptr = (task_t *)kmalloc(sizeof(task_t));
     INIT_LIST_HEAD(&(new_thread_ptr->node));
     new_thread_ptr->state = TASK_RUNNING;
     new_thread_ptr->kernel_stack = (char *)alloc_pages(1);
     new_thread_ptr->kernel_stack_size = PAGE_SIZE;
-    new_thread_ptr->tid = pid_cnter++;
+    
     // new_thread_ptr->ppid = get_current_thread()->tgid;
     new_thread_ptr->user_stack = (char *)alloc_pages(1);
     new_thread_ptr->user_stack_size = PAGE_SIZE;
@@ -30,6 +34,22 @@ task_t *new_thread()
     //stack is decremental
     new_thread_ptr->old_reg_set.sp = (uint64_t)STACK_BASE(new_thread_ptr->kernel_stack, new_thread_ptr->kernel_stack_size);
     new_thread_ptr->exit_code = new_thread_ptr->exit_state = new_thread_ptr->exit_signal = 0;
+    return new_thread_ptr;
+}
+
+pid_t next_free_tid()
+{
+    while (tid2task[pid_cnter]) {
+        pid_cnter = (pid_cnter + 1) % MAX_TASK_CNT;
+    }
+    return pid_cnter;
+}
+
+task_t *new_thread()
+{
+    task_t *new_thread_ptr = _new_thread();
+    new_thread_ptr->tid = next_free_tid();
+    tid2task[new_thread_ptr->tid] = new_thread_ptr;
     return new_thread_ptr;
 }
 extern void return_from_fork();
@@ -78,7 +98,7 @@ task_t *copy_thread(task_t *src)
     dst->exit_state = src->exit_state;
     dst->exit_code = src->exit_code;
     dst->exit_signal = src->exit_signal;
-
+    
     dst->old_reg_set.lr = return_from_fork;
     return dst;
 }
@@ -86,7 +106,9 @@ task_t *copy_thread(task_t *src)
 task_t *copy_run_thread(task_t *src)
 {
     task_t *dst = copy_thread(src);
+    //disable_interrupt();
     list_add_tail(&(dst->node), &running_queue);
+    //test_enable_interrupt();
     return dst;
 }
 
@@ -96,7 +118,9 @@ task_t *create_thread(char *text)
     new_thread_ptr->text = text;
     // new_thread_ptr->old_reg_set.lr = (uint64_t)text;
     //insert to tail of running queue
+    //disable_interrupt();
     list_add_tail(&(new_thread_ptr->node), &running_queue);
+    //test_enable_interrupt();
     uart_write_string("new thread: 0x");
     uart_write_no_hex((uint64_t)new_thread_ptr);
     uart_write_string("\n");
@@ -112,13 +136,23 @@ void destruct_thread(task_t *t)
 
 void schedule()
 {
-    task_t *next_task = list_entry(running_queue.next, task_t, node);
-    list_del(&(next_task->node));
-    task_t *current = get_current_thread();
-    if ((current->state | current->exit_state) == TASK_RUNNING)
-        list_add_tail(&(current->node), &running_queue);
-    //context switch
-    switch_to(&(current->old_reg_set), &(next_task->old_reg_set));
+    disable_interrupt();
+    // uart_write_string("schedule disable irq ");
+    // uart_write_no(interrupt_cnter);
+    // uart_write_string("\n");
+    if (!list_empty(&running_queue)) {
+        task_t *next_task = list_entry(running_queue.next, task_t, node);
+        list_del_init(&(next_task->node));
+        task_t *current = get_current_thread();
+        if ((current->state | current->exit_state) == TASK_RUNNING)
+            list_add_tail(&(current->node), &running_queue);
+        // uart_write_string("leave schedule enable irq ");
+        // uart_write_no(interrupt_cnter);
+        // uart_write_string("\n");
+        test_enable_interrupt();
+        //context switch
+        switch_to(&(current->old_reg_set), &(next_task->old_reg_set));
+    }
 }
 
 void _exit(int exitcode)
@@ -128,8 +162,10 @@ void _exit(int exitcode)
     current->exit_code = exitcode;
     current->state = 0;
     current->exit_state = EXIT_ZOMBIE;
-    list_del(current);
+    disable_interrupt();
+    list_del_init(current);
     list_add_tail(current, &stop_queue);
+    test_enable_interrupt();
     schedule();
 }
 
@@ -139,11 +175,14 @@ void kill_zombies()
     //kill all threads in stop queue
     task_t *safe;
     task_t *p;
+    disable_interrupt();
     list_for_each_entry_safe(p, safe, &stop_queue, node) {
         uart_write_string("killing a zombie\n");
+        tid2task[p->tid] = NULL;
         list_del(&(p->node));
         destruct_thread(p);
     }
+    test_enable_interrupt();
 }
 extern struct task_reg_set *get_current_ctx();
 task_t *get_current_thread()
@@ -156,8 +195,10 @@ void idle_thread()
 {
     while (1) {
         //no runnable task, idle
-        while (list_empty(&running_queue))
+        disable_interrupt();
+        if (list_empty(&stop_queue))
             kill_zombies();
+        test_enable_interrupt();
         schedule();
     }
 }
@@ -187,15 +228,15 @@ void thread_demo()
 
 void init_idle_thread()
 {
-    task_t *idle_thread_ptr = new_thread();
+    task_t *idle_thread_ptr = _new_thread();
     free_page(idle_thread_ptr->kernel_stack);
     idle_thread_ptr->kernel_stack_size = PAGE_SIZE;
     idle_thread_ptr->kernel_stack = LOW_MEMORY - PAGE_SIZE;
     idle_thread_ptr->text = idle_thread;
     idle_thread_ptr->old_reg_set.lr = (uint64_t)idle_thread;
     idle_thread_ptr->state = TASK_RUNNING;
-    idle_thread_ptr->tid--;
-    pid_cnter--;
+    idle_thread_ptr->tid = next_free_tid();
+    tid2task[idle_thread_ptr->tid] = idle_thread_ptr;
     write_sysreg(tpidr_el1, &(idle_thread_ptr->old_reg_set));
 }
 
@@ -203,5 +244,16 @@ void demo_thread()
 {
     for (int i = 0; i < 4; i++) {
         create_thread(thread_demo);
+    }
+}
+
+void time_reschedule(void *data)
+{
+    if (!list_empty(&running_queue)) {
+        disable_interrupt();
+        char *ret_addr = read_sysreg(elr_el1);
+        asm volatile("mov x30, %0" : : "r" (ret_addr));
+        test_enable_interrupt();
+        schedule();
     }
 }

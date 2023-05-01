@@ -97,14 +97,13 @@ static void _buddy_unlink_blk(struct buddy *self, bd_blk_t *blk, int order)
 
 void *_buddy_alloc_pages(struct buddy *self, size_t page_no)
 {
-    disable_interrupt();
+    
 #ifdef PRINT_LOG
     uart_write_string("---------------------------------------------\nCall Buddy Allocate pages:");
     uart_write_no(page_no);
     uart_write_string("\n");
 #endif
     if (page_no == 0) {
-        test_enable_interrupt();
         return NULL;
     }
     //align to closet power of 2
@@ -112,9 +111,9 @@ void *_buddy_alloc_pages(struct buddy *self, size_t page_no)
     //page_cnt is in power of 2
     unsigned request_order = ul_log2(page_cnt);
     if (request_order >= BUDDY_ORDERS) {
-        test_enable_interrupt();
         return NULL;
     }
+    disable_interrupt();
 #ifdef PRINT_LOG
     uart_write_string("Request order: ");
     uart_write_no(request_order);
