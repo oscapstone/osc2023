@@ -3,6 +3,7 @@
 #include "utils.h"
 #include "mmio.h"
 #include "list.h"
+#include "stdint.h"
 //https://github.com/Tekki/raspberrypi-documentation/blob/master/hardware/raspberrypi/bcm2836/QA7_rev3.4.pdf p7
 //https://datasheets.raspberrypi.com/bcm2836/bcm2836-peripherals.pdf 4.6
 #define CORE0_TIMER_IRQ_CTRL ((volatile unsigned int *)(0x40000040))
@@ -62,4 +63,5 @@ extern struct timer_task_scheduler _timer_task_scheduler;
 extern void print_uptime_every2second();
 extern void notify(void *arg);
 extern void sleep_timer(void *arg);
+extern void enable_el0_access_pcnter();
 #endif

@@ -29,11 +29,13 @@ task_t *_new_thread()
     // new_thread_ptr->ppid = get_current_thread()->tgid;
     new_thread_ptr->user_stack = (char *)alloc_pages(1);
     new_thread_ptr->user_stack_size = PAGE_SIZE;
+    new_thread_ptr->user_text = new_thread_ptr->text = NULL;
     my_bzero(&(new_thread_ptr->old_reg_set), sizeof(new_thread_ptr->old_reg_set));
     new_thread_ptr->old_reg_set.lr = (uint64_t)real_thread;
     //stack is decremental
     new_thread_ptr->old_reg_set.sp = (uint64_t)STACK_BASE(new_thread_ptr->kernel_stack, new_thread_ptr->kernel_stack_size);
     new_thread_ptr->exit_code = new_thread_ptr->exit_state = new_thread_ptr->exit_signal = 0;
+    new_thread_ptr->need_reschedule = 0;
     return new_thread_ptr;
 }
 
@@ -131,6 +133,9 @@ void destruct_thread(task_t *t)
 {
     free_page(t->kernel_stack);
     free_page(t->user_stack);
+    if (t->user_text) {
+        free_page(t->user_text);
+    }
     kfree(t);
 }
 
@@ -152,6 +157,8 @@ void schedule()
         test_enable_interrupt();
         //context switch
         switch_to(&(current->old_reg_set), &(next_task->old_reg_set));
+    } else {
+        test_enable_interrupt();
     }
 }
 
@@ -203,6 +210,14 @@ void idle_thread()
     }
 }
 
+void one_shot_idle()
+{
+    disable_interrupt();
+    if (list_empty(&stop_queue))
+        kill_zombies();
+    test_enable_interrupt();
+}
+
 void thread_demo()
 {
     task_t *current;
@@ -226,18 +241,18 @@ void thread_demo()
     uart_write_string(" end\n");
 }
 
-void init_idle_thread()
+void init_startup_thread(char *main_addr)
 {
-    task_t *idle_thread_ptr = _new_thread();
-    free_page(idle_thread_ptr->kernel_stack);
-    idle_thread_ptr->kernel_stack_size = PAGE_SIZE;
-    idle_thread_ptr->kernel_stack = LOW_MEMORY - PAGE_SIZE;
-    idle_thread_ptr->text = idle_thread;
-    idle_thread_ptr->old_reg_set.lr = (uint64_t)idle_thread;
-    idle_thread_ptr->state = TASK_RUNNING;
-    idle_thread_ptr->tid = next_free_tid();
-    tid2task[idle_thread_ptr->tid] = idle_thread_ptr;
-    write_sysreg(tpidr_el1, &(idle_thread_ptr->old_reg_set));
+    task_t *startup_thread_ptr = _new_thread();
+    free_page(startup_thread_ptr->kernel_stack);
+    startup_thread_ptr->kernel_stack_size = PAGE_SIZE;
+    startup_thread_ptr->kernel_stack = LOW_MEMORY - PAGE_SIZE;
+    startup_thread_ptr->text = main_addr;
+    startup_thread_ptr->old_reg_set.lr = (uint64_t)main_addr;
+    startup_thread_ptr->state = TASK_RUNNING;
+    startup_thread_ptr->tid = next_free_tid();
+    tid2task[startup_thread_ptr->tid] = startup_thread_ptr;
+    write_sysreg(tpidr_el1, &(startup_thread_ptr->old_reg_set));
 }
 
 void demo_thread()
@@ -247,13 +262,39 @@ void demo_thread()
     }
 }
 
-void time_reschedule(void *data)
+void check_reschedule()
 {
-    if (!list_empty(&running_queue)) {
-        disable_interrupt();
+    task_t *current = get_current_thread();
+    disable_interrupt();
+    if (current->need_reschedule) {
         char *ret_addr = read_sysreg(elr_el1);
         asm volatile("mov x30, %0" : : "r" (ret_addr));
+        current->need_reschedule = 0;
         test_enable_interrupt();
         schedule();
+    } else {
+        test_enable_interrupt();
     }
+}
+
+void time_reschedule(void *data)
+{
+    task_t *current = get_current_thread();
+    current->need_reschedule = 1;
+}
+
+char *load_program(char *text, size_t file_size)
+{
+    task_t *current = get_current_thread();
+    if (current->user_text != NULL) {
+        free_page(current->user_text);
+        current->user_text = NULL;
+    }
+    size_t page_needed = ALIGN(file_size, PAGE_SIZE) / PAGE_SIZE;
+    char *load_addr = alloc_pages(page_needed);
+    if (load_addr == NULL) {
+        return NULL;
+    }
+    memcpy(load_addr, text, file_size);
+    return current->user_text = load_addr;
 }

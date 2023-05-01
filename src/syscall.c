@@ -17,7 +17,7 @@ void syscall_uart_read(struct trap_frame *tf)
     size_t size = tf->gprs[1];
     size_t i;
     for (i = 0; i < size; i++)
-        kuart_write(buf[i]);
+        buf[i] = _kuart_read();
     tf->gprs[0] = i;
 }
 void syscall_uart_write(struct trap_frame *tf)
@@ -26,7 +26,7 @@ void syscall_uart_write(struct trap_frame *tf)
     size_t size = tf->gprs[1];
     size_t i;
     for (i = 0; i < size; i++)
-        buf[i] = kuart_read();
+        _kuart_write(buf[i]);
     tf->gprs[0] = i;
 }
 
@@ -64,9 +64,9 @@ void syscall_exec(struct trap_frame *tf)
         //file not found or not a valid new ascii format cpio archive file
         tf->gprs[0] = -1;
     } else {
-        run_user_prog(content);
+        // run_user_prog(content);
+        tf->gprs[0] = _initramfs.exec(&_initramfs, argv);
         //never go here
-        tf->gprs[0] = -1;
     }
 }
 void syscall_fork(struct trap_frame *tf)

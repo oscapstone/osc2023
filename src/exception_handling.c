@@ -12,7 +12,6 @@ int interrupt_cnter;
 void test_enable_interrupt()
 {
     if (interrupt_cnter > 0) interrupt_cnter--;
-    // interrupt_cnter--;
     if (interrupt_cnter == 0) {
         enable_local_all_interrupt();
     }
@@ -45,11 +44,7 @@ void default_handler()
     test_enable_interrupt();
 }
 
-void current_synchronous_exception_router(void)
-{
-    uart_write_string("In current_synchronous_exception_router\n");
-    default_handler();
-}
+
 
 void _qbin_unlink_head(struct interrupt_scheduler *self, list_t *head)
 {
@@ -71,34 +66,47 @@ struct interrupt_task_node *fetch_next(struct interrupt_scheduler *self, int *pr
     return task;
 }
 
+void core_timer_top_half(int prior)
+{
+    uart_write_string("is timer\n");
+    core_timer_disable();
+    _interrupt_scheduler.add_task(&_interrupt_scheduler, _timer_task_scheduler.timer_interrupt_handler, &_timer_task_scheduler, prior);
+    core_timer_enable();
+}
+
+void uart_top_half(int prior)
+{
+    uart_write_string("is uart\n");
+    //disable uart interrupt
+    if (*AUX_MU_IER & 0b10) *AUX_MU_IER &= ~(0b10);
+    else if (*AUX_MU_IER & 0b01) *AUX_MU_IER &= ~(0b01);
+    // *AUX_MU_IER &= ~(0b11);
+    _interrupt_scheduler.add_task(&_interrupt_scheduler, uart_irq_handler, *AUX_MU_IER, prior);
+}
+
 //Decouple the Interrupt Handlers
 void irq_router(void)
 {
+    //https://grasslab.github.io/osdi/en/labs/lab3.html#on-excpetion-taken
+    //Interrupt is disabled. (PSTATE.{D,A,I,F} are set to 1).
+    //to enable kernel preemption, enable interrupt
+    // if (interrupt_cnter == 0) enable_local_all_interrupt();
+    
     disable_interrupt();
     int new_prior = -1;
-    // uart_write_string("In current_irq_exception_router\n");
     //top half
-    ////https://cs140e.sergio.bz/docs/BCM2837-ARM-Peripherals.pdf p112
     unsigned int uart = (*IRQ_PENDING_1 & (1 << 29));
-    //https://datasheets.raspberrypi.com/bcm2836/bcm2836-peripherals.pdf 4.10
     unsigned int core_timer = (*CORE0_INTERRUPT_SOURCE & 0x2);
+    
     if (uart) {
-        //handle uart (Basic Exercise 3)
-        //https://cs140e.sergio.bz/docs/BCM2837-ARM-Peripherals.pdf p12
-        //1. masks the device’s interrupt line,
-        //disable uart interrupt
-        if (*AUX_MU_IER & 0b10) *AUX_MU_IER &= ~(0b10);
-        else if (*AUX_MU_IER & 0b01) *AUX_MU_IER &= ~(0b01);
-        // *AUX_MU_IER &= ~(0b11);
-        //3. enqueues the processing task to the event queue,
-        _interrupt_scheduler.add_task(&_interrupt_scheduler, uart_irq_handler, *AUX_MU_IER, 1);
+        uart_top_half(1);
         new_prior = 1;
     } else if (core_timer) {
-        core_timer_disable();
-        _interrupt_scheduler.add_task(&_interrupt_scheduler, _timer_task_scheduler.timer_interrupt_handler, &_timer_task_scheduler, 0);
+        core_timer_top_half(0);
         new_prior = 0;
     }
 
+    //bottom half
     int prior;
     if (_interrupt_scheduler.prior_stk_idx != -1 && new_prior > _interrupt_scheduler.priority_stack[_interrupt_scheduler.prior_stk_idx]) {
         //Preemption
@@ -121,13 +129,15 @@ void irq_router(void)
             _interrupt_scheduler.prior_stk_idx--;
         }
     } //else {
-        //other one is running, that guy will wake handle the newly enqueued task
+        //other one is running, that guy will wake and handle the newly enqueued task
     //}
     test_enable_interrupt();
+    check_reschedule();
 }
 
 void current_irq_exception_router(void)
 {
+    uart_write_string("In current_irq_exception_router\n");
     irq_router();
 }
 
@@ -143,8 +153,16 @@ static void syscall_handler(struct trap_frame *tf)
     }
 }
 
-void lower_synchronous_exception_router(struct trap_frame *tf)
+
+
+void synchronous_exception_router(struct trap_frame *tf)
 {
+    //https://grasslab.github.io/osdi/en/labs/lab3.html#on-excpetion-taken
+    //Interrupt is disabled. (PSTATE.{D,A,I,F} are set to 1).
+    //to enable kernel preemption, enable interrupt
+    if (interrupt_cnter == 0) enable_local_all_interrupt();
+    // enable_local_all_interrupt();
+
     // uart_write_string("In lower_synchronous_exception_router\n");
     unsigned long esr = read_sysreg(esr_el1); // cause of that exception
     unsigned int ec = ESR_ELx_EC(esr);
@@ -164,9 +182,23 @@ void lower_synchronous_exception_router(struct trap_frame *tf)
         return;
     }
 }
+
+void current_synchronous_exception_router(struct trap_frame *tf)
+{
+    uart_write_string("In current_synchronous_exception_router\n");
+    // default_handler();
+    synchronous_exception_router(tf);
+}
+
+void lower_synchronous_exception_router(struct trap_frame *tf)
+{
+    // uart_write_string("In lower_synchronous_exception_router\n");
+    synchronous_exception_router(tf);
+}
+
 void lower_irq_exception_router(void)
 {
-    // uart_write_string("In lower_irq_exception_router\n");
+    uart_write_string("In lower_irq_exception_router\n");
     // default_handler();
     irq_router();
 }
@@ -199,3 +231,4 @@ void init_interrupt_scheduler(struct interrupt_scheduler *self)
     self->qsize = 0;
     self->add_task = _add_task;
 }
+

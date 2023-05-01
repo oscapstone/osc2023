@@ -7,7 +7,8 @@
 struct timer_task_scheduler _timer_task_scheduler;
 extern void core_timer_enable();
 extern void core_timer_disable();
-
+extern void timer_enable_int();
+extern void timer_disable_int();
 void write_uptime()
 {
     uart_write_string("Booting time: ");
@@ -97,13 +98,15 @@ int _unlink_head(struct timer_task_scheduler *self)
 //run those tasks have expired in queue and pop them.
 void _timer_interrupt_handler(struct timer_task_scheduler *self)
 {
+    task_t *current = get_current_thread();
     unsigned long long cur_ticks = get_timer_ticks();
     while (self->head && self->head->run_at <= cur_ticks) {
         // *DISABLE_IRQS1 = 1;
-        *CORE0_TIMER_IRQ_CTRL = 0;
+        // *CORE0_TIMER_IRQ_CTRL = 0;
         self->head->callback(self->head->data);
         // *ENB_IRQS1 = 1;
         self->unlink_head(self);
+        if (current->need_reschedule) break;
         cur_ticks = get_timer_ticks();
     }
 }
@@ -244,3 +247,12 @@ void sleep_timer(void *arg)
     // delay(freq * t);
     uart_write_string("sleep_timer end\n");
 }
+
+void enable_el0_access_pcnter()
+{
+    uint64_t tmp;
+    asm volatile("mrs %0, cntkctl_el1" : "=r"(tmp));
+    tmp |= 1;
+    asm volatile("msr cntkctl_el1, %0" : : "r"(tmp));
+}
+

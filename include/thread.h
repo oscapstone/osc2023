@@ -50,6 +50,7 @@ typedef struct task_struct {
     char *user_stack;
     size_t user_stack_size;
     char *text;
+    char *user_text;
 
     struct trap_frame *tf;
     
@@ -59,11 +60,12 @@ typedef struct task_struct {
     int exit_state;
     int exit_code;
     int exit_signal;
+    size_t need_reschedule;
     //signal handler table
     //TODO
 } task_t;
 extern task_t *tid2task[MAX_TASK_CNT];
-extern void init_idle_thread();
+extern void init_startup_thread(char *main_addr);
 //prepare a template for create_thread
 //Notice that this function Call kmalloc!!!
 extern task_t *new_thread();
@@ -83,6 +85,7 @@ extern inline void switch_to(struct task_reg_set *prev, struct task_reg_set *nex
 extern task_t *get_current_thread();
 //responsible for killing zombie threads and try to schedule other runnable thread.
 extern void idle_thread();
+extern void one_shot_idle();
 //call destruct_thread
 extern void kill_zombies();
 //free freeable resources by it own
@@ -101,4 +104,6 @@ struct trap_frame {
     uint64_t spsr_el1;    // Saved program status register
 };
 extern void time_reschedule(void *data);
+extern void check_reschedule();
+extern char *load_program(char *text, size_t file_size);
 #endif

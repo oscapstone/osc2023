@@ -9,6 +9,7 @@ extern char kuart_read(void);
 extern unsigned int uart_readline(char *buffer, unsigned int buffer_size);
 extern unsigned long long uart_read_hex_ull();
 extern void kuart_write(char c);
+extern void _kuart_write(char c);
 extern void uart_write_string(char *str);
 extern void uart_write_no(unsigned long long n);
 extern void uart_write_no_hex(unsigned long long n);

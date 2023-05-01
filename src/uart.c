@@ -76,7 +76,7 @@ unsigned long long uart_read_hex_ull() {
     return res;
 }
 
-static void _kuart_write(char c)
+void _kuart_write(char c)
 {
     while (!(*AUX_MU_LSR & 0x20));
     *AUX_MU_IO = c;

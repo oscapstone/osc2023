@@ -31,7 +31,7 @@ extern void set_exception_vector_table(void);
 extern void exception_handler(void);
 extern void set_exception_vector_table(void);
 extern void default_handler(void);
-extern void current_synchronous_exception_router(void);
+extern void current_synchronous_exception_router(struct trap_frame *tf);
 extern void current_irq_exception_router(void);
 extern void lower_synchronous_exception_router(struct trap_frame *tf);
 extern void lower_irq_exception_router(void);
