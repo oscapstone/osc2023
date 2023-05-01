@@ -179,6 +179,7 @@ void synchronous_exception_router(struct trap_frame *tf)
         uart_write_string("in Instruction  Abort\n");
         break;
     default:
+        default_handler();
         return;
     }
 }

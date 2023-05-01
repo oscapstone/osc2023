@@ -63,6 +63,7 @@ void syscall_exec(struct trap_frame *tf)
 {
     const char *name = tf->gprs[0];
     char **const argv = tf->gprs[1];
+    char *real_argv[2] = {name, NULL};
     //reform all syscall_function into proper form
     size_t file_size;
     char *content = _initramfs.file_content(&_initramfs, name, &file_size);
@@ -71,7 +72,7 @@ void syscall_exec(struct trap_frame *tf)
         tf->gprs[0] = -1;
     } else {
         // run_user_prog(content);
-        tf->gprs[0] = _initramfs.exec(&_initramfs, argv);
+        tf->gprs[0] = _initramfs.exec(&_initramfs, real_argv);
         //never go here
     }
 }
@@ -127,18 +128,8 @@ void syscall_signal(struct trap_frame *tf)
     tf->gprs[0] = prev_handler;
 }
 
-void syscall_sigkill(struct trap_frame *tf)
+void _add_signal(pid_t recv_pid, int signum)
 {
-    pid_t recv_pid = tf->gprs[0];
-    int signum = tf->gprs[1];
-    if (signum < 0 || signum > MAX_SIGNAL) {
-        tf->gprs[0] = -1;
-        return;
-    }
-    if (recv_pid < 0 || recv_pid >= MAX_TASK_CNT || tid2task[recv_pid] == NULL) {
-        tf->gprs[0] = -1;
-        return;
-    }
     task_t *target = tid2task[recv_pid];
     struct signal *new_sig = kmalloc(sizeof(struct signal));
     new_sig->handler_user_stack = alloc_pages(1);
@@ -151,6 +142,21 @@ void syscall_sigkill(struct trap_frame *tf)
     disable_interrupt();
     list_add_tail(&(new_sig->node), &(target->pending_signal_list));
     test_enable_interrupt();
+}
+
+void syscall_sigkill(struct trap_frame *tf)
+{
+    pid_t recv_pid = tf->gprs[0];
+    int signum = tf->gprs[1];
+    if (signum < 0 || signum > MAX_SIGNAL) {
+        tf->gprs[0] = -1;
+        return;
+    }
+    if (recv_pid < 0 || recv_pid >= MAX_TASK_CNT || tid2task[recv_pid] == NULL) {
+        tf->gprs[0] = -1;
+        return;
+    }
+    _add_signal(recv_pid, signum);
     tf->gprs[0] = 0;
 }
 

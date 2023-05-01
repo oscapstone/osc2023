@@ -78,7 +78,7 @@ static void timeout_cmd(int argc, char *argv[])
         uart_write_string("length should within [1, 100].\n");
         return;
     }
-    char *msg = (char *)simple_malloc(buf_size * sizeof(char));
+    char *msg = (char *)kmalloc(buf_size * sizeof(char));
     uart_write_string("message: ");
     uart_read_input(msg, buf_size);
     uart_write_string("duration: ");

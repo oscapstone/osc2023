@@ -4,6 +4,7 @@
 #include "uart.h"
 #include "list.h"
 #include "exception.h"
+#include "signal.h"
 
 pid_t pid_cnter;
 task_t *tid2task[MAX_TASK_CNT];
@@ -30,6 +31,11 @@ task_t *_new_thread()
     new_thread_ptr->user_stack = (char *)alloc_pages(1);
     new_thread_ptr->user_stack_size = PAGE_SIZE;
     new_thread_ptr->user_text = new_thread_ptr->text = NULL;
+
+    new_thread_ptr->arg_loaded = 0;
+    new_thread_ptr->argc = 0;
+    my_bzero(new_thread_ptr->argv, sizeof(new_thread_ptr->argv));
+
     my_bzero(&(new_thread_ptr->old_reg_set), sizeof(new_thread_ptr->old_reg_set));
     new_thread_ptr->old_reg_set.lr = (uint64_t)real_thread;
     //stack is decremental
@@ -119,19 +125,27 @@ task_t *copy_run_thread(task_t *src)
     return dst;
 }
 
-task_t *create_thread(char *text)
-{
+task_t *create_thread_with_argc_argv(char *text, int argc, char **argv) {
     task_t *new_thread_ptr = new_thread();
     new_thread_ptr->text = text;
-    // new_thread_ptr->old_reg_set.lr = (uint64_t)text;
-    //insert to tail of running queue
+    //argument passing
+    new_thread_ptr->argc = min(argc, 8);
+    for (int i = 0; i < new_thread_ptr->argc && argv[i] != NULL; i++) {
+        new_thread_ptr->argv[i] = argv[i];
+    }
     disable_interrupt();
     list_add_tail(&(new_thread_ptr->node), &running_queue);
     test_enable_interrupt();
-    uart_write_string("new thread: 0x");
-    uart_write_no_hex((uint64_t)new_thread_ptr);
-    uart_write_string("\n");
     return new_thread_ptr;
+}
+
+task_t *create_thread_with_argv(char *text, char **argv) {
+    return create_thread_with_argc_argv(text, 8, argv);
+}
+
+task_t *create_thread(char *text)
+{
+    return create_thread_with_argc_argv(text, 0, NULL);
 }
 
 void destruct_thread(task_t *t)
@@ -186,7 +200,6 @@ void _exit(int exitcode)
 
 void kill_zombies()
 {
-    // uart_write_string("in kill zombies\n");
     //kill all threads in stop queue
     task_t *safe;
     task_t *p;
@@ -211,7 +224,7 @@ void idle_thread()
     while (1) {
         //no runnable task, idle
         disable_interrupt();
-        if (list_empty(&stop_queue))
+        if (!list_empty(&stop_queue))
             kill_zombies();
         test_enable_interrupt();
         schedule();
@@ -221,7 +234,7 @@ void idle_thread()
 void one_shot_idle()
 {
     disable_interrupt();
-    if (list_empty(&stop_queue))
+    if (!list_empty(&stop_queue))
         kill_zombies();
     test_enable_interrupt();
 }
@@ -301,8 +314,42 @@ char *load_program(char *text, size_t file_size)
     size_t page_needed = ALIGN(file_size, PAGE_SIZE) / PAGE_SIZE;
     char *load_addr = alloc_pages(page_needed);
     if (load_addr == NULL) {
+        uart_write_string("No enough space for loading program.\n");
         return NULL;
     }
     memcpy(load_addr, text, file_size);
     return current->user_text = load_addr;
+}
+
+//return void to avoid setting x0
+void check_load_args()
+{
+    task_t *current = get_current_thread();
+    char **argv = current->argv;
+    if (!current->arg_loaded) {
+        current->arg_loaded = 1;
+        asm volatile (
+        "mov x0, %[arg1]\n\t"
+        "mov x1, %[arg2]\n\t"
+        "mov x2, %[arg3]\n\t"
+        "mov x3, %[arg4]\n\t"
+        "mov x4, %[arg5]\n\t"
+        "mov x5, %[arg6]\n\t"
+        "mov x6, %[arg7]\n\t"
+        "mov x7, %[arg8]\n\t"
+        "mov x8, %[arg9]\n\t"
+        :
+        : [arg1] "r" (argv[0]), [arg2] "r" (argv[1]), [arg3] "r" (argv[2]), [arg4] "r" (argv[3]),
+          [arg5] "r" (argv[4]), [arg6] "r" (argv[5]), [arg7] "r" (argv[6]), [arg8] "r" (argv[7]), 
+          [arg9] "r" (argv[8])
+        );
+    }
+}
+
+void check_before_switch_back()
+{
+    check_load_args();
+    handle_current_signal();
+    // asm volatile("b check_load_args\n\t");
+    // asm volatile("b handle_current_signal\n\t");
 }

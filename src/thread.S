@@ -20,7 +20,7 @@ switch_to:
     mov sp,  x9
     msr tpidr_el1, x1
     msr daifclr, 0xf
-    b handle_current_signal
+    b check_before_switch_back
     ret
 
 .global get_current_ctx

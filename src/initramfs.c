@@ -3,6 +3,7 @@
 #include "utils.h"
 #include "thread.h"
 #include "mm.h"
+#include "syscall.h"
 char *cpio_addr, *cpio_end;
 struct initramfs _initramfs;
 extern void run_user_program(void *prog_addr, void *stack_addr);
@@ -49,7 +50,6 @@ void _cpio_ls(struct initramfs *self, char *path)
 struct cpio_newc_header *_cpio_find_file(struct initramfs *self, char *path)
 {
     char *ptr = self->addr;
-
     if (strncmp(ptr, "070701", 6) != 0) {
         uart_write_string("Not a valid New ASCII Format Cpio archive file\n");
         return;
@@ -61,6 +61,8 @@ struct cpio_newc_header *_cpio_find_file(struct initramfs *self, char *path)
         header = ptr;
         
         file_path = ptr + sizeof(struct cpio_newc_header);
+        uart_write_string(file_path);
+        uart_write_string("\n");
         if (strcmp(file_path, path) == 0) {
             return header;
         }
@@ -122,19 +124,62 @@ int _cpio_exec(struct initramfs *self, char *argv[])
 {
     char *ptr = self->addr;
 
+    char *path = argv[0];
+
+    unsigned file_size, path_size, header_path_size;
+
+    // char *content_ptr = self->file_content(self, path, &file_size);
+    ///////////////////////////////////////////////////
+
     if (strncmp(ptr, "070701", 6) != 0) {
         uart_write_string("Not a valid New ASCII Format Cpio archive file\n");
         return -1;
     }
 
-    char *path = argv[0];
-
-    unsigned file_size, path_size, header_path_size;
-
-    char *content_ptr = self->file_content(self, path, &file_size);
-    char *load_addr = load_program(content_ptr, file_size);
-
-    run_user_prog(load_addr);
+    struct cpio_newc_header *header = _cpio_find_file(self, path);
+    if (header == NULL) {
+        uart_write_string("File Not Found!\n");
+        return -1;
+    }
+    file_size = hex2unsigned(&(header->c_filesize));
+    path_size = hex2unsigned(&(header->c_namesize));
+    header_path_size = sizeof(struct cpio_newc_header) + path_size;
+    header_path_size = ALIGN(header_path_size, 4);
+    char *content_ptr = (char *)header + header_path_size;
+    /////////////////////////////////////////////////////
+    // char *load_addr = load_program(content_ptr, file_size);
+    /////////////////////////////////////////////////////
+    task_t *current = get_current_thread();
+    if (current->user_text != NULL) {
+        free_page(current->user_text);
+        current->user_text = NULL;
+    }
+    size_t page_needed = ALIGN(file_size, PAGE_SIZE) / PAGE_SIZE;
+    char *load_addr = alloc_pages(page_needed);
+    if (load_addr == NULL) {
+        uart_write_string("No enough space for loading program.\n");
+        return NULL;
+    }
+    memcpy(load_addr, content_ptr, file_size);
+    current->user_text = load_addr;
+    //////////////////////////////////////////////////////
+    // run_user_prog(load_addr);
+    //////////////////////////////////////////////////////
+    //write lr
+    __asm__ __volatile__("mov x30, %[value]"
+                         :
+                         : [value] "r" (exit)
+                         : "x30");
+    //write fp
+    __asm__ __volatile__("mov x29, %[value]"
+                         :
+                         : [value] "r" (STACK_BASE(current->user_stack, current->user_stack_size))
+                         : "x29");
+    //allow interrupt
+    write_sysreg(spsr_el1, 0);
+    write_sysreg(elr_el1, load_addr);
+    write_sysreg(sp_el0, STACK_BASE(current->user_stack, current->user_stack_size));
+    asm volatile("eret");
     return -1;
 }
 

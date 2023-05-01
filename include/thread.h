@@ -61,8 +61,15 @@ typedef struct task_struct {
     char *text;
     char *user_text;
 
+    //will not copy to child threads
+    int arg_loaded;
+    int argc;
+    char *argv[9];
+
+    //kernel stack top after an user called a syscall.
     struct trap_frame *tf;
     
+    //for kernel thread to memorize current register on context switching
     struct task_reg_set old_reg_set;
 
     //about signal
@@ -80,6 +87,8 @@ extern void init_startup_thread(char *main_addr);
 //Notice that this function Call kmalloc!!!
 extern task_t *new_thread();
 //create a new thread
+extern task_t *create_thread_with_argc_argv(char *text, int argc, char **argv);
+extern task_t *create_thread_with_argv(char *text, char **argv);
 extern task_t *create_thread(char *text);
 extern void destruct_thread(task_t *t);
 extern list_t running_queue, waiting_queue, stop_queue;
@@ -107,4 +116,6 @@ extern void demo_thread();
 extern void time_reschedule(void *data);
 extern void check_reschedule();
 extern char *load_program(char *text, size_t file_size);
+
+extern void check_before_switch_back();
 #endif

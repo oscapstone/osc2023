@@ -28,12 +28,12 @@ typedef struct timer_task_node {
     unsigned long long run_at;
     timer_interrupt_callback_t callback;
     void *data;
-    struct timer_task_node *next, *prev;
+    list_t node;
 } timer_task_t;
 struct timer_task_scheduler {
     //member variable
     //  doubled-linked-list queue head sorted by run_at in increasing order
-    timer_task_t *head;
+    list_t head;
     //  size
     size_t qsize;
 

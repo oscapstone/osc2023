@@ -2,6 +2,7 @@
 #define _INITRAMFS_H
 #include "stdint.h"
 #include "utils.h"
+// #define INIT_KSIZE 0x4000
 extern char *cpio_addr, *cpio_end;
 //struct __attribute__((__packed__)) cpio_newc_header {
 struct cpio_newc_header {
