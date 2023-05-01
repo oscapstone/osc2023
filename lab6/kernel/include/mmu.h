@@ -14,16 +14,26 @@
 
 #define PD_TABLE                0b11L
 #define PD_BLOCK                0b01L
-#define PD_UNX                  (1L<<54)
+#define PD_UNX                  (1L << 54)
 #define PD_ACCESS               (1L << 10)
 #define PD_UK_ACCESS            (1L << 6)
-#define BOOT_PGD_ATTR           PD_TABLE
-#define BOOT_PUD_ATTR           (PD_ACCESS | (MAIR_IDX_DEVICE_nGnRnE << 2) | PD_BLOCK)
+
+#define PERIPHERAL_START        0x3c000000L
+#define PERIPHERAL_END          0x3f000000L
+#define USER_KERNEL_BASE        0x00000000L
+#define USER_STACK_BASE         0xfffffffff000L
+
+#define MMU_PGD_BASE            0x1000L
+#define MMU_PGD_ADDR            (MMU_PGD_BASE + 0x0000L)
+#define MMU_PUD_ADDR            (MMU_PGD_BASE + 0x1000L)
+#define MMU_PTE_ADDR            (MMU_PGD_BASE + 0x2000L)
+
+#define BOOT_PGD_ATTR           (PD_TABLE)
+#define BOOT_PUD_ATTR           (PD_TABLE + PD_ACCESS + (MAIR_IDX_NORMAL_NOCACHE << 2))
+#define BOOT_PTE_ATTR_nGnRnE    (PD_BLOCK + PD_ACCESS + PD_UK_ACCESS + (MAIR_DEVICE_nGnRnE << 2))
+#define BOOT_PTE_ATTR_NOCACHE   (PD_BLOCK + PD_ACCESS + (MAIR_NORMAL_NOCACHE << 2))
 
 #ifndef __ASSEMBLER__
-
-#define kernel_pgd_addr 0x1000
-#define kernel_pud_addr 0x2000
 
 void *set_2M_kernel_mmu(void *x0);
 void map_one_page(size_t *pgd_p, size_t va, size_t pa);

@@ -18,8 +18,8 @@ set_mmu_configuration:
     msr mair_el1, x4
 
     // set and enable MMU
-    mov x4, 0x1000 // PGD's page frame at 0x1000
-    mov x1, 0x2000 // PUD's page frame at 0x2000
+    ldr x4, = MMU_PGD_ADDR // PGD's page frame at 0x1000
+    ldr x1, = MMU_PUD_ADDR // PUD's page frame at 0x2000
 
     ldr x2, = BOOT_PGD_ATTR
     orr x2, x1, x2 // combine the physical address of next level page with attribute.
@@ -28,20 +28,20 @@ set_mmu_configuration:
     ldr x2, = BOOT_PUD_ATTR
     mov x3, 0x00000000
     orr x3, x2, x3
-    str x3, [x1]    // 1st 1GB mapped by the 1st entry of PUD
+    str x3, [x1]         // 1st 1GB mapped by the 1st entry of PUD
     mov x3, 0x40000000
     orr x3, x2, x3
-    str x3, [x1, 8] // 2nd 1GB mapped by the 2nd entry of PUD
+    str x3, [x1, 8]      // 2nd 1GB mapped by the 2nd entry of PUD
 
-    msr ttbr0_el1, x4 // load PGD to the bottom translation-based register.
-    msr ttbr1_el1, x4 // also load PGD to the upper translation based register.
+    msr ttbr0_el1, x4    // load PGD to the bottom translation-based register.
+    msr ttbr1_el1, x4    // also load PGD to the upper translation based register.
 
-    mov sp, 0x3c000000
+    mov sp, 0x3c000000   // temp stack
     bl set_2M_kernel_mmu
 
     mrs x2, sctlr_el1
     orr x2 , x2, 1
-    msr sctlr_el1, x2 // enable MMU, cache remains disabled
+    msr sctlr_el1, x2    // enable MMU, cache remains disabled
 
     // indirect branch to the upper virtual address
     ldr x2, =set_exception_vector_table
@@ -53,10 +53,8 @@ set_exception_vector_table:
 
 setup_stack:
     // set top of stack at 0xffff00003c000000 (last usable memory)
-    movz x3, 0x0000
-    movk x3, 0x3c00, lsl 16
-    movk x3, 0xffff, lsl 48
-    mov  sp, x3
+    ldr x3, =_stack_top
+    mov sp, x3
 
 setup_bss:
     ldr     x1, =__bss_start

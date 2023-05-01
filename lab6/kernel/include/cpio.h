@@ -11,6 +11,9 @@
 
 #define CPIO_NEWC_HEADER_MAGIC "070701"    // big endian constant, to check whether it is big endian or little endian
 
+extern void* CPIO_DEFAULT_START;
+extern void* CPIO_DEFAULT_END;
+
 // Using newc archive format
 struct cpio_newc_header
 {

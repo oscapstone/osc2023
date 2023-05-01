@@ -2,40 +2,36 @@
 #include "mmu.h"
 #include "memory.h"
 #include "string.h"
-// PGD's page frame at 0x1000
-// PUD's page frame at 0x2000
-// two-level translation (1G) -> three-level translation (2MB)
+
 void* set_2M_kernel_mmu(void* x0)
 {
-    //unsigned long *pud_table = kmalloc(0x1000);
-    unsigned long *pud_table = (unsigned long *)0x3000;
-    for (int i = 0; i < 512; i++)
-    {
-        // 0x3F000000 to 0x3FFFFFFF for peripherals
-        if ((0x00000000 + (0x200000L) * i) >= 0x3F000000L)
-        {
-            pud_table[i] = PD_ACCESS + PD_BLOCK + (0x00000000 + (0x200000L) * i) + (MAIR_DEVICE_nGnRnE << 2) + PD_UK_ACCESS;
-        }else
-        {
-            pud_table[i] = PD_ACCESS + PD_BLOCK + (0x00000000 + (0x200000L) * i) + (MAIR_IDX_NORMAL_NOCACHE << 2);
-        }
-    }
+   // Turn
+   //   Two-level Translation (1GB) - in boot.S
+   // to
+   //   Three-level Translation (2MB) - set PUD point to new table
+   unsigned long *pud_table = (unsigned long *) MMU_PUD_ADDR;
 
-    //unsigned long *pud_table2 = kmalloc(0x1000);
-    unsigned long *pud_table2 = (unsigned long *)0x4000;
+    unsigned long *pud_table1 = (unsigned long *) MMU_PTE_ADDR;
+    unsigned long *pud_table2 = (unsigned long *)(MMU_PTE_ADDR + 0x1000L);
     for (int i = 0; i < 512; i++)
     {
-        pud_table2[i] = PD_ACCESS + PD_BLOCK + (0x40000000L + (0x200000L) * i) + (MAIR_IDX_NORMAL_NOCACHE << 2);
+        unsigned long addr = 0x200000L * i;
+        if ( addr >= PERIPHERAL_END )
+        {
+            pud_table1[i] = ( 0x00000000 + addr ) + BOOT_PTE_ATTR_nGnRnE;
+            continue;
+        }
+        pud_table1[i] = (0x00000000 + addr ) + BOOT_PTE_ATTR_NOCACHE; //   0 * 2MB
+        pud_table2[i] = (0x40000000 + addr ) + BOOT_PTE_ATTR_NOCACHE; // 512 * 2MB
     }
 
     // set PUD
-    *(unsigned long *)(kernel_pud_addr) = PD_ACCESS + (MAIR_IDX_NORMAL_NOCACHE << 2) + PD_TABLE + (unsigned long)pud_table;
-    *(unsigned long *)(kernel_pud_addr + 0x8) = PD_ACCESS + (MAIR_IDX_NORMAL_NOCACHE << 2) + PD_TABLE + (unsigned long)pud_table2;
+    pud_table[0] = (unsigned long)pud_table1 + BOOT_PUD_ATTR;
+    pud_table[1] = (unsigned long)pud_table2 + BOOT_PUD_ATTR;
 
     return x0;
 }
 
-// pa,va aligned to 4K
 void map_one_page(size_t *virt_pgd_p, size_t va, size_t pa)
 {
     size_t *table_p = virt_pgd_p;
@@ -62,7 +58,6 @@ void map_one_page(size_t *virt_pgd_p, size_t va, size_t pa)
     }
 }
 
-//give 
 void mappages(size_t *virt_pgd_p, size_t va, size_t size, size_t pa)
 {
     for (size_t s = 0; s < size; s+=0x1000)

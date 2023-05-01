@@ -46,9 +46,6 @@ int exec(trapframe_t *tpf,const char *name, char *const argv[])
     char *new_data = get_file_start((char *)name);
     curr_thread->data = kmalloc(curr_thread->datasize);
 
-    //remap code
-    mappages(PHYS_TO_VIRT(curr_thread->context.pgd), 0x0, curr_thread->datasize, (size_t)VIRT_TO_PHYS(curr_thread->data));
-
     for (unsigned int i = 0; i < curr_thread->datasize; i++)
     {
         curr_thread->data[i] = new_data[i];
@@ -60,8 +57,8 @@ int exec(trapframe_t *tpf,const char *name, char *const argv[])
         curr_thread->signal_handler[i] = signal_default_handler;
     }
 
-    tpf->elr_el1 = 0;
-    tpf->sp_el0 = 0xfffffffff000;
+    tpf->elr_el1 = USER_KERNEL_BASE;
+    tpf->sp_el0 = USER_STACK_BASE;
     tpf->x0 = 0;
     return 0;
 }
@@ -77,15 +74,11 @@ int fork(trapframe_t *tpf)
         newt->signal_handler[i] = curr_thread->signal_handler[i];
     }
 
-    mappages(newt->context.pgd, 0x3C000000L, 0x3000000L, 0x3C000000L);
-    mappages(newt->context.pgd, 0x3F000000L, 0x1000000L, 0x3F000000L);
-    mappages(newt->context.pgd, 0x40000000L, 0x40000000L, 0x40000000L);
+    // remap
+    mappages(newt->context.pgd, USER_KERNEL_BASE, newt->datasize, (size_t)VIRT_TO_PHYS(newt->data));
+    mappages(newt->context.pgd, USER_STACK_BASE - USTACK_SIZE, USTACK_SIZE, (size_t)VIRT_TO_PHYS(newt->stack_alloced_ptr));
+    mappages(newt->context.pgd, PERIPHERAL_START, PERIPHERAL_END - PERIPHERAL_START, PERIPHERAL_START);
 
-    // remap code and stack
-    mappages(newt->context.pgd, 0xffffffffb000, 0x4000, (size_t)VIRT_TO_PHYS(newt->stack_alloced_ptr));
-    mappages(newt->context.pgd, 0x0, newt->datasize, (size_t)VIRT_TO_PHYS(newt->data));
-
-    //在這段page被蓋爁
     int parent_pid = curr_thread->pid;
 
     //copy data into new process
@@ -106,8 +99,6 @@ int fork(trapframe_t *tpf)
         newt->kernel_stack_alloced_ptr[i] = curr_thread->kernel_stack_alloced_ptr[i];
     }
 
-    //在這段page被蓋爁
-    
     store_context(get_current());
     //for child
     if( parent_pid != curr_thread->pid)
@@ -138,7 +129,6 @@ void exit(trapframe_t *tpf, int status)
 
 int syscall_mbox_call(trapframe_t *tpf, unsigned char ch, unsigned int *mbox_user)
 {
-    //mbox_user = (unsigned int *)(curr_thread->stack_alloced_ptr + USTACK_SIZE - (0xfffffffff000 - (size_t)mbox));
     lock();
 
     unsigned int size_of_mbox = mbox_user[0];

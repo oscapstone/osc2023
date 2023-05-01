@@ -28,10 +28,9 @@ void init_thread_sched()
         threads[i].iszombie = 0;
     }
 
-    asm volatile("msr tpidr_el1, %0" ::"r"(kmalloc(sizeof(thread_t)))); /// malloc a space for current kernel thread to prevent crash
-
     thread_t* idlethread = thread_create(idle,0x1000);
     curr_thread = idlethread;
+    asm volatile("msr tpidr_el1, %0" ::"r" (&idlethread->context));
     unlock();
 }
 
@@ -75,19 +74,15 @@ int thread_exec(char *data, unsigned int filesize)
 {
     thread_t *t = thread_create(data, filesize);
 
-    mappages(t->context.pgd, 0x3C000000L, 0x3000000L, 0x3C000000L);
-    mappages(t->context.pgd, 0x3F000000L, 0x1000000L, 0x3F000000L);
-    mappages(t->context.pgd, 0x40000000L, 0x40000000L, 0x40000000L);
-
-    mappages(t->context.pgd, 0xffffffffb000, 0x4000, (size_t)VIRT_TO_PHYS(t->stack_alloced_ptr));
-    mappages(t->context.pgd, 0x0, filesize, (size_t)VIRT_TO_PHYS(t->data));
+    mappages(t->context.pgd, USER_KERNEL_BASE, t->datasize, (size_t)VIRT_TO_PHYS(t->data));
+    mappages(t->context.pgd, USER_STACK_BASE - USTACK_SIZE, USTACK_SIZE, (size_t)VIRT_TO_PHYS(t->stack_alloced_ptr));
+    mappages(t->context.pgd, PERIPHERAL_START, PERIPHERAL_END - PERIPHERAL_START, PERIPHERAL_START);
 
     t->context.pgd = VIRT_TO_PHYS(t->context.pgd);
-    t->context.sp = 0xfffffffff000;
-    t->context.fp = 0xfffffffff000;
-    t->context.lr = 0L;
+    t->context.sp = USER_STACK_BASE;
+    t->context.fp = USER_STACK_BASE;
+    t->context.lr = USER_KERNEL_BASE;
 
-    t->context.lr = (unsigned long)0L;
     //copy file into data
     for (int i = 0; i < filesize;i++)
     {
