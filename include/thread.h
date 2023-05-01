@@ -4,6 +4,7 @@
 #include "types.h"
 #include "list.h"
 #include "time_interrupt.h"
+#include "signal.h"
 
 #define TASK_RUNNING            0
 #define TASK_INTERRUPTIBLE      1
@@ -35,8 +36,16 @@ struct task_reg_set {
 #define STACK_BASE(start_addr, stack_size) ((char *)(start_addr) + (stack_size))
 #define MAX_TASK_CNT 0X1000
 extern pid_t pid_cnter;
-//declaration
-struct trap_frame;
+struct trap_frame {
+    //general purpose regiesters
+    //x0 ~ x30
+    uint64_t gprs[31];
+    // uint64_t fp;          // Frame pointer (x29)
+    // uint64_t lr;          // Link register (x30)
+    uint64_t sp;          // elr_el1, store current user stack pointer
+    uint64_t elr_el1;     // Exception link register
+    uint64_t spsr_el1;    // Saved program status register
+};
 typedef struct task_struct {
     union {
         struct list_head node;
@@ -62,7 +71,8 @@ typedef struct task_struct {
     int exit_signal;
     size_t need_reschedule;
     //signal handler table
-    //TODO
+    signal_handler_t reg_sig_handlers[MAX_SIGNAL+1];
+    list_t pending_signal_list;
 } task_t;
 extern task_t *tid2task[MAX_TASK_CNT];
 extern void init_startup_thread(char *main_addr);
@@ -93,16 +103,7 @@ extern void kill_zombies();
 extern void _exit(int exitcode);
 extern void thread_demo();
 extern void demo_thread();
-struct trap_frame {
-    //general purpose regiesters
-    //x0 ~ x30
-    uint64_t gprs[31];
-    // uint64_t fp;          // Frame pointer (x29)
-    // uint64_t lr;          // Link register (x30)
-    uint64_t sp;          // elr_el1, store current user stack pointer
-    uint64_t elr_el1;     // Exception link register
-    uint64_t spsr_el1;    // Saved program status register
-};
+
 extern void time_reschedule(void *data);
 extern void check_reschedule();
 extern char *load_program(char *text, size_t file_size);

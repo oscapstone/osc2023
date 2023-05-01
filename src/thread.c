@@ -36,6 +36,8 @@ task_t *_new_thread()
     new_thread_ptr->old_reg_set.sp = (uint64_t)STACK_BASE(new_thread_ptr->kernel_stack, new_thread_ptr->kernel_stack_size);
     new_thread_ptr->exit_code = new_thread_ptr->exit_state = new_thread_ptr->exit_signal = 0;
     new_thread_ptr->need_reschedule = 0;
+    my_bzero(&(new_thread_ptr->reg_sig_handlers), sizeof(new_thread_ptr->reg_sig_handlers));
+    INIT_LIST_HEAD(&(new_thread_ptr->pending_signal_list));
     return new_thread_ptr;
 }
 
@@ -100,6 +102,9 @@ task_t *copy_thread(task_t *src)
     dst->exit_state = src->exit_state;
     dst->exit_code = src->exit_code;
     dst->exit_signal = src->exit_signal;
+
+    //copy signal handlers
+    memcpy(&(dst->reg_sig_handlers), &(src->reg_sig_handlers), sizeof(src->reg_sig_handlers));
     
     dst->old_reg_set.lr = return_from_fork;
     return dst;
@@ -108,9 +113,9 @@ task_t *copy_thread(task_t *src)
 task_t *copy_run_thread(task_t *src)
 {
     task_t *dst = copy_thread(src);
-    //disable_interrupt();
+    disable_interrupt();
     list_add_tail(&(dst->node), &running_queue);
-    //test_enable_interrupt();
+    test_enable_interrupt();
     return dst;
 }
 
@@ -120,9 +125,9 @@ task_t *create_thread(char *text)
     new_thread_ptr->text = text;
     // new_thread_ptr->old_reg_set.lr = (uint64_t)text;
     //insert to tail of running queue
-    //disable_interrupt();
+    disable_interrupt();
     list_add_tail(&(new_thread_ptr->node), &running_queue);
-    //test_enable_interrupt();
+    test_enable_interrupt();
     uart_write_string("new thread: 0x");
     uart_write_no_hex((uint64_t)new_thread_ptr);
     uart_write_string("\n");
@@ -142,18 +147,12 @@ void destruct_thread(task_t *t)
 void schedule()
 {
     disable_interrupt();
-    // uart_write_string("schedule disable irq ");
-    // uart_write_no(interrupt_cnter);
-    // uart_write_string("\n");
     if (!list_empty(&running_queue)) {
         task_t *next_task = list_entry(running_queue.next, task_t, node);
         list_del_init(&(next_task->node));
         task_t *current = get_current_thread();
         if ((current->state | current->exit_state) == TASK_RUNNING)
             list_add_tail(&(current->node), &running_queue);
-        // uart_write_string("leave schedule enable irq ");
-        // uart_write_no(interrupt_cnter);
-        // uart_write_string("\n");
         test_enable_interrupt();
         //context switch
         switch_to(&(current->old_reg_set), &(next_task->old_reg_set));
@@ -170,6 +169,15 @@ void _exit(int exitcode)
     current->state = 0;
     current->exit_state = EXIT_ZOMBIE;
     disable_interrupt();
+    //free pending signals(a freeable resource for thread)
+    struct signal *pend_sig, *safe;
+    list_for_each_entry_safe(pend_sig, safe, &(current->pending_signal_list), node) {
+        list_del(&(pend_sig->node));
+        test_enable_interrupt();
+        free_page(pend_sig->handler_user_stack);
+        kfree(pend_sig);
+        disable_interrupt();
+    }
     list_del_init(current);
     list_add_tail(current, &stop_queue);
     test_enable_interrupt();

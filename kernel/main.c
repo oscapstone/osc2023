@@ -61,9 +61,9 @@ int main(void)
     // print_uptime_every2second();
     init_startup_thread(main);
     size_t freq = get_timer_freq();
-    _timer_task_scheduler.interval_run_tick(&_timer_task_scheduler, (timer_interrupt_callback_t)time_reschedule, NULL, freq >> 3);
+    _timer_task_scheduler.interval_run_tick(&_timer_task_scheduler, (timer_interrupt_callback_t)time_reschedule, NULL, freq >> 5);
     // _timer_task_scheduler.interval_run_tick(&_timer_task_scheduler, (timer_interrupt_callback_t)write_uptime, NULL, freq >> 5);
-    _timer_task_scheduler.interval_run_tick(&_timer_task_scheduler, (timer_interrupt_callback_t)one_shot_idle, NULL, freq >> 5);
+    _timer_task_scheduler.interval_run_tick(&_timer_task_scheduler, (timer_interrupt_callback_t)one_shot_idle, NULL, freq);
 
     // create_thread(shell_main_thread);
     // idle_thread();

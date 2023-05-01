@@ -68,7 +68,7 @@ struct interrupt_task_node *fetch_next(struct interrupt_scheduler *self, int *pr
 
 void core_timer_top_half(int prior)
 {
-    uart_write_string("is timer\n");
+    // uart_write_string("is timer\n");
     core_timer_disable();
     _interrupt_scheduler.add_task(&_interrupt_scheduler, _timer_task_scheduler.timer_interrupt_handler, &_timer_task_scheduler, prior);
     core_timer_enable();
@@ -76,7 +76,7 @@ void core_timer_top_half(int prior)
 
 void uart_top_half(int prior)
 {
-    uart_write_string("is uart\n");
+    // uart_write_string("is uart\n");
     //disable uart interrupt
     if (*AUX_MU_IER & 0b10) *AUX_MU_IER &= ~(0b10);
     else if (*AUX_MU_IER & 0b01) *AUX_MU_IER &= ~(0b01);
@@ -137,7 +137,7 @@ void irq_router(void)
 
 void current_irq_exception_router(void)
 {
-    uart_write_string("In current_irq_exception_router\n");
+    // uart_write_string("In current_irq_exception_router\n");
     irq_router();
 }
 
@@ -185,7 +185,7 @@ void synchronous_exception_router(struct trap_frame *tf)
 
 void current_synchronous_exception_router(struct trap_frame *tf)
 {
-    uart_write_string("In current_synchronous_exception_router\n");
+    // uart_write_string("In current_synchronous_exception_router\n");
     // default_handler();
     synchronous_exception_router(tf);
 }
@@ -198,7 +198,7 @@ void lower_synchronous_exception_router(struct trap_frame *tf)
 
 void lower_irq_exception_router(void)
 {
-    uart_write_string("In lower_irq_exception_router\n");
+    // uart_write_string("In lower_irq_exception_router\n");
     // default_handler();
     irq_router();
 }

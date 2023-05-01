@@ -13,6 +13,7 @@ void syscall_getpid(struct trap_frame *tf)
 }
 void syscall_uart_read(struct trap_frame *tf)
 {
+    if (!UART_READABLE()) schedule();
     char *buf = tf->gprs[0];
     size_t size = tf->gprs[1];
     size_t i;
@@ -33,20 +34,25 @@ void syscall_uart_write(struct trap_frame *tf)
 void run_user_prog(char *user_text)
 {
     task_t *current = get_current_thread();
+    _run_user_prog(user_text, exit, STACK_BASE(current->user_stack, current->user_stack_size));
+}
+
+void _run_user_prog(char *user_text, char *callback, char *stack_base)
+{
     //write lr
     __asm__ __volatile__("mov x30, %[value]"
                          :
-                         : [value] "r" (exit)
+                         : [value] "r" (callback)
                          : "x30");
     //write fp
     __asm__ __volatile__("mov x29, %[value]"
                          :
-                         : [value] "r" (STACK_BASE(current->user_stack, current->user_stack_size))
+                         : [value] "r" (stack_base)
                          : "x29");
     //allow interrupt
     write_sysreg(spsr_el1, 0);
     write_sysreg(elr_el1, user_text);
-    write_sysreg(sp_el0, STACK_BASE(current->user_stack, current->user_stack_size));
+    write_sysreg(sp_el0, stack_base);
     asm volatile("eret");
 }
 
@@ -106,18 +112,60 @@ void syscall_kill(struct trap_frame *tf)
     // schedule();
 }
 
+//register a signal handler
 void syscall_signal(struct trap_frame *tf)
 {
-    
+    int signum = tf->gprs[0];
+    signal_handler_t handler = tf->gprs[1];
+    if (signum < 0 || signum > MAX_SIGNAL) {
+        tf->gprs[0] = NULL;
+        return;
+    }
+    task_t *current = get_current_thread();
+    signal_handler_t prev_handler = current->reg_sig_handlers[signum];
+    current->reg_sig_handlers[signum] = handler;
+    tf->gprs[0] = prev_handler;
 }
 
 void syscall_sigkill(struct trap_frame *tf)
 {
-    
+    pid_t recv_pid = tf->gprs[0];
+    int signum = tf->gprs[1];
+    if (signum < 0 || signum > MAX_SIGNAL) {
+        tf->gprs[0] = -1;
+        return;
+    }
+    if (recv_pid < 0 || recv_pid >= MAX_TASK_CNT || tid2task[recv_pid] == NULL) {
+        tf->gprs[0] = -1;
+        return;
+    }
+    task_t *target = tid2task[recv_pid];
+    struct signal *new_sig = kmalloc(sizeof(struct signal));
+    new_sig->handler_user_stack = alloc_pages(1);
+    new_sig->handler_user_stack_size = PAGE_SIZE;
+    new_sig->tf = kmalloc(sizeof(struct trap_frame));
+    new_sig->signum = signum;
+    new_sig->handling = 0;
+
+    INIT_LIST_HEAD(&(new_sig->node));
+    disable_interrupt();
+    list_add_tail(&(new_sig->node), &(target->pending_signal_list));
+    test_enable_interrupt();
+    tf->gprs[0] = 0;
 }
+
 void syscall_sigreturn(struct trap_frame *tf)
 {
-    
+    task_t *current = get_current_thread();
+    disable_interrupt();
+    struct signal *handled = list_entry(current->pending_signal_list.next, struct signal, node);
+    list_del(&(handled->node));
+    test_enable_interrupt();
+    memcpy(tf, handled->tf, sizeof(struct trap_frame));
+    kfree(handled->tf);
+    free_page(handled->handler_user_stack);
+    kfree(handled);
+    //do not modify the original trap frame so that user process don't aware of enter of signal
 }
 
 syscall_t default_syscall_table[NUM_syscalls] = {

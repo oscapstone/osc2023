@@ -57,3 +57,9 @@ sigkill:
     mov x8, #9
     svc #0
     ret
+
+.global sigret
+sigret:
+    mov x8, #10
+    svc #0
+    ret

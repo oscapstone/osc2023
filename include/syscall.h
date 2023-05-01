@@ -28,5 +28,7 @@ extern void exit();
 extern int mbox_call(unsigned char ch, unsigned int *mbox);
 extern void kill(int pid);
 extern void fork_test();
+extern void sigret();
+extern void _run_user_prog(char *user_text, char *callback, char *stack_base);
 extern void run_user_prog(char *user_text);
 #endif
