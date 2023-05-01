@@ -2,6 +2,7 @@
 #include "sched.h"
 #include "syscall.h"
 #include "memory.h"
+#include "mmu.h"
 
 void check_signal(trapframe_t *tpf)
 {
@@ -41,21 +42,23 @@ void run_signal(trapframe_t* tpf,int signal)
         return;
     }
 
-    char *temp_signal_userstack = kmalloc(USTACK_SIZE);
-
     asm("msr elr_el1, %0\n\t"
         "msr sp_el0, %1\n\t"
         "msr spsr_el1, %2\n\t"
-        "eret\n\t" ::"r"(signal_handler_wrapper),
-        "r"(temp_signal_userstack + USTACK_SIZE),
-        "r"(tpf->spsr_el1));
+	"mov x0, %3\n\t"
+        "eret\n\t"
+        :: "r"(USER_SIGNAL_WRAPPER_VA + ((size_t)signal_handler_wrapper % 0x1000)),
+           "r"(tpf->sp_el0),
+           "r"(tpf->spsr_el1),
+           "r"(curr_thread->curr_signal_handler));
 }
 
 void signal_handler_wrapper()
 {
-    (curr_thread->curr_signal_handler)();
+    //elr_el1 set to function -> call function by x0
     //system call sigreturn
-    asm("mov x8,50\n\t"
+    asm("blr x0\n\t"
+        "mov x8,50\n\t"
         "svc 0\n\t");
 }
 

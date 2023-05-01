@@ -15,13 +15,16 @@
 #define PD_TABLE                0b11L
 #define PD_BLOCK                0b01L
 #define PD_UNX                  (1L << 54)
+#define PD_KNX                  (1L << 53)
 #define PD_ACCESS               (1L << 10)
+#define PD_RDONLY               (1L << 7)
 #define PD_UK_ACCESS            (1L << 6)
 
 #define PERIPHERAL_START        0x3c000000L
 #define PERIPHERAL_END          0x3f000000L
 #define USER_KERNEL_BASE        0x00000000L
 #define USER_STACK_BASE         0xfffffffff000L
+#define USER_SIGNAL_WRAPPER_VA  0xffffffff9000L
 
 #define MMU_PGD_BASE            0x1000L
 #define MMU_PGD_ADDR            (MMU_PGD_BASE + 0x0000L)
@@ -36,8 +39,8 @@
 #ifndef __ASSEMBLER__
 
 void *set_2M_kernel_mmu(void *x0);
-void map_one_page(size_t *pgd_p, size_t va, size_t pa);
-void mappages(size_t *pgd_p, size_t va, size_t size, size_t pa);
+void map_one_page(size_t *pgd_p, size_t va, size_t pa, size_t flag);
+void mappages(size_t *pgd_p, size_t va, size_t size, size_t pa, size_t flag);
 void free_page_tables(size_t *page_table, int level);
 
 #endif //__ASSEMBLER__

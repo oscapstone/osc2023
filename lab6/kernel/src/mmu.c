@@ -32,7 +32,7 @@ void* set_2M_kernel_mmu(void* x0)
     return x0;
 }
 
-void map_one_page(size_t *virt_pgd_p, size_t va, size_t pa)
+void map_one_page(size_t *virt_pgd_p, size_t va, size_t pa, size_t flag)
 {
     size_t *table_p = virt_pgd_p;
     for (int level = 0; level < 4; level++)
@@ -42,7 +42,7 @@ void map_one_page(size_t *virt_pgd_p, size_t va, size_t pa)
         if (level == 3)
         {
             table_p[idx] = pa;
-            table_p[idx] |= PD_ACCESS | PD_TABLE | (MAIR_IDX_NORMAL_NOCACHE << 2) | (PD_UK_ACCESS);
+            table_p[idx] |= PD_ACCESS | PD_TABLE | (MAIR_IDX_NORMAL_NOCACHE << 2) | PD_UK_ACCESS | PD_KNX | flag;
             return;
         }
 
@@ -51,18 +51,19 @@ void map_one_page(size_t *virt_pgd_p, size_t va, size_t pa)
             size_t* newtable_p =kmalloc(0x1000);
             memset(newtable_p, 0, 0x1000);
             table_p[idx] = VIRT_TO_PHYS((size_t)newtable_p);
-            table_p[idx] |= PD_ACCESS | PD_TABLE | (MAIR_IDX_NORMAL_NOCACHE << 2) | PD_UK_ACCESS;
+            table_p[idx] |= PD_ACCESS | PD_TABLE | (MAIR_IDX_NORMAL_NOCACHE << 2) | flag;
         }
 
         table_p = (size_t*)PHYS_TO_VIRT((size_t)(table_p[idx] & ENTRY_ADDR_MASK));
     }
 }
 
-void mappages(size_t *virt_pgd_p, size_t va, size_t size, size_t pa)
+void mappages(size_t *virt_pgd_p, size_t va, size_t size, size_t pa, size_t flag)
 {
+    pa = pa - (pa % 0x1000); // align
     for (size_t s = 0; s < size; s+=0x1000)
     {
-        map_one_page(virt_pgd_p, va + s, pa + s);
+        map_one_page(virt_pgd_p, va + s, pa + s, flag);
     }
 }
 
