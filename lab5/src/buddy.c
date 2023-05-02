@@ -67,7 +67,7 @@ void init_buddy()
 	pool = null;
 	use_pool = null;
 	int heap_end = buddy_start + page_total * sizeof(struct page) + (MAX_ORDER) * sizeof(struct page*);
-	memory_reserve(kernel_end,heap_end + 0x100000);		//reserve heap size
+	//memory_reserve(kernel_end,heap_end + 0x100000);		//reserve heap size
 	return;
 }
 

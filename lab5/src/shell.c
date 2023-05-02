@@ -101,7 +101,7 @@ void shell_option(char* command,char* ramdisk)
 	else if(!strcmp(command,"video"))
 	{
 		Thread(from_EL1_to_EL0);
-		schedule();
+		core_timer_enable();
 	}
 	else
 	{

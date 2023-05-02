@@ -119,6 +119,7 @@ EL1_check_interrupt:
 
 EL0_SVC_interrupt:
 	save_all
+	bl enable_interrupt						//can't ignore
 	mov		x0,sp							//save sp to trap_frame , otherwise sp will grow in handler
 	bl		EL0_SVC_handler
 	load_all

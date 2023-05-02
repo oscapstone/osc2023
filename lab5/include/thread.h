@@ -25,8 +25,9 @@ struct thread
 	struct registers reg;		//save callee-saved register's address
 	struct thread *next;
 	int tid;
-	char* status;
+	int status;					//RUN : 1 , DEAD : 2
 	char stack[0x10000];
+	char* kernel_stack_base;
 	char* kernel_stack;
 };
 

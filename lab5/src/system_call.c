@@ -16,7 +16,6 @@ extern void from_EL1_to_EL0();
 
 void EL0_SVC_handler(struct trap_frame *tf)
 {
-	core_timer_enable();
 	uint64_t esr_el1;
 	asm volatile("mrs %0, ESR_EL1;" : "=r" (esr_el1));
 	if(esr_el1>>26 == 0b010101)							//SVC instruction execution in AArch64 state
@@ -41,7 +40,9 @@ void EL0_SVC_handler(struct trap_frame *tf)
 				enable_interrupt();
 				break;
 			case 5:
-				exit();								//use previous exit
+				disable_interrupt();
+				exit();											//use previous exit
+				enable_interrupt();
 				break;
 			case 6:
 				tf->reg[0] = mbox_call(tf->reg[1],tf->reg[0]);	//use previous mbox_call
@@ -115,42 +116,40 @@ int exec(char *name,char *argv)
 int fork(struct trap_frame *tf)
 {
 	char *thd = get_current();
-	int ctid = Thread(to_child);							//create new child thread
-	char *child_copy = thread_list[ctid];					//for child copy
-	int gap = (int)child_copy - (int)thd;					//parent & child gap
-	for(int i=0;i<sizeof(struct thread) - sizeof(char*);i++)//avoid change kernel_stack pointer
+	int ctid = Thread(to_child);								//create new child thread
+	char *child_copy = thread_list[ctid];						//for child copy
+	int gap = (int)child_copy - (int)thd;						//parent & child gap
+	for(int i=0;i<sizeof(struct thread) - sizeof(char*)*2;i++)	//avoid change kernel_stack pointer
 	{
-		child_copy[i] = thd[i];								//copy whole thread data to child , include stack
+		child_copy[i] = thd[i];									//copy whole thread data to child , include stack
 	}
 
 	struct thread *parent = thd;
-	for(int i=0;i<0x10000;i++)
+	for(int i=0;i<0x10000;i++)									//copy whole kernel_stack
 	{
-		thread_list[ctid]->kernel_stack[i] = parent->kernel_stack[i];	//copy whole kernel_stack
+		thread_list[ctid]->kernel_stack_base[i] = parent->kernel_stack_base[i];
 	}
 
-	struct trap_frame *c_tf = (char*)((uint64_t)tf + (uint64_t)thread_list[ctid]->kernel_stack - (uint64_t)parent->kernel_stack);
-
+	struct trap_frame *c_tf = (char*)((uint64_t)tf + (uint64_t)thread_list[ctid]->kernel_stack_base - (uint64_t)parent->kernel_stack_base);
 	char* c_tmp = c_tf;
 	char* tmp = tf;
-	for(int i=0;i<sizeof(struct trap_frame);i++)
+	for(int i=0;i<sizeof(struct trap_frame);i++)				//copy whole trap_frame
 	{
 		c_tmp[i] = tmp[i];
 	}
 
 	parent->reg.SP = tf;
-	thread_list[ctid]->tid = ctid;							//update child tid
+	thread_list[ctid]->tid = ctid;								//update child tid
 	thread_list[ctid]->reg.SP = c_tf;
-	thread_list[ctid]->reg.LR = to_child;					//return to child & load register
-	thread_list[ctid]->reg.FP = ((uint64_t)thread_list[ctid]->kernel_stack + 0x10000) & 0xFFFFFFF0;
+	thread_list[ctid]->reg.LR = to_child;						//return to child & load register
+	thread_list[ctid]->reg.FP = (uint64_t)thread_list[ctid]->kernel_stack;
 	thread_list[ctid]->next = null;
 
 	//for user_thread
-	c_tf->SPSR_EL1 = 0;										//open interrupt & jump back to EL0
-	c_tf->reg[0] = 0;										//child's return value
-	c_tf->SP_EL0 += gap;									//update sp_el0
+	c_tf->SPSR_EL1 = 0;											//open interrupt & jump back to EL0
+	c_tf->reg[0] = 0;											//child's return value
+	c_tf->SP_EL0 += gap;										//update sp_el0
 	c_tf->reg[29] += gap;
-	core_timer_enable();
 
 	return ctid;
 }
@@ -164,16 +163,13 @@ void kill(int pid)
 
 void fork_test()
 {
-	for(int i=0;i<1000000000;i++)
-	{
-		asm volatile("nop;");
-	}
 	uart_send_string("Fork Test, pid ");
 	uart_int(test_get_pid());
 	uart_send_string("\r\n");
     int cnt = 1;
     int ret = 0;
-    if ((ret = test_fork()) == 0) { // child
+    if ((ret = test_fork()) == 0)
+   	{ 	// child
         long long cur_sp;
         asm volatile("mov %0, sp" : "=r"(cur_sp));
 		uart_send_string("first child pid: ");
@@ -186,7 +182,6 @@ void fork_test()
 		uart_hex(cur_sp);
 		uart_send_string("\r\n");
         ++cnt;
-
         if ((ret = test_fork()) != 0)
 		{
             asm volatile("mov %0, sp" : "=r"(cur_sp));
@@ -214,10 +209,6 @@ void fork_test()
 				uart_send_string(", sp : ");
 				uart_hex(cur_sp);
 				uart_send_string("\r\n");
-				for(int i=0;i<100000000;i++)
-				{
-					asm volatile("nop;");
-				}
                 ++cnt;
             }
         }
@@ -230,8 +221,8 @@ void fork_test()
 		uart_send_string(", child ");
 		uart_int(ret);
 		uart_send_string("\r\n");
+		test_exit();
     }
-	test_exit();
 }
 
 int test_get_pid()
@@ -257,14 +248,6 @@ int test_fork()
 void test_exit()
 {
 	asm volatile("mov x8, 5;"
-				 "svc 0;"
-				);
-	return;
-}
-
-void test_exec()
-{
-	asm volatile("mov x8, 3;"
 				 "svc 0;"
 				);
 	return;

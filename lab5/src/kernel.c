@@ -43,10 +43,14 @@ void kernel_main(void* dtb)		//x0 is the first argument
 	set_exception_vector_table();					//set vbar_el1 for exception & interrupt
    
 	init_buddy();									//simple allocator
-	memory_reserve(0x0,(char*)0x1000);				//Spin tables for multicore boot
-	memory_reserve((char*)0x80000,kernel_end);		//Kernel image in the physical memory
-	memory_reserve(ramdisk_start,ramdisk_end);		//Initramfs
-	memory_reserve(dtb,dtb + 0x16000);				//Devicetree
+	//memory_reserve(0x0,(char*)0x1000);				//Spin tables for multicore boot
+	//memory_reserve((char*)0x80000,kernel_end);		//Kernel image in the physical memory
+	//memory_reserve(ramdisk_start,ramdisk_end);		//Initramfs
+	//memory_reserve(dtb,dtb + 0x16000);				//Devicetree
+	
+	memory_reserve(0x0,0x9000000);
+
+	enable_interrupt();
 
 	init_thread();
 	push_idle();

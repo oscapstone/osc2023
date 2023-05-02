@@ -31,14 +31,15 @@ int Thread(void (*func)())
 		{
 			thd->next = null;
 			thd->tid = i;
-			thd->reg.x19 = fork_test;
-			//thd->reg.x19 = video_prog();										//EL1 switch_to use
+			//thd->reg.x19 = fork_test;			//for fork_test use
+			thd->reg.x19 = video_prog();
 			thd->reg.x20 = ((uint64_t)(thd->stack + 0x10000) & 0xFFFFFFF0);		//for user_stack
-			thd->kernel_stack = ((uint64_t)(d_alloc(0x10000) + 0x10000) & 0xFFFFFFF0);
+			thd->kernel_stack_base = d_alloc(0x10000);
+			thd->kernel_stack = ((uint64_t)(thd->kernel_stack_base + 0x10000) & 0xFFFFFFF0);
 			thd->reg.LR = func;
 			thd->reg.SP = thd->kernel_stack;									//set EL1 kernel_stack
 			thd->reg.FP = thd->kernel_stack;
-			thd->status = "RUN";
+			thd->status = 1;
 			thread_list[i] = thd;
 			break;
 		}
@@ -97,23 +98,32 @@ again:
 	}
 	struct thread *now = get_current();
 	struct thread *next = run_queue;
+/*
+	uart_send_string("now id :");
+	uart_int(now->tid);
+	uart_send_string(", next id :");
+	uart_int(next->tid);
+	uart_send_string("\r\n");
+*/	
 	run_queue = run_queue->next;
 	if(now->tid != 0)
 	{
 		push_run_queue(now);					//may need keep running (RR)
 	}
-	if(strcmp(next->status,"RUN") == 0)
+	if(next->status == 1)						//1 : RUN
 	{
 		switch_to(now,next);
 	}
-	else if(strcmp(next->status,"DEAD") == 0)
+	else if(next->status == 2)					//2 : DEAD
 	{
 		pop_run_queue(next->tid);
 		goto again;
 	}
 	else
 	{
-		uart_send_string("status unknow\n");
+		uart_send_string("status unknow , id: ");
+		uart_int(next->tid);
+		uart_send_string("\r\n");
 	}
 	return;
 }
@@ -122,9 +132,9 @@ void kill_zombies()
 {
 	for(int i=1;i<65536;i++)
 	{
-		if(thread_list[i] != null && thread_list[i]->status == "DEAD")
+		if(thread_list[i] != null && thread_list[i]->status == 2)
 		{
-			d_free(thread_list[i]->kernel_stack);
+			d_free(thread_list[i]->kernel_stack_base);
 			d_free(thread_list[i]);
 			thread_list[i] = null;
 		}
@@ -136,7 +146,7 @@ void idle()
 {
 	while(1)
 	{
-		uart_send_string("in idel\r\n");
+		//uart_send_string("in idel\r\n");
 		kill_zombies();
 		schedule();
 	}
@@ -145,14 +155,15 @@ void idle()
 
 void push_idle()
 {
-	struct thread *thd;
-	thd = d_alloc(sizeof(struct thread));
+	struct thread *thd = d_alloc(sizeof(struct thread));
 	thd->next = null;
 	thd->tid = 0;
-	thd->reg.FP = ((int)(thd->stack + 0x10000) & 0xFFFFFFF0);
+	thd->kernel_stack_base = d_alloc(0x10000);
+	thd->kernel_stack = ((uint64_t)(thd->kernel_stack_base + 0x10000) & 0xFFFFFFF0);
+	thd->reg.FP = thd->kernel_stack;
 	thd->reg.LR = idle;
-	thd->reg.SP = ((int)(thd->stack + 0x10000) & 0xFFFFFFF0);
-	thd->status = "RUN";
+	thd->reg.SP = thd->kernel_stack;
+	thd->status = 1;
 	thread_list[0] = thd;					//always set idle thread in list's first
 	push_run_queue(thread_list[0]);
 	return;
@@ -176,7 +187,7 @@ void clear_thread_list()
 	{
 		if(thread_list[i] != null)
 		{
-			d_free(thread_list[i]->kernel_stack);
+			d_free(thread_list[i]->kernel_stack_base);
 			d_free(thread_list[i]);
 			thread_list[i] = null;
 		}
@@ -206,7 +217,7 @@ void foo()
 void exit()				//end of a thread
 {
 	struct thread *tmp = get_current();
-	tmp->status = "DEAD";
+	tmp->status = 2;
 	schedule();
 	return;
 }

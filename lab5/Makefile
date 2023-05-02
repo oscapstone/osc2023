@@ -13,7 +13,7 @@ OBJ = $(patsubst %.c, $(OBJ_DIR)/%.o, $(notdir $(SRC)))
 OBJ += $(patsubst %.S, $(OBJ_DIR)/%.o, $(notdir $(ASM)))
 
 
-FLAG = -Wall -nostdlib -I include -c -g
+FLAG = -Wall -nostdlib -I include -c -g -O3 -mgeneral-regs-only -fno-builtin
 
 .PHONY: all
 
@@ -37,6 +37,9 @@ kernel8.img: $(OBJ)
 
 run: all
 	qemu-system-aarch64 -M raspi3b -kernel kernel8.img -display none -serial null -serial stdio -initrd initramfs.cpio -dtb bcm2710-rpi-3-b-plus.dtb 
+
+gura: all
+	qemu-system-aarch64 -M raspi3b -kernel kernel8.img -serial null -serial stdio -initrd initramfs.cpio -dtb bcm2710-rpi-3-b-plus.dtb 
 
 asm: all
 	qemu-system-aarch64 -M raspi3b -kernel kernel8.img -display none -serial null -serial stdio -initrd initramfs.cpio -dtb bcm2710-rpi-3-b-plus.dtb -d int

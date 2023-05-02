@@ -66,7 +66,7 @@ void EL0_core_timer_handler()
     	"msr     CNTP_TVAL_EL0,x0;"		//set new timeout
 	);
 	schedule();							//use timer interrupt to switch_to next thread (RR)
-	print_time();
+	//print_time();
 	return;
 }
 
@@ -75,10 +75,11 @@ void EL1_core_timer_handler()
 	asm volatile
 	(
 		"mrs     x0,CNTFRQ_EL0;"
+		"asr     x0,x0,5;"
     	"msr     CNTP_TVAL_EL0,x0;"    //set new timeout , plus 1 sec
 	);
-//	schedule();
-//	print_time();
+	schedule();
+	//print_time();
 	//one_sec_pass();
 	return;
 }
@@ -87,7 +88,7 @@ void EL1_check_interrupt_source()
 {
 	if(*CORE0_INTERRUPT_SOURCE & 0x00000002)		//bit 1  : CNTPNSIRQ interrupt
 	{
-		uart_send_string("async EL1 timer interrupt\r\n");
+		//uart_send_string("async EL1 timer interrupt\r\n");
 		EL1_core_timer_handler();		
 	}	
 	else if(*GPU_PENDING1_REGISTER & 0x20000000)	//bit 29 : AUX intterupt (uart1_interrupt)
@@ -101,7 +102,7 @@ void EL0_check_interrupt_source()
 {
 	if(*CORE0_INTERRUPT_SOURCE & 0x00000002)	//bit 1  : CNTPNSIRQ interrupt
 	{
-		uart_send_string("async EL0 timer interrupt\r\n");
+		//uart_send_string("async EL0 timer interrupt\r\n");
 		EL0_core_timer_handler();		
 	}	
 	return;

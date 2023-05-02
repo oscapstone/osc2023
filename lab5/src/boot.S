@@ -35,7 +35,7 @@ master:
 from_EL2_to_EL1:
 		mov		x0,(1<<31)		//in HCR_EL2 , 31bit set : the execution state for EL1 is AArch64
 		msr		HCR_EL2,x0		//Hypervisor Configuration Register for EL2 , msr:load general register -> state register
-		mov		x0,0x3C5		//0011:	9:PSTATE.D 8:PSTATE.A , 1100: 7:PSTATE.I 6:PSTATE.F(D,A,I,F set 1 to disable interrupt) , 0101: EL1h(jump to EL1)
+		mov		x0,0x5			//0011:	9:PSTATE.D 8:PSTATE.A , 1100: 7:PSTATE.I 6:PSTATE.F(D,A,I,F set 1 to disable interrupt) , 0101: EL1h(jump to EL1)
 		msr		SPSR_EL2,x0		//Saved Program Status Register (EL2) , saved process state when an exception is taken to EL2
 		msr		ELR_EL2,LR		//Exception Link Register (EL2) , when taking an exception to EL2, holds the address to return to
 		ERET					//exception return , will load from ELR_EL2 -> PC
@@ -47,6 +47,5 @@ from_EL1_to_EL0:
 		mov		x0,0x0			//open interrupt
 		msr		SPSR_EL1,x0
 		msr		SP_EL0,x20
-		bl		enable_interrupt
-		bl		core_timer_enable
+		bl		enable_interrupt	//can ignore
 		ERET
