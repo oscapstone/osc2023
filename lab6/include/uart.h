@@ -4,19 +4,19 @@
 #ifndef UART_H
 #define UART_H
 
-#define PHY_AUX_IRQ 0x7e215000
-#define PHY_AUX_ENABLE 0x7e215004
-#define PHY_AUX_MU_IO 0x7e215040
-#define PHY_AUX_MU_IER 0x7e215044
-#define PHY_AUX_MU_IIR 0x7e215048
-#define PHY_AUX_MU_LCR 0x7e21504c
-#define PHY_AUX_MU_MCR 0x7e215050
-#define PHY_AUX_MU_LSR 0x7e215054
-#define PHY_AUX_MU_MSR 0x7e215058
-#define PHY_AUX_MU_SCRATCH 0x7e21505c
-#define PHY_AUX_MU_CNTL 0x7e215060
-#define PHY_AUX_MU_STAT 0x7e215064
-#define PHY_AUX_MU_BAUD 0x7e215068
+#define PHY_AUX_IRQ 0xffff00007e215000
+#define PHY_AUX_ENABLE 0xffff00007e215004
+#define PHY_AUX_MU_IO 0xffff00007e215040
+#define PHY_AUX_MU_IER 0xffff00007e215044
+#define PHY_AUX_MU_IIR 0xffff00007e215048
+#define PHY_AUX_MU_LCR 0xffff00007e21504c
+#define PHY_AUX_MU_MCR 0xffff00007e215050
+#define PHY_AUX_MU_LSR 0xffff00007e215054
+#define PHY_AUX_MU_MSR 0xffff00007e215058
+#define PHY_AUX_MU_SCRATCH 0xffff00007e21505c
+#define PHY_AUX_MU_CNTL 0xffff00007e215060
+#define PHY_AUX_MU_STAT 0xffff00007e215064
+#define PHY_AUX_MU_BAUD 0xffff00007e215068
 
 #define AUX_IRQ                                                                \
   (volatile unsigned int *)((PHY_AUX_IRQ) - (BUS_BASE) + (MMIO_BASE))

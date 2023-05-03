@@ -93,7 +93,7 @@ int timer_walk(int sec) {
  * Disable the interrupt
  *******************************************************************/
 int disable_timer_int(void) {
-  asm volatile("ldr	x1, 	=0x40000040;"
+  asm volatile("ldr	x1, 	=0xffff000040000040;"
                "mov	x0,	0;"
                "str	w0, 	[x1];");
   return 0;
@@ -111,7 +111,7 @@ int enable_timer_int(void) {
                "mul	x0, 	x0, x1;"
                "msr	cntp_tval_el0, x0;"
                "mov	x0, 	2;"
-               "ldr	x1, 	=0x40000040;"
+               "ldr	x1, 	=0xffff000040000040;"
                "str	w0,	[x1];");
   return 0;
 }

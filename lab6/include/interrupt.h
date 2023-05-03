@@ -2,13 +2,13 @@
 #ifndef INTERRUPT_H
 #define INTERRUPT_H
 
-#define GPU_INT_ROUT ((volatile unsigned int *)0x4000000C)
-#define CORE0_TIMER_IRQ_CTRL 0x40000040
-#define CORE0_IRQ_SOURCE ((volatile unsigned int *)0x40000060)
-#define _IRQ_PEND_1 ((volatile unsigned int *)0x7E00B204)
+#define GPU_INT_ROUT ((volatile unsigned int *)0xffff00004000000C)
+#define CORE0_TIMER_IRQ_CTRL 0xffff000040000040
+#define CORE0_IRQ_SOURCE ((volatile unsigned int *)0xffff000040000060)
+#define _IRQ_PEND_1 ((volatile unsigned int *)0xffff00007E00B204)
 //#define IRQ_PEND_1 ((_IRQ_PEND_1) - (BUS_BASE) + (MMIO_BASE))
-#define IRQ_PEND_1 ((volatile unsigned int *)0x3f00B204)
-#define IRQS1 (volatile unsigned int *)0x3f00b210
+#define IRQ_PEND_1 ((volatile unsigned int *)0xffff00003f00B204)
+#define IRQS1 (volatile unsigned int *)0xffff00003f00b210
 
 int core_timer_enable(void);
 int core_timer_handler(void);

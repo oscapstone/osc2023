@@ -172,9 +172,6 @@ void exit() {
   Thread *t = get_current();
   thread_q_delete(&running, t);
   thread_q_add(&deleted, t);
-  uart_puts("[exit] ");
-  uart_puti(t->id);
-  uart_puts("\n");
   schedule();
   return;
 }

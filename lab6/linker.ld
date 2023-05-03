@@ -5,7 +5,9 @@ PHDRS
 }
 SECTIONS
 {
-	. = 0x80000;
+	. = 0xffff000000000000;
+	. += 0x80000;
+	. = ALIGN(0x00001000);
 	__all_start = .;
 	.text : { KEEP( *(text.boot) ) *(.text .text.* .gnu.linkonce.t*) } :text
 	/* Note: text.boot need to place at 0x80000 */
