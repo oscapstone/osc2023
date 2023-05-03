@@ -1,1 +1,0 @@
-void test_mem_alloc();

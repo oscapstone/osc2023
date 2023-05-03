@@ -3,6 +3,16 @@
 
 .global set_el1_exception_vector_table
 .global exception_vector_table
+.global enable_interrupt
+.global disable_interrupt
+
+enable_interrupt:
+    msr DAIFClr, 0xf
+    ret
+
+disable_interrupt:
+    msr DAIFSet, 0xf
+    ret
 
 // save general registers to stack
 .macro save_all

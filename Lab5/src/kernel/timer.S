@@ -9,6 +9,13 @@ core_timer_enable:
     str w0, [x1] // unmask timer interrupt
     ret
 
+.global set_switch_timer
+set_switch_timer:
+    mrs x0, cntfrq_el0
+    mov x0, x0, lsr#5
+    msr cntp_tval_el0, x0
+    ret
+
 /*
 cntpct_el0: The timer’s current count.
 cntp_cval_el0: A compared timer count. If cntpct_el0 >= cntp_cval_el0, interrupt the CPU core.

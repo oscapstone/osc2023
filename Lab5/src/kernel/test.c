@@ -1,6 +1,7 @@
+#include "stdlib.h"
 #include "dynamic_alloc.h"
 #include "page_alloc.h"
-#include "stdlib.h"
+#include "thread.h"
 
 void test_mem_alloc()
 {
@@ -25,5 +26,21 @@ void test_mem_alloc()
     printf("a = %p\n", a);
     free(a);
 
+    return;
+}
+
+void test_thread()
+{
+    thread_info *thread_ret;
+    thread_ret = thread_create(test_mem_alloc);
+    thread_create(test_mem_alloc);
+    thread_create(test_mem_alloc);
+    thread_create(test_mem_alloc);
+    thread_create(test_mem_alloc);
+    thread_create(test_mem_alloc);
+    thread_create(test_mem_alloc);
+    thread_create(test_mem_alloc);
+
+    debug_task_rq();
     return;
 }

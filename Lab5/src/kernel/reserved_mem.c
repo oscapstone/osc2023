@@ -1,6 +1,7 @@
 #include "reserve_mem.h"
 #include "page_alloc.h"
 #include "dynamic_alloc.h"
+#include "reserve_mem.h"
 #include "stdlib.h"
 
 reserved_memory_block RMarray[100];

@@ -3,6 +3,8 @@
 #include "mbox.h"
 #include "reserve_mem.h"
 #include "device_tree.h"
+#include "thread.h"
+
 extern void *_dtb_ptr;
 
 void kernel_main(void)
@@ -13,6 +15,7 @@ void kernel_main(void)
 
 	fdt_traverse(initramfs_callback, _dtb_ptr);
 
+	thread_init();
 	memory_init();
 
 	shell_start();

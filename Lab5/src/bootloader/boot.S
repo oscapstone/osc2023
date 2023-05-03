@@ -14,8 +14,8 @@ proc_hang:
 	b 	proc_hang
 
 master:
-	adr	x0, __bss_start
-	adr	x1, __bss_end
+	ldr	x0, =__bss_start
+	ldr	x1, =__bss_end
 	sub	x1, x1, x0
 	bl 	memzero
 

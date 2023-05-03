@@ -9,5 +9,6 @@ void el0_timer_handler(long cntpct_el0, long cntfrq_el0);
 void el1_timer_handler(long cntpct_el0, long cntfrq_el0);
 void add_timer(int sec, char *mes);
 int is_timer_queue_empty();
+void timer_delay(long seconds);
 
 #endif /*_TIMER_H */

@@ -281,19 +281,19 @@ void debug()
         printf("NULL\n");
     }
     printf("**\n");
-    printf("** DEBUGGING frame_array\n");
-    for (int i = 2045; i < 2045 + 20; i++)
-    {
-        printf("frame_array[%d].addr = %p\n", i, frame_array[i].addr);
-        printf("frame_array[%d].val = %d\n", i, frame_array[i].val);
-        printf("frame_array[%d].contiguous_head = %d\n", i, frame_array[i].contiguous_head);
-        printf("frame_array[%d].allocated_order = %d\n", i, frame_array[i].allocated_order);
-        if (frame_array[i].next != NULL)
-            printf("frame_array[%d].next->index = %d\n", i, frame_array[i].next->index);
-        if (frame_array[i].previous != NULL)
-            printf("frame_array[%d].previous->index = %d\n", i, frame_array[i].previous->index);
-    }
-    printf("**\n");
+    // printf("** DEBUGGING frame_array\n");
+    // for (int i = 2045; i < 2045 + 20; i++)
+    // {
+    //     printf("frame_array[%d].addr = %p\n", i, frame_array[i].addr);
+    //     printf("frame_array[%d].val = %d\n", i, frame_array[i].val);
+    //     printf("frame_array[%d].contiguous_head = %d\n", i, frame_array[i].contiguous_head);
+    //     printf("frame_array[%d].allocated_order = %d\n", i, frame_array[i].allocated_order);
+    //     if (frame_array[i].next != NULL)
+    //         printf("frame_array[%d].next->index = %d\n", i, frame_array[i].next->index);
+    //     if (frame_array[i].previous != NULL)
+    //         printf("frame_array[%d].previous->index = %d\n", i, frame_array[i].previous->index);
+    // }
+    // printf("**\n");
 
     return;
 }

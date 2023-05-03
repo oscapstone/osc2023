@@ -148,3 +148,25 @@ int is_timer_queue_empty()
 {
     return timer_queue_front == timer_queue_back ? 1 : 0;
 }
+
+void timer_delay(long seconds)
+{
+    long cntpct_el0, cntfrq_el0, nowtime, due;
+
+    asm volatile(
+        "mrs %0, cntpct_el0\n\t"
+        "mrs %1, cntfrq_el0\n\t"
+        : "=r"(cntpct_el0), "=r"(cntfrq_el0)::);
+
+    due = cntpct_el0 / cntfrq_el0 + seconds;
+    nowtime = cntpct_el0 / cntfrq_el0;
+
+    while (nowtime <= due)
+    {
+        asm volatile(
+            "mrs %0, cntpct_el0\n\t"
+            "mrs %1, cntfrq_el0\n\t"
+            : "=r"(cntpct_el0), "=r"(cntfrq_el0)::);
+        nowtime = cntpct_el0 / cntfrq_el0;
+    }
+}

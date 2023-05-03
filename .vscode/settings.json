@@ -20,7 +20,11 @@
         "ostream": "c",
         "tuple": "c",
         "type_traits": "c",
-        "dynamic_alloc.h": "c"
+        "dynamic_alloc.h": "c",
+        "page_alloc.h": "c",
+        "stdint.h": "c",
+        "device_tree.h": "c",
+        "list.h": "c"
     },
     "C_Cpp.errorSquiggles": "enabled"
 }

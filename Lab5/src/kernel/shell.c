@@ -6,7 +6,7 @@
 #include "timer.h"
 #include "page_alloc.h"
 #include "dynamic_alloc.h"
-#include "test_mem_alloc.h"
+#include "test.h"
 
 extern void *_dtb_ptr;
 extern char *cpioDest;
@@ -36,6 +36,7 @@ void shell_main(char *command)
         uart_send_string("asynw\t: [test] asynchronous write\n");
         uart_send_string("setTimeout\t: Usage: setTimeout <Message> <Seconds>\n");
         uart_send_string("alloc\t: [test] malloc and free\n");
+        uart_send_string("thread\t: [test]\n");
     }
     else if (!strcmp(command, "hello"))
     {
@@ -174,6 +175,10 @@ void shell_main(char *command)
     {
         debug();
         debug_pool();
+    }
+    else if (!memcmp(command, "thread", 5))
+    {
+        test_thread();
     }
 
     return;

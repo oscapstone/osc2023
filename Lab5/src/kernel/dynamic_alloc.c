@@ -225,15 +225,15 @@ void debug_pool()
         printf("NULL\n");
     }
     printf("**\n");
-    printf("** DEBUGGING chunk\n");
-    for (int i = 0; i < 20; i++)
-    {
-        printf("chunk_array[%d].index = %d\n", i, chunk_array[i].index);
-        printf("chunk_array[%d].size = %d\n", i, chunk_array[i].size);
-        printf("chunk_array[%d].addr = %p\n", i, chunk_array[i].addr);
-        printf("chunk_array[%d].val = %d\n", i, chunk_array[i].val);
-        printf("chunk_array[%d].belong_page= %d\n", i, chunk_array[i].belong_page);
-        printf("\n");
-    }
-    printf("**\n");
+    // printf("** DEBUGGING chunk\n");
+    // for (int i = 0; i < 20; i++)
+    // {
+    //     printf("chunk_array[%d].index = %d\n", i, chunk_array[i].index);
+    //     printf("chunk_array[%d].size = %d\n", i, chunk_array[i].size);
+    //     printf("chunk_array[%d].addr = %p\n", i, chunk_array[i].addr);
+    //     printf("chunk_array[%d].val = %d\n", i, chunk_array[i].val);
+    //     printf("chunk_array[%d].belong_page= %d\n", i, chunk_array[i].belong_page);
+    //     printf("\n");
+    // }
+    // printf("**\n");
 }
