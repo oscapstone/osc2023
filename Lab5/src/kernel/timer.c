@@ -1,5 +1,9 @@
 #include "stdlib.h"
 #include "timer.h"
+#include "thread.h"
+
+extern void enable_interrupt();
+extern void disable_interrupt();
 
 typedef struct timer_queue_node
 {
@@ -88,15 +92,9 @@ void add_timer(int sec, char *mes)
 
 void el0_timer_handler(long cntpct_el0, long cntfrq_el0)
 {
-    // disable core timer interrupt
-    asm volatile(
-        "mov x1, 0;"
-        "msr cntp_ctl_el0, x1;");
-
-    long nowtime = cntpct_el0 / cntfrq_el0;
-    printf("Time out, now time: %ld seconds after booting\n", nowtime);
-
-    return;
+    disable_interrupt();
+    schedule();
+    enable_interrupt();
 }
 
 void el1_timer_handler(long cntpct_el0, long cntfrq_el0)
@@ -106,6 +104,7 @@ void el1_timer_handler(long cntpct_el0, long cntfrq_el0)
         "mov x1, 0;"
         "msr cntp_ctl_el0, x1;");
 
+    // printf("\n");
     long nowtime = cntpct_el0 / cntfrq_el0;
     printf("Time out, now time: %ld seconds after booting\n", nowtime);
     printf("Message: %s\n", timer_queue[timer_queue_front].message);

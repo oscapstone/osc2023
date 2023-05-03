@@ -225,6 +225,7 @@ int free_page_frame(int index)
 // return merged order, YES modify frame_array
 int merge_buddy(int *index, int buddy, int order)
 {
+    // printf("[DEBUG] Merging buddy index = %d and buddy_index = %d, allocated_order = %d\n", *index, buddy, order);
     if (order == MAX_ORDER)
         return order;
 
@@ -243,19 +244,13 @@ int merge_buddy(int *index, int buddy, int order)
     frame_array[*index].val = order + 1;
     for (int i = 1; i < (1 << (order + 1)); i++)
     {
-        frame_array[i].val = FREE_BUDDY;
+        frame_array[i + *index].val = FREE_BUDDY;
     }
 
     if (order + 1 == MAX_ORDER)
         return order + 1;
 
     int new_buddy = *index ^ (1 << (order + 1));
-    if (new_buddy < *index)
-    {
-        *index = new_buddy;
-        new_buddy = *index; // Find itself
-    }
-
     if (frame_array[*index].val == frame_array[new_buddy].val)
     {
         frame_array[buddy].val = FREE_BUDDY;
@@ -281,19 +276,19 @@ void debug()
         printf("NULL\n");
     }
     printf("**\n");
-    // printf("** DEBUGGING frame_array\n");
-    // for (int i = 2045; i < 2045 + 20; i++)
-    // {
-    //     printf("frame_array[%d].addr = %p\n", i, frame_array[i].addr);
-    //     printf("frame_array[%d].val = %d\n", i, frame_array[i].val);
-    //     printf("frame_array[%d].contiguous_head = %d\n", i, frame_array[i].contiguous_head);
-    //     printf("frame_array[%d].allocated_order = %d\n", i, frame_array[i].allocated_order);
-    //     if (frame_array[i].next != NULL)
-    //         printf("frame_array[%d].next->index = %d\n", i, frame_array[i].next->index);
-    //     if (frame_array[i].previous != NULL)
-    //         printf("frame_array[%d].previous->index = %d\n", i, frame_array[i].previous->index);
-    // }
-    // printf("**\n");
+    printf("** DEBUGGING frame_array\n");
+    for (int i = 0; i < 20; i++)
+    {
+        printf("frame_array[%d].addr = %p\n", i, frame_array[i].addr);
+        printf("frame_array[%d].val = %d\n", i, frame_array[i].val);
+        printf("frame_array[%d].contiguous_head = %d\n", i, frame_array[i].contiguous_head);
+        printf("frame_array[%d].allocated_order = %d\n", i, frame_array[i].allocated_order);
+        if (frame_array[i].next != NULL)
+            printf("frame_array[%d].next->index = %d\n", i, frame_array[i].next->index);
+        if (frame_array[i].previous != NULL)
+            printf("frame_array[%d].previous->index = %d\n", i, frame_array[i].previous->index);
+    }
+    printf("**\n");
 
     return;
 }

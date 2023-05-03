@@ -9,7 +9,7 @@
 #include "test.h"
 
 extern void *_dtb_ptr;
-extern char *cpioDest;
+extern char *cpioDestGlobal;
 extern char read_buffer[100];
 // extern page_frame_node frame_array[TOTAL_NUM_PAGE];
 // extern chunk chunk_array[3000];
@@ -31,7 +31,6 @@ void shell_main(char *command)
         uart_send_string("cat\t: copy each FILE to standard output\n");
         uart_send_string("dts\t: list devicetree\n");
         uart_send_string("svc\t: test svc interrupt in user program\n");
-        uart_send_string("time\t: time 2 secs\n");
         uart_send_string("asynr\t: [test] asynchronous read\n");
         uart_send_string("asynw\t: [test] asynchronous write\n");
         uart_send_string("setTimeout\t: Usage: setTimeout <Message> <Seconds>\n");
@@ -51,8 +50,7 @@ void shell_main(char *command)
     }
     else if (!strcmp(command, "ls"))
     {
-        // char *cpioDest = (char *)0x8000000;
-        read_cpio((char *)cpioDest);
+        read_cpio((char *)cpioDestGlobal);
     }
     else if (!memcmp(command, "cat", 3))
     {
@@ -71,7 +69,7 @@ void shell_main(char *command)
             i++;
         }
 
-        read_content((char *)cpioDest, filename);
+        read_content((char *)cpioDestGlobal, filename);
     }
     else if (!strcmp(command, "dts"))
     {
@@ -79,20 +77,8 @@ void shell_main(char *command)
     }
     else if (!strcmp(command, "svc"))
     {
-        // char *cpioDest = (char *)0x8000000;
-        char *cpioUserPgmDest = cpioDest;
         char *userDest = (char *)0x200000;
-        cpioUserPgmDest = find_content_addr(cpioUserPgmDest, "userprogram.img");
-        if (cpioUserPgmDest == NULL)
-        {
-            uart_send_string("FAIL to find userprogram.img\n");
-            return;
-        }
-        if (load_userprogram(cpioUserPgmDest, userDest) != 0)
-        {
-            uart_send_string("FAIL to load user program.\n");
-            return;
-        }
+        load_userprogram("userprogram.img", userDest);
 
         asm volatile(
             "mov x0, 0x3c0;" // EL0t

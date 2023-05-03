@@ -14,4 +14,7 @@ void asyn_write();
 void uart_rx_handler();
 void uart_tx_handler();
 
+void enable_uart_irq();
+void disable_uart_irq();
+
 #endif /*_MINI_UART_H */

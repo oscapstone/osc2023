@@ -4,16 +4,18 @@
 #include "dynamic_alloc.h"
 #include "reserve_mem.h"
 #include "list.h"
+#include "syscall.h"
 
 extern task_struct *get_current();
 extern void set_switch_timer();
 extern void enable_interrupt();
 extern void disable_interrupt();
 extern void switch_to(task_struct *, task_struct *);
+extern void kernel_thread_init();
 
 long thread_cnt = 0;
 
-task_struct idle = {0};
+task_struct kernel_thread = {0};
 struct list_head task_rq_head;      // run queue
 struct list_head task_zombieq_head; // zombie queue
 
@@ -23,8 +25,8 @@ void schedule()
     task_struct *next = del_rq();
 
     if (next == NULL)
-        next = &idle;
-    if (cur != &idle)
+        next = &kernel_thread;
+    if (cur != &kernel_thread)
         add_rq(cur);
 
     set_switch_timer();
@@ -33,13 +35,13 @@ void schedule()
     if (next->status == FORKING)
     {
         add_rq(next);
-        switch_to(cur, &idle);
+        switch_to(cur, &kernel_thread);
     }
     else if (next->status == ZOMBIE)
     {
         INIT_LIST_HEAD(&next->list);
         list_add_tail(&next->list, &task_zombieq_head);
-        switch_to(cur, &idle);
+        switch_to(cur, &kernel_thread);
     }
     else
     {
@@ -58,16 +60,19 @@ task_struct *del_rq()
     struct list_head *ret;
     ret = task_rq_head.prev;
     if (ret != &task_rq_head)
+    {
         list_del_init(ret);
+        return container_of(ret, task_struct, list);
+    }
     else
-        ret = NULL;
-    return container_of(ret, task_struct, list);
+        return NULL;
 }
 
 void thread_init()
 {
     INIT_LIST_HEAD(&task_rq_head);
     INIT_LIST_HEAD(&task_zombieq_head);
+    kernel_thread_init(&kernel_thread);
     return;
 }
 
@@ -90,6 +95,7 @@ thread_info *thread_create(func_ptr fp)
     new_task->task_context.sp = new_task->kstack_start + MIN_PAGE_SIZE;
     new_task->thread_info->id = thread_cnt++;
     new_task->status = READY;
+    new_task->job = fp;
 
     add_rq(new_task);
 
@@ -101,12 +107,12 @@ void task_wrapper()
 {
     task_struct *current = get_current();
     (current->job)();
-    // exit(0); TODO
+    exit(0);
 }
 
 void idle_task()
 {
-    while (!list_empty(&task_rq_head))
+    while (!list_empty(&task_rq_head) || !list_empty(&task_zombieq_head))
     {
         disable_interrupt();
         kill_zombies();
@@ -132,6 +138,8 @@ void kill_zombies()
         free(tmp->trapframe);
         free(tmp);
     }
+    INIT_LIST_HEAD(&task_zombieq_head);
+    return;
 }
 
 void do_fork()
@@ -210,6 +218,24 @@ void debug_task_rq()
     start = &task_rq_head;
     printf("\n[DEBUG] task run queue\n");
     printf("task_rq_head -> ");
+    while (iter->next != start)
+    {
+        iter = iter->next;
+        task_struct *tmp;
+        tmp = container_of(iter, task_struct, list);
+        printf("thread_id %d -> ", tmp->thread_info->id);
+    }
+    printf("NULL\n\n");
+}
+
+void debug_task_zombieq()
+{
+    struct list_head *iter;
+    struct list_head *start;
+    iter = &task_zombieq_head;
+    start = &task_zombieq_head;
+    printf("\n[DEBUG] task run queue\n");
+    printf("task_zombieq_head -> ");
     while (iter->next != start)
     {
         iter = iter->next;

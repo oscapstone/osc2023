@@ -181,3 +181,13 @@ void uart_tx_handler()
 		memset(write_buffer, '\0', 100);
 	}
 }
+
+void enable_uart_irq()
+{
+	put32(ENABLE_IRQS_1, 1 << 29);
+}
+
+void disable_uart_irq()
+{
+	put32(DISABLE_IRQS_1, 1 << 29);
+}

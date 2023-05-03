@@ -24,7 +24,7 @@ typedef struct
     uint32_t nameoff;
 } fdt_prop;
 
-char *cpioDest;
+char *cpioDestGlobal;
 
 static uint64_t pad_to_4(void *num);
 static uint32_t rev32(uint32_t val);
@@ -75,7 +75,7 @@ int initramfs_callback(void *dtb)
             {
                 uint64_t addr = (uint64_t)rev32(*((uint32_t *)prop_val));
                 printf("initramfs_addr at %p\n", addr);
-                cpioDest = (char *)addr;
+                cpioDestGlobal = (char *)addr;
             }
             p += rev32(prop->len);
             p += pad_to_4(p);

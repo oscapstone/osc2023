@@ -1,6 +1,8 @@
 #include "stdlib.h"
 #include "mini_uart.h"
 
+extern char *cpioDestGlobal;
+
 typedef struct cpio_newc_header
 {
     char c_magic[6];
@@ -92,7 +94,7 @@ void read_content(char *cpioDest, char *filename)
     uart_send_string_of_size((char *)cpioDest, fs);
 }
 
-char *find_content_addr(char *cpioDest, char *filename)
+char *find_content_addr(char *cpioDest, const char *filename)
 {
     int flag = 0;
     while (!memcmp(cpioDest, "070701", 6) && memcmp(cpioDest + sizeof(cpio_t), "TRAILER!!!", 10))
@@ -100,7 +102,7 @@ char *find_content_addr(char *cpioDest, char *filename)
         cpio_t *header = (cpio_t *)cpioDest;
         int ns = hex2int(header->c_namesize, 8);
         // Check filename
-        if (!memcmp(cpioDest + sizeof(cpio_t), filename, ns - 1))
+        if (!memcmp(cpioDest + sizeof(cpio_t), (char *)filename, ns - 1))
         {
             flag = 1;
             break;
@@ -124,24 +126,32 @@ char *find_content_addr(char *cpioDest, char *filename)
     return cpioDest;
 }
 
-int load_userprogram(char *cpioDest, char *userDest)
+int load_userprogram(const char *filename, char *userDest)
 {
+    char *cpioUserPgmDest = cpioDestGlobal;
+    cpioUserPgmDest = find_content_addr(cpioUserPgmDest, filename);
+    if (cpioUserPgmDest == NULL)
+    {
+        uart_send_string("FAIL to find userprogram.img\n");
+        return -1;
+    }
+
     // Found target file
-    cpio_t *header = (cpio_t *)cpioDest;
+    cpio_t *header = (cpio_t *)cpioUserPgmDest;
     int ns = hex2int(header->c_namesize, 8);
     int fs = hex2int(header->c_filesize, 8);
     if ((sizeof(cpio_t) + ns) % 4 != 0)
-        cpioDest += (sizeof(cpio_t) + ns + (4 - (sizeof(cpio_t) + ns) % 4));
+        cpioUserPgmDest += (sizeof(cpio_t) + ns + (4 - (sizeof(cpio_t) + ns) % 4));
     else
-        cpioDest += (sizeof(cpio_t) + ns + ((sizeof(cpio_t) + ns) % 4));
+        cpioUserPgmDest += (sizeof(cpio_t) + ns + ((sizeof(cpio_t) + ns) % 4));
 
-    printf("load %p to %p\n", cpioDest, userDest);
+    printf("load %p to %p\n", cpioUserPgmDest, userDest);
     printf("size: %d bytes\n", fs);
 
     // load content
     while (fs--)
     {
-        *userDest++ = *cpioDest++;
+        *userDest++ = *cpioUserPgmDest++;
     }
 
     if (fs == -1)

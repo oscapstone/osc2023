@@ -24,3 +24,8 @@ switch_to:
 get_current:
     mrs x0, tpidr_el1
     ret
+
+.global kernel_thread_init
+kernel_thread_init:
+    msr tpidr_el1, x0
+    ret

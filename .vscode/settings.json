@@ -24,7 +24,8 @@
         "page_alloc.h": "c",
         "stdint.h": "c",
         "device_tree.h": "c",
-        "list.h": "c"
+        "list.h": "c",
+        "thread.h": "c"
     },
     "C_Cpp.errorSquiggles": "enabled"
 }

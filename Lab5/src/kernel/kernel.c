@@ -16,6 +16,7 @@ void kernel_main(void)
 	fdt_traverse(initramfs_callback, _dtb_ptr);
 
 	thread_init();
+
 	memory_init();
 
 	shell_start();

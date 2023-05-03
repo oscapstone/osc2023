@@ -8,7 +8,6 @@ extern page_frame_node frame_array[TOTAL_NUM_PAGE];
 pool_list pool[33]; // 1, 2, 4, 6, 8, 16, 32
 chunk chunk_array[3000];
 int global_chunk_index = -1;
-int record_chunk_index = -1;
 
 void init_pool()
 {
@@ -32,7 +31,6 @@ void *get_chunk(int req_size)
     {
         // empty pool on req_size
         int frame_index = get_page_from_free_list(MIN_PAGE_SIZE, req_pool_index);
-        record_chunk_index = global_chunk_index;
         split_page(frame_index, req_pool_index);
     }
 
@@ -164,12 +162,23 @@ void free(void *addr)
 
     if (frame_array[frame_index].chunk_order != -1)
     {
-        // used to allocate chunks, find chunk index
-        unsigned long frame_start_addr = (unsigned long)frame_array[frame_index].addr;
-        int chunk_index = ((addr_long - frame_start_addr) / (frame_array[frame_index].chunk_order * MIN_CHUNK_SIZE)) + record_chunk_index + 1;
+        int chunk_index = -1;
+        // Find chunk_index
+        for (int i = 0; i < global_chunk_index; i++)
+        {
+            if (addr == chunk_array[i].addr)
+            {
+                chunk_index = i;
+                break;
+            }
+        }
         // Check if is OK to free
         if (chunk_index >= global_chunk_index || chunk_array[chunk_index].val != ALLOCATED)
         {
+            if (chunk_index >= global_chunk_index)
+                printf("chunk_index is TOO high\n");
+            if (chunk_array[chunk_index].val != ALLOCATED)
+                printf("chunk_index = %d\n", chunk_index);
             printf("This chunk is Not Allocated yet\n");
             return;
         }
@@ -225,15 +234,15 @@ void debug_pool()
         printf("NULL\n");
     }
     printf("**\n");
-    // printf("** DEBUGGING chunk\n");
-    // for (int i = 0; i < 20; i++)
-    // {
-    //     printf("chunk_array[%d].index = %d\n", i, chunk_array[i].index);
-    //     printf("chunk_array[%d].size = %d\n", i, chunk_array[i].size);
-    //     printf("chunk_array[%d].addr = %p\n", i, chunk_array[i].addr);
-    //     printf("chunk_array[%d].val = %d\n", i, chunk_array[i].val);
-    //     printf("chunk_array[%d].belong_page= %d\n", i, chunk_array[i].belong_page);
-    //     printf("\n");
-    // }
-    // printf("**\n");
+    printf("** DEBUGGING chunk\n");
+    for (int i = 0; i < 20; i++)
+    {
+        printf("chunk_array[%d].index = %d\n", i, chunk_array[i].index);
+        printf("chunk_array[%d].size = %d\n", i, chunk_array[i].size);
+        printf("chunk_array[%d].addr = %p\n", i, chunk_array[i].addr);
+        printf("chunk_array[%d].val = %d\n", i, chunk_array[i].val);
+        printf("chunk_array[%d].belong_page= %d\n", i, chunk_array[i].belong_page);
+        printf("\n");
+    }
+    printf("**\n");
 }

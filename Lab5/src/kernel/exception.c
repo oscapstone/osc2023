@@ -2,6 +2,11 @@
 #include "peripherals/irq.h"
 #include "stdlib.h"
 #include "timer.h"
+#include "thread.h"
+#include "syscall.h"
+
+extern task_struct *get_current();
+extern void enable_interrupt();
 
 /**
  * common exception handler
@@ -147,4 +152,74 @@ void el1_irq_interrupt_handler()
     }
 
     return;
+}
+
+void el0_to_el1_sync_handler(unsigned long trapframe_addr)
+{
+    int syscall_no;
+    trapframe *curr_trapframe = (trapframe *)trapframe_addr;
+    asm volatile("mov %0, x8"
+                 : "=r"(syscall_no)::);
+    if (syscall_no == 0)
+    {
+        int pid = getpid();
+        curr_trapframe->x[0] = pid;
+    }
+    else if (syscall_no == 1)
+    {
+        char *buf = (char *)curr_trapframe->x[0];
+        unsigned int size = curr_trapframe->x[1];
+        disable_uart_irq();
+        enable_interrupt();
+        unsigned int ret = uart_read(buf, size);
+        curr_trapframe->x[0] = ret;
+    }
+    else if (syscall_no == 2)
+    {
+        char *buf = (char *)curr_trapframe->x[0];
+        unsigned int size = curr_trapframe->x[1];
+        unsigned int ret = uart_write(buf, size);
+        curr_trapframe->x[0] = ret;
+    }
+    else if (syscall_no == 3)
+    {
+        char *name = (char *)curr_trapframe->x[0];
+        char **argv = (char **)curr_trapframe->x[1];
+        int ret = exec(name, argv);
+        curr_trapframe->x[0] = ret;
+    }
+    else if (syscall_no == 4)
+    {
+        task_struct *current = get_current();
+        current->status = FORKING;
+        current->trapframe = (void *)trapframe_addr;
+        int ret = fork();
+        curr_trapframe = (trapframe *)get_current()->trapframe;
+        curr_trapframe->x[0] = ret;
+    }
+    else if (syscall_no == 5)
+    {
+        int status = curr_trapframe->x[0];
+        exit(status);
+    }
+    else if (syscall_no == 6)
+    {
+        unsigned char ch = (unsigned char)curr_trapframe->x[0];
+        unsigned int *mbox_user = (unsigned int *)curr_trapframe->x[1];
+        int ret = mbox_call_u(ch, mbox_user);
+        curr_trapframe->x[0] = ret;
+    }
+    else if (syscall_no == 7)
+    {
+        int pid = (int)curr_trapframe->x[0];
+        kill(pid);
+    }
+    else if (syscall_no == 9)
+    {
+        task_struct *current = get_current();
+        if (current->thread_info->child_id == 0)
+            printf("child here, fork() return value : %d\n", current->thread_info->child_id);
+        else
+            printf("parent here, fork() return value : %d\n", current->thread_info->child_id);
+    }
 }

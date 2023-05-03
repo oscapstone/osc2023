@@ -32,8 +32,8 @@ typedef struct _trapframe
 
 typedef struct _task_struct
 {
+    struct _context task_context; // context need to be the first one
     struct _thread_info *thread_info;
-    struct _context task_context;
     struct list_head list;
     struct _trapframe *trapframe;
     func_ptr job;
@@ -54,5 +54,6 @@ void kill_zombies();
 void do_fork();
 void create_child(task_struct *parent);
 void debug_task_rq();
+void debug_task_zombieq();
 
 #endif /*_THREAD_H */
