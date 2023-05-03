@@ -1,4 +1,3 @@
-
 .global switch_to
 .type switch_to , @function
 switch_to:

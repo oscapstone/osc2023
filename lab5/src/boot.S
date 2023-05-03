@@ -44,8 +44,16 @@ from_EL2_to_EL1:
 .type from_EL1_to_EL0 , @function
 from_EL1_to_EL0:
 		msr		ELR_EL1,x19
-		mov		x0,0x0			//open interrupt
-		msr		SPSR_EL1,x0
+		mov		x2,0x0			//open interrupt
+		msr		SPSR_EL1,x2
 		msr		SP_EL0,x20
-		bl		enable_interrupt	//can ignore
+		ERET
+
+.global sig_from_EL1_to_EL0
+.type sig_from_EL1_to_EL0 , @function
+sig_from_EL1_to_EL0:
+		msr		ELR_EL1,LR
+		mov		x2,0x0
+		msr     SPSR_EL1,x2
+		msr     SP_EL0,x20
 		ERET

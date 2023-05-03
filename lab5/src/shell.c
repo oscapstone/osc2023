@@ -3,7 +3,6 @@
 #include "mbox.h"
 #include "reboot.h"
 #include "ramdisk.h"
-#include "to_EL0.h"
 #include "check_interrupt.h"
 #include "timer.h"
 #include "buddy.h"
@@ -44,7 +43,6 @@ void shell_option(char* command,char* ramdisk)
 		uart_send_string("cat\t\t: show file content\r\n");
 		uart_send_string("timer\t\t: show timer-multiplexing process\r\n");
 		uart_send_string("thread\t\t: show basic1\r\n");
-		uart_send_string("exec\t\t: show basic2\r\n");
 		uart_send_string("video\t\t: show basic3\r\n");
 	}
 	else if(!strcmp(command,"hello"))
@@ -92,11 +90,6 @@ void shell_option(char* command,char* ramdisk)
 			Thread(fun);
 		}
 		idle();
-	}
-	else if(!strcmp(command,"exec"))		//need to change thread's LR to fork_test
-	{
-		Thread(from_EL1_to_EL0);		
-		schedule();
 	}
 	else if(!strcmp(command,"video"))
 	{

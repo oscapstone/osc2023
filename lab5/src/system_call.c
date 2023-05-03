@@ -3,7 +3,6 @@
 #include "check_interrupt.h"
 #include "mini_uart.h"
 #include "ramdisk.h"
-#include "to_EL0.h"
 #include "mbox.h"
 
 #define null 0
@@ -13,6 +12,7 @@ extern char* ramdisk_start;
 extern struct thread *thread_list[65536];
 extern void to_child();
 extern void from_EL1_to_EL0();
+extern void sig_from_EL1_to_EL0();
 
 void EL0_SVC_handler(struct trap_frame *tf)
 {
@@ -50,8 +50,25 @@ void EL0_SVC_handler(struct trap_frame *tf)
 			case 7:
 				kill(tf->reg[0]);
 				break;
+			case 8:
+				signal(tf->reg[0],tf->reg[1]);
+				break;
+			case 9:
+				sig_kill(tf->reg[0],tf->reg[1]);
+				break;
+			case 10:											//back to right position
+				asm volatile("mov LR,x21;"
+							 "ret;"
+							);
+				break;
 			default:
 				break;
+		}
+		if(tf->reg[8] == 9)										//encounter sig_kill
+		{
+			asm volatile("mov x23,sp;");
+			kernel_sig_check(tf->reg[0]);
+			asm volatile("mov sp,x23;");
 		}
 	}
 	return;
@@ -90,7 +107,7 @@ int uart_write(char* buffer,int size)
 	return count;
 }
 
-int exec(char *name,char *argv)
+int exec(char *name,char *argv)		//not pretty sure works well , should consider same issue as signal
 {
 	char* prog_start = find_prog(ramdisk_start,name);
 	char* code = null;
@@ -106,7 +123,7 @@ int exec(char *name,char *argv)
 		struct thread *thd = get_current();
 		char* stack = (uint64_t)(thd->stack + 0x10000) & 0xFFFFFFF0;
 		asm volatile("mov x19,%0;"
-					 "mov x20,%1;" : "=r" (prog), "=r" (stack)
+					 "mov x20,%1;" :: "r" (prog), "r" (stack)
 					);
 		from_EL1_to_EL0();
 	}
@@ -144,6 +161,7 @@ int fork(struct trap_frame *tf)
 	thread_list[ctid]->reg.LR = to_child;						//return to child & load register
 	thread_list[ctid]->reg.FP = (uint64_t)thread_list[ctid]->kernel_stack;
 	thread_list[ctid]->next = null;
+	thread_list[ctid]->sig = 0;									//not copy sig
 
 	//for user_thread
 	c_tf->SPSR_EL1 = 0;											//open interrupt & jump back to EL0
@@ -158,6 +176,44 @@ void kill(int pid)
 {
 	thread_list[pid]->status = "DEAD";
 	thread_list[pid] = null;
+	return;
+}
+
+void signal(int sig,void (*handler)())
+{
+	struct thread *thd = get_current();
+	thd->sig_handler[sig] = handler;							//update all thread's sig_handler
+	return;
+}
+
+void sig_kill(int pid,int sig)
+{
+	thread_list[pid]->sig = sig;								//set signal on thread(pid)
+	return;
+}
+
+void kernel_sig_check(int pid)
+{
+	asm volatile("mov x21,LR;");								//save to SVC handler's LR
+	struct thread *thd = thread_list[pid];
+	if(thd->sig != 0)
+	{
+		char* stack = (uint64_t)(d_alloc(0x10000) + 0x10000) & 0xFFFFFFF0;
+		void (*func)();
+		func = (void*)thd->sig_handler[thd->sig];
+		asm volatile("mov x20,%0;"
+					 "mov x22,%1;" :: "r" (stack) , "r" (func)	//save handler's address
+					);
+		sig_from_EL1_to_EL0();									//enter EL0 & jump to next line
+		asm volatile("mov %0,x22;" : "=r" (func));
+		func();
+		thd->sig = 0;											//clean signal
+		d_free(stack);
+		asm volatile("mov x8,10;"								//should go back to kernel_sig_check()'s next line
+					 "svc 0;"
+					);
+		return;													//should not be here
+	}
 	return;
 }
 

@@ -40,6 +40,11 @@ int Thread(void (*func)())
 			thd->reg.SP = thd->kernel_stack;									//set EL1 kernel_stack
 			thd->reg.FP = thd->kernel_stack;
 			thd->status = 1;
+			thd->sig = 0;						//no signal
+			for(int i=0;i<10;i++)
+			{
+				thd->sig_handler[i] = null;
+			}
 			thread_list[i] = thd;
 			break;
 		}
