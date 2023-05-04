@@ -21,11 +21,11 @@ switch_to:
     mov sp,  x9
     msr tpidr_el1, x1
 
-    dsb ish // ensure write has completed
+    dsb ish           // ensure write has completed, lock for context switch
     msr ttbr0_el1, x0 // switch translation based address.
-    tlbi vmalle1is // invalidate all TLB entries
-    dsb ish // ensure completion of TLB invalidatation
-    isb // clear pipeline
+    tlbi vmalle1is    // invalidate all TLB entries in stage 1, el1 and inner shareable
+    dsb ish           // ensure completion of TLB invalidatation
+    isb               // clear pipeline
 
     ret
 

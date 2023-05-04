@@ -12,23 +12,23 @@ void* set_2M_kernel_mmu(void* x0)
    //   Three-level Translation (2MB) - set PUD point to new table
    unsigned long *pud_table = (unsigned long *) MMU_PUD_ADDR;
 
-    unsigned long *pud_table1 = (unsigned long *) MMU_PTE_ADDR;
-    unsigned long *pud_table2 = (unsigned long *)(MMU_PTE_ADDR + 0x1000L);
+    unsigned long *pte_table1 = (unsigned long *) MMU_PTE_ADDR;
+    unsigned long *pte_table2 = (unsigned long *)(MMU_PTE_ADDR + 0x1000L);
     for (int i = 0; i < 512; i++)
     {
         unsigned long addr = 0x200000L * i;
         if ( addr >= PERIPHERAL_END )
         {
-            pud_table1[i] = ( 0x00000000 + addr ) + BOOT_PTE_ATTR_nGnRnE;
+            pte_table1[i] = ( 0x00000000 + addr ) + BOOT_PTE_ATTR_nGnRnE;
             continue;
         }
-        pud_table1[i] = (0x00000000 + addr ) | BOOT_PTE_ATTR_NOCACHE; //   0 * 2MB
-        pud_table2[i] = (0x40000000 + addr ) | BOOT_PTE_ATTR_NOCACHE; // 512 * 2MB
+        pte_table1[i] = (0x00000000 + addr ) | BOOT_PTE_ATTR_NOCACHE; //   0 * 2MB // No definition for 3-level attribute, use nocache.
+        pte_table2[i] = (0x40000000 + addr ) | BOOT_PTE_ATTR_NOCACHE; // 512 * 2MB
     }
 
     // set PUD
-    pud_table[0] = (unsigned long) pud_table1 | BOOT_PUD_ATTR;
-    pud_table[1] = (unsigned long) pud_table2 | BOOT_PUD_ATTR;
+    pud_table[0] = (unsigned long) pte_table1 | BOOT_PUD_ATTR;
+    pud_table[1] = (unsigned long) pte_table2 | BOOT_PUD_ATTR;
 
     return x0;
 }
@@ -38,28 +38,26 @@ void map_one_page(size_t *virt_pgd_p, size_t va, size_t pa, size_t flag)
     size_t *table_p = virt_pgd_p;
     for (int level = 0; level < 4; level++)
     {
-        unsigned int idx = (va >> (39 - level * 9)) & 0x1ff;
+        unsigned int idx = (va >> (39 - level * 9)) & 0x1ff; // p.14, 9-bit only
 
         if (level == 3)
         {
             table_p[idx] = pa;
-            table_p[idx] |= PD_ACCESS | PD_TABLE | (MAIR_IDX_NORMAL_NOCACHE << 2) | PD_KNX | flag;
+            table_p[idx] |= PD_ACCESS | PD_TABLE | (MAIR_IDX_NORMAL_NOCACHE << 2) | PD_KNX | flag; // el0 only
             return;
         }
 
         if(!table_p[idx])
         {
-            size_t* newtable_p =kmalloc(0x1000);
+            size_t* newtable_p =kmalloc(0x1000);             // create a table
             memset(newtable_p, 0, 0x1000);
-            table_p[idx] = VIRT_TO_PHYS((size_t)newtable_p);
+            table_p[idx] = VIRT_TO_PHYS((size_t)newtable_p); // point to that table
             table_p[idx] |= PD_ACCESS | PD_TABLE | (MAIR_IDX_NORMAL_NOCACHE << 2);
         }
 
-        table_p = (size_t*)PHYS_TO_VIRT((size_t)(table_p[idx] & ENTRY_ADDR_MASK));
+        table_p = (size_t*)PHYS_TO_VIRT((size_t)(table_p[idx] & ENTRY_ADDR_MASK)); // PAGE_SIZE
     }
 }
-
-
 
 
 void mmu_add_vma(struct thread *t, size_t va, size_t size, size_t pa, size_t rwx, int is_alloced)

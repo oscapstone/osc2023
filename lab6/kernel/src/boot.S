@@ -22,26 +22,26 @@ set_mmu_configuration:
     ldr x1, = MMU_PUD_ADDR // PUD's page frame at 0x2000
 
     ldr x2, = BOOT_PGD_ATTR
-    orr x2, x1, x2 // combine the physical address of next level page with attribute.
-    str x2, [x4]
+    orr x2, x1, x2         // combine the physical address of next level page with attribute.
+    str x2, [x4]           // [MMU_PGD_ADDR] = MMU_PUD_ADDR | BOOT_PGD_ATTR
 
     ldr x2, = BOOT_PUD_ATTR
     mov x3, 0x00000000
-    orr x3, x2, x3
-    str x3, [x1]         // 1st 1GB mapped by the 1st entry of PUD
+    orr x3, x2, x3         // [MMU_PUD_ADDR] = 0x00000000 | BOOT_PUD_ATTR
+    str x3, [x1]           // 1st 1GB mapped by the 1st entry of PUD
     mov x3, 0x40000000
-    orr x3, x2, x3
-    str x3, [x1, 8]      // 2nd 1GB mapped by the 2nd entry of PUD
+    orr x3, x2, x3         // [MMU_PUD_ADDR + 8] = 0x40000000 | BOOT_PUD_ATTR
+    str x3, [x1, 8]        // 2nd 1GB mapped by the 2nd entry of PUD
 
-    msr ttbr0_el1, x4    // load PGD to the bottom translation-based register.
-    msr ttbr1_el1, x4    // also load PGD to the upper translation based register.
+    msr ttbr0_el1, x4      // load PGD to the bottom translation-based register.
+    msr ttbr1_el1, x4      // also load PGD to the upper translation based register.
 
-    mov sp, 0x3c000000   // temp stack
+    mov sp, 0x3c000000     // temp stack
     bl set_2M_kernel_mmu
 
-    mrs x2, sctlr_el1
-    orr x2 , x2, 1
-    msr sctlr_el1, x2    // enable MMU, cache remains disabled
+    mrs x2, sctlr_el1      // sctlr_el1: Provides top level control of the system, including its memory system, at EL1 and EL0.
+    orr x2 , x2, 1         // sctlr_el1[0]: EL1&0 stage 1 address translation enabled/disabled.
+    msr sctlr_el1, x2
 
     // indirect branch to the upper virtual address
     ldr x2, =set_exception_vector_table
