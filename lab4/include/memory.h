@@ -1,7 +1,7 @@
 #ifndef MEMORY_H
 #define MEMORY_H
 
-#define MEMORY_START 0x90000
+#define MEMORY_START 0x00000
 
 #define PAGE_SHIFT 12
 #define PAGE_SIZE (1 << PAGE_SHIFT) // 4096
@@ -58,4 +58,5 @@ void memory_free(void *address);
 
 int find_buddy(int page_number, int order);
 
+void memory_reserve(void *start, void *end);
 #endif

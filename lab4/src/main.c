@@ -12,9 +12,11 @@ int main()
     printf("--------------------\n\n");
 
     init_memory();
+    memory_reserve((void *)0x0, (void *)0x1000);
 
     void *address_1 = memory_allocation(16);
     void *address_2 = memory_allocation(64);
+    printf("address_1: %x\n", address_1);
     memory_free(address_1);
     void *address_3 = memory_allocation(1024);
     memory_free(address_2);

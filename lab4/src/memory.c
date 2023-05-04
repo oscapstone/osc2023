@@ -350,3 +350,11 @@ int find_buddy(int page_number, int order)
 {
     return page_number ^ (1 << order);
 }
+void memory_reserve(void *start, void *end)
+{
+    int size = end - start;
+    memory_allocation(size);
+    printf("--------------------\n\n");
+    printf("[memory_reserve] start: %x end: %x size: %d done\n\n", start, end, size);
+    printf("--------------------\n\n");
+}
