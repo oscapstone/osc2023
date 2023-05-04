@@ -1,5 +1,6 @@
 #ifndef TIMER_H
 #define TIMER_H
+#include <stdint.h>
 
 /************************************************************************
  * Timer queue, which is the basic data type of the timer-queue.

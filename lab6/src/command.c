@@ -9,6 +9,7 @@
 #include "thread.h"
 #include "timer.h"
 #include "uart.h"
+#include "vm.h"
 // static char buf[256];
 
 struct command commands[] = {
@@ -239,7 +240,8 @@ int exec() {
 
   if (size != 0) {
     setup_program_loc(dest);
-    thread_create(sys_run_program);
+    Thread *user = thread_create(sys_run_program);
+    map_vm(user->pgd, 0, dest, 64);
     core_timer_enable();
     schedule();
     Thread *t = get_current();

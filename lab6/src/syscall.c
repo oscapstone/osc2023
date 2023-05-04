@@ -5,6 +5,8 @@
 #include "thread.h"
 #include "time.h"
 #include "uart.h"
+#include "vm.h"
+#include "mem.h"
 // FIXME: should disable INT in the critical section.
 
 // k From switch.S
@@ -80,6 +82,8 @@ int sys_exec(const char *name, char *const argv[]) {
   int size = initrd_content_getSize(name);
   // Get memory for user program.
   char *dest = (char *)pmalloc(6);
+  Thread *t = get_current();
+  map_vm(t->pgd, 0, dest, 64);	// Map the program to 0x0
   setup_program_loc(dest);
   char *d = dest;
   for (int i = 0; i < size; i++) {

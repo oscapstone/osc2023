@@ -43,6 +43,7 @@ typedef struct THread{
 	uint32_t child;
 	uint64_t sp_el0;	// Store the base_sp at el0
 	uint64_t handler;
+	uint64_t pgd;		// store the value of PGB
 	enum Thread_status status;
 	struct THread *prev;
 	struct THread *next;
@@ -66,6 +67,7 @@ void schedule();
 void exit();
 /// Shell thread Init
 void terminal_run_thread();
+void vm_base_switch(Thread *next);
 
 /// Test 
 void test_thread_queue();

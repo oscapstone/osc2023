@@ -23,6 +23,8 @@
  ************************************************************************/
 #define PD_TABLE (0b11) // Show that this record point to page table
 #define PD_BLOCK (0b01)	// Show that this record point to virtual address
+#define PD_PAGE (0b11)	// Show that this record point to virtual address
+#define USER_ACCESS (1 << 6)
 #define PD_ACCESS (1 << 10) // access flag, if not set -> page fault
 #define BOOT_PGD_ATTR PD_TABLE // PGD the toppest page table
 
@@ -31,7 +33,7 @@
 #define BOOT_PUD_ATTR (PD_ACCESS | (MAIR_IDX_DEVICE_nGnRnE << 2) | PD_BLOCK)
 #define BOOT_DEVICE_ATTR (PD_ACCESS | (MAIR_IDX_DEVICE_nGnRnE << 2) | PD_BLOCK)
 #define BOOT_NORMAL_ATTR (PD_ACCESS | (MAIR_IDX_NORMAL_NOCACHE << 2) | PD_BLOCK)
-
+#define PAGE_NORMAL_ATTR (USER_ACCESS | PD_ACCESS | (MAIR_IDX_NORMAL_NOCACHE << 2) | PD_PAGE)
 
 
 #endif // MMU_H

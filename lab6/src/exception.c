@@ -15,7 +15,7 @@ static uint64_t read_elr_el1(void) {
 
 static uint64_t read_esr_el1(void) {
   uint64_t esr_el1;
-  asm volatile("mrs	%0, esr_el1;" : "=r"(esr_el1));
+  asm volatile("mrs	%0, ttbr0_el1;" : "=r"(esr_el1));
   return esr_el1;
 }
 
@@ -42,10 +42,13 @@ int print_spsr_el1(void) {
 
 int exception_entry() {
 
+	/*
   uart_puts("Other exceptions\n");
   print_spsr_el1();
   print_elr_el1();
+  */
   print_esr_el1();
+  
 
   return 0;
 }

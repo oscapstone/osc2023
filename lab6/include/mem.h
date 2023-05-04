@@ -24,14 +24,14 @@ typedef struct SLOT{
 }slot;
 
 /// Page frame allocator
-void *pmalloc(int);
+uint64_t pmalloc(int);
 
 /// Small memory allocator
 void *smalloc(int);
 
 /// Free the page
 // TODO: We should free the page without the accurate memory input.
-int pfree(void*);
+int pfree(uint64_t);
 
 /// Reserve the memory location.
 /// start address + size

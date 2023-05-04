@@ -151,6 +151,8 @@ void schedule() {
     if (t->status == wait) {
       thread_q_add(&deleted, thread_q_pop(&running));
       terminal_run_thread();
+      t = thread_q_pop(&running);
+      thread_q_add(&running, t);
     }
     // sys_kill(t->id);
     // idle();

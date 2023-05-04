@@ -1,6 +1,9 @@
 #include "mem.h"
 #include "heap.h"
 #include "uart.h"
+#include "mmu.h"
+#include "vm.h"
+#include "str.h"
 
 #define NULL 0
 
@@ -227,7 +230,7 @@ static void *list_pops(int cnt) {
   // Handle if all page has been allocated
   if (free_smem[cnt] == NULL || free_smem[cnt]->addr == NULL)
     gen_slots(cnt);
-  int ret = free_smem[cnt]->addr;
+  void* ret = free_smem[cnt]->addr;
   list_deletes(cnt, ret);
   return ret;
 }
@@ -300,7 +303,7 @@ int smalloc_init(void) {
 /*****************************************************************
  * Page malloc for buddy system
  ****************************************************************/
-void *pmalloc(int cnt) {
+uint64_t pmalloc(int cnt) {
   int t = 1;
   for (int i = 0; i < cnt; i++) {
     t *= 2;
@@ -309,7 +312,8 @@ void *pmalloc(int cnt) {
     uart_puts("PMALLOC invalid size!\n");
     return 0;
   }
-  int ret = 0;
+  uint64_t ret = 0;
+  uint64_t vir = 0;
   // If free memory in current size
   if (free_mem[cnt] != NULL) {
     ret = list_pop(cnt);
@@ -320,7 +324,7 @@ void *pmalloc(int cnt) {
     // uart_puts("***PMALLOC without split!: ");
     // uart_puth(ret << 12);
     // uart_puts("\n");
-    return (void *)(ret << 12);
+    return (ret << 12);
   }
   // Else
   int i;
@@ -345,14 +349,15 @@ void *pmalloc(int cnt) {
   // uart_puts("***PMALLOC with split!: ");
   // uart_puth(ret << 12);
   // uart_puts("\n");
-  return (void *)(ret << 12);
+  return (ret << 12);
 }
 
 /************************************************************************
  * Free the memory allocated from buddy system.
  * @addr: the target memory address to free.
  ***********************************************************************/
-int pfree(void *addr) {
+int pfree(uint64_t addr) {
+	addr = vir2phy(addr);
   int c = 1;
   int index = ((int)addr) >> 12;
   int t = 1;

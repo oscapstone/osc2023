@@ -2,6 +2,8 @@
 #include "interrupt.h"
 #include "thread.h"
 
+extern uint64_t get_current();
+
 static void *program_loc;
 /**************************************************************************
  * This function will run the program at the specific location.
@@ -42,17 +44,20 @@ int setup_program_loc(void *loc) {
  * which will setup sp_el0 and the elr_el1
  *********************************************************************/
 void sys_run_program(void) {
-  core_timer_enable();
+  //core_timer_enable();
   Thread *t = get_current();
+  //vm_base_switch(t);
   void *sp_el0 = (void *)t->sp_el0;
   asm volatile("mov x2,	0x0;\r\n" // Enable CPU interrupt
                "msr spsr_el1, 	x2;\r\n"
                "msr sp_el0,	%[sp];\r\n"
                "mov x1,	%[loc];\r\n"
-               "msr elr_el1,	%[loc];\r\n" // Set the target address
+	       "mov x0, 0x0;"
+	       "msr elr_el1, x0;"
+               //"msr elr_el1,	%[loc];\r\n" // Set the target address
                "eret"
                :
-               : [loc] "r"(program_loc) // input location
+               : [loc] "r"(0x0) // input location
                  ,
                  [sp] "r"(sp_el0));
   return;
