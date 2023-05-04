@@ -32,16 +32,50 @@
 #define MMU_PTE_ADDR            (MMU_PGD_BASE + 0x2000L)
 
 #define BOOT_PGD_ATTR           (PD_TABLE)
-#define BOOT_PUD_ATTR           (PD_TABLE + PD_ACCESS + (MAIR_IDX_NORMAL_NOCACHE << 2))
-#define BOOT_PTE_ATTR_nGnRnE    (PD_BLOCK + PD_ACCESS + PD_UK_ACCESS + (MAIR_DEVICE_nGnRnE << 2))
-#define BOOT_PTE_ATTR_NOCACHE   (PD_BLOCK + PD_ACCESS + (MAIR_NORMAL_NOCACHE << 2))
+#define BOOT_PUD_ATTR           (PD_TABLE | PD_ACCESS)
+#define BOOT_PTE_ATTR_nGnRnE    (PD_BLOCK | PD_ACCESS | (MAIR_DEVICE_nGnRnE << 2) | PD_UNX | PD_KNX | PD_UK_ACCESS)
+#define BOOT_PTE_ATTR_NOCACHE   (PD_BLOCK | PD_ACCESS | (MAIR_NORMAL_NOCACHE << 2))
+
+
+#define MEMFAIL_DATA_ABORT_LOWER 0b100100
+#define MEMFAIL_INST_ABORT_LOWER 0b100000
+
+#define TF_LEVEL0 0b000100
+#define TF_LEVEL1 0b000101
+#define TF_LEVEL2 0b000110
+#define TF_LEVEL3 0b000111
 
 #ifndef __ASSEMBLER__
 
+#include "sched.h"
+
+typedef struct{
+    unsigned int iss : 25, // Instruction specific syndrome
+                 il : 1,   // Instruction length bit
+                 ec : 6;   // Exception class
+} esr_el1_t;
+
+typedef struct vm_area_struct
+{
+
+    list_head_t listhead;
+    unsigned long virt_addr;
+    unsigned long phys_addr;
+    unsigned long area_size;
+    unsigned long rwx;   // 1, 2, 4
+    int is_alloced;
+
+} vm_area_struct_t;
+
 void *set_2M_kernel_mmu(void *x0);
 void map_one_page(size_t *pgd_p, size_t va, size_t pa, size_t flag);
-void mappages(size_t *pgd_p, size_t va, size_t size, size_t pa, size_t flag);
-void free_page_tables(size_t *page_table, int level);
+
+void mmu_add_vma(struct thread *t, size_t va, size_t size, size_t pa, size_t rwx, int is_alloced);
+void mmu_del_vma(struct thread *t);
+void mmu_map_pages(size_t *pgd_p, size_t va, size_t size, size_t pa, size_t flag);
+void mmu_free_page_tables(size_t *page_table, int level);
+
+void mmu_memfail_abort_handle(esr_el1_t* esr_el1);
 
 #endif //__ASSEMBLER__
 

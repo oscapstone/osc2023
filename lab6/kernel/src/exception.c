@@ -6,9 +6,19 @@
 #include "syscall.h"
 #include "sched.h"
 #include "signal.h"
+#include "mmu.h"
 
 void sync_64_router(trapframe_t* tpf)
 {
+    unsigned long long esr_el1;
+    __asm__ __volatile__("mrs %0, esr_el1\n\t": "=r"(esr_el1));
+    esr_el1_t *esr = (esr_el1_t *)&esr_el1;
+    if (esr->ec == MEMFAIL_DATA_ABORT_LOWER || esr->ec == MEMFAIL_INST_ABORT_LOWER)
+    {
+        mmu_memfail_abort_handle(esr);
+        return;
+    }
+
     el1_interrupt_enable();
     unsigned long long syscall_no = tpf->x8;
     if (syscall_no == 0)       { getpid(tpf);                                                                 }
@@ -21,6 +31,7 @@ void sync_64_router(trapframe_t* tpf)
     else if (syscall_no == 7)  { kill(tpf, (int)tpf->x0);                                                     }
     else if (syscall_no == 8)  { signal_register(tpf->x0, (void (*)())tpf->x1);                               }
     else if (syscall_no == 9)  { signal_kill(tpf->x0, tpf->x1);                                               }
+    else if (syscall_no == 10) { mmap(tpf,(void *)tpf->x0,tpf->x1,tpf->x2,tpf->x3,tpf->x4,tpf->x5);           }
     else if (syscall_no == 50) { sigreturn(tpf);                                                              }
 }
 

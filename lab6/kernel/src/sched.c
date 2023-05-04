@@ -54,17 +54,19 @@ void schedule(){
 void kill_zombies(){
     lock();
     list_head_t *curr;
+    thread_t *t;
     list_for_each(curr,run_queue)
     {
-        if (((thread_t *)curr)->iszombie)
+        t = (thread_t *)curr;
+        if (t->iszombie)
         {
             list_del_entry(curr);
-            kfree(((thread_t *)curr)->stack_alloced_ptr);        // free stack
-            kfree(((thread_t *)curr)->kernel_stack_alloced_ptr); // free stack
-            free_page_tables(((thread_t *)curr)->context.pgd,0);
-            kfree(((thread_t *)curr)->data); // free data (don't free data because of fork)
-            ((thread_t *)curr)->iszombie = 0;
-            ((thread_t *)curr)->isused = 0;
+            mmu_free_page_tables(t->context.pgd,0);
+            mmu_del_vma(t);
+            kfree(t->kernel_stack_alloced_ptr);
+            kfree(t->context.pgd);
+            t->iszombie = 0;
+            t->isused   = 0;
         }
     }
     unlock();
@@ -74,12 +76,10 @@ int thread_exec(char *data, unsigned int filesize)
 {
     thread_t *t = thread_create(data, filesize);
 
-    mappages(t->context.pgd, USER_KERNEL_BASE, t->datasize, (size_t)VIRT_TO_PHYS(t->data), 0);
-    mappages(t->context.pgd, USER_STACK_BASE - USTACK_SIZE, USTACK_SIZE, (size_t)VIRT_TO_PHYS(t->stack_alloced_ptr), 0);
-    mappages(t->context.pgd, PERIPHERAL_START, PERIPHERAL_END - PERIPHERAL_START, PERIPHERAL_START, 0);
-
-    // Additional Block for Read-Only block -> User space signal handler cannot be killed
-    mappages(t->context.pgd, USER_SIGNAL_WRAPPER_VA, 0x2000, (size_t)VIRT_TO_PHYS(signal_handler_wrapper), PD_RDONLY);
+    mmu_add_vma(t,              USER_KERNEL_BASE,                       t->datasize,   (size_t)VIRT_TO_PHYS(t->data)             , 0b111, 1);
+    mmu_add_vma(t, USER_STACK_BASE - USTACK_SIZE,                       USTACK_SIZE,   (size_t)VIRT_TO_PHYS(t->stack_alloced_ptr), 0b111, 1);
+    mmu_add_vma(t,              PERIPHERAL_START, PERIPHERAL_END - PERIPHERAL_START,                             PERIPHERAL_START, 0b011, 0);
+    mmu_add_vma(t,        USER_SIGNAL_WRAPPER_VA,                            0x2000, (size_t)VIRT_TO_PHYS(signal_handler_wrapper), 0b101, 0);
 
     t->context.pgd = VIRT_TO_PHYS(t->context.pgd);
     t->context.sp = USER_STACK_BASE;
@@ -126,6 +126,7 @@ thread_t *thread_create(void *start, unsigned int filesize)
             break;
         }
     }
+    INIT_LIST_HEAD(&r->vma_list);
     r->iszombie = 0;
     r->isused = 1;
     r->context.lr = (unsigned long long)start;

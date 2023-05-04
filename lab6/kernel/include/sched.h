@@ -47,6 +47,7 @@ typedef struct thread
     void             (*curr_signal_handler)();
     int              signal_is_checking;
     thread_context_t signal_saved_context;
+    list_head_t      vma_list;
 } thread_t;
 
 extern thread_t    *curr_thread;

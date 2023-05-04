@@ -41,21 +41,32 @@ size_t uartwrite(trapframe_t *tpf,const char buf[], size_t size)
 //In this lab, you won’t have to deal with argument passing
 int exec(trapframe_t *tpf,const char *name, char *const argv[])
 {
-    kfree(curr_thread->data);
+    mmu_del_vma(curr_thread);
+    INIT_LIST_HEAD(&curr_thread->vma_list);
+
     curr_thread->datasize = get_file_size((char *)name);
     char *new_data = get_file_start((char *)name);
     curr_thread->data = kmalloc(curr_thread->datasize);
+    curr_thread->stack_alloced_ptr = kmalloc(USTACK_SIZE);
 
-    for (unsigned int i = 0; i < curr_thread->datasize; i++)
-    {
-        curr_thread->data[i] = new_data[i];
-    }
+    asm("dsb ish\n\t");      // ensure write has completed
+    mmu_free_page_tables(curr_thread->context.pgd, 0);
+    memset(PHYS_TO_VIRT(curr_thread->context.pgd), 0, 0x1000);
+    asm("tlbi vmalle1is\n\t" // invalidate all TLB entries
+        "dsb ish\n\t"        // ensure completion of TLB invalidatation
+        "isb\n\t");          // clear pipeline
 
-    //clear signal handler
+    mmu_add_vma(curr_thread,              USER_KERNEL_BASE,             curr_thread->datasize, (size_t)VIRT_TO_PHYS(curr_thread->data)             , 0b111, 1);
+    mmu_add_vma(curr_thread, USER_STACK_BASE - USTACK_SIZE,                       USTACK_SIZE, (size_t)VIRT_TO_PHYS(curr_thread->stack_alloced_ptr), 0b111, 1);
+    mmu_add_vma(curr_thread,              PERIPHERAL_START, PERIPHERAL_END - PERIPHERAL_START,                                     PERIPHERAL_START, 0b011, 0);
+    mmu_add_vma(curr_thread,        USER_SIGNAL_WRAPPER_VA,                            0x2000,         (size_t)VIRT_TO_PHYS(signal_handler_wrapper), 0b101, 0);
+
+    memcpy(curr_thread->data, new_data, curr_thread->datasize);
     for (int i = 0; i <= SIGNAL_MAX; i++)
     {
         curr_thread->signal_handler[i] = signal_default_handler;
     }
+
 
     tpf->elr_el1 = USER_KERNEL_BASE;
     tpf->sp_el0 = USER_STACK_BASE;
@@ -74,27 +85,23 @@ int fork(trapframe_t *tpf)
         newt->signal_handler[i] = curr_thread->signal_handler[i];
     }
 
-    // remap
-    mappages(newt->context.pgd, USER_KERNEL_BASE, newt->datasize, (size_t)VIRT_TO_PHYS(newt->data), 0);
-    mappages(newt->context.pgd, USER_STACK_BASE - USTACK_SIZE, USTACK_SIZE, (size_t)VIRT_TO_PHYS(newt->stack_alloced_ptr), 0);
-    mappages(newt->context.pgd, PERIPHERAL_START, PERIPHERAL_END - PERIPHERAL_START, PERIPHERAL_START, 0);
-
-    // Additional Block for Read-Only block -> User space signal handler cannot be killed
-    mappages(newt->context.pgd, USER_SIGNAL_WRAPPER_VA, 0x2000, (size_t)VIRT_TO_PHYS(signal_handler_wrapper), PD_RDONLY);
+    list_head_t *pos;
+    vm_area_struct_t *vma;
+    list_for_each(pos, &curr_thread->vma_list){
+        // ignore device and signal wrapper
+        vma = (vm_area_struct_t *)pos;
+        if (vma->virt_addr == USER_SIGNAL_WRAPPER_VA || vma->virt_addr == PERIPHERAL_START)
+        {
+            continue;
+        }
+        char *new_alloc = kmalloc(vma->area_size);
+        mmu_add_vma(newt, vma->virt_addr, vma->area_size, (size_t)VIRT_TO_PHYS(new_alloc), vma->rwx, 1);
+        memcpy(new_alloc, (void*)PHYS_TO_VIRT(vma->phys_addr), vma->area_size);
+    }
+    mmu_add_vma(newt,       PERIPHERAL_START, PERIPHERAL_END - PERIPHERAL_START,                             PERIPHERAL_START, 0b011, 0);
+    mmu_add_vma(newt, USER_SIGNAL_WRAPPER_VA,                            0x2000, (size_t)VIRT_TO_PHYS(signal_handler_wrapper), 0b101, 0);
 
     int parent_pid = curr_thread->pid;
-
-    //copy data into new process
-    for (int i = 0; i < newt->datasize; i++)
-    {
-        newt->data[i] = curr_thread->data[i];
-    }
-
-    //copy user stack into new process
-    for (int i = 0; i < USTACK_SIZE; i++)
-    {
-        newt->stack_alloced_ptr[i] = curr_thread->stack_alloced_ptr[i];
-    }
 
     //copy stack into new process
     for (int i = 0; i < KSTACK_SIZE; i++)
@@ -171,6 +178,38 @@ void signal_kill(int pid, int signal)
     lock();
     threads[pid].sigcount[signal]++;
     unlock();
+}
+
+//only need to implement the anonymous page mapping in this Lab.
+void *mmap(trapframe_t *tpf, void *addr, size_t len, int prot, int flags, int fd, int file_offset)
+{
+    uart_sendline("mmap\n");
+    len = len % 0x1000 ? len + (0x1000 - len % 0x1000) : len; // rounds up
+    addr = (unsigned long)addr % 0x1000 ? addr + (0x1000 - (unsigned long)addr % 0x1000) : addr;
+
+    // check if overlap
+    list_head_t *pos;
+    vm_area_struct_t *vma;
+    vm_area_struct_t *the_area_ptr = 0;
+    list_for_each(pos, &curr_thread->vma_list)
+    {
+        vma = (vm_area_struct_t *)pos;
+        if ( ! (vma->virt_addr >= (unsigned long)(addr + len) || vma->virt_addr + vma->area_size <= (unsigned long)addr ) )
+        {
+            the_area_ptr = vma;
+            break;
+        }
+    }
+    // test the end of the area as addr
+    if (the_area_ptr)
+    {
+        tpf->x0 = (unsigned long) mmap(tpf, (void *)(the_area_ptr->virt_addr + the_area_ptr->area_size), len, prot, flags, fd, file_offset);
+        return (void *)tpf->x0;
+    }
+
+    mmu_add_vma(curr_thread, (unsigned long)addr, len, VIRT_TO_PHYS((unsigned long)kmalloc(len)), prot, 1);
+    tpf->x0 = (unsigned long)addr;
+    return (void*)tpf->x0;
 }
 
 void sigreturn(trapframe_t *tpf)
