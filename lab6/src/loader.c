@@ -45,9 +45,11 @@ int setup_program_loc(void *loc) {
  *********************************************************************/
 void sys_run_program(void) {
   //core_timer_enable();
+  uart_puts("sys_run_program");
   Thread *t = get_current();
   //vm_base_switch(t);
   void *sp_el0 = (void *)t->sp_el0;
+  uart_puts("start eret");
   asm volatile("mov x2,	0x0;\r\n" // Enable CPU interrupt
                "msr spsr_el1, 	x2;\r\n"
                "msr sp_el0,	%[sp];\r\n"
