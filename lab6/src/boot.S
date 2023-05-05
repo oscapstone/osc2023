@@ -33,7 +33,6 @@ memzero:
 		sub		x1,x1,#1
 		cbnz	x1,memzero		//if bss_size != 0 , branch memzero(repeat clean)
 
-
 master:
 		mov		x0,x27
 		bl		kernel_main
