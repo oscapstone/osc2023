@@ -100,7 +100,10 @@ int map_vm(uint64_t* pt, uint64_t vm, uint64_t pm, int len){
 
 		if(ptr_pmd[pte] != 0){
 			uart_puts("the block has been mapped!\n");
+			/*
 			uart_puthl(ptr_pmd[pte]);
+			uart_puthl(pm + i * 0x1000);
+			*/
 			return 1;
 		}
 
@@ -110,6 +113,86 @@ int map_vm(uint64_t* pt, uint64_t vm, uint64_t pm, int len){
 		uart_puts("\n pte value: ");
 		uart_puthl(ptr_pmd[pte]);
 		*/
+	}
+	return 0;
+}
+
+int copy_vm(uint64_t* from, uint64_t*  to){
+	from = phy2vir(from);
+	to = phy2vir(to);
+	uint64_t *ptr_pte, *ptr_pmd, *ptr_pud, *ptr_pgd;
+	uint64_t *to_ptr_pte, *to_ptr_pmd, *to_ptr_pud, *to_ptr_pgd;
+	// Get pud
+	// 511 to pass the stack copy
+	for(int i = 0; i < 511; i ++){
+		if(from[i] == NULL )
+			continue;
+		ptr_pgd = phy2vir(from[i] & 0xfffffffffffff000); 
+		if(to[i] == NULL) 
+			to[i] = page_table_init(); 
+		to_ptr_pgd = phy2vir(to[i] & 0xfffffffffffff000); 
+		/*
+		uart_puthl(to_ptr_pgd);
+		uart_puthl(to_ptr_pgd);
+		uart_puthl(to[i]);
+		uart_puts(" ");
+		*/
+		for(int j = 0; j < 512; j++){
+			if(ptr_pgd[j] == NULL)
+				continue;
+			ptr_pud = phy2vir(ptr_pgd[j] & 0xfffffffffffff000);
+			if(to_ptr_pgd[j] == NULL)
+				to_ptr_pgd[j] = page_table_init();
+			to_ptr_pud = phy2vir(to_ptr_pgd[j] & 0xfffffffffffff000);
+			/*
+			uart_puthl(to_ptr_pgd[j]);
+		uart_puthl(to_ptr_pud);
+		uart_puts(" ");
+		*/
+			for(int k = 0; k < 512; k++){
+				if(ptr_pud[k] == NULL)
+					continue;
+				ptr_pmd = phy2vir(ptr_pud[k] & 0xfffffffffffff000);
+				if(to_ptr_pud[k] == NULL)
+					to_ptr_pud[k] = page_table_init();
+				to_ptr_pmd = phy2vir(to_ptr_pud[k] & 0xfffffffffffff000);
+				/*
+				uart_puts(" ");
+		uart_puthl(to_ptr_pud[k]);
+		uart_puthl(to_ptr_pmd);
+		*/
+		/*
+		uart_puts(" ");
+		*/
+				for(int l = 0; l < 512; l++){
+					if(ptr_pmd[l] == NULL)
+						continue;
+					/*
+					if(to_ptr_pmd[l] == NULL)
+						to_ptr_pmd[l] = page_table_init();
+						*/
+					to_ptr_pmd[l] = ptr_pmd[l];
+					/*
+					uart_puts("\n ptr_pmd");
+					uart_puthl(ptr_pmd[l]);
+					uart_puthl(to_ptr_pmd[l]);
+					uart_puthl(to_ptr_pmd);
+					*/
+					/*
+					char *f = (char*)phy2vir(ptr_pmd[l]);
+					char *to = (char*)phy2vir(to_ptr_pmd[l]);
+					uart_puts("\ninnnest");
+					uart_puthl(f);
+					uart_puthl(to);
+					for(int z = 0; z < 0x1000; z++){
+						*to++ = *f++;
+					}
+					*/
+					//to_ptr_pmd[l] = ptr_pmd[l];
+					//uart_puti(l);
+				}
+			}
+		}
 	}
 	return 0;
 }

@@ -7,6 +7,7 @@
 #include "uart.h"
 #include "vm.h"
 #include "mem.h"
+#include "loader.h"
 // FIXME: should disable INT in the critical section.
 
 // k From switch.S
@@ -111,6 +112,24 @@ void sys_exit(int status) {
  * system call mbox
  ***********************************************************************/
 int sys_mbox_call(unsigned char ch, unsigned int *mbox) {
+	uint64_t phy_addr = 0x0;
+	// If is the user space addr, need to translate to phyaddr
+	if(((uint64_t)mbox & 0xffff000000000000) == 0){
+		asm volatile(
+			"mov	x1, %[mbox];"
+			"at	s1e0r, x1;"	// Translate vir->phy
+			"mrs	%[phy], par_el1;"
+			: [phy] "=r" (phy_addr)
+			: [mbox] "r" (mbox));
+		if(phy_addr & 1 == 1)
+			uart_puts("Translate Error\n");
+		phy_addr &= 0xFFFFFFFFF000;
+		phy_addr |= ((uint64_t)mbox & 0xFFF);	// Get offset
+		phy_addr = phy2vir(phy_addr);
+		//uart_puthl(phy_addr);
+		return sys_mailbox_config(ch, phy_addr);
+	}
+
   return sys_mailbox_config(ch, mbox);
 }
 
@@ -167,7 +186,7 @@ int sys_fork(Trap_frame *trap_frame) {
   cur->regs.sp = trap_frame;
 
   // Should at the same offset to the cur.
-  child->regs.sp = (((void *)trap_frame) - ((void *)cur) + ((void *)child));
+  child->regs.sp =  (((void *)trap_frame) - ((void *)cur) + ((void *)child));
   child->regs.fp = (char *)child + 0x1000 - 16;
 
   // Copy the handler from parent
@@ -181,20 +200,43 @@ int sys_fork(Trap_frame *trap_frame) {
   trap_frame_child->regs[29] = child->regs.fp;
 
   // Get the displacement of userspace stack
-  trap_frame_child->sp_el0 =
-      (char *)trap_frame->sp_el0 - (char *)cur->sp_el0 + (char *)child->sp_el0;
+  //trap_frame_child->sp_el0 =
+  //    (char *)trap_frame->sp_el0 - (char *)cur->sp_el0 + (char *)child->sp_el0;
+  trap_frame_child->sp_el0 = trap_frame->sp_el0;
 
   // Write child's ID in the x0 of parent
   trap_frame->regs[0] = child->id;
   cur->child = child->id;
 
-  // Copy user stack
-  c = (char *)trap_frame_child->sp_el0;
-  f = (char *)trap_frame->sp_el0;
+  // Copy user stack Change for vir
+  f = (char*) cur->sp_el0_kernel;
+  c = (char*) child->sp_el0_kernel;
+  for(int i = 0; i < 0x4000; i++){
+	  *c++ = *f++;
+  }
+
+  // Map the page table
+  // FIXME:
+  //child->pgd = cur->pgd;
+  copy_vm(cur->pgd, child->pgd);
+  //map_vm(child->pgd, 0xffffffffb000, vir2phy(child->sp_el0_kernel), 4);
+  /*
+  uart_puts("child pgd: ");
+  uart_puth(child->pgd);
+  for(uint64_t va = 0x3c000000; va <= 0x3f000000; va += 0x1000){
+	  map_vm(child->pgd, va, va, 1);
+  }
+  */
+  //void* addr = getProgramLo();
+  //map_vm(phy2vir(child->pgd), 0, addr, 64);
+  /*
+  c = (char *)trap_frame_child->sp_el0_kernel ;
+  f = (char *)trap_frame->sp_el0_kernel;
   while (f != (char *)cur->sp_el0) {
     *c++ = *f++;
   }
   *c = *f;
+  */
 
   // LOG
   /*

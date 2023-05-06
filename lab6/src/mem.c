@@ -330,8 +330,13 @@ uint64_t pmalloc(int cnt) {
   int i;
   // Find the free memory closet to target
   for (i = cnt + 1; i < MEM_MAX; i++) {
-    if (free_mem[i] != NULL)
+    if (free_mem[i] != NULL && free_mem[i]->index >0)
       break;
+    else if (free_mem[i] != NULL && free_mem[i] -> index <= 0){
+	    list_pop(i);
+	    i -= 1;
+	    continue;
+    }
   }
   // Pop one and split it to target size
   for (int j = i; j > cnt; --j) {

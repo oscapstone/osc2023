@@ -10,5 +10,6 @@ uint64_t phy2vir(void*);
 uint64_t vir2phy(void*);
 
 int map_vm(uint64_t*, uint64_t vm, uint64_t pm, int length);
+int copy_vm(uint64_t*, uint64_t*);
 
 #endif // VM_H

@@ -121,12 +121,13 @@ void vm_base_switch(Thread *next){
  * @fn: The first function will be execute after thread created.
  ***********************************************************************/
 Thread *thread_create(void (*fn)(void *)) {
+  disable_int();
   Thread *cur = (Thread*) pmalloc(0); // Get the small size
   cur = phy2vir(cur);		// This is also in the kernel
   cur->pgd = pmalloc(0);	// Get the entry of PGD
   memset(phy2vir(cur->pgd), 0, 0x1000);
-  uart_puts("\npgd: ");
-  uart_puth(cur->pgd);
+  //uart_puts("\npgd: ");
+  //uart_puth(cur->pgd);
   cur->child = 0;
   cur->handler = NULL;
   cur->regs.lr = fn;
@@ -140,7 +141,9 @@ Thread *thread_create(void (*fn)(void *)) {
   map_vm(phy2vir(cur->pgd), 0xffffffffb000, tmp_sp, 4); // Map the phyaddr to vm
   //cur->sp_el0 = pmalloc(2) + 0x1000 - 16;     // Separate kernel stack
   cur->sp_el0 = 0xffffffffeff0;	// This is virtual address ,
+  cur->sp_el0_kernel = phy2vir(tmp_sp);	// For fork
   thread_q_add(&running, cur);                // Add to thread queue
+  enable_int();
   return cur;
 }
 
@@ -244,6 +247,7 @@ void schedule() {
  * Move current thread from running queue to deleted queue
  **********************************************************************/
 void exit() {
+	//uart_puts("exit");
   Thread *t = get_current();
   thread_q_delete(&running, t);
   thread_q_add(&deleted, t);
@@ -287,6 +291,6 @@ void test_thread_queue(void) {
 void terminal_run_thread() {
   Thread *t = thread_create(terminal_run);
   pfree(t->pgd);
-  t->pgd = 0x0;	// Using the kernel's pgd (not nessary)
+  t->pgd = 0x0;	// Using the kernel's pgd 
   return;
 }
