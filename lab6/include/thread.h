@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include "vm.h"
 
 // Store the thread status
 enum Thread_status{
@@ -45,6 +46,9 @@ typedef struct THread{
 	uint64_t handler;
 	uint64_t pgd;		// store the value of PGB
 	uint64_t sp_el0_kernel;	// Store teh phypage for fork
+	int signaled;
+	vm_node* vm_list;
+	int mapped;
 	enum Thread_status status;
 	struct THread *prev;
 	struct THread *next;

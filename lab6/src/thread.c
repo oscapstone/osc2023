@@ -135,15 +135,23 @@ Thread *thread_create(void (*fn)(void *)) {
   cur->regs.fp = ((char *)cur) + 0x1000 - 16; // No matter?
   cur->id = thread_count++;                   // Set ID
   cur->status = run;                          // Set the status
+  cur->signaled = 0;
+  cur->vm_list = NULL;
+  cur->mapped = 0;
   
   // Note: This sp is in user space, don't add 0xffff0000
   uint64_t tmp_sp = pmalloc(2);
-  map_vm(phy2vir(cur->pgd), 0xffffffffb000, tmp_sp, 4); // Map the phyaddr to vm
+  //uart_puthl(&(cur->vm_list));
+  for(int i = 0; i < 4; i++)
+	  vm_list_add(phy2vir(&(cur->vm_list)), 0xffffffffb000 + 0x1000 * i, tmp_sp + 0x1000 * i);
+  //vm_list_add(cur->vm_list, 0xffffffffb000, tmp_sp, 4); // Demand Paging
+  //map_vm(phy2vir(cur->pgd), 0xffffffffb000, tmp_sp, 4); // Map the phyaddr to vm
   //cur->sp_el0 = pmalloc(2) + 0x1000 - 16;     // Separate kernel stack
   cur->sp_el0 = 0xffffffffeff0;	// This is virtual address ,
   cur->sp_el0_kernel = phy2vir(tmp_sp);	// For fork
   thread_q_add(&running, cur);                // Add to thread queue
   enable_int();
+  //disable_int();
   return cur;
 }
 

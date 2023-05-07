@@ -2,6 +2,7 @@
 #define VM_H
 #include "mmu.h"
 #include <stdint.h>
+#include <stddef.h>
 
 //===================================================================
 //Useful functions
@@ -11,5 +12,19 @@ uint64_t vir2phy(void*);
 
 int map_vm(uint64_t*, uint64_t vm, uint64_t pm, int length);
 int copy_vm(uint64_t*, uint64_t*);
+
+// For Demand paging
+typedef struct VM_Node{
+	uint64_t phy;
+	uint64_t vir;
+	struct VM_Node *next;
+	struct VM_Node *prev;
+}vm_node;
+
+// List operation for list
+int vm_list_add(vm_node**, uint64_t vir, uint64_t phy);
+uint64_t vm_list_delete(vm_node**, uint64_t vir);
+int vm_list_copy(vm_node* from, vm_node** to);
+int vm_list_dump(vm_node*);
 
 #endif // VM_H

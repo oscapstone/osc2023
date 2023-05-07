@@ -1,6 +1,7 @@
 #include "loader.h"
 #include "interrupt.h"
 #include "thread.h"
+#include "vm.h"
 
 extern uint64_t get_current();
 
@@ -46,6 +47,9 @@ int setup_program_loc(void *loc) {
 void sys_run_program(void) {
   //core_timer_enable();
   Thread *t = get_current();
+  while(t->mapped != 1){
+	  schedule();
+  }
   //vm_base_switch(t);
   void *sp_el0 = (void *)t->sp_el0;
   asm volatile("mov x2,	0x0;\r\n" // Enable CPU interrupt

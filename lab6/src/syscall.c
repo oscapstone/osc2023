@@ -84,7 +84,9 @@ int sys_exec(const char *name, char *const argv[]) {
   // Get memory for user program.
   char *dest = (char *)pmalloc(6);
   Thread *t = get_current();
-  map_vm(phy2vir(t->pgd), 0, dest, 64);	// Map the program to 0x0
+  for(int i = 0; i < 64; i++)
+  vm_list_add(phy2vir(t->vm_list), 0 + i * 0x1000, dest + i * 0x1000);
+  //map_vm(phy2vir(t->pgd), 0, dest, 64);	// Map the program to 0x0
   dest = phy2vir(dest);
   setup_program_loc(dest);
   char *d = dest;
@@ -219,13 +221,19 @@ int sys_fork(Trap_frame *trap_frame) {
   // FIXME:
   //child->pgd = cur->pgd;
   copy_vm(cur->pgd, child->pgd);
+  for(uint64_t va = 0x3c000000; va <= 0x3f000000; va += 0x1000){
+	  map_vm(child->pgd, va, va, 1);
+  }
+  // Copy unmapping page
+  uart_puthl(cur->vm_list);
+  vm_list_copy(phy2vir(cur->vm_list), phy2vir(&(child->vm_list)));
+  //vm_list_dump(phy2vir(child->vm_list));
+  //uart_puthl(child->vm_list);
+  //uart_puthl(child->vm_list->phy);
   //map_vm(child->pgd, 0xffffffffb000, vir2phy(child->sp_el0_kernel), 4);
   /*
   uart_puts("child pgd: ");
   uart_puth(child->pgd);
-  for(uint64_t va = 0x3c000000; va <= 0x3f000000; va += 0x1000){
-	  map_vm(child->pgd, va, va, 1);
-  }
   */
   //void* addr = getProgramLo();
   //map_vm(phy2vir(child->pgd), 0, addr, 64);
@@ -264,6 +272,20 @@ void sys_signal(int sig, void (*handler)()) {
 }
 
 /*************************************************************************
+ *
+ */
+uint64_t sys_mmap(uint64_t addr, size_t len, int prot, int flags,
+		int fd, int file_offsets){
+	/*
+	if(addr == NULL){
+	}
+	else{
+	}
+	*/
+	return 0;
+}
+
+/*************************************************************************
  * __handler store the handler pointer
  ************************************************************************/
 static void (*__handler)() = NULL;
@@ -283,7 +305,11 @@ void handler_container() {
   __handler();
   __handler = NULL;
   // The EL0 wapper of the `exit()`
-  uexit();
+  asm volatile(
+	"mov	x8, 15;"
+	"svc	0;"
+	);
+  //uexit();
 }
 
 /**************************************************************************
@@ -307,8 +333,11 @@ void posix_kill(int pid, int sig) {
     return;
   // Setup the pointer which handler_container will execuate.
   __handler = t->handler;
+  t->signaled = 1;
+  /*
   setup_program_loc(handler_container);
   Thread *h = thread_create(sys_run_program);
+  */
   return;
 }
 

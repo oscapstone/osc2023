@@ -98,14 +98,17 @@ int map_vm(uint64_t* pt, uint64_t vm, uint64_t pm, int len){
 		ptr_pmd = ptr_pud[pmd] & 0xfffffffffffff000;
 		ptr_pmd = phy2vir(ptr_pmd);
 
+#if 0
 		if(ptr_pmd[pte] != 0){
-			uart_puts("the block has been mapped!\n");
+			uart_puts(" ");
+			//uart_puts("the block has been mapped!\n");
 			/*
 			uart_puthl(ptr_pmd[pte]);
 			uart_puthl(pm + i * 0x1000);
 			*/
-			return 1;
+			//return 1;
 		}
+#endif
 
 		//Write the record
 		ptr_pmd[pte] = (((pm + i * 0x1000) | PAGE_NORMAL_ATTR) &0xffffffff);
@@ -176,9 +179,7 @@ int copy_vm(uint64_t* from, uint64_t*  to){
 					uart_puts("\n ptr_pmd");
 					uart_puthl(ptr_pmd[l]);
 					uart_puthl(to_ptr_pmd[l]);
-					uart_puthl(to_ptr_pmd);
-					*/
-					/*
+					uart_puthl(to_ptr_pmd); */ /*
 					char *f = (char*)phy2vir(ptr_pmd[l]);
 					char *to = (char*)phy2vir(to_ptr_pmd[l]);
 					uart_puts("\ninnnest");
@@ -197,4 +198,122 @@ int copy_vm(uint64_t* from, uint64_t*  to){
 	return 0;
 }
 		
+int vm_list_add(vm_node** head, uint64_t vir, uint64_t phy){
+	disable_int();
+	vm_node* n = smalloc(sizeof(vm_node));
+	vm_node *cur = phy2vir(*head);
+	n  = phy2vir(n);
+	/*
+	uart_puts("\nlist add : ");
+	uart_puthl(head);
+	uart_puts("\n");
+	*/
+	n->phy = phy;
+	n->vir = vir; if(*head == NULL){
+		*head = n;
+		n->next = NULL;
+		n->prev = NULL;
+		return 0;
+	}
+	while(cur->next != NULL){
+		/*
+		uart_puthl(cur->vir);
+		uart_puts(" ");
+		*/
+		cur = cur->next;
+	}
+	cur->next = n;
+	n->prev = cur;
+	n->next = NULL;
+	return 0;
+	enable_int();
+}
 
+// Return the physical address to map
+uint64_t vm_list_delete(vm_node **head, uint64_t vir){
+	disable_int();
+	vm_node* cur = *head;
+	uint64_t ret;
+	/*
+	uart_puthl(vir);
+	uart_puthl(head);
+	*/
+	if(cur == NULL){
+		return 0;
+	}
+	if(cur->vir == vir){
+		ret = (*head)->phy;
+		*head = cur->next;
+		if(cur->next != NULL)
+			cur->next->prev = NULL;
+		return ret;
+	}
+	while(cur != NULL){
+		/*
+		uart_puts("\ntraverse: ");
+		uart_puthl(cur->vir);
+		*/
+		if(cur->vir == vir){
+			ret = cur->phy;
+			if(cur->prev != NULL)
+			cur->prev->next = cur->next;
+			if(cur->next != NULL)
+			cur->next->prev = cur->prev;
+			return ret;
+		}
+		if(cur->next == NULL)
+			break;
+		cur = cur->next;
+	}
+	return 0;
+	enable_int();
+}
+
+int vm_list_copy(vm_node* from, vm_node** to){
+	disable_int();
+	vm_node *cur;
+	vm_node *tmp = *to;
+	if(from == NULL || tmp == NULL){
+		*to = NULL;
+		return 0;
+	}
+	while(tmp->next != NULL){
+		tmp = tmp->next;
+	}
+	cur = (vm_node*) phy2vir(smalloc(sizeof(vm_node)));
+	cur->phy = from->phy;
+	cur->vir = from->vir;
+	cur->next = NULL;
+	cur->prev = NULL;
+	tmp->next = cur;
+	while(from->next != NULL){
+		/*
+		uart_puts("\n copy :");
+		uart_puthl(cur->vir);
+		uart_puthl(cur->phy);
+		uart_puthl(from->vir);
+		uart_puthl(from->phy);
+		*/
+		cur->next = (vm_node*) phy2vir(smalloc(sizeof(vm_node)));
+		cur->next->prev = cur;
+		cur = cur->next;
+		from = from->next;
+		cur->phy = from->phy;
+		cur->vir = from->vir;
+		cur->next = NULL;
+	}
+	return 0;
+	enable_int();
+}
+
+int vm_list_dump(vm_node* cur){
+	while(cur != NULL){
+		uart_puts("PHY: ");
+		uart_puthl(cur->phy);
+		uart_puts(" VIR: ");
+		uart_puthl(cur->vir);
+		uart_puts("\n");
+		cur = cur->next;
+	}
+	return 0;
+}

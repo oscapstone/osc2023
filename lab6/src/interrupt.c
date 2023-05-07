@@ -5,6 +5,9 @@
 #include "thread.h"
 #include "timer.h"
 #include "uart.h"
+#include "vm.h"
+
+extern Thread* get_current();
 
 #if 0
 task_q *head = 0;
@@ -298,6 +301,38 @@ int low_irq_handler(void) {
   return 0;
 }
 
+static int page_fault_handler(){
+	uint64_t esr;
+	uint64_t far;
+	uint64_t f;
+	Thread* t = get_current();
+	uint64_t phy;
+	t = phy2vir(t);
+	asm volatile("mrs %[esr], esr_el1;": [esr] "=r" (esr));
+	asm volatile("mrs %[far], far_el1;": [far] "=r" (far));
+	f = far & 0x0000fffffffffffff000;
+	// ISS is at [5:0]
+	esr = esr & 0x2f;
+	if(esr >= 4 || esr <= 7){
+		uart_puts("[Translation fault] ");
+		phy = vm_list_delete(phy2vir(&(t->vm_list)), f);
+		if(phy == 0 || far & 0xffff000000000000){
+			uart_puts("VM LIST ERROR!!\n");
+			uart_puthl(f);
+			uart_puthl(phy);
+		}
+		if(phy != 0)
+		map_vm(phy2vir(t->pgd), f, phy, 1);
+		uart_puthl(far);
+		uart_puts("\n");
+	}
+	else{
+		uart_puts("[Segmantation fault\n");
+	}
+	return 0;
+}
+	
+
 /**********************************************************************
  * Low_synchronize_handler (SVC)
  * @trap_fram: The address of sp which store the x0-x30 and
@@ -309,6 +344,8 @@ void low_syn_handler(Trap_frame *trap_frame) {
   uint64_t esr; // Which contain the exception and value
   uint64_t index;
   uint64_t *regs = trap_frame->regs;
+  Thread *t = get_current();
+  t = phy2vir(t);
   asm volatile("mrs  %[esr], esr_el1;" : [esr] "=r"(esr) :);
   enable_int();
   // Check if the exception if from SVC
@@ -350,9 +387,47 @@ void low_syn_handler(Trap_frame *trap_frame) {
     case 9:
       posix_kill(regs[0], regs[1]);
       break;
+    case 10:
+      /*
+      uart_puts("mmap: ");
+      uart_puthl(regs[0]);
+      uart_puts(" ");
+      uart_puthl(regs[1]);
+      uart_puts(" ");
+      uart_puthl(regs[2]);
+      uart_puts(" ");
+      uart_puthl(regs[3]);
+      uart_puts(" ");
+      uart_puthl(regs[4]);
+      uart_puts(" ");
+      uart_puthl(regs[5]);
+      uart_puts(" ");
+      */
+      regs[0] = sys_mmap(regs[0], regs[1], regs[2], regs[3], regs[4], regs[5]);
+      break;
+    case 15:
+      asm volatile(
+	"mov	sp, x19;");
+      break;
     default:
       uart_puts("***UNKNOWN INT***\n");
     }
   }
+  else if (((esr >> 26) & 0x7F) == 0x20) {
+	  uart_puts("Instruction abort\n");
+	  page_fault_handler();
+	  return;
+  }
+  else if (((esr >> 26) & 0x7F) == 0x24) {
+	  uart_puts("Data abort\n");
+	  page_fault_handler();
+  }
+  if(t->signaled){
+	  t->signaled = 0;
+	  asm volatile("mov	x19, sp;"
+			"msr	elr_el1, %[loc];"
+			:: [loc] "r" (handler_container));
+  }
   return;
 }
+
