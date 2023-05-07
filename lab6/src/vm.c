@@ -46,8 +46,9 @@ static uint64_t page_table_init(){
  * @vm: virtual address want to map to
  * @pm: physical address want to map from
  * @len: how many page want to map to (4KB)
+ * @prop: the property of the page (for mmap & COW)
  ************************************************************************/
-int map_vm(uint64_t* pt, uint64_t vm, uint64_t pm, int len){
+int map_vm(uint64_t* pt, uint64_t vm, uint64_t pm, int len, int prop){
 	if(len <= 0)
 		return 1;
 	if(pt == NULL)
@@ -110,8 +111,12 @@ int map_vm(uint64_t* pt, uint64_t vm, uint64_t pm, int len){
 		}
 #endif
 
-		//Write the record
-		ptr_pmd[pte] = (((pm + i * 0x1000) | PAGE_NORMAL_ATTR) &0xffffffff);
+		//Write the record (normal)
+		if(prop == 0)
+			ptr_pmd[pte] = (((pm + i * 0x1000) | PAGE_NORMAL_ATTR) &0xffffffff);
+		else if(prop & PROT_READ)
+			ptr_pmd[pte] = (((pm + i * 0x1000) | PAGE_NORMAL_ATTR | 0x40) & 0xffffffff);
+
 		/*
 		uart_puts("\n pte value: ");
 		uart_puthl(ptr_pmd[pte]);
@@ -230,6 +235,7 @@ int vm_list_add(vm_node** head, uint64_t vir, uint64_t phy){
 }
 
 // Return the physical address to map
+// FIXME: DON'T DELETE, just keep it
 uint64_t vm_list_delete(vm_node **head, uint64_t vir){
 	disable_int();
 	vm_node* cur = *head;
@@ -243,9 +249,11 @@ uint64_t vm_list_delete(vm_node **head, uint64_t vir){
 	}
 	if(cur->vir == vir){
 		ret = (*head)->phy;
+		/*
 		*head = cur->next;
 		if(cur->next != NULL)
 			cur->next->prev = NULL;
+			*/
 		return ret;
 	}
 	while(cur != NULL){
@@ -255,10 +263,12 @@ uint64_t vm_list_delete(vm_node **head, uint64_t vir){
 		*/
 		if(cur->vir == vir){
 			ret = cur->phy;
+			/*
 			if(cur->prev != NULL)
 			cur->prev->next = cur->next;
 			if(cur->next != NULL)
 			cur->next->prev = cur->prev;
+			*/
 			return ret;
 		}
 		if(cur->next == NULL)

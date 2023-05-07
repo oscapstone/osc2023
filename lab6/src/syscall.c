@@ -8,6 +8,7 @@
 #include "vm.h"
 #include "mem.h"
 #include "loader.h"
+#include "str.h"
 // FIXME: should disable INT in the critical section.
 
 // k From switch.S
@@ -222,7 +223,7 @@ int sys_fork(Trap_frame *trap_frame) {
   //child->pgd = cur->pgd;
   copy_vm(cur->pgd, child->pgd);
   for(uint64_t va = 0x3c000000; va <= 0x3f000000; va += 0x1000){
-	  map_vm(child->pgd, va, va, 1);
+	  map_vm(child->pgd, va, va, 1, 0);
   }
   // Copy unmapping page
   uart_puthl(cur->vm_list);
@@ -275,14 +276,47 @@ void sys_signal(int sig, void (*handler)()) {
  *
  */
 uint64_t sys_mmap(uint64_t addr, size_t len, int prot, int flags,
-		int fd, int file_offsets){
-	/*
+		int fd, int file_offset){
+	Thread* t = get_current();
+	uint64_t phy_mem;
+	uint32_t l; 	// Get the pmalloc size
+	// User defined the map address
 	if(addr == NULL){
+		addr = 0x100000;
 	}
-	else{
+	// Align to page size
+	if(addr & 0xFFF)
+		addr = (addr & ( ~0xfff )) + 0x1000;
+	if(len & 0xFFF)
+		len = (len & (~0xfff)) + 0x1000;
+	l = len >> 13; // Size for pmalloc
+
+	// Find the empty slot (virtual mem)
+	while(1){
+		if(vm_list_delete(phy2vir(&(t->vm_list)), addr) == 0){
+			uart_puthl(addr);
+			break;
+		}
+		addr += 0x1000;
 	}
-	*/
-	return 0;
+	if(flags == MAP_ANONYMOUS){
+		phy_mem = pmalloc(l);
+		//uart_puthl(phy_mem);
+		//uart_puti(len >> 12);
+		// Anonymous means no backup file -> content = 0
+		memset(phy2vir(phy_mem), 0, len);
+		vm_list_add(phy2vir(&(t->vm_list)), addr, phy_mem);
+		//uart_puthl(vm_list_delete(phy2vir(&(t->vm_list)), addr));
+		map_vm(phy2vir(t->pgd), addr, phy_mem, len >> 12, flags);
+	}else if(flags == MAP_POPULATE){
+		phy_mem = fd + file_offset;
+		phy_mem = vir2phy(phy_mem);
+		vm_list_add(phy2vir(&(t->vm_list)), addr, phy_mem);
+		map_vm(phy2vir(t->pgd), addr, phy_mem, len >> 12, flags);
+	}else{
+		uart_puts("MMAP FLAG ERROR!!\n");
+	}
+	return addr;
 }
 
 /*************************************************************************

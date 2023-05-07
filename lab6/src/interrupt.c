@@ -318,11 +318,11 @@ static int page_fault_handler(){
 		phy = vm_list_delete(phy2vir(&(t->vm_list)), f);
 		if(phy == 0 || far & 0xffff000000000000){
 			uart_puts("VM LIST ERROR!!\n");
-			uart_puthl(f);
-			uart_puthl(phy);
+			//uart_puthl(f);
+			//uart_puthl(phy);
 		}
 		if(phy != 0)
-		map_vm(phy2vir(t->pgd), f, phy, 1);
+		map_vm(phy2vir(t->pgd), f, phy, 1, 0);
 		uart_puthl(far);
 		uart_puts("\n");
 	}
@@ -388,7 +388,6 @@ void low_syn_handler(Trap_frame *trap_frame) {
       posix_kill(regs[0], regs[1]);
       break;
     case 10:
-      /*
       uart_puts("mmap: ");
       uart_puthl(regs[0]);
       uart_puts(" ");
@@ -402,7 +401,6 @@ void low_syn_handler(Trap_frame *trap_frame) {
       uart_puts(" ");
       uart_puthl(regs[5]);
       uart_puts(" ");
-      */
       regs[0] = sys_mmap(regs[0], regs[1], regs[2], regs[3], regs[4], regs[5]);
       break;
     case 15:
