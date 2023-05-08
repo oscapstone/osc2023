@@ -64,7 +64,7 @@ void kill_zombies(){
             mmu_free_page_tables(t->context.pgd,0);
             mmu_del_vma(t);
             kfree(t->kernel_stack_alloced_ptr);
-            kfree(t->context.pgd);
+            kfree(PHYS_TO_VIRT(t->context.pgd));
             t->iszombie = 0;
             t->isused   = 0;
         }
