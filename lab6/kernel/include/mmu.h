@@ -37,23 +37,10 @@
 #define BOOT_PTE_ATTR_nGnRnE    (PD_BLOCK | PD_ACCESS | (MAIR_DEVICE_nGnRnE << 2) | PD_UNX | PD_KNX | PD_UK_ACCESS)  // p.17
 #define BOOT_PTE_ATTR_NOCACHE   (PD_BLOCK | PD_ACCESS | (MAIR_NORMAL_NOCACHE << 2))
 
-#define MEMFAIL_DATA_ABORT_LOWER 0b100100
-#define MEMFAIL_INST_ABORT_LOWER 0b100000
-
-#define TF_LEVEL0 0b000100
-#define TF_LEVEL1 0b000101
-#define TF_LEVEL2 0b000110
-#define TF_LEVEL3 0b000111
-
 #ifndef __ASSEMBLER__
 
 #include "sched.h"
-
-typedef struct{
-    unsigned int iss : 25, // Instruction specific syndrome
-                 il : 1,   // Instruction length bit
-                 ec : 6;   // Exception class
-} esr_el1_t;
+#include "exception.h"
 
 typedef struct vm_area_struct
 {

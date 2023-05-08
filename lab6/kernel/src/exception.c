@@ -12,6 +12,7 @@ void sync_64_router(trapframe_t* tpf)
 {
     unsigned long long esr_el1;
     __asm__ __volatile__("mrs %0, esr_el1\n\t": "=r"(esr_el1));
+    // esr_el1: Holds syndrome information for an exception taken to EL1.
     esr_el1_t *esr = (esr_el1_t *)&esr_el1;
     if (esr->ec == MEMFAIL_DATA_ABORT_LOWER || esr->ec == MEMFAIL_INST_ABORT_LOWER)
     {

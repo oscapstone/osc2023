@@ -183,30 +183,33 @@ void signal_kill(int pid, int signal)
 //only need to implement the anonymous page mapping in this Lab.
 void *mmap(trapframe_t *tpf, void *addr, size_t len, int prot, int flags, int fd, int file_offset)
 {
-    uart_sendline("mmap\n");
-    len = len % 0x1000 ? len + (0x1000 - len % 0x1000) : len; // rounds up
+    // Ignore flags as we have demand pages
+
+    // Req #3 Page size round up
+    len = len % 0x1000 ? len + (0x1000 - len % 0x1000) : len;
     addr = (unsigned long)addr % 0x1000 ? addr + (0x1000 - (unsigned long)addr % 0x1000) : addr;
 
-    // check if overlap
+    // Req #2 check if overlap
     list_head_t *pos;
     vm_area_struct_t *vma;
     vm_area_struct_t *the_area_ptr = 0;
     list_for_each(pos, &curr_thread->vma_list)
     {
         vma = (vm_area_struct_t *)pos;
+        // Detect existing vma overlapped
         if ( ! (vma->virt_addr >= (unsigned long)(addr + len) || vma->virt_addr + vma->area_size <= (unsigned long)addr ) )
         {
             the_area_ptr = vma;
             break;
         }
     }
-    // test the end of the area as addr
+    // take as a hint to decide new region's start address
     if (the_area_ptr)
     {
         tpf->x0 = (unsigned long) mmap(tpf, (void *)(the_area_ptr->virt_addr + the_area_ptr->area_size), len, prot, flags, fd, file_offset);
         return (void *)tpf->x0;
     }
-
+    // create new valid region, map and set the page attributes (prot)
     mmu_add_vma(curr_thread, (unsigned long)addr, len, VIRT_TO_PHYS((unsigned long)kmalloc(len)), prot, 1);
     tpf->x0 = (unsigned long)addr;
     return (void*)tpf->x0;

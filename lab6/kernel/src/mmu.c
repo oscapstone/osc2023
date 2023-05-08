@@ -130,7 +130,7 @@ void mmu_memfail_abort_handle(esr_el1_t* esr_el1)
             break;
         }
     }
-
+    // area is not part of process's address space
     if (!the_area_ptr)
     {
         uart_sendline("[Segmentation fault]: Kill Process\r\n");
@@ -138,21 +138,22 @@ void mmu_memfail_abort_handle(esr_el1_t* esr_el1)
         return;
     }
 
-    // For translation fault
+    // For translation fault, only map one page frame for the fault address
     if ((esr_el1->iss & 0x3f) == TF_LEVEL0 ||
         (esr_el1->iss & 0x3f) == TF_LEVEL1 ||
         (esr_el1->iss & 0x3f) == TF_LEVEL2 ||
         (esr_el1->iss & 0x3f) == TF_LEVEL3)
     {
-        uart_sendline("[Translation fault]: 0x%x\r\n",far_el1);
+        uart_sendline("[Translation fault]: 0x%x\r\n",far_el1); // far_el1: Fault address register.
+                                           // Holds the faulting Virtual Address for all synchronous Instruction or Data Abort, PC alignment fault and Watchpoint exceptions that are taken to EL1.
 
         size_t addr_offset = (far_el1 - the_area_ptr->virt_addr);
         addr_offset = (addr_offset % 0x1000) == 0 ? addr_offset : addr_offset - (addr_offset % 0x1000);
 
         size_t flag = 0;
-        if(!(the_area_ptr->rwx & (0b1 << 2))) flag |= PD_UNX;
-        if(!(the_area_ptr->rwx & (0b1 << 1))) flag |= PD_RDONLY;
-        if(  the_area_ptr->rwx & (0b1 << 0) ) flag |= PD_UK_ACCESS;
+        if(!(the_area_ptr->rwx & (0b1 << 2))) flag |= PD_UNX;        // 4: executable
+        if(!(the_area_ptr->rwx & (0b1 << 1))) flag |= PD_RDONLY;     // 2: writable
+        if(  the_area_ptr->rwx & (0b1 << 0) ) flag |= PD_UK_ACCESS;  // 1: readable / accessible
         map_one_page(PHYS_TO_VIRT(curr_thread->context.pgd), the_area_ptr->virt_addr + addr_offset, the_area_ptr->phys_addr + addr_offset, flag);
     }
     else
