@@ -1,11 +1,6 @@
 #ifndef CPIO_H
 #define CPIO_H
 
-#include "uart.h"
-#include "string.h"
-#include "utils.h"
-#include "exec.h"
-
 #define CPIO_NEWC_HEADER_MAGIC "070701"    // big endian
 
 struct cpio_newc_header 
@@ -34,4 +29,6 @@ int cpio_newc_parse_header(struct cpio_newc_header *this_header_pointer,
 int  ls(char* working_dir);
 int  cat(char* thefilepath);
 int execfile(char *thefilepath);
+char *get_file_start(char *thefilepath);
+unsigned int get_file_size(char *thefilepath);
 #endif

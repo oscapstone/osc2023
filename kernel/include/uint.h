@@ -1,3 +1,4 @@
+#include "stddef.h"
 #ifndef __int8_t_defined
 # define __int8_t_defined
 typedef signed char                int8_t;

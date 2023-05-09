@@ -49,11 +49,8 @@ static  void __list_del(list_head_t * prev, list_head_t * next  )
 
 void list_del(list_head_t * entry)
 {       
-        __list_del(entry->prev,entry->next);
-        entry->next = entry;
-        entry->prev = entry;
-       // entry->next = LIST_POISON1;
-       // entry->prev = LIST_POISON2;
+        __list_del(entry->prev, entry->next);
+
 }
 
 

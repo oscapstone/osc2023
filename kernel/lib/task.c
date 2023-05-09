@@ -11,9 +11,8 @@ void add_task(task_callback_t callback, int priority){
     t->callback = callback;
     // uart_puts("b\n");
     t->priority = priority;
-    t->listhead.next = &(t->listhead);
-    t->listhead.prev = &(t->listhead);
-
+    INIT_LIST_HEAD(&t->listhead);
+    
     disable_interrupt();
     // insert based on priority
     if(list_empty(&task_list)) {
@@ -43,11 +42,13 @@ void add_task(task_callback_t callback, int priority){
 
 void pop_task() {
     while (!list_empty(&task_list)) {
+        disable_interrupt();
         task_t *first = (task_t *)list_entry(task_list.next, task_t, listhead);
         if(first->priority > cur_priority) {
+            enable_interrupt();
             return;
         }
-        disable_interrupt();
+       
         list_del(&first->listhead);
         int tmp_priority = cur_priority;
         cur_priority = first->priority;

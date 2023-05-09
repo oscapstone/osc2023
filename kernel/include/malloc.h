@@ -2,6 +2,6 @@
 #define MALLOC_H
 
 void *smalloc(unsigned long size);
-void *memcpy(void *dest, const void *src, int n);
+void *memcpy(void *dest, const void *src, unsigned long long n);
 
 #endif

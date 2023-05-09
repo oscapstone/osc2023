@@ -1,4 +1,4 @@
-.section ".text"
+.section ".text.boot"
 
 .global _start
 
@@ -8,7 +8,7 @@ _start:
     mrs     x1, mpidr_el1
     and     x1, x1, #3
     // switch to el1 before master
-    cbz     x1, master
+    cbz     x1, from_el2_to_el1
   // cpu id > 0, stop
 
 busyloop:  
@@ -16,21 +16,10 @@ busyloop:
     b       busyloop
 
 from_el2_to_el1:
-    // enable RW
-    mov x20, (1 << 31) // EL1 uses aarch64
-    // decide execution state of el1 and el0
-    msr hcr_el2, x20    
-    // 3c daif disabled
-    // 5 exception level
-    mov x20, 0x3c5 
-    // EL1h (SPSel = 1) with interrupt disabled
-    msr spsr_el2, x20
-    msr elr_el2, lr     // eret location
-    eret // return to EL1 ,str in elr_el2
+    bl _from_el2_to_el1
 
 master:
-    bl      from_el2_to_el1
-    mov     x1, (3 << 20)           // close advanced SIMD exception
+    ldr     x1, =(3 << 20)           // close advanced SIMD exception
     msr     CPACR_EL1, x1           // printf builtin_va might use
     adr     x1, exception_vector_table // set exception_vector_table
     msr     vbar_el1, x1
@@ -52,3 +41,16 @@ kernel:
     // bl save next command to lr register
     bl      main
     b       busyloop
+
+_from_el2_to_el1:
+    // enable RW
+    mov x1, (1 << 31) // EL1 uses aarch64
+    // decide execution state of el1 and el0
+    msr hcr_el2, x1
+    // 3c daif disabled
+    // 5 exception level
+    mov x1, 0x3c5 
+    // EL1h (SPSel = 1) with interrupt disabled
+    msr spsr_el2, x1
+    msr elr_el2, lr     // eret location
+    eret // return to EL1 ,str in elr_el2

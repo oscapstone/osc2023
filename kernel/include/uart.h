@@ -6,16 +6,27 @@
 #include "sprintf.h"
 
 #define MAX_BUF_SIZE 0x400
-#define ENABLE_IRQS_1 ((volatile unsigned int*)(INT_BASE+0x210))
-#define IRQ_PENDING_1 ((volatile unsigned int*)(INT_BASE+0x204))
-#define IRQ_PENDING_1_AUX_INT (1 << 29)
 
 #define INT_SRC_0
 #define INT_AUX_RECV 0b00000100
 #define INT_AUX_TRAN 0b00000010
 #define INT_AUX_MASK 0b00000110
 
+/* Auxilary mini UART registers */
+#define AUX_ENABLE      ((volatile unsigned int*)(MMIO_BASE+0x00215004))
+#define AUX_MU_IO       ((volatile unsigned int*)(MMIO_BASE+0x00215040))
+#define AUX_MU_IER      ((volatile unsigned int*)(MMIO_BASE+0x00215044))
+#define AUX_MU_IIR      ((volatile unsigned int*)(MMIO_BASE+0x00215048))
+#define AUX_MU_LCR      ((volatile unsigned int*)(MMIO_BASE+0x0021504C))
+#define AUX_MU_MCR      ((volatile unsigned int*)(MMIO_BASE+0x00215050))
+#define AUX_MU_LSR      ((volatile unsigned int*)(MMIO_BASE+0x00215054))
+#define AUX_MU_MSR      ((volatile unsigned int*)(MMIO_BASE+0x00215058))
+#define AUX_MU_SCRATCH  ((volatile unsigned int*)(MMIO_BASE+0x0021505C))
+#define AUX_MU_CNTL     ((volatile unsigned int*)(MMIO_BASE+0x00215060))
+#define AUX_MU_STAT     ((volatile unsigned int*)(MMIO_BASE+0x00215064))
+#define AUX_MU_BAUD     ((volatile unsigned int*)(MMIO_BASE+0x00215068))
 
+extern int echo;
 
 void init_idx();
 void uart_init();

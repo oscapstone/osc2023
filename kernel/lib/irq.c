@@ -1,24 +1,31 @@
+
 #include "irq.h"
+#include "uart.h"
+#include "sched.h"
+#include "timer.h"
+#include "task.h"
+#include "signal.h"
+#include "syscall.h"
 
 #define AUX_MU_IIR  ((volatile unsigned int*)(MMIO_BASE+0x00215048))
 
 
 
-#define UART_IRQ_PRIORITY 3
-#define TIMER_IRQ_PRIORITY 4
+#define UART_IRQ_PRIORITY 4
+#define TIMER_IRQ_PRIORITY 3
 
 // unmask specific interrupt
 void enable_interrupt() {
     //uart_puts("ei daif\n");
-    asm volatile("msr DAIFClr, 0xf");
+    asm volatile("msr daifclr, 0xf");
     //uart_puts("eiii daif\n");
 }
 // mask specific interrupt
 void disable_interrupt() {
-    asm volatile("msr DAIFSet, 0xf");
+    asm volatile("msr daifset, 0xf");
 }
 
-void irq_handler(unsigned long long x0)
+void irq_handler()
 {
     // core0_int_src : 0x40000060
     // from aux && from GPU0 -> uart exception
@@ -54,11 +61,15 @@ void irq_handler(unsigned long long x0)
         pop_task();
         //uart_printf("a3\n");
         core_timer_interrupt_enable();
+
+        // timer interrupt to be round robin
+        if (run_queue->next->next != run_queue) // runqueue size > 1
+            schedule();
     }
 }
 void invalid_exception_handler(unsigned long long x0) {
     uart_printf("invalid exception : 0x%x\n", x0);
-    //uart_getc();
+    uart_getc();
 }
 
 void cpacr_el1_off(){
@@ -69,12 +80,51 @@ void cpacr_el1_off(){
     );
 }
 
-void sync_el0_64_handler() {
-    unsigned long long spsr, esr, elr;
-    asm volatile("mrs %0, spsr_el1\n\t":"=r"(spsr));
-    asm volatile("mrs %0, elr_el1\n\t":"=r"(elr));
-    asm volatile("mrs %0, esr_el1 \n\t":"=r"(esr));
-    uart_printf("spsr_el1: %d\nelr_el1: %d\nesr_el1: %d\n\n", spsr, elr, esr);
+void sync_el0_64_handler(trapframe_t *tpf) {
+    enable_interrupt();
+    // get trapframe x8
+    // which is system call number
+    unsigned long long syscall_no = tpf->x8;
+
+    // by lab given spec 
+    // arguments store in x0 x1 x2 ...
+    switch (syscall_no)
+    {
+    case 0:
+        getpid(tpf);
+        break;
+    case 1:
+        uartread(tpf, (char *)tpf->x0, tpf->x1);
+        break;
+    case 2:
+        uartwrite(tpf, (char *)tpf->x0, tpf->x1);
+        break;
+    case 3:
+        exec(tpf, (char *)tpf->x0, (char **)tpf->x1);
+        break;
+    case 4:
+        fork(tpf);
+        break;
+    case 5:
+        exit(tpf, tpf->x0);
+        break;
+    case 6:
+        syscall_mbox_call(tpf, (unsigned char)tpf->x0, (unsigned int *)tpf->x1);
+        break;
+    case 7:
+        kill(tpf, (int)tpf->x0);
+        break;
+    case 8:
+        signal_register(tpf->x0, (signal_handler_t)tpf->x1);
+        break;
+    case 9:
+        signal_kill(tpf->x0, tpf->x1);
+        break;
+    case 50:
+        // self-defined signal return
+        sigreturn(tpf);
+        break;
+    }
 }
 
 
@@ -97,4 +147,23 @@ void test_preemption() {
     uart_async_printf("Starting test :\n");
     add_task(lowp, 9);
     uart_async_putc('\r');    // to trigger pop_task
+}
+
+static unsigned long long lock_count = 0;
+void lock()
+{
+    disable_interrupt();
+    lock_count++;
+}
+
+void unlock()
+{
+    lock_count--;
+    if (lock_count<0)
+    {
+        uart_printf("lock error !!!\r\n");
+        while(1);
+    }
+    if (lock_count == 0)
+        enable_interrupt();
 }

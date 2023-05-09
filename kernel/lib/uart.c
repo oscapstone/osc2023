@@ -1,25 +1,12 @@
 #include "uart.h"
 
-/* Auxilary mini UART registers */
-#define AUX_ENABLE      ((volatile unsigned int*)(MMIO_BASE+0x00215004))
-#define AUX_MU_IO       ((volatile unsigned int*)(MMIO_BASE+0x00215040))
-#define AUX_MU_IER      ((volatile unsigned int*)(MMIO_BASE+0x00215044))
-#define AUX_MU_IIR      ((volatile unsigned int*)(MMIO_BASE+0x00215048))
-#define AUX_MU_LCR      ((volatile unsigned int*)(MMIO_BASE+0x0021504C))
-#define AUX_MU_MCR      ((volatile unsigned int*)(MMIO_BASE+0x00215050))
-#define AUX_MU_LSR      ((volatile unsigned int*)(MMIO_BASE+0x00215054))
-#define AUX_MU_MSR      ((volatile unsigned int*)(MMIO_BASE+0x00215058))
-#define AUX_MU_SCRATCH  ((volatile unsigned int*)(MMIO_BASE+0x0021505C))
-#define AUX_MU_CNTL     ((volatile unsigned int*)(MMIO_BASE+0x00215060))
-#define AUX_MU_STAT     ((volatile unsigned int*)(MMIO_BASE+0x00215064))
-#define AUX_MU_BAUD     ((volatile unsigned int*)(MMIO_BASE+0x00215068))
-
-#define ENABLE_IRQS_1 ((volatile unsigned int*)(MMIO_BASE + 0x0000b210))
 //#define IRQ_PENDING_1 ((volatile unsigned int*)((MMIO_BASE+0xB000)+0x204))
 //#define IRQ_PENDING_1_AUX_INT (1 << 29)
 
-char uart_tx_buffer[MAX_BUF_SIZE];
-char uart_rx_buffer[MAX_BUF_SIZE];
+char uart_tx_buffer[MAX_BUF_SIZE] = {};
+char uart_rx_buffer[MAX_BUF_SIZE] = {};
+
+int echo = 1;
 
 static unsigned int uart_tx_buffer_r_idx;
 static unsigned int uart_tx_buffer_w_idx;
@@ -30,9 +17,9 @@ static unsigned int uart_rx_buffer_w_idx;
  * Set baud rate and characteristics (115200 8N1) and map to GPIO
  */
 void init_idx() {
-    uart_tx_buffer_r_idx = 1;
+    uart_tx_buffer_r_idx = 0;
     uart_tx_buffer_w_idx = 0;
-    uart_rx_buffer_r_idx = 1;
+    uart_rx_buffer_r_idx = 0;
     uart_rx_buffer_w_idx = 0;
 }
 void uart_init()
@@ -174,6 +161,8 @@ char uart_async_getc() {
     // is empty
     // if empty rx buffer get a byte from IO
     //uart_puts("call rx\n");
+    // fix test
+    enable_mini_uart_rx_interrupt();
     while((uart_rx_buffer_w_idx == uart_rx_buffer_r_idx))
         enable_mini_uart_rx_interrupt();
     
@@ -212,12 +201,12 @@ void enable_mini_uart_interrupt() {
     enable_mini_uart_rx_interrupt();
     //uart_puts("a2\n");
     enable_mini_uart_tx_interrupt();
-    //uart_puts("a3\n");
 
     // second level interrupt controller
     // might be block
+    //uart_puts("a5\n");
     *ENABLE_IRQS_1 |= 1 << 29;
-    //uart_puts("a4\n");
+    uart_puts("a4\n");
 }
 
 // rx interrupt bit 1

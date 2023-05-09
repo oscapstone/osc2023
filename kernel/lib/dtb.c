@@ -1,4 +1,8 @@
 #include "dtb.h"
+#include "uart.h"
+#include "string.h"
+#include "uart.h"
+#include "string.h"
 
 char *dtb_base;
 extern char *cpio_start;
@@ -52,6 +56,7 @@ void fdt_traverse(dtb_callback callback)
         // begin of node's representation
         case FDT_BEGIN_NODE:
             // move node's unit name
+            callback(token_type, pointer, 0, 0);
             pointer += strlen(pointer);
             // node name is followed by zeroed padding bytes
             // allign
@@ -60,6 +65,7 @@ void fdt_traverse(dtb_callback callback)
 
         // end of node's representation
         case FDT_END_NODE:
+            //callback(token_type, 0, 0, 0);
             break;
         
         case FDT_PROP:
@@ -85,15 +91,44 @@ void fdt_traverse(dtb_callback callback)
             break;
         // ignore NOP
         case FDT_NOP:
+            //callback(token_type, 0, 0, 0);
             break;
         // marks end of structures block
         case FDT_END:
+            //callback(token_type, 0, 0, 0);
             break;
         default:
+            uart_printf("error type:%x\n", token_type);
             return;
         }
     }
 }
+
+void dtb_callback_show_tree(uint32_t node_type, char *name, void *data, uint32_t name_size)
+{
+    static int level = 0;
+    if (node_type == FDT_BEGIN_NODE)
+    {
+        for (int i = 0; i < level; i++)
+            uart_async_printf("   ");
+        uart_async_printf("%s{\n", name);
+        level++;
+    }
+    else if (node_type == FDT_END_NODE)
+    {
+        level--;
+        for (int i = 0; i < level; i++)
+            uart_async_printf("   ");
+        uart_async_printf("}\n");
+    }
+    else if (node_type == FDT_PROP)
+    {
+        for (int i = 0; i < level; i++)
+            uart_async_printf("   ");
+        uart_async_printf("%s\n", name);
+    }
+}
+
 
 void initramfs_callback(unsigned int node_type, char *name, void *value, unsigned int name_size)
 {

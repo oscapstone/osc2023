@@ -8,7 +8,7 @@ typedef struct list_head {
 } list_head_t;
 
 extern list_head_t task_list;
-extern list_head_t timer_event_list;
+extern list_head_t *timer_event_list;
 
 #define LIST_HEAD_INIT(name) { &(name), &(name) }
 #define LIST_HEAD(name) list_head_t name = LIST_HEAD_INIT(name)
@@ -35,5 +35,11 @@ void list_add_tail( list_head_t *new_lst, list_head_t *head);
 void list_insert(list_head_t *new_lst, list_head_t *prev, list_head_t *next);
 static  void __list_del(list_head_t * prev, list_head_t * next);
 void list_del(list_head_t * entry);
+
+static inline int list_is_head(const struct list_head *list, const struct list_head *head)
+{
+	return list == head;
+}
+
 
 #endif

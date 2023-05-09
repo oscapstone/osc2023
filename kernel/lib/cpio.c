@@ -1,5 +1,8 @@
 #include "cpio.h"
-#include "exec.h"
+#include "uart.h"
+#include "string.h"
+#include "utils.h"
+#include "sched.h"
 
 char *cpio_start;
 char *cpio_end;
@@ -82,7 +85,7 @@ int execfile(char *thefilepath)
         if(!strcmp(thefilepath,filepath))
         {
             // 
-            exec(filedata);
+            exec_thread(filedata, filesize);
             break;
         }
 
@@ -151,6 +154,64 @@ int ls(char *working_dir)
         // if this is not TRAILER!!! (last of file)
         if (header_pointer != 0)
             uart_printf("%s\n", filepath);
+    }
+    return 0;
+}
+
+char* get_file_start(char *thefilepath)
+{
+    char *filepath;
+    char *filedata;
+    unsigned int filesize;
+    struct cpio_newc_header *header_pointer = (struct cpio_newc_header *)cpio_start;
+
+    while (header_pointer != 0)
+    {
+        int error = cpio_newc_parse_header(header_pointer, &filepath, &filesize, &filedata, &header_pointer);
+        //if parse header error
+        if (error)
+        {
+            uart_puts("error");
+            break;
+        }
+
+        if (strcmp(thefilepath, filepath) == 0)
+        {
+            return filedata;
+        }
+
+        //if this is TRAILER!!! (last of file)
+        if (header_pointer == 0)
+            uart_printf("execfile: %s: No such file or directory\r\n", thefilepath);
+    }
+    return 0;
+}
+
+unsigned int get_file_size(char *thefilepath)
+{
+    char *filepath;
+    char *filedata;
+    unsigned int filesize;
+    struct cpio_newc_header *header_pointer = (struct cpio_newc_header *)cpio_start;
+
+    while (header_pointer != 0)
+    {
+        int error = cpio_newc_parse_header(header_pointer, &filepath, &filesize, &filedata, &header_pointer);
+        //if parse header error
+        if (error)
+        {
+            uart_puts("error");
+            break;
+        }
+
+        if (strcmp(thefilepath, filepath) == 0)
+        {
+            return filesize;
+        }
+
+        //if this is TRAILER!!! (last of file)
+        if (header_pointer == 0)
+            uart_printf("execfile: %s: No such file or directory\r\n", thefilepath);
     }
     return 0;
 }

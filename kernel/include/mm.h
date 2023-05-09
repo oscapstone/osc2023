@@ -11,8 +11,8 @@
 #define ALLOCATED 1
 
 typedef struct frame_entry {
-    uint32_t order;         // 2 ^ order * 4k
-    uint32_t status;        // free or allocated
+    uint32_t order;
+    uint32_t status;
 } frame_entry;
 
 typedef struct frame_entry_list_head {
@@ -20,8 +20,8 @@ typedef struct frame_entry_list_head {
 } frame_entry_list_head;
 
 typedef struct chunk_slot_entry {
-    uint32_t size;          // page chunk size, per page, per chunk size type
-    uint32_t status;        // free or allocated
+    uint32_t size;
+    uint32_t status;
 } chunk_slot_entry;
 
 typedef struct chunk_slot_list_head {
@@ -41,6 +41,7 @@ void chunk_slot_free(void *address);
 void memory_reserve(void *start, void *end);
 void memory_init();
 void *malloc(uint32_t size);
+void free(void *address);
 
 void page_frame_allocator_test();
 void chunk_slot_allocator_test();
