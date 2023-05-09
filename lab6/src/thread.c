@@ -106,10 +106,11 @@ void vm_base_switch(Thread *next){
 		//"dsb	ish;"
 		//"msr	ttbr0_el1, x0;"
 		"msr	ttbr0_el1, %[pgd];"
+		"msr	ttbr1_el1, %[zero];"
 		"tlbi	vmalle1is;"
 		"dsb	ish;"
 		"isb;" 
-		"ret;":: [pgd] "r" (next->pgd));
+		"ret;":: [pgd] "r" (next->pgd), [zero] "r" (0));
 
 	return;
 }
@@ -174,8 +175,8 @@ void kill_zombies(void) {
     // uart_puti(t->child);
     if (t->child > t->id)
       sys_kill(t->child);
-    pfree(t->sp_el0);
-    pfree(t);
+    //pfree(t->sp_el0);
+    //pfree(t);
     t = thread_q_pop(&deleted);
   }
   return;
@@ -199,13 +200,9 @@ void schedule() {
     if (t->status == wait) {
       thread_q_add(&deleted, thread_q_pop(&running));
       terminal_run_thread();
-	uart_puts("New terminal\n");
       t = thread_q_pop(&running);
       thread_q_add(&running, t);
-      print_esr_el1();
-      vm_base_switch(t);
-      print_esr_el1();
-	uart_puts("New terminal\n");
+      //vm_base_switch(t);
     }
     // sys_kill(t->id);
     // idle();
@@ -255,10 +252,10 @@ void schedule() {
  * Move current thread from running queue to deleted queue
  **********************************************************************/
 void exit() {
-	//uart_puts("exit");
   Thread *t = get_current();
   thread_q_delete(&running, t);
   thread_q_add(&deleted, t);
+	uart_puts("exit");
   schedule();
   return;
 }
@@ -297,6 +294,7 @@ void test_thread_queue(void) {
  * Wrapper function of the thread create fo terminal_run()
  ************************************************************************/
 void terminal_run_thread() {
+  uart_puts("Terminal Thread Create\n");
   Thread *t = thread_create(terminal_run);
   pfree(t->pgd);
   t->pgd = 0x0;	// Using the kernel's pgd 

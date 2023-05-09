@@ -17,7 +17,8 @@ exception_vector_table:
 	b	exception_handler
 	.align 7
 
-	b	__irq_handler
+	#b	__irq_handler
+	b	exception_handler
 	.align 7
 	b	__irq_handler
 	.align 7

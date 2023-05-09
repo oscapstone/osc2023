@@ -86,7 +86,7 @@ int sys_exec(const char *name, char *const argv[]) {
   char *dest = (char *)pmalloc(6);
   Thread *t = get_current();
   for(int i = 0; i < 64; i++)
-  vm_list_add(phy2vir(t->vm_list), 0 + i * 0x1000, dest + i * 0x1000);
+  vm_list_add(phy2vir(&(t->vm_list)), 0 + i * 0x1000, dest + i * 0x1000);
   //map_vm(phy2vir(t->pgd), 0, dest, 64);	// Map the program to 0x0
   dest = phy2vir(dest);
   setup_program_loc(dest);

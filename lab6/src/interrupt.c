@@ -411,7 +411,7 @@ void low_syn_handler(Trap_frame *trap_frame) {
       uart_puts("***UNKNOWN INT***\n");
     }
   }
-  else if (((esr >> 26) & 0x7F) == 0x20) {
+  else if (((esr >> 26) & 0x7F) == 0x20 || ((esr >> 26) & 0x7F) == 0x21) {
 	  uart_puts("Instruction abort\n");
 	  page_fault_handler();
 	  return;

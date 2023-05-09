@@ -115,7 +115,7 @@ int map_vm(uint64_t* pt, uint64_t vm, uint64_t pm, int len, int prop){
 		if(prop == 0)
 			ptr_pmd[pte] = (((pm + i * 0x1000) | PAGE_NORMAL_ATTR) &0xffffffff);
 		else if(prop & PROT_READ)
-			ptr_pmd[pte] = (((pm + i * 0x1000) | PAGE_NORMAL_ATTR | 0x40) & 0xffffffff);
+			ptr_pmd[pte] = (((pm + i * 0x1000) | PAGE_NORMAL_ATTR | 0x80) & 0xffffffff);
 
 		/*
 		uart_puts("\n pte value: ");
@@ -179,7 +179,9 @@ int copy_vm(uint64_t* from, uint64_t*  to){
 					if(to_ptr_pmd[l] == NULL)
 						to_ptr_pmd[l] = page_table_init();
 						*/
-					to_ptr_pmd[l] = ptr_pmd[l];
+					//to_ptr_pmd[l] = ptr_pmd[l];
+					// For COW set it read only [7]
+					to_ptr_pmd[l] = ptr_pmd[l] | 0x1 << 7;
 					/*
 					uart_puts("\n ptr_pmd");
 					uart_puthl(ptr_pmd[l]);
