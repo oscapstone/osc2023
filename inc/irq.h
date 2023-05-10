@@ -18,6 +18,7 @@ typedef struct{
 typedef struct{
     struct list_head dp_head;
     uint32 i_status;
+    uint32 i_nested_layer;
 } irq_meta;
 
 int irq_add_task(void (*task)(void *), void *data, void (*fini)(void), uint32 priority);

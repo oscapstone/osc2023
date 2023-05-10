@@ -11,6 +11,9 @@
 #include <exec.h>
 #include <mm.h>
 #include <timer.h>
+#include <current.h>
+#include <kthread.h>
+#include <sched.h>
 
 static void timeout_print(char *str)
 {
@@ -38,6 +41,7 @@ void _help(int mode){
             "chmod_uart\t: " "change uart async/sync mode" "\r\n"
             "chmod_timer\t: " "change timer show/not to show mode" "\r\n"
             "setTimeout <msg> <sec>\t: " "print @msg after @sec seconds" "\r\n"
+            "thread_test\t: " "test kernel thread" "\r\n"
         );
     }
 }
@@ -145,4 +149,18 @@ int _setTimeout(char *shell_buf){
     memncpy(mem ,msg, len);
     timer_add_after((void(*)(void *))timeout_print, mem, atoi(tsec));
     return 0;
+}
+
+static void foo(){
+    for (int i = 0; i < 10; ++i) {
+        uart_printf("Thread id: %d %d\r\n", current->tid, i);
+        delay(1000000);
+        schedule();
+    }
+}
+
+void _thread_test(){
+    for (int i = 0; i < 3; ++i) {
+        kthread_create(foo);
+    }
 }

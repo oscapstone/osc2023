@@ -116,8 +116,8 @@ void timer_init(){
     t_meta.size = 0;
     t_meta.t_interval = 0;
     t_meta.t_status = 0xffffffff;
-    timer_show_enable = 1;
-    timer_add_after(boot_time_callback,NULL,2);
+    timer_show_enable = 0;
+    // timer_add_after(boot_time_callback,NULL,2);
 }
 
 void boot_time_callback(){
@@ -138,14 +138,17 @@ static void add_timer(timer_node *tn){
         timer_enable();
     }
 }
-void timer_irq_add(){
+int timer_irq_add(){
     uint32 core0_irq_src = get32(CORE0_IRQ_SOURCE);
 
-    if (core0_irq_src & 0x02){
-        timer_disable();
-        if(irq_add_task(timer_irq_handler, NULL, timer_irq_fini ,TIMER_PRIO))
-            timer_enable();
+    if (!(core0_irq_src & 0x02)) {
+        return 0;
     }
+    
+    timer_disable();
+    if(irq_add_task(timer_irq_handler, NULL, timer_irq_fini ,TIMER_PRIO))
+        timer_enable();
+    return 1;
 }
 
 void timer_irq_handler(){

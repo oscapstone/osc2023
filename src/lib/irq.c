@@ -3,6 +3,8 @@
 #include <utils.h>
 #include <timer.h>
 #include <BCM.h>
+#include <current.h>
+#include <sched.h>
 
 #define IRQ_TASK_NUM 32
 
@@ -124,6 +126,7 @@ int irq_add_task(void (*task)(void *), void *data, void (*fini)(void), uint32 pr
 
 void irq_init(){
     i_meta.i_status = 0xffffffff;
+    i_meta.i_nested_layer = 0;
     INIT_LIST_HEAD(&i_meta.dp_head);
 }
 
@@ -132,8 +135,23 @@ void default_exception_handler(uint32 n){
 }
 
 void irq_handler(){
-    timer_irq_add();
-    uart_irq_add();
+
+    i_meta.i_nested_layer++;
+
+    if(!timer_irq_add()){}
+    else if(!uart_irq_add()){}
+
+    i_meta.i_nested_layer--;
+
+    if(i_meta.i_nested_layer || !current->need_resched || current->preempt){
+        return;
+    }
+
+    enable_interrupt();
+
+    schedule();
+
+    disable_interrupt();
 }
 
 void enable_irqs1(){

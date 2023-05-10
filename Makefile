@@ -11,7 +11,7 @@ KERNEL_DIR = kernel
 LIB_DIR = lib
 ECHO = echo
 
-CFLAGS  = -Wall -nostdlib -nostartfiles -ffreestanding -mgeneral-regs-only \
+CFLAGS  = -Wall -nostdlib -nostartfiles -ffreestanding -mgeneral-regs-only -g\
 				-I$(INC_DIR)
 LDFLAGS = -I$(INC_DIR)
 
@@ -97,7 +97,7 @@ qemuk: all $(INITRAMFS_CPIO) $(RPI3_DTB)
 		qemu-system-aarch64 -M raspi3 -kernel $(KERNEL_IMG) -display none \
 											-dtb $(RPI3_DTB) \
 											-initrd $(INITRAMFS_CPIO) \
-											-serial null -serial stdio
+											-serial null -serial pty -s -S
 
 qemutty: $(KERNEL_IMG)
 		qemu-system-aarch64 -M raspi3 -kernel $(KERNEL_IMG) -display none \

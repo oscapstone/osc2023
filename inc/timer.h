@@ -28,7 +28,7 @@ typedef struct{
 
 void timer_init();
 void boot_time_callback();
-void timer_irq_add();
+int timer_irq_add();
 void timer_irq_handler();
 void timer_switch_info();
 void timer_add_after(void (*callback)(void *), void *data, uint32 after);

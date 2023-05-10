@@ -258,15 +258,17 @@ void uart_init (void)
     uart_recv_fp = uart_sync_recv;
     uart_send_fp = uart_sync_send;
 }
-void uart_irq_add(){
+int uart_irq_add(){
     uint32 iir = get32(AUX_MU_IIR_REG);
     // No interrupt
     if(iir & 0x01)
-        return;
+        return 0;
 
     disable_RW_interrupt();
     if(irq_add_task((void (*)(void *))uart_irq_handler, NULL,uart_irq_fini, UART_PRIO))
         enable_RW_interrupt();
+
+    return 1;
 }
 void uart_irq_handler(void){
     uint32 iir = get32(AUX_MU_IIR_REG), ier = 0;
