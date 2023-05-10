@@ -5,6 +5,8 @@
 #include "sysregs.h"
 #include "mm.h"
 
+char *program_address = (char *)0x10A0000;
+
 int hex2int(char *hex)
 {
     int value = 0;
@@ -174,14 +176,15 @@ void *cpio_run_program(char program_name[])
 
     ramfs -= file_size;
 
-    char *program_start = NULL;
-    if (strcmp(program_name, "syscall.img") == 0)
-        program_start = 0x10A0000;
-    else if (strcmp(program_name, "fork_test.img") == 0)
-        program_start = 0x10B0000;
-    else
-        program_start = 0x10C0000;
-
+    // char *program_start = NULL;
+    // if (strcmp(program_name, "syscall.img") == 0)
+    //     program_start = 0x10A0000;
+    // else if (strcmp(program_name, "fork_test.img") == 0)
+    //     program_start = 0x10B0000;
+    // else
+    //     program_start = 0x10C0000;
+    char *program_start = program_address;
+    program_address += 0x100000;
     for (int i = 0; i < file_size; i++)
         *(program_start + i) = *(ramfs + i);
 

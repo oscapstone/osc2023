@@ -19,7 +19,7 @@ void foo()
 
 void user_test()
 {
-    const char *argv[] = {0x0};
+    // const char *argv[] = {0x0};
     // exec("fork_test.img", argv);
     exec("syscall.img", NULL);
 }
@@ -35,8 +35,8 @@ int main()
     init_schedule();
     init_timer();
 
-    for (int i = 0; i < 5; i++)
-        thread_create(foo);
+    // for (int i = 0; i < 5; i++)
+    //     thread_create(foo);
     thread_create(user_test);
 
     unsigned int current_pid = get_current_task();

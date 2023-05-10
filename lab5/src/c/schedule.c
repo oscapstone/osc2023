@@ -110,7 +110,11 @@ void sys_kill(struct trapframe *tf)
     if (task_pool[pid])
     {
         task_pool[pid]->state == ZOMBIE;
-        printf("kill pid: %d\n", pid);
+        km_free(task_pool[pid]->kstack);
+        km_free(task_pool[pid]->ustack);
+        km_free(task_pool[pid]);
+        task_pool[pid] = NULL;
+        printf("killed pid: %d\n", pid);
     }
     else
     {
