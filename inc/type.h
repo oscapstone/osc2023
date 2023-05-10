@@ -1,6 +1,8 @@
 #ifndef _TYPES_H
 #define _TYPES_H
 
+#include <stddef.h>
+
 typedef unsigned long long int uint64;
 typedef unsigned int uint32;
 typedef unsigned short uint16;
@@ -17,7 +19,7 @@ typedef uint32 fdt32_t;
 typedef uint64 fdt64_t;
 
 #define ALIGN(num, base) ((num + base - 1) & ~(base - 1))
-#define NULL 0
+
 #define PAGE_SIZE 0x1000
 
 #endif /* _TYPES_H */

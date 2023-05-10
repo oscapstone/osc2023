@@ -5,6 +5,8 @@ void kthread_init(void);
 
 void kthread_create(void (*start)(void));
 
+void kthread_finit(void);
+
 void kthread_kill_zombies(void);
 
 #endif

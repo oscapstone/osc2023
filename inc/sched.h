@@ -24,6 +24,9 @@ typedef struct _task_struct {
     /* This must be the first element */
     struct pt_regs regs;
     void *kernel_stack;
+    void *user_stack;
+    /* TODO: Update to address_space*/
+    void *data;
     struct list_head list;
     uint32 need_resched:1;
     uint32 tid;

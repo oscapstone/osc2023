@@ -1,5 +1,7 @@
-.global exec_user_proc
-exec_user_proc:
+/* See src/lib/exec.c for function declaration */
+
+.global enter_el0_run_user_prog
+enter_el0_run_user_prog:
     // Set sp_el0 to the user program's stack pointer
     msr sp_el0, x0
     

@@ -5,6 +5,7 @@
 #include <mm.h>
 #include <waitqueue.h>
 #include <preempt.h>
+#include <task.h>
 
 #define STACK_SIZE (2 * PAGE_SIZE)
 
@@ -22,7 +23,7 @@ static uint32 alloc_tid(void)
     return tid;
 }
 
-static void kthread_fini(void)
+void kthread_fini(void)
 {    
     preempt_disable();
 
@@ -65,10 +66,7 @@ static inline void pt_regs_init(struct pt_regs *regs, void *main){
 
 void kthread_init(void){
     task_struct *task;
-    task = kmalloc(sizeof(task_struct));
-    task->need_resched = 0;
-    task->tid = alloc_tid();
-    task->preempt = 0;
+    task = task_create();
     set_current(task);
     sched_add_task(task);
     
@@ -78,11 +76,9 @@ void kthread_init(void){
 void kthread_create(void (*start)(void)){
     task_struct *task;
     
-    task = kmalloc(sizeof(task_struct));
+    task = task_create();
 
     task->kernel_stack = kmalloc(STACK_SIZE);
-    task->need_resched = 0;
-    task->tid = alloc_tid();
     task->regs.sp = (char *)task->kernel_stack + STACK_SIZE - 0x10;
     pt_regs_init(&task->regs, start);
 
@@ -100,7 +96,6 @@ void kthread_kill_zombies(void){
         task = wq_get_first_task(wait_queue);
         wq_del_task(task);
         preempt_enable();
-        kfree(task->kernel_stack);
-        kfree(task);
+        task_free(task);
     }
 }

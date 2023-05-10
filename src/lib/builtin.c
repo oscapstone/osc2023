@@ -96,19 +96,7 @@ void *_malloc(char *size){
 }
 
 void _exec(uint64 _initramfs_addr,char *filename){
-    char *mem;
-    char *user_sp;
-
-    mem = cpio_load_prog((char*)_initramfs_addr, filename);
-    if(mem == NULL)
-        return;
-    
-    user_sp = kmalloc(PAGE_SIZE);
-    if (user_sp == NULL) {
-        kfree(mem);
-        return;
-    }
-    exec_user_proc(user_sp, mem);
+    exec_user_prog(_initramfs_addr, filename);
 }
 
 void _chmod_uart(){
