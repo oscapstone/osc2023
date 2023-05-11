@@ -36,7 +36,7 @@ void *malloc(unsigned int size){
         return NULL;
     }
 
-    //spilt first, then allocate; next round of allocating can be faster -> O(logn)
+    
     while(target_val!=req_order){
         //get the available frame from the list
         struct frame* l_tmp=frame_list[target_val];
@@ -330,7 +330,7 @@ void init_mm_reserve(){
     memory_reserve((void*)0x0, __kernel_end_ptr); // spin tables, kernel image
     memory_reserve((void*)0x20000000, (void*)0x20000800); // hard code reserve initramfs
 
-    //init
+    //init frame array
     for(unsigned int i=0;i<n_frames;i++){
         frame_array[i].index=i;
         frame_array[i].val=0;
@@ -345,6 +345,7 @@ void init_mm_reserve(){
             void *addr=(void*)MEM_REGION_BEGIN+PAGE_SIZE*j;
             //reserve the start/end address
             if(addr>=reserved_se[i][0]&&addr<reserved_se[i][1]){
+                //record the reserved memory in frame array
                 frame_array[j].state=RESERVED;
             }
             if(addr>=reserved_se[i][1]) break;
@@ -355,6 +356,7 @@ void init_mm_reserve(){
         frame_list[i]=NULL;
     }
 
+    //initialize array
     for(unsigned int n=0;n<n_frames;n++){
 
         struct frame* target = &frame_array[n];
@@ -363,7 +365,7 @@ void init_mm_reserve(){
         if(target->state == RESERVED) continue;
         if(target->state == C_NALLOCABLE) continue;
 
-        //first merge blocks for 4,8,16,32....
+        //first merge buddy for 4,8,16,32....
         for(int i=target->val;i<MAX_ORDER;i++){
             unsigned int buddy = idx ^ (unsigned int)pow(2, i);
             struct frame* fr_buddy = &frame_array[buddy];
