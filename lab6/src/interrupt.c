@@ -358,7 +358,12 @@ static int cow_handler() {
       map_vm(phy2vir(t->pgd), f, phy, 1, 0);
     else if (RW == 1) {
       uart_puts("[Copy on Write fault]\n");
-      map_vm(phy2vir(t->pgd), f, malloc(0), 1, 0);
+      char* tmp = phy2vir(malloc(0));
+      char *from = (char*)f;
+      for(int i = 0; i < 0x1000; ++i){
+	      *tmp++ = *from++;
+      }
+      map_vm(phy2vir(t->pgd), f, vir2phy(tmp), 1, 0);
     }
     uart_puthl(far);
     uart_puts("\n");
