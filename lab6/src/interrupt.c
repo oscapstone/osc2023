@@ -342,10 +342,36 @@ static int cow_handler() {
   asm volatile("mrs %[esr], esr_el1;" : [esr] "=r"(esr));
   asm volatile("mrs %[far], far_el1;" : [far] "=r"(far));
   f = far & 0x0000fffffffffffff000;
+  uint64_t trans; 
+
+  asm volatile("mov	x19, %[f];"
+		"at 	s1e0r, x19;"
+		"mrs	%[trans], par_el1;"
+		:[trans] "=r" (trans)
+		:[f] "r" (f));
   // Wnr is at [6]
   RW = (esr >> 6) & 0x1;
+  trans &= 0xFFFFFFFFFFFFF000;
   esr = esr & 0x2f;
   if (esr >= 4 || esr <= 7) {
+    if (RW == 1) {
+      uart_puts("[Copy on Write fault]\n");
+      uint64_t xx = pmalloc(0);
+      char* tmp = phy2vir(xx);
+      char *from = (char*)phy2vir(trans);
+      /*
+      uart_puthl(from);
+      uart_puthl(tmp);
+      uart_puthl(xx);
+      */
+      uart_puthl(far);
+      for(int i = 0; i < 0x1000; ++i){
+	      *tmp++ = *from++;
+      }
+      uart_puts("map vm\n");
+      map_vm(phy2vir(t->pgd), f, vir2phy(tmp), 1, 0);
+      return;
+    }
     uart_puts("[Translation fault] ");
     phy = vm_list_delete(phy2vir(&(t->vm_list)), f);
     // Read fault should be found at the vm_list
@@ -356,20 +382,11 @@ static int cow_handler() {
     }
     if (phy != 0)
       map_vm(phy2vir(t->pgd), f, phy, 1, 0);
-    else if (RW == 1) {
-      uart_puts("[Copy on Write fault]\n");
-      char* tmp = phy2vir(malloc(0));
-      char *from = (char*)f;
-      for(int i = 0; i < 0x1000; ++i){
-	      *tmp++ = *from++;
-      }
-      map_vm(phy2vir(t->pgd), f, vir2phy(tmp), 1, 0);
-    }
     uart_puthl(far);
     uart_puts("\n");
-  } else {
+	} else {
     uart_puts("[Segmantation fault]\n");
-  }
+	}
   return 0;
 }
 

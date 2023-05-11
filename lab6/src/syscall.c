@@ -84,12 +84,14 @@ int sys_exec(const char *name, char *const argv[]) {
   // Get memory for user program.
   char *dest = (char *)pmalloc(6);
   Thread *t = get_current();
+  // Put the user program in the vm_list for future map
   for (int i = 0; i < 64; i++)
     vm_list_add(phy2vir(&(t->vm_list)), 0 + i * 0x1000, dest + i * 0x1000);
   // map_vm(phy2vir(t->pgd), 0, dest, 64);	// Map the program to 0x0
   dest = phy2vir(dest);
   setup_program_loc(dest);
   char *d = dest;
+  // Copy user program to the alloc page
   for (int i = 0; i < size; i++) {
     *d++ = *start++;
   }
@@ -211,16 +213,19 @@ int sys_fork(Trap_frame *trap_frame) {
   cur->child = child->id;
 
   // Copy user stack Change for vir
+  // SKIP: COW
+  /*
   f = (char *)cur->sp_el0_kernel;
   c = (char *)child->sp_el0_kernel;
   for (int i = 0; i < 0x4000; i++) {
     *c++ = *f++;
   }
+  */
 
   // Map the page table
-  // FIXME:
   // child->pgd = cur->pgd;
   copy_vm(cur->pgd, child->pgd);
+  // For mailBox
   for (uint64_t va = 0x3c000000; va <= 0x3f000000; va += 0x1000) {
     map_vm(child->pgd, va, va, 1, 0);
   }
@@ -272,14 +277,22 @@ void sys_signal(int sig, void (*handler)()) {
 }
 
 /*************************************************************************
+ * MMAP function
  *
- */
+ * @addr: The virtual address want to map to.
+ * @len: The length user required
+ * @prot: Protecton, R/W/E
+ * @flags: Separate different behaviors.
+ * @fd:
+ * @file_offset:
+ ************************************************************************/
 uint64_t sys_mmap(uint64_t addr, size_t len, int prot, int flags, int fd,
                   int file_offset) {
   Thread *t = get_current();
   uint64_t phy_mem;
   uint32_t l; // Get the pmalloc size
-  // User defined the map address
+  
+  // If User not defined the map address assigned one
   if (addr == NULL) {
     addr = 0x100000;
   }
@@ -290,7 +303,7 @@ uint64_t sys_mmap(uint64_t addr, size_t len, int prot, int flags, int fd,
     len = (len & (~0xfff)) + 0x1000;
   l = len >> 13; // Size for pmalloc
 
-  // Find the empty slot (virtual mem)
+  // Find the empty slot in memory(virtual mem)
   while (1) {
     if (vm_list_delete(phy2vir(&(t->vm_list)), addr) == 0) {
       uart_puthl(addr);
@@ -298,20 +311,22 @@ uint64_t sys_mmap(uint64_t addr, size_t len, int prot, int flags, int fd,
     }
     addr += 0x1000;
   }
+  // Discard fd, file_offset
   if (flags == MAP_ANONYMOUS) {
     phy_mem = pmalloc(l);
     // uart_puthl(phy_mem);
     // uart_puti(len >> 12);
+
     //  Anonymous means no backup file -> content = 0
     memset(phy2vir(phy_mem), 0, len);
     vm_list_add(phy2vir(&(t->vm_list)), addr, phy_mem);
     // uart_puthl(vm_list_delete(phy2vir(&(t->vm_list)), addr));
-    map_vm(phy2vir(t->pgd), addr, phy_mem, len >> 12, flags);
+    map_vm(phy2vir(t->pgd), addr, phy_mem, len >> 12, prot);
   } else if (flags == MAP_POPULATE) {
     phy_mem = fd + file_offset;
     phy_mem = vir2phy(phy_mem);
     vm_list_add(phy2vir(&(t->vm_list)), addr, phy_mem);
-    map_vm(phy2vir(t->pgd), addr, phy_mem, len >> 12, flags);
+    map_vm(phy2vir(t->pgd), addr, phy_mem, len >> 12, prot);
   } else {
     uart_puts("MMAP FLAG ERROR!!\n");
   }

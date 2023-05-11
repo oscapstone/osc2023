@@ -112,9 +112,11 @@ int map_vm(uint64_t *pt, uint64_t vm, uint64_t pm, int len, int prop) {
     // Write the record (normal)
     if (prop == 0)
       ptr_pmd[pte] = (((pm + i * 0x1000) | PAGE_NORMAL_ATTR) & 0xffffffff);
-    else if (prop & PROT_READ)
+    else if (prop & PROT_READ){
+	    uart_puts("read\n");
       ptr_pmd[pte] =
           (((pm + i * 0x1000) | PAGE_NORMAL_ATTR | 0x80) & 0xffffffff);
+    }
 
     /*
     uart_puts("\n pte value: ");
@@ -124,6 +126,12 @@ int map_vm(uint64_t *pt, uint64_t vm, uint64_t pm, int len, int prop) {
   return 0;
 }
 
+/************************************************************************
+ * Copy the entire Virtual memeory tables.
+ * 
+ * @from: The page table copy from.
+ * @to: The page table copy to.
+ ***********************************************************************/
 int copy_vm(uint64_t *from, uint64_t *to) {
   from = phy2vir(from);
   to = phy2vir(to);
@@ -206,6 +214,14 @@ uart_puthl(to_ptr_pmd);
   return 0;
 }
 
+/************************************************************************
+ * Add the New node to the vm_list which can be map to the page table 
+ * when page fault.
+ *
+ * @head: The head of the vm_node, usually &(thread->vm_list)
+ * @vir: The virtual address the page will map to
+ * @phy: The physical address will be mapped
+ ***********************************************************************/
 int vm_list_add(vm_node **head, uint64_t vir, uint64_t phy) {
   disable_int();
   vm_node *n = smalloc(sizeof(vm_node));
@@ -238,8 +254,11 @@ int vm_list_add(vm_node **head, uint64_t vir, uint64_t phy) {
   enable_int();
 }
 
-// Return the physical address to map
-// FIXME: DON'T DELETE, just keep it
+/**********************************************************************
+ * Return the physical Address going to map when page fault.
+ * @vm_node: The head of the vm_list
+ * @vir: virtual address for query
+ *********************************************************************/
 uint64_t vm_list_delete(vm_node **head, uint64_t vir) {
   disable_int();
   vm_node *cur = *head;
@@ -283,6 +302,11 @@ uint64_t vm_list_delete(vm_node **head, uint64_t vir) {
   enable_int();
 }
 
+/***********************************************************************
+ * Copy the entire vm_list for fork()
+ * @from: 
+ * @to:
+ **********************************************************************/
 int vm_list_copy(vm_node *from, vm_node **to) {
   disable_int();
   vm_node *cur;
@@ -295,16 +319,21 @@ int vm_list_copy(vm_node *from, vm_node **to) {
     tmp = tmp->next;
   }
   // Bypass the copy of stack
+  // NOTE: not need to bypass because of COW
+  /*
   while (from != NULL && from->vir >= 0xffff00000000)
     from = from->next;
+    */
   if (from == NULL)
     return;
+  // The first Node
   cur = (vm_node *)phy2vir(smalloc(sizeof(vm_node)));
   cur->phy = from->phy;
   cur->vir = from->vir;
   cur->next = NULL;
   cur->prev = NULL;
   tmp->next = cur;
+  // Remain nodes
   while (from->next != NULL) {
     /*
     uart_puts("\n copy :");
@@ -325,6 +354,9 @@ int vm_list_copy(vm_node *from, vm_node **to) {
   enable_int();
 }
 
+/************************************************************************
+ * Help function, just for checking the status of vm_list
+ ***********************************************************************/
 int vm_list_dump(vm_node *cur) {
   while (cur != NULL) {
     uart_puts("PHY: ");
