@@ -3,14 +3,13 @@
 #include <stdbool.h>
 
 #include "oscos/timer/timeout.h"
+#include "oscos/utils/suspend.h"
 
-static void _timeout_callback(bool *const volatile flag) { *flag = true; }
+static void _timeout_callback(volatile bool *const flag) { *flag = true; }
 
 void delay_ns(const uint64_t ns) {
   volatile bool flag = false;
   timeout_add_timer((void (*)(void *))_timeout_callback, (void *)&flag, ns);
 
-  while (!flag) {
-    __asm__ __volatile__("wfi");
-  }
+  WFI_WHILE(!flag);
 }
