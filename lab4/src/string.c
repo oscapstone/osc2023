@@ -83,6 +83,24 @@ void ftoa(float n, char *res, int afterpoint)
     }
 }
 
+int atoi(char *s)
+{
+    // Initialize result
+    int value = 0;
+
+    // Iterate through all characters
+    // of input string and update result
+    // take ASCII character of corosponding digit and
+    // subtract the code from '0' to get numerical
+    // value and multiply res by 10 to shuffle
+    // digits left to update running total
+    for (int i = 0; s[i] != '\0'; i++)
+        value = value * 10 + s[i] - '0';
+
+    // return result.
+    return value;
+}
+
 void reverse(char *s)
 {
     int i;

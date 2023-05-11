@@ -117,7 +117,7 @@ char uart_getc()
 
     /* read it and return */
     r = (char)(*AUX_MU_IO);
-    /* convert carrige return to newline 
+    /* convert carrige return to newline
        because pressing enter only sends \r */
     return r == '\r' ? '\n' : r;
 }
@@ -131,8 +131,8 @@ void uart_puts(char *s)
     {
         /* convert newline to carrige return + newline */
 
-        //if(*s=='\n')
-        //    uart_send('\r');
+        // if(*s=='\n')
+        //     uart_send('\r');
 
         uart_send(*s++);
     }
@@ -141,4 +141,37 @@ void uart_puts(char *s)
 void putc(void *p, char c)
 {
     uart_send(c);
+}
+
+void uart_getline(char *buffer)
+{
+    char c;
+    int counter = 0;
+
+    while (1)
+    {
+        c = uart_getc();
+        // delete
+        if ((c == 127) && counter > 0)
+        {
+            counter--;
+            uart_puts("\b \b");
+        }
+        // new line
+        else if ((c == 10) || (c == 13))
+        {
+            buffer[counter] = '\0';
+            uart_send(c);
+            break;
+        }
+        // regular input
+        else if (counter < 100)
+        {
+            buffer[counter] = c;
+            counter++;
+            uart_send(c);
+        }
+    }
+
+    return;
 }

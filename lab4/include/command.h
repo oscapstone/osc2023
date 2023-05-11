@@ -9,5 +9,6 @@ void command_timestamp();
 void command_not_found(char *);
 void command_cpio();
 void command_reboot();
+void command_malloc();
 
 #endif

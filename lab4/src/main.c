@@ -13,6 +13,8 @@ int main()
 
     init_memory();
     memory_reserve((void *)0x0, (void *)0x1000);
+    printf("pass any key start\n");
+    uart_getc();
 
     void *address_1 = memory_allocation(16);
     void *address_2 = memory_allocation(64);

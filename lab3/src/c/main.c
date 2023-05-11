@@ -7,7 +7,7 @@
 int main()
 {
     init_uart();
-    mini_uart_interrupt_enable();
+    // mini_uart_interrupt_enable();
     init_printf(0, putc);
     init_memory();
     init_timer();

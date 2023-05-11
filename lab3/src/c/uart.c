@@ -42,8 +42,8 @@ void init_uart()
     *AUX_MU_LCR = 3;    /* Set the data size to 8 bit. */
     *AUX_MU_MCR = 0;    /* Don’t need auto flow control. */
     *AUX_MU_BAUD = 270; /* 115200 baud */
-    *AUX_MU_IIR = 6;    /* No FIFO */
-    // *AUX_MU_IIR      = 0xc6;       /* No FIFO */
+    // *AUX_MU_IIR = 6;    /* No FIFO */
+    *AUX_MU_IIR = 0xc6; /* No FIFO */
 
     /* map UART1 to GPIO pins */
     reg = *GPFSEL1;
@@ -76,36 +76,37 @@ void init_uart()
  */
 void uart_send(unsigned int c)
 {
-    // /* Wait until we can send */
-    // do
-    // {
-
-    //     asm volatile("nop");
-
-    // } while (!(*AUX_MU_LSR & 0x20));
-
-    // /* write the character to the buffer */
-    // *AUX_MU_IO = c;
-
-    // if (c == '\n')
-    // {
-    //     do
-    //     {
-
-    //         asm volatile("nop");
-
-    //     } while (!(*AUX_MU_LSR & 0x20));
-
-    //     *AUX_MU_IO = '\r';
-    // }
-    int was_empty = 0;
-    if (queue_empty(&uart_write))
+    /* Wait until we can send */
+    do
     {
-        was_empty = 1;
+
+        asm volatile("nop");
+
+    } while (!(*AUX_MU_LSR & 0x20));
+
+    /* write the character to the buffer */
+    *AUX_MU_IO = c;
+
+    if (c == '\n')
+    {
+        do
+        {
+
+            asm volatile("nop");
+
+        } while (!(*AUX_MU_LSR & 0x20));
+
+        *AUX_MU_IO = '\r';
     }
-    queue_push(&uart_write, c); // push to write queue, drop if buffer full
-    if (was_empty)
-        *AUX_MU_IER |= 2; // enable interrupt (2: I can transmit to uart, 1: I can receive from uart)
+    // interrupt driven
+    // int was_empty = 0;
+    // if (queue_empty(&uart_write))
+    // {
+    //     was_empty = 1;
+    // }
+    // queue_push(&uart_write, c); // push to write queue, drop if buffer full
+    // if (was_empty)
+    //     *AUX_MU_IER |= 2; // enable interrupt (2: I can transmit to uart, 1: I can receive from uart)
 }
 
 /**
@@ -114,27 +115,29 @@ void uart_send(unsigned int c)
 char uart_getc()
 {
 
-    // char r;
+    char r;
 
-    // /* wait until something is in the buffer */
-    // do
-    // {
-
-    //     asm volatile("nop");
-
-    // } while (!(*AUX_MU_LSR & 0x01));
-
-    // /* read it and return */
-    // r = (char)(*AUX_MU_IO);
-    // /* convert carrige return to newline
-    //    because pressing enter only sends \r */
-    // return r == '\r' ? '\n' : r;
-    while (queue_empty(&uart_read))
+    /* wait until something is in the buffer */
+    do
     {
+
         asm volatile("nop");
-    }
-    char r = queue_pop(&uart_read);
+
+    } while (!(*AUX_MU_LSR & 0x01));
+
+    /* read it and return */
+    r = (char)(*AUX_MU_IO);
+    /* convert carrige return to newline
+       because pressing enter only sends \r */
     return r == '\r' ? '\n' : r;
+
+    // interrupt driven
+    // while (queue_empty(&uart_read))
+    // {
+    //     asm volatile("nop");
+    // }
+    // char r = queue_pop(&uart_read);
+    // return r == '\r' ? '\n' : r;
 }
 
 /**
@@ -182,8 +185,11 @@ void uart_puts(char *s)
     {
         /* convert newline to carrige return + newline */
 
-        // if(*s=='\n')
-        //     uart_send('\r');
+        if (*s == '\n')
+        {
+            uart_send('\r');
+            uart_send('\n');
+        }
 
         uart_send(*s++);
     }

@@ -92,7 +92,7 @@ void command_controller(enum SPECIAL_CHARACTER input_parse, char c, char buffer[
         strset(buffer, 0, MAX_BUFFER_LEN);
 
         // new line head;
-        printf("# ");
+        uart_puts("# ");
     }
     else if (input_parse == REGULAR_INPUT)
     {

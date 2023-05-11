@@ -1,6 +1,8 @@
 #include "uart.h"
 #include "string.h"
 #include "cpio.h"
+#include "memory.h"
+#include "printf.h"
 
 void input_buffer_overflow_message(char cmd[])
 {
@@ -20,6 +22,7 @@ void command_help()
     uart_puts("\ttimestamp:\tget current timestamp.\n");
     uart_puts("\treboot:\t\treboot Raspberry Pi.\n");
     uart_puts("\tcpio:\t\tread initramfs.cpio on the SD card.\n");
+    uart_puts("\tmalloc:\t\ttest memory allocation.\n");
     uart_puts("\n");
 }
 
@@ -67,42 +70,42 @@ void command_cpio()
         break;
 
     case '2':
+    {
+        char file_name[100];
+        char c;
+        int counter = 0;
+
+        uart_puts("# ");
+
+        while (1)
         {
-            char file_name[100];
-            char c;
-            int counter = 0;
-
-            uart_puts("# ");
-
-            while (1)
+            c = uart_getc();
+            // delete
+            if ((c == 127) && counter > 0)
             {
-                c = uart_getc();
-                // delete
-                if ((c == 127) && counter > 0)
-                {
-                    counter--;
-                    uart_puts("\b \b");
-                }
-                // new line
-                else if ((c == 10) || (c == 13))
-                {
-                    file_name[counter] = '\0';
-                    uart_send(c);
-                    break;
-                }
-                // regular input
-                else if (counter < 100)
-                {
-                    file_name[counter] = c;
-                    counter++;
-                    uart_send(c);
-                }
+                counter--;
+                uart_puts("\b \b");
             }
-
-            cpio_find_file(file_name);
+            // new line
+            else if ((c == 10) || (c == 13))
+            {
+                file_name[counter] = '\0';
+                uart_send(c);
+                break;
+            }
+            // regular input
+            else if (counter < 100)
+            {
+                file_name[counter] = c;
+                counter++;
+                uart_send(c);
+            }
         }
 
-        break;
+        cpio_find_file(file_name);
+    }
+
+    break;
 
     default:
         break;
@@ -124,4 +127,14 @@ void command_reboot()
     *PM_RSTC = PM_PASSWORD | 0x20;
 
     // while(1);
+}
+
+void command_malloc()
+{
+    printf("malloc size:");
+    char size[10];
+    uart_getline(size);
+    int size_int = atoi(size);
+    void *address = memory_allocation(size_int);
+    memory_free(address);
 }

@@ -174,7 +174,7 @@ void cpio_run_executable(char executable_name[])
 
     ramfs -= file_size;
 
-    char *program_position = (char *)0x10A0000;
+    char *program_position = (char *)0x10B0000;
 
     while (file_size--)
     {
