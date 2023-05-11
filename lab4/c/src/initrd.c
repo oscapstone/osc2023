@@ -2,7 +2,7 @@
 
 #include "oscos/devicetree.h"
 
-static const void *_initrd_start = NULL;
+static const void *_initrd_start;
 
 static bool _cpio_newc_is_header_field_valid(const char field[const static 8]) {
   for (size_t i = 0; i < 8; i++) {
@@ -63,9 +63,16 @@ _initrd_init_dtb_traverse_callback(void *const _arg,
 }
 
 bool initrd_init(void) {
-  fdt_traverse(_initrd_init_dtb_traverse_callback, NULL);
-  return _initrd_is_valid();
+  _initrd_start = NULL;
+
+  if (devicetree_is_init()) {
+    fdt_traverse(_initrd_init_dtb_traverse_callback, NULL);
+  }
+
+  return _initrd_start && _initrd_is_valid();
 }
+
+bool initrd_is_init(void) { return _initrd_start; }
 
 const void *initrd_get_start(void) { return _initrd_start; }
 

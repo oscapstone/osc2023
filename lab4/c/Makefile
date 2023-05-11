@@ -12,7 +12,7 @@ CPPFLAGS_BASE = -Iinclude
 ASFLAGS_DEBUG = -g
 
 CFLAGS_BASE    = -std=c17 -pedantic-errors -Wall -Wextra -ffreestanding \
-                 -mcpu=cortex-a53 -mno-outline-atomics -mstrict-align
+                 -mcpu=cortex-a53+nofp+nosimd -mstrict-align
 CFLAGS_DEBUG   = -g
 CFLAGS_RELEASE = -O3 -flto
 
@@ -21,11 +21,15 @@ LDFLAGS_RELEASE = -flto -Xlinker --gc-sections
 
 LDLIBS_BASE = -lgcc
 
-OBJS      = start main delay devicetree el initrd mailbox mailbox_info reset \
-            serial shell simple_malloc timeout user_program vector_table xcpt \
-			xcpt_handler xcpt_task_queue xcpt_task_queue_fini \
-			xcpt_task_queue_run interrupt_handlers/core_timer \
-			interrupt_handlers/irq ds/heapq libc/string
+OBJS      = start main console devicetree initrd shell user-program \
+            drivers/aux drivers/gpio drivers/l1ic drivers/l2ic drivers/mailbox \
+            drivers/mini-uart drivers/pm \
+            mem/simple-alloc \
+            timer/delay timer/timeout \
+            xcpt/default-handler xcpt/irq-handler xcpt/task-queue \
+            xcpt/vector-table xcpt/xcpt \
+            libc/ctype libc/stdio libc/string \
+            utils/fmt utils/heapq
 LD_SCRIPT = $(SRC_DIR)/linker.ld
 
 # ------------------------------------------------------------------------------

@@ -10,8 +10,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "oscos/align.h"
 #include "oscos/libc/string.h"
+#include "oscos/utils/align.h"
 
 /// \brief New ASCII Format CPIO archive header.
 typedef struct {
@@ -89,6 +89,10 @@ typedef struct {
 ///
 /// \return Whether or not initialization is successful.
 bool initrd_init(void);
+
+/// \brief Returns whether or not the initial ramdisk has been successfully
+///        initialized.
+bool initrd_is_init(void);
 
 /// \brief Returns the loading address of the initial ramdisk.
 const void *initrd_get_start(void);

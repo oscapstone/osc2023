@@ -1,36 +1,37 @@
-#include "oscos/bcm2837/mailbox_info.h"
+#include "oscos/console.h"
 #include "oscos/devicetree.h"
-#include "oscos/el.h"
-#include "oscos/serial.h"
+#include "oscos/drivers/aux.h"
+#include "oscos/drivers/gpio.h"
+#include "oscos/drivers/l1ic.h"
+#include "oscos/drivers/l2ic.h"
+#include "oscos/drivers/mailbox.h"
+#include "oscos/drivers/pm.h"
+#include "oscos/initrd.h"
 #include "oscos/shell.h"
-#include "oscos/timeout.h"
+#include "oscos/timer/timeout.h"
 #include "oscos/xcpt.h"
 
 void main(const void *const dtb_start) {
-  devicetree_register(dtb_start);
-
-  set_vector_table();
-
-  serial_init();
-
-  core_timer_interrupt_enable_el1();
-
+  l1ic_init();
+  l2ic_init();
+  xcpt_set_vector_table();
+  timeout_init();
   XCPT_UNMASK_ALL();
 
-  serial_fputs("INFO:Initialization complete, running at EL: 0x");
-  serial_print_hex(get_current_el());
-  serial_putc('\n');
+  gpio_init();
+  aux_init();
+  console_init();
 
-  const uint32_t board_revision = get_board_revision();
-  const arm_memory_t arm_memory = get_arm_memory();
+  mailbox_init();
+  pm_init();
 
-  serial_fputs("Board revision: 0x");
-  serial_print_hex(board_revision);
-  serial_fputs(", ARM memory: Base: 0x");
-  serial_print_hex(arm_memory.base);
-  serial_fputs(", Size: 0x");
-  serial_print_hex(arm_memory.size);
-  serial_putc('\n');
+  if (!devicetree_init(dtb_start)) {
+    console_puts("WARN: Devicetree blob is invalid.");
+  }
+
+  if (!initrd_init()) {
+    console_puts("WARN: Initial ramdisk is invalid.");
+  }
 
   run_shell();
 }

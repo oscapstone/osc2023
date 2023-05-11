@@ -1,47 +1,39 @@
 #include "oscos/shell.h"
 
-#include <stdbool.h>
 #include <stdnoreturn.h>
 
-#include "oscos/delay.h"
+#include "oscos/console.h"
+#include "oscos/drivers/mailbox.h"
+#include "oscos/drivers/pm.h"
 #include "oscos/initrd.h"
+#include "oscos/libc/ctype.h"
+#include "oscos/libc/inttypes.h"
 #include "oscos/libc/string.h"
-#include "oscos/reset.h"
-#include "oscos/serial.h"
-#include "oscos/simple_malloc.h"
-#include "oscos/timeout.h"
-#include "oscos/user_program.h"
+#include "oscos/mem/simple-alloc.h"
+#include "oscos/timer/timeout.h"
+#include "oscos/user-program.h"
+#include "oscos/utils/time.h"
 
 #define MAX_CMD_LEN 78
 
-static bool _shell_is_initrd_valid;
+static void _shell_print_prompt(void) { console_fputs("# "); }
 
-static void _shell_init(void) { _shell_is_initrd_valid = initrd_init(); }
-
-static void _shell_print_prompt(void) { serial_fputs("# "); }
-
-static size_t _shell_read_cmd(char *const buf, const size_t n) {
+static size_t _shell_read_line(char *const buf, const size_t n) {
   size_t cmd_len = 0;
 
   for (;;) {
-    char c;
-
-    int read_result;
-    while ((read_result = serial_getc_nonblock()) < 0) {
-      __asm__ __volatile__("wfi");
-    }
-    c = read_result;
+    const char c = console_getc();
 
     if (c == '\n') {
-      serial_putc('\n');
+      console_putc('\n');
       break;
     } else if (c == '\x7f') { // Backspace.
       if (cmd_len > 0) {
-        serial_fputs("\b \b");
+        console_fputs("\b \b");
         cmd_len--;
       }
     } else {
-      serial_putc(c);
+      console_putc(c);
       if (n > 0 && cmd_len < n - 1) {
         buf[cmd_len] = c;
       }
@@ -63,75 +55,87 @@ static size_t _shell_read_cmd(char *const buf, const size_t n) {
 }
 
 static void _shell_do_cmd_help(void) {
-  serial_puts("help   : print this help menu\n"
-              "hello  : print Hello World!\n"
-              "reboot : reboot the device\n"
-              "ls     : list all files in the initial ramdisk\n"
-              "cat    : print the content of a file in the initial ramdisk\n"
-              "exec   : run a user program in the initial ramdisk");
+  console_puts(
+      "help       : print this help menu\n"
+      "hello      : print Hello World!\n"
+      "hwinfo     : get the hardware's information by mailbox\n"
+      "reboot     : reboot the device\n"
+      "ls         : list all files in the initial ramdisk\n"
+      "cat        : print the content of a file in the initial ramdisk\n"
+      "exec       : run a user program in the initial ramdisk\n"
+      "setTimeout : print a message after a timeout");
 }
 
-static void _shell_do_cmd_hello(void) { serial_puts("Hello World!"); }
+static void _shell_do_cmd_hello(void) { console_puts("Hello World!"); }
 
-noreturn static void _shell_do_cmd_reboot(void) { reboot(); }
+static void _shell_do_cmd_hwinfo(void) {
+  const uint32_t board_revision = mailbox_get_board_revision();
+  const arm_memory_t arm_memory = mailbox_get_arm_memory();
+
+  console_printf("Board revision: 0x%" PRIx32 "\nARM memory: Base: 0x%" PRIx32
+                 ", Size: 0x%" PRIx32 "\n",
+                 board_revision, arm_memory.base, arm_memory.size);
+}
+
+noreturn static void _shell_do_cmd_reboot(void) { pm_reboot(); }
 
 static void _shell_do_cmd_ls(void) {
-  if (!_shell_is_initrd_valid) {
-    serial_puts("oscsh: ls: initrd is invalid");
+  if (!initrd_is_init()) {
+    console_puts("oscsh: ls: initrd is invalid");
     return;
   }
 
-  INITRD_FOR_ENTRY(entry) { serial_puts(CPIO_NEWC_PATHNAME(entry)); }
+  INITRD_FOR_ENTRY(entry) { console_puts(CPIO_NEWC_PATHNAME(entry)); }
 }
 
 static void _shell_do_cmd_cat(void) {
-  if (!_shell_is_initrd_valid) {
-    serial_puts("oscsh: cat: initrd is invalid");
+  if (!initrd_is_init()) {
+    console_puts("oscsh: cat: initrd is invalid");
     return;
   }
 
-  serial_fputs("Filename: ");
+  console_fputs("Filename: ");
 
   char filename_buf[MAX_CMD_LEN + 1];
-  _shell_read_cmd(filename_buf, MAX_CMD_LEN + 1);
+  _shell_read_line(filename_buf, MAX_CMD_LEN + 1);
 
   const cpio_newc_entry_t *const entry =
       initrd_find_entry_by_pathname(filename_buf);
   if (!entry) {
-    serial_puts("oscsh: cat: no such file or directory");
+    console_puts("oscsh: cat: no such file or directory");
     return;
   }
 
   const uint32_t mode = CPIO_NEWC_HEADER_VALUE(entry, mode);
   const uint32_t file_type = mode & CPIO_NEWC_MODE_FILE_TYPE_MASK;
   if (file_type == CPIO_NEWC_MODE_FILE_TYPE_REG) {
-    serial_write(CPIO_NEWC_FILE_DATA(entry), CPIO_NEWC_FILESIZE(entry));
+    console_write(CPIO_NEWC_FILE_DATA(entry), CPIO_NEWC_FILESIZE(entry));
   } else if (file_type == CPIO_NEWC_MODE_FILE_TYPE_DIR) {
-    serial_puts("oscsh: cat: is a directory");
+    console_puts("oscsh: cat: is a directory");
   } else if (file_type == CPIO_NEWC_MODE_FILE_TYPE_LNK) {
-    serial_fputs("Symbolic link to: ");
-    serial_write(CPIO_NEWC_FILE_DATA(entry), CPIO_NEWC_FILESIZE(entry));
-    serial_putc('\n');
+    console_fputs("Symbolic link to: ");
+    console_write(CPIO_NEWC_FILE_DATA(entry), CPIO_NEWC_FILESIZE(entry));
+    console_putc('\n');
   } else {
-    serial_puts("oscsh: cat: unknown file type");
+    console_puts("oscsh: cat: unknown file type");
   }
 }
 
 static void _shell_do_cmd_exec(void) {
-  if (!_shell_is_initrd_valid) {
-    serial_puts("oscsh: exec: initrd is invalid");
+  if (!initrd_is_init()) {
+    console_puts("oscsh: exec: initrd is invalid");
     return;
   }
 
-  serial_fputs("Filename: ");
+  console_fputs("Filename: ");
 
   char filename_buf[MAX_CMD_LEN + 1];
-  _shell_read_cmd(filename_buf, MAX_CMD_LEN + 1);
+  _shell_read_line(filename_buf, MAX_CMD_LEN + 1);
 
   const cpio_newc_entry_t *const entry =
       initrd_find_entry_by_pathname(filename_buf);
   if (!entry) {
-    serial_puts("oscsh: exec: no such file or directory");
+    console_puts("oscsh: exec: no such file or directory");
     return;
   }
 
@@ -144,63 +148,94 @@ static void _shell_do_cmd_exec(void) {
     user_program_start = CPIO_NEWC_FILE_DATA(entry);
     user_program_len = CPIO_NEWC_FILESIZE(entry);
   } else if (file_type == CPIO_NEWC_MODE_FILE_TYPE_DIR) {
-    serial_puts("oscsh: exec: is a directory");
+    console_puts("oscsh: exec: is a directory");
     return;
   } else if (file_type == CPIO_NEWC_MODE_FILE_TYPE_LNK) {
-    serial_fputs("oscos: exec: is a symbolic link to: ");
-    serial_write(CPIO_NEWC_FILE_DATA(entry), CPIO_NEWC_FILESIZE(entry));
-    serial_putc('\n');
+    console_fputs("oscos: exec: is a symbolic link to: ");
+    console_write(CPIO_NEWC_FILE_DATA(entry), CPIO_NEWC_FILESIZE(entry));
+    console_putc('\n');
     return;
   } else {
-    serial_puts("oscsh: exec: unknown file type");
+    console_puts("oscsh: exec: unknown file type");
     return;
   }
 
   if (!load_user_program(user_program_start, user_program_len)) {
-    serial_puts("oscsh: exec: user program too long");
+    console_puts("oscsh: exec: user program too long");
     return;
   }
 
   run_user_program();
 }
 
-static void _shell_do_cmd_settimeout(char *const cmd) {
-  const char *p = cmd + 11;
+static void _shell_do_cmd_set_timeout(const char *const args) {
+  const char *c = args;
 
-  const char *const msg_start = p;
-  for (; !(*p == '\0' || *p == ' '); p++)
+  // Skip initial whitespaces.
+  for (; *c == ' '; c++)
     ;
 
-  const size_t msg_len = p - msg_start;
-  char *const msg_buf = simple_malloc(msg_len + 1);
-  memcpy(msg_buf, msg_start, msg_len);
-  msg_buf[msg_len] = '\0';
+  // Message.
 
-  for (; *p == '\0' || *p == ' '; p++)
-    ;
+  if (!*c)
+    goto invalid;
 
-  uint64_t after_secs = 0;
-  for (; '0' <= *p && *p <= '9'; p++) {
-    after_secs = after_secs * 10 + (*p - '0');
+  const char *const message_start = c;
+  size_t message_len = 0;
+
+  for (; *c && *c != ' '; c++) {
+    message_len++;
   }
 
-  add_timer((void (*)(void *))serial_puts, msg_buf, after_secs * NS_PER_SEC);
+  // Skip whitespaces.
+  for (; *c == ' '; c++)
+    ;
+
+  // Seconds.
+
+  if (!*c)
+    goto invalid;
+
+  size_t seconds = 0;
+  for (; *c && *c != ' '; c++) {
+    if (!isdigit(*c))
+      goto invalid;
+    seconds = seconds * 10 + (*c - '0');
+  }
+
+  // Skip whitespaces.
+  for (; *c == ' '; c++)
+    ;
+
+  // There should be no more arguments.
+  if (*c)
+    goto invalid;
+
+  // Copy the string.
+
+  char *const message_copy = simple_alloc(message_len + 1);
+  memcpy(message_copy, message_start, message_len);
+  message_copy[message_len] = '\0';
+
+  // Register the callback.
+  timeout_add_timer((void (*)(void *))console_puts, message_copy,
+                    seconds * NS_PER_SEC);
+  return;
+
+invalid:
+  console_puts("oscsh: setTimeout: invalid command format");
 }
 
 static void _shell_cmd_not_found(const char *const cmd) {
-  serial_fputs("oscsh: ");
-  serial_fputs(cmd);
-  serial_puts(": command not found");
+  console_printf("oscsh: %s: command not found\n", cmd);
 }
 
 void run_shell(void) {
-  _shell_init();
-
   for (;;) {
     _shell_print_prompt();
 
     char cmd_buf[MAX_CMD_LEN + 1];
-    const size_t cmd_len = _shell_read_cmd(cmd_buf, MAX_CMD_LEN + 1);
+    const size_t cmd_len = _shell_read_line(cmd_buf, MAX_CMD_LEN + 1);
 
     if (cmd_len == 0) {
       // No-op.
@@ -208,6 +243,8 @@ void run_shell(void) {
       _shell_do_cmd_help();
     } else if (strcmp(cmd_buf, "hello") == 0) {
       _shell_do_cmd_hello();
+    } else if (strcmp(cmd_buf, "hwinfo") == 0) {
+      _shell_do_cmd_hwinfo();
     } else if (strcmp(cmd_buf, "reboot") == 0) {
       _shell_do_cmd_reboot();
     } else if (strcmp(cmd_buf, "ls") == 0) {
@@ -216,8 +253,9 @@ void run_shell(void) {
       _shell_do_cmd_cat();
     } else if (strcmp(cmd_buf, "exec") == 0) {
       _shell_do_cmd_exec();
-    } else if (strncmp(cmd_buf, "setTimeout ", 11) == 0) {
-      _shell_do_cmd_settimeout(cmd_buf);
+    } else if (strncmp(cmd_buf, "setTimeout", 10) == 0 &&
+               (!cmd_buf[10] || cmd_buf[10] == ' ')) {
+      _shell_do_cmd_set_timeout(cmd_buf + 10);
     } else {
       _shell_cmd_not_found(cmd_buf);
     }

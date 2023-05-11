@@ -1,12 +1,13 @@
 #ifndef OSCOS_DEVICETREE_H
 #define OSCOS_DEVICETREE_H
 
+#include <stdbool.h>
 #include <stdint.h>
 
-#include "oscos/align.h"
-#include "oscos/control_flow.h"
-#include "oscos/endian.h"
 #include "oscos/libc/string.h"
+#include "oscos/utils/align.h"
+#include "oscos/utils/control-flow.h"
+#include "oscos/utils/endian.h"
 
 /// \brief Flattened devicetree header.
 typedef struct {
@@ -41,9 +42,14 @@ typedef struct {
 #define FDT_NOP ((uint32_t)0x00000004)
 #define FDT_END ((uint32_t)0x00000009)
 
-/// \brief Registers the devicetree loading address.
+/// \brief Initializes the device tree.
 /// \param dtb_start The loading address of the devicetree blob.
-void devicetree_register(const void *dtb_start);
+/// \return Whether or not the initialization succeeds.
+bool devicetree_init(const void *dtb_start);
+
+/// \brief Returns whether or not the devicetree has been successfully
+///        initialized.
+bool devicetree_is_init(void);
 
 /// \brief The start of the strings block of the devicetree blob.
 #define FDT_START_STRINGS                                                      \
@@ -98,8 +104,7 @@ const char *fdt_get_start(void);
 /// \param item The item. Must not point to the FDT_END_NODE token.
 const fdt_item_t *fdt_next_item(const fdt_item_t *item);
 
-/// \brief Traverses through the nodes at the top-level (i. e., in the root
-///        node).
+/// \brief Performs in-order traversal of the devicetree.
 /// \param callback The callback that is called on each node.
 /// \param arg The first argument that will be passed to \p callback.
 void fdt_traverse(control_flow_t (*callback)(void *arg, const fdt_item_t *node),
