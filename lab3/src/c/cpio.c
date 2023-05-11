@@ -174,7 +174,7 @@ void cpio_run_executable(char executable_name[])
 
     ramfs -= file_size;
 
-    char *program_position = (char *)0x10B0000;
+    char *program_position = (char *)0x10A0000;
 
     while (file_size--)
     {
@@ -184,7 +184,7 @@ void cpio_run_executable(char executable_name[])
     }
 
     asm volatile(
-        "mov x0, 0x3c0          \n\t"
+        "mov x0, 0          \n\t"
         "msr spsr_el1, x0       \n\t"
         "mov x0, 0x10A0000      \n\t"
         "msr elr_el1, x0        \n\t"

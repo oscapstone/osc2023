@@ -7,6 +7,5 @@ _start:
     svc 0
     cmp x0, 5
     blt 1b
-2:
-    svc 4
-    eret
+1:
+    b 1b
