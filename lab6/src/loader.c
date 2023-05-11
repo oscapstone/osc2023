@@ -45,19 +45,19 @@ int setup_program_loc(void *loc) {
  * which will setup sp_el0 and the elr_el1
  *********************************************************************/
 void sys_run_program(void) {
-  //core_timer_enable();
+  // core_timer_enable();
   Thread *t = get_current();
-  while(t->mapped != 1){
-	  schedule();
+  while (t->mapped != 1) {
+    schedule();
   }
-  //vm_base_switch(t);
+  // vm_base_switch(t);
   void *sp_el0 = (void *)t->sp_el0;
   asm volatile("mov x2,	0x0;\r\n" // Enable CPU interrupt
                "msr spsr_el1, 	x2;\r\n"
                "msr sp_el0,	%[sp];\r\n"
                "mov x1,	%[loc];\r\n"
-	       "mov x0, 0x0;"
-	       "msr elr_el1, x0;"
+               "mov x0, 0x0;"
+               "msr elr_el1, x0;"
                //"msr elr_el1,	%[loc];\r\n" // Set the target address
                "eret"
                :

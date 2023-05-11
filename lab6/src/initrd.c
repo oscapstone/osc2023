@@ -138,7 +138,7 @@ int initrd_getLo() { return lo_ramfs; }
  * Called by lodaer to run the program.
  * *****************************************************/
 void *initrd_content_getLo(const char *name) {
-	lo_ramfs = phy2vir(lo_ramfs);
+  lo_ramfs = phy2vir(lo_ramfs);
   char *buf = (char *)lo_ramfs;
   int ns = 0;
   int fs = 0;
@@ -165,7 +165,7 @@ void *initrd_content_getLo(const char *name) {
 }
 
 int initrd_content_getSize(const char *name) {
-	lo_ramfs = phy2vir(lo_ramfs);
+  lo_ramfs = phy2vir(lo_ramfs);
   char *buf = (char *)lo_ramfs;
   int ns = 0;
   int fs = 0;

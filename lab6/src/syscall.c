@@ -2,13 +2,12 @@
 #include "initrd.h"
 #include "loader.h"
 #include "mailbox.h"
+#include "mem.h"
+#include "str.h"
 #include "thread.h"
 #include "time.h"
 #include "uart.h"
 #include "vm.h"
-#include "mem.h"
-#include "loader.h"
-#include "str.h"
 // FIXME: should disable INT in the critical section.
 
 // k From switch.S
@@ -85,9 +84,9 @@ int sys_exec(const char *name, char *const argv[]) {
   // Get memory for user program.
   char *dest = (char *)pmalloc(6);
   Thread *t = get_current();
-  for(int i = 0; i < 64; i++)
-  vm_list_add(phy2vir(&(t->vm_list)), 0 + i * 0x1000, dest + i * 0x1000);
-  //map_vm(phy2vir(t->pgd), 0, dest, 64);	// Map the program to 0x0
+  for (int i = 0; i < 64; i++)
+    vm_list_add(phy2vir(&(t->vm_list)), 0 + i * 0x1000, dest + i * 0x1000);
+  // map_vm(phy2vir(t->pgd), 0, dest, 64);	// Map the program to 0x0
   dest = phy2vir(dest);
   setup_program_loc(dest);
   char *d = dest;
@@ -115,23 +114,22 @@ void sys_exit(int status) {
  * system call mbox
  ***********************************************************************/
 int sys_mbox_call(unsigned char ch, unsigned int *mbox) {
-	uint64_t phy_addr = 0x0;
-	// If is the user space addr, need to translate to phyaddr
-	if(((uint64_t)mbox & 0xffff000000000000) == 0){
-		asm volatile(
-			"mov	x1, %[mbox];"
-			"at	s1e0r, x1;"	// Translate vir->phy
-			"mrs	%[phy], par_el1;"
-			: [phy] "=r" (phy_addr)
-			: [mbox] "r" (mbox));
-		if(phy_addr & 1 == 1)
-			uart_puts("Translate Error\n");
-		phy_addr &= 0xFFFFFFFFF000;
-		phy_addr |= ((uint64_t)mbox & 0xFFF);	// Get offset
-		phy_addr = phy2vir(phy_addr);
-		//uart_puthl(phy_addr);
-		return sys_mailbox_config(ch, phy_addr);
-	}
+  uint64_t phy_addr = 0x0;
+  // If is the user space addr, need to translate to phyaddr
+  if (((uint64_t)mbox & 0xffff000000000000) == 0) {
+    asm volatile("mov	x1, %[mbox];"
+                 "at	s1e0r, x1;" // Translate vir->phy
+                 "mrs	%[phy], par_el1;"
+                 : [phy] "=r"(phy_addr)
+                 : [mbox] "r"(mbox));
+    if (phy_addr & 1 == 1)
+      uart_puts("Translate Error\n");
+    phy_addr &= 0xFFFFFFFFF000;
+    phy_addr |= ((uint64_t)mbox & 0xFFF); // Get offset
+    phy_addr = phy2vir(phy_addr);
+    // uart_puthl(phy_addr);
+    return sys_mailbox_config(ch, phy_addr);
+  }
 
   return sys_mailbox_config(ch, mbox);
 }
@@ -189,7 +187,7 @@ int sys_fork(Trap_frame *trap_frame) {
   cur->regs.sp = trap_frame;
 
   // Should at the same offset to the cur.
-  child->regs.sp =  (((void *)trap_frame) - ((void *)cur) + ((void *)child));
+  child->regs.sp = (((void *)trap_frame) - ((void *)cur) + ((void *)child));
   child->regs.fp = (char *)child + 0x1000 - 16;
 
   // Copy the handler from parent
@@ -203,8 +201,9 @@ int sys_fork(Trap_frame *trap_frame) {
   trap_frame_child->regs[29] = child->regs.fp;
 
   // Get the displacement of userspace stack
-  //trap_frame_child->sp_el0 =
-  //    (char *)trap_frame->sp_el0 - (char *)cur->sp_el0 + (char *)child->sp_el0;
+  // trap_frame_child->sp_el0 =
+  //    (char *)trap_frame->sp_el0 - (char *)cur->sp_el0 + (char
+  //    *)child->sp_el0;
   trap_frame_child->sp_el0 = trap_frame->sp_el0;
 
   // Write child's ID in the x0 of parent
@@ -212,32 +211,32 @@ int sys_fork(Trap_frame *trap_frame) {
   cur->child = child->id;
 
   // Copy user stack Change for vir
-  f = (char*) cur->sp_el0_kernel;
-  c = (char*) child->sp_el0_kernel;
-  for(int i = 0; i < 0x4000; i++){
-	  *c++ = *f++;
+  f = (char *)cur->sp_el0_kernel;
+  c = (char *)child->sp_el0_kernel;
+  for (int i = 0; i < 0x4000; i++) {
+    *c++ = *f++;
   }
 
   // Map the page table
   // FIXME:
-  //child->pgd = cur->pgd;
+  // child->pgd = cur->pgd;
   copy_vm(cur->pgd, child->pgd);
-  for(uint64_t va = 0x3c000000; va <= 0x3f000000; va += 0x1000){
-	  map_vm(child->pgd, va, va, 1, 0);
+  for (uint64_t va = 0x3c000000; va <= 0x3f000000; va += 0x1000) {
+    map_vm(child->pgd, va, va, 1, 0);
   }
   // Copy unmapping page
   uart_puthl(cur->vm_list);
   vm_list_copy(phy2vir(cur->vm_list), phy2vir(&(child->vm_list)));
-  //vm_list_dump(phy2vir(child->vm_list));
-  //uart_puthl(child->vm_list);
-  //uart_puthl(child->vm_list->phy);
-  //map_vm(child->pgd, 0xffffffffb000, vir2phy(child->sp_el0_kernel), 4);
+  // vm_list_dump(phy2vir(child->vm_list));
+  // uart_puthl(child->vm_list);
+  // uart_puthl(child->vm_list->phy);
+  // map_vm(child->pgd, 0xffffffffb000, vir2phy(child->sp_el0_kernel), 4);
   /*
   uart_puts("child pgd: ");
   uart_puth(child->pgd);
   */
-  //void* addr = getProgramLo();
-  //map_vm(phy2vir(child->pgd), 0, addr, 64);
+  // void* addr = getProgramLo();
+  // map_vm(phy2vir(child->pgd), 0, addr, 64);
   /*
   c = (char *)trap_frame_child->sp_el0_kernel ;
   f = (char *)trap_frame->sp_el0_kernel;
@@ -275,48 +274,48 @@ void sys_signal(int sig, void (*handler)()) {
 /*************************************************************************
  *
  */
-uint64_t sys_mmap(uint64_t addr, size_t len, int prot, int flags,
-		int fd, int file_offset){
-	Thread* t = get_current();
-	uint64_t phy_mem;
-	uint32_t l; 	// Get the pmalloc size
-	// User defined the map address
-	if(addr == NULL){
-		addr = 0x100000;
-	}
-	// Align to page size
-	if(addr & 0xFFF)
-		addr = (addr & ( ~0xfff )) + 0x1000;
-	if(len & 0xFFF)
-		len = (len & (~0xfff)) + 0x1000;
-	l = len >> 13; // Size for pmalloc
+uint64_t sys_mmap(uint64_t addr, size_t len, int prot, int flags, int fd,
+                  int file_offset) {
+  Thread *t = get_current();
+  uint64_t phy_mem;
+  uint32_t l; // Get the pmalloc size
+  // User defined the map address
+  if (addr == NULL) {
+    addr = 0x100000;
+  }
+  // Align to page size
+  if (addr & 0xFFF)
+    addr = (addr & (~0xfff)) + 0x1000;
+  if (len & 0xFFF)
+    len = (len & (~0xfff)) + 0x1000;
+  l = len >> 13; // Size for pmalloc
 
-	// Find the empty slot (virtual mem)
-	while(1){
-		if(vm_list_delete(phy2vir(&(t->vm_list)), addr) == 0){
-			uart_puthl(addr);
-			break;
-		}
-		addr += 0x1000;
-	}
-	if(flags == MAP_ANONYMOUS){
-		phy_mem = pmalloc(l);
-		//uart_puthl(phy_mem);
-		//uart_puti(len >> 12);
-		// Anonymous means no backup file -> content = 0
-		memset(phy2vir(phy_mem), 0, len);
-		vm_list_add(phy2vir(&(t->vm_list)), addr, phy_mem);
-		//uart_puthl(vm_list_delete(phy2vir(&(t->vm_list)), addr));
-		map_vm(phy2vir(t->pgd), addr, phy_mem, len >> 12, flags);
-	}else if(flags == MAP_POPULATE){
-		phy_mem = fd + file_offset;
-		phy_mem = vir2phy(phy_mem);
-		vm_list_add(phy2vir(&(t->vm_list)), addr, phy_mem);
-		map_vm(phy2vir(t->pgd), addr, phy_mem, len >> 12, flags);
-	}else{
-		uart_puts("MMAP FLAG ERROR!!\n");
-	}
-	return addr;
+  // Find the empty slot (virtual mem)
+  while (1) {
+    if (vm_list_delete(phy2vir(&(t->vm_list)), addr) == 0) {
+      uart_puthl(addr);
+      break;
+    }
+    addr += 0x1000;
+  }
+  if (flags == MAP_ANONYMOUS) {
+    phy_mem = pmalloc(l);
+    // uart_puthl(phy_mem);
+    // uart_puti(len >> 12);
+    //  Anonymous means no backup file -> content = 0
+    memset(phy2vir(phy_mem), 0, len);
+    vm_list_add(phy2vir(&(t->vm_list)), addr, phy_mem);
+    // uart_puthl(vm_list_delete(phy2vir(&(t->vm_list)), addr));
+    map_vm(phy2vir(t->pgd), addr, phy_mem, len >> 12, flags);
+  } else if (flags == MAP_POPULATE) {
+    phy_mem = fd + file_offset;
+    phy_mem = vir2phy(phy_mem);
+    vm_list_add(phy2vir(&(t->vm_list)), addr, phy_mem);
+    map_vm(phy2vir(t->pgd), addr, phy_mem, len >> 12, flags);
+  } else {
+    uart_puts("MMAP FLAG ERROR!!\n");
+  }
+  return addr;
 }
 
 /*************************************************************************
@@ -339,11 +338,9 @@ void handler_container() {
   __handler();
   __handler = NULL;
   // The EL0 wapper of the `exit()`
-  asm volatile(
-	"mov	x8, 15;"
-	"svc	0;"
-	);
-  //uexit();
+  asm volatile("mov	x8, 15;"
+               "svc	0;");
+  // uexit();
 }
 
 /**************************************************************************

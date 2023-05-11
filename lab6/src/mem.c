@@ -1,9 +1,9 @@
 #include "mem.h"
 #include "heap.h"
-#include "uart.h"
 #include "mmu.h"
-#include "vm.h"
 #include "str.h"
+#include "uart.h"
+#include "vm.h"
 
 #define NULL 0
 
@@ -230,7 +230,7 @@ static void *list_pops(int cnt) {
   // Handle if all page has been allocated
   if (free_smem[cnt] == NULL || free_smem[cnt]->addr == NULL)
     gen_slots(cnt);
-  void* ret = free_smem[cnt]->addr;
+  void *ret = free_smem[cnt]->addr;
   list_deletes(cnt, ret);
   return ret;
 }
@@ -330,12 +330,12 @@ uint64_t pmalloc(int cnt) {
   int i;
   // Find the free memory closet to target
   for (i = cnt + 1; i < MEM_MAX; i++) {
-    if (free_mem[i] != NULL && free_mem[i]->index >0)
+    if (free_mem[i] != NULL && free_mem[i]->index > 0)
       break;
-    else if (free_mem[i] != NULL && free_mem[i] -> index <= 0){
-	    list_pop(i);
-	    i -= 1;
-	    continue;
+    else if (free_mem[i] != NULL && free_mem[i]->index <= 0) {
+      list_pop(i);
+      i -= 1;
+      continue;
     }
   }
   // Pop one and split it to target size
@@ -362,7 +362,7 @@ uint64_t pmalloc(int cnt) {
  * @addr: the target memory address to free.
  ***********************************************************************/
 int pfree(uint64_t addr) {
-	addr = vir2phy(addr);
+  addr = vir2phy(addr);
   int c = 1;
   int index = ((int)addr) >> 12;
   int t = 1;

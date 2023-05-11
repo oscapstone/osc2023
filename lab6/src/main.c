@@ -26,7 +26,7 @@ int main(void *dtb_location) {
   fdt_find_do(dtb_location, "linux,initrd-start", initrd_fdt_callback);
   uart_puts("test_thread\n");
   core_timer_enable();
-  //terminal_run();
+  // terminal_run();
   terminal_run_thread();
   // idle();
 

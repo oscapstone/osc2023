@@ -6,22 +6,22 @@
  * Implement page frame allocator by buddy system.
  *****************************************************************/
 
-#define MEM_MAX 7 		// 2^0 -> 2^6 * 4KB
-#define MEM_SIZE 0x3c000	// 0x3c00 0000 / 4KB (0x1000)
+#define MEM_MAX 7        // 2^0 -> 2^6 * 4KB
+#define MEM_SIZE 0x3c000 // 0x3c00 0000 / 4KB (0x1000)
 #define FRAME_SIZE 0x1000
-#define SMEM_MAX 5		// 2^0 -> 2^4 * 32 bits
+#define SMEM_MAX 5 // 2^0 -> 2^4 * 32 bits
 
-typedef struct MEM_NODE{
-	int index;
-	struct MEM_NODE* prev;
-	struct MEM_NODE* next;
-}mem_node;
+typedef struct MEM_NODE {
+  int index;
+  struct MEM_NODE *prev;
+  struct MEM_NODE *next;
+} mem_node;
 
-typedef struct SLOT{
-	void* addr;
-	struct SLOT* prev;
-	struct SLOT* next;
-}slot;
+typedef struct SLOT {
+  void *addr;
+  struct SLOT *prev;
+  struct SLOT *next;
+} slot;
 
 /// Page frame allocator
 uint64_t pmalloc(int);
@@ -36,12 +36,12 @@ int pfree(uint64_t);
 /// Reserve the memory location.
 /// start address + size
 /// Called after pmalloc_init()
-int preserve(void*, int);
+int preserve(void *, int);
 
 /// Startup allocation.
 int pmalloc_init(void);
 
 int smalloc_init(void);
-int sfree(void*);
+int sfree(void *);
 
-#endif //MEM_H
+#endif // MEM_H

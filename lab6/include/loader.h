@@ -4,7 +4,7 @@
 int run_program(void *);
 void sys_run_program(void);
 int setup_program_loc(void *);
-void* getProgramLo();
+void *getProgramLo();
 
 // TODO: For future expansion.
 int load_program();

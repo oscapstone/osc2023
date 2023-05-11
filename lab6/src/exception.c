@@ -85,7 +85,6 @@ int exception_entry() {
   print_far_el1();
   print_ttbr0_el1();
   print_ttbr1_el1();
-  
 
   return 0;
 }

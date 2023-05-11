@@ -1,6 +1,6 @@
 #include "dtb.h"
-#include "uart.h"
 #include "str.h"
+#include "uart.h"
 #include <stdint.h>
 
 /**********************************************************
