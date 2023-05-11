@@ -25,7 +25,9 @@
         "stdint.h": "c",
         "device_tree.h": "c",
         "list.h": "c",
-        "thread.h": "c"
+        "thread.h": "c",
+        "signal.h": "c",
+        "limits": "c"
     },
     "C_Cpp.errorSquiggles": "enabled"
 }

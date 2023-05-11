@@ -94,6 +94,7 @@ thread_info *thread_create(func_ptr fp)
     new_task->thread_info->id = thread_cnt++;
     new_task->status = READY;
     new_task->job = fp;
+    new_task->custom_signal = NULL;
 
     add_rq(new_task);
 
@@ -133,6 +134,8 @@ void kill_zombies()
         free((void *)tmp->kstack_start);
         free((void *)tmp->ustack_start);
         free(tmp->thread_info);
+        if (tmp->custom_signal)
+            free(tmp->custom_signal);
         free(tmp);
     }
     INIT_LIST_HEAD(&task_zombieq_head);
@@ -171,6 +174,16 @@ void create_child(task_struct *parent)
     child_d = (char *)&(child->task_context);
     for (int i = 0; i < sizeof(context); i++)
         child_d[i] = parent_d[i];
+
+    // copy custom_signal
+    if (parent->custom_signal)
+    {
+        child->custom_signal = (custom_signal *)my_malloc(sizeof(custom_signal));
+        parent_d = (char *)&(parent->custom_signal);
+        child_d = (char *)&(child->custom_signal);
+        for (int i = 0; i < sizeof(custom_signal); i++)
+            child_d[i] = parent_d[i];
+    }
 
     // copy kernel stack
     parent_d = (char *)parent->kstack_start;
