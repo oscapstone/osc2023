@@ -37,7 +37,7 @@ void memory_init()
     init_page_frame();
     init_pool();
 
-    memory_reserve(0x0000, 0x1000, "Multicore Boot");
+    memory_reserve(0x0000, 0x5000, "PGD, PUD");
     memory_reserve(0x60000, 0x100000, "Kernel Img");
     memory_reserve(0x1000000, 0x1000fff, "Printf Buffer");
     memory_reserve(0x8000000, 0x8010000, "Initramfs");

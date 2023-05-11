@@ -5,6 +5,8 @@
 #include "device_tree.h"
 #include "thread.h"
 
+#include "virtual_mem.h"
+
 extern void *_dtb_ptr;
 
 void kernel_main(void)
@@ -18,6 +20,8 @@ void kernel_main(void)
 	thread_init();
 
 	memory_init();
+
+	// virtual_mem_init();
 
 	shell_start();
 }

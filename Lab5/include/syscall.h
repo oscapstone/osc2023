@@ -11,5 +11,6 @@ int fork();
 void exit(int status);
 int mbox_call_u(unsigned char ch, unsigned int *mbox);
 void kill(int pid);
+void signal(int SIGNAL, void (*handler)());
 
 #endif /*_SYSCALL_H */

@@ -1,3 +1,4 @@
+#include "stdlib.h"
 #include "thread.h"
 #include "mini_uart.h"
 #include "page_alloc.h"
@@ -5,8 +6,7 @@
 #include "utils.h"
 #include "peripherals/mbox_call.h"
 #include "peripherals/gpio.h"
-
-#include "stdlib.h"
+#include "my_signal.h"
 
 extern task_struct *get_current();
 extern void set_switch_timer();
@@ -140,4 +140,20 @@ void kill(int pid)
             return;
         }
     }
+}
+
+void signal(int SIGNAL, void (*handler)())
+{
+    printf("[info] Called signal()\n");
+    task_struct *cur = get_current();
+
+    custom_signal *new = (custom_signal *)my_malloc(sizeof(custom_signal));
+    new->sig_num = SIGNAL;
+    new->handler = handler;
+    INIT_LIST_HEAD(&new->list);
+
+    if (!cur->custom_signal)
+        cur->custom_signal = new;
+    else
+        list_add_tail(&cur->custom_signal->list, &new->list);
 }

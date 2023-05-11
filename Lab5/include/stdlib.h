@@ -6,6 +6,8 @@
 #include "printf.h"
 #include "utils.h"
 #include "mini_uart.h"
+#include "page_alloc.h"
+#include "dynamic_alloc.h"
 
 int strcmp(const char *str1, const char *str2);
 int strlen(const char *str);
@@ -14,6 +16,7 @@ int atoi(char *str);
 
 void *memset(void *dest, register int val, int len);
 int memcmp(void *s1, void *s2, int n);
+void *memcpy(void *dest, const void *src, size_t len);
 int hex2int(char *s, int n);
 
 void *simple_malloc(unsigned int size);

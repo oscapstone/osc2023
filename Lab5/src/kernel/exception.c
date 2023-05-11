@@ -7,6 +7,8 @@
 
 extern task_struct *get_current();
 extern void enable_interrupt();
+extern void disable_interrupt();
+extern signal_handler signal_table[];
 
 /**
  * common exception handler
@@ -214,7 +216,53 @@ void el0_to_el1_sync_handler(unsigned long trapframe_addr)
         int pid = (int)curr_trapframe->x[0];
         kill(pid);
     }
+    else if (syscall_no == 8)
+    {
+        // signal
+        int SIGNAL = (int)curr_trapframe->x[0];
+        void (*handler)() = (void (*)())curr_trapframe->x[1];
+        signal(SIGNAL, handler);
+    }
     else if (syscall_no == 9)
+    {
+        // signal kill
+        int pid = (int)curr_trapframe->x[0];
+        int SIGNAL = (int)curr_trapframe->x[1];
+        int if_cust = 0;
+        task_struct *current = get_current();
+
+        if (current->custom_signal)
+        {
+            custom_signal *cust_sig = current->custom_signal;
+            do
+            {
+                if (cust_sig->sig_num == SIGNAL)
+                {
+                    if_cust = 1;
+                    // signal's context save
+                    sig_context_update(curr_trapframe, cust_sig->handler);
+                    break;
+                }
+                cust_sig = container_of(cust_sig->list.next, custom_signal, list);
+            } while (cust_sig != current->custom_signal);
+        }
+        else if (!current->custom_signal && !if_cust)
+            (signal_table[SIGNAL])(pid);
+    }
+    else if (syscall_no == 10)
+    {
+        // signal restore
+        sig_context_restore(curr_trapframe);
+
+        disable_interrupt();
+        task_struct *current = get_current();
+        free(current->signal_context->trapframe);
+        free(current->signal_context->user_stack);
+        free(current->signal_context);
+        current->signal_context = NULL;
+        enable_interrupt();
+    }
+    else if (syscall_no == 11)
     {
         task_struct *current = get_current();
         if (current->thread_info->child_id == 0)

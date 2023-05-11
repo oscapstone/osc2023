@@ -171,7 +171,7 @@ void shell_start()
     char command[COMMAND_BUFFER];
     memset(command, '\0', COMMAND_BUFFER);
 
-    uart_send_string("# ");
+    uart_send_string("$ ");
 
     while (1)
     {
@@ -186,7 +186,7 @@ void shell_start()
                 shell_main(command);
                 memset(command, '\0', COMMAND_BUFFER);
                 i = 0;
-                uart_send_string("# ");
+                uart_send_string("$ ");
             }
             else if (c == 8) // Backspace
             {

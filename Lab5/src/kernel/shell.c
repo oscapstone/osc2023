@@ -36,6 +36,7 @@ void shell_main(char *command)
         uart_send_string("setTimeout\t: Usage: setTimeout <Message> <Seconds>\n");
         uart_send_string("alloc\t: [test] malloc and free\n");
         uart_send_string("thread\t: [test]\n");
+        uart_send_string("syscall\t: [test]\n");
     }
     else if (!strcmp(command, "hello"))
     {
@@ -170,7 +171,7 @@ void shell_start()
     char command[COMMAND_BUFFER];
     memset(command, '\0', COMMAND_BUFFER);
 
-    uart_send_string("# ");
+    uart_send_string("$ ");
 
     while (1)
     {
@@ -185,7 +186,7 @@ void shell_start()
                 shell_main(command);
                 memset(command, '\0', COMMAND_BUFFER);
                 i = 0;
-                uart_send_string("# ");
+                uart_send_string("$ ");
             }
             else if (c == 8) // Backspace
             {

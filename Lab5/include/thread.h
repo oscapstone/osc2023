@@ -2,6 +2,7 @@
 #define _THREAD_H
 
 #include "list.h"
+#include "my_signal.h"
 
 #define READY 1
 #define ZOMBIE 2
@@ -40,7 +41,9 @@ typedef struct _task_struct
     unsigned long ustack_start;     // user stack base
     unsigned long usrpgm_load_addr; // user program load address
     unsigned long status;
-    unsigned long trapframe;        // using "unsigned long" to keep trapframe address, instead of claiming a "trapframe_t*" to avoid "Data Abort"
+    unsigned long trapframe; // using "unsigned long" to keep trapframe address, instead of claiming a "trapframe_t*" to avoid "Data Abort"
+    struct _custom_signal *custom_signal;
+    struct _signal_context *signal_context;
 } task_struct;
 
 void schedule();
