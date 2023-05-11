@@ -12,7 +12,6 @@ int main()
     printf("--------------------\n\n");
 
     init_memory();
-    memory_reserve((void *)0x0, (void *)0x1000);
     printf("pass any key start\n");
     uart_getc();
 

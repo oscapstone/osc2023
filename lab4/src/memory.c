@@ -352,9 +352,18 @@ int find_buddy(int page_number, int order)
 }
 void memory_reserve(void *start, void *end)
 {
-    int size = end - start;
-    memory_allocation(size);
-    printf("--------------------\n\n");
-    printf("[memory_reserve] start: %x end: %x size: %d done\n\n", start, end, size);
-    printf("--------------------\n\n");
+    int start_page_number = (long)(start - MEMORY_START) >> PAGE_SHIFT;
+    int end_page_number = (long)(end - MEMORY_START) >> PAGE_SHIFT;
+
+    for (int i = start_page_number; i < end_page_number; i++)
+    {
+        struct page *page = &bookkeep[i];
+        page->order = -1;
+        page->allocator = NULL;
+        page->object_count = 0;
+        page->first_free = NULL;
+        page->start_address = MEMORY_START + (i << PAGE_SHIFT);
+        page->page_number = i;
+        page->used = 1;
+    }
 }
