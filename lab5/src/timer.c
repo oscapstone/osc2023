@@ -4,6 +4,7 @@
 #include "timer.h"
 #include "string.h"
 #include "exception.h"
+#include "list.h"
 /**
  * Implmentation of timer multiplexing using software mechanism and some common time functions like
  * get_system_time().
@@ -18,15 +19,15 @@
  *       so setTimeout can't use a large timeout number (lower than 40 seconds is ok)
  */
 
-
-struct list_head timer_list;
+// Create timer list for timerout events
+LIST_HEAD(timer_list);
 
 int isTimerMultiplexingEventIRQ = 0; // used for irq routing in exception.c
 
-void timer_list_init()
-{
-    INIT_LIST_HEAD(&timer_list);
-}
+// void timer_list_init()
+// {
+//     INIT_LIST_HEAD(&timer_list);
+// }
 
 void timerEvents_irq_handler() {
     uint64_t system_time = get_system_time();
@@ -45,7 +46,7 @@ void timerEvents_irq_handler() {
         isTimerMultiplexingEventIRQ = 0;
     }
 
-    dumpyTimerEventList();
+    dumpTimerEventList();
 }
 
 /**
@@ -64,7 +65,16 @@ void add_timer(void (*callback)(timer_event_t *), char *args, uint64_t duration)
     InitalizeNewTimerEvent(timerEvent, callback, args, duration, current_system_time);
     
     isTimerMultiplexingEventIRQ = 1;
-
+    // We need to consider that when we add new timer event, if there are already other timer events
+    // in timer_list. Then update all remaining time for each timer events and reset 'cntp_tval_el0' 
+    // for next timer interrupt. 
+    // 
+    // First, update previously registered timer events in timer list. Second, add this new added
+    // timer to timer list. It's worth noting that both of them should use same system time to 
+    // avoid inconsistency problems.
+    //
+    // In following function, we will update shared variable access by interrupt hanlder, so
+    // critical section is essential.
     //disable_irq(); 
     UpdateTimerEvents(current_system_time); 
     AddNewTimerEvents(timerEvent);
@@ -141,7 +151,7 @@ void AddNewTimerEvents(timer_event_t *timerEvent)
     }
 
     
-    dumpyTimerEventList();
+    dumpTimerEventList();
 }
 
 void setNextTimerEventInterrupt()
@@ -170,7 +180,7 @@ void dumpTimerEvent(timer_event_t *timerEvent)
     printf("args(message): %s\n\n", timerEvent->args);
 }
 
-void dumpyTimerEventList()
+void dumpTimerEventList()
 {
     printf("--------Timer event list--------\n");
     if (!list_empty(&timer_list)) {
@@ -197,7 +207,7 @@ void print_timeoutEventInfo(timer_event_t *timeout_event)
     printf("---End Info---\n");
 }
 
-
+// core0 time
 uint64_t get_system_time()
 {
     uint64_t cnt_freq, cnt_tpct;
@@ -210,6 +220,20 @@ uint64_t get_system_time()
     uint64_t system_timestamp = cnt_tpct / cnt_freq;
     // printf("timestamp: %u\n", system_timestamp);
     return system_timestamp;
+}
+
+void print_timestamp()
+{
+    unsigned long int cnt_freq, cnt_tpct;
+    asm volatile(
+        "mrs %0, cntfrq_el0 \n\t"
+        "mrs %1, cntpct_el0 \n\t"
+        : "=r" (cnt_freq),  "=r" (cnt_tpct)
+        :
+    );
+    unsigned long int timestamp = cnt_tpct / cnt_freq;
+    printf("timestamp: %u\n", timestamp);
+    return;
 }
 
 /**

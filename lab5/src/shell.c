@@ -5,12 +5,16 @@
 #include "cpio.h"
 #include "printf.h"
 #include "mm.h"
-#include "exception.h"
+#include "entry.h"
+
+
+int kernel_shell_status = KERNEL_SHELL_DISABLE;
 
 extern int uart_read_idx;
 extern char UART_READ_BUFFER[MAX_BUFFER_LEN];
 extern int uart_transmit_idx;
 extern char UART_TRANSMIT_BUFFER[MAX_BUFFER_LEN];
+
 void shell_start () 
 {
     int buffer_counter = 0;
@@ -31,6 +35,7 @@ void shell_start ()
     // read input
     while(1)
     {
+        //input_char = uart_getc();
         input_char = read_transmit_asynchronous_procoessing(buffer, &buffer_counter);
         
         input_parse = parse ( input_char );
@@ -72,6 +77,14 @@ char read_transmit_asynchronous_procoessing(char buffer[], int * buffer_counter)
             
             return input_char;
         }
+
+        // ToDo : 
+        // Busy Waiting for printing all chars remaining in transmit buffer to avoid concurrency(race condition) problem. 
+        // Because it's possible when doing printf() function then transmit exception occur causing 
+        // race condiion?? 
+        // (It's race condition possible happen? Maybe not. But processor is too strong, so it's difficult to check that)
+        // For safe problem in future, we still add busy waitng code 
+        while (uart_transmit_idx != 0);
     }
 }
 
@@ -116,7 +129,7 @@ void command_controller ( enum SPECIAL_CHARACTER input_parse, char c, char buffe
 
             if      ( !strcmp(buffer, "help"        ) ) command_help();
             else if ( !strcmp(buffer, "hello"       ) ) command_hello();
-            else if ( !strcmp(buffer, "timestamp"   ) ) command_timestamp();
+            // else if ( !strcmp(buffer, "timestamp"   ) ) command_timestamp();
             else if ( !strcmp(buffer, "reboot"      ) ) command_reboot();
             else if ( !strcmp(buffer, "ls"          ) ) command_cpio_ls((void *) INITRAMFS_ADDR);
             else if ( !strncmp(buffer, "cat ", 3    ) ) command_getCpioFile((void *) INITRAMFS_ADDR, buffer + 4);
