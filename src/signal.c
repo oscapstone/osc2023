@@ -3,6 +3,7 @@
 #include "exception.h"
 #include "syscall.h"
 #include "uart.h"
+#include "mmu.h"
 static void default_sig_handler()
 {
     uart_write_string("This is default signal handler\n");
@@ -29,15 +30,15 @@ void handle_current_signal()
         sig->handling = 1;
         memcpy(sig->tf, current_tf, sizeof(struct trap_frame));
         test_enable_interrupt();
+        mappages(current->pgd, USER_SIG_STK_LOW, sig->handler_user_stack_size, sig->handler_user_stack);
         //multiplex signal
-        
         if (current->reg_sig_handlers[sig->signum] == NULL) {
             //user doesn't register user-defined handler, use default signal handler
             default_sig_handlers[sig->signum]();
             syscall_sigreturn(current_tf);
         } else {
             //run user-defined signal handler
-            _run_user_prog(current->reg_sig_handlers[sig->signum], sigret, STACK_BASE(sig->handler_user_stack, sig->handler_user_stack_size));
+            _run_user_prog(current->reg_sig_handlers[sig->signum], sigret, STACK_BASE(USER_SIG_STK_LOW, sig->handler_user_stack_size));
         }
         disable_interrupt();
     }

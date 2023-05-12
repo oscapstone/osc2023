@@ -4,11 +4,12 @@
 #include "mmio.h"
 #include "list.h"
 #include "stdint.h"
+#define ARM_PERI_BASE        (KERN_BASE | 0x40000000)
 //https://github.com/Tekki/raspberrypi-documentation/blob/master/hardware/raspberrypi/bcm2836/QA7_rev3.4.pdf p7
 //https://datasheets.raspberrypi.com/bcm2836/bcm2836-peripherals.pdf 4.6
-#define CORE0_TIMER_IRQ_CTRL ((volatile unsigned int *)(0x40000040))
+#define CORE0_TIMER_IRQ_CTRL ((volatile unsigned int *)(ARM_PERI_BASE + 0x40))
 //https://datasheets.raspberrypi.com/bcm2836/bcm2836-peripherals.pdf 4.10
-#define CORE0_INTERRUPT_SOURCE ((volatile unsigned int *)(0x40000060))
+#define CORE0_INTERRUPT_SOURCE ((volatile unsigned int *)(ARM_PERI_BASE + 0x60))
 //https://cs140e.sergio.bz/docs/BCM2837-ARM-Peripherals.pdf 7.5
 #define ARM_IRQ_REG_BASE ((volatile unsigned int*)(MMIO_BASE + 0x0000b000))
 #define IRQ_PENDING_1 	 ((volatile unsigned int*)(MMIO_BASE + 0x0000b204))

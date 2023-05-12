@@ -16,7 +16,7 @@ extern void enable_local_all_interrupt();
 int main(void)
 {
     int el = get_el();
-    set_exception_vector_table();
+    // set_exception_vector_table();
     
     uart_init();
     uart_flush();
@@ -43,6 +43,8 @@ int main(void)
     //meory init
     init_buddy(&_buddy);
     init_mem_pool(&_mem_pool);
+    //map kernel space
+    // kspace_map();
 
     init_note();
     print_hw_info();
@@ -69,6 +71,8 @@ int main(void)
     // idle_thread();
 
     create_thread(idle_thread);
-    shell_main_thread();
+    // shell_main_thread();
+    char *argv[] = {"vm.img", NULL};
+    _initramfs.exec(&_initramfs, argv);
     return 0;
 }

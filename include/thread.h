@@ -6,6 +6,11 @@
 #include "time_interrupt.h"
 #include "signal.h"
 
+#define USER_STK_HIGH 0xfffffffff000
+#define USER_STK_LOW  0xffffffffb000
+
+#define STACKSIZE     16384 // 4096 * 4
+
 #define TASK_RUNNING            0
 #define TASK_INTERRUPTIBLE      1
 #define TASK_UNINTERRUPTIBLE    2
@@ -80,6 +85,8 @@ typedef struct task_struct {
     //signal handler table
     signal_handler_t reg_sig_handlers[MAX_SIGNAL+1];
     list_t pending_signal_list;
+
+    unsigned long *pgd;
 } task_t;
 extern task_t *tid2task[MAX_TASK_CNT];
 extern void init_startup_thread(char *main_addr);

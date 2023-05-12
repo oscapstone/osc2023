@@ -49,3 +49,12 @@ get_el:
    mrs x0, CurrentEl
    lsr x0, x0, #2
    ret
+
+.global update_pgd
+update_pgd:
+    dsb ish // ensure write has completed
+    msr ttbr0_el1, x0 // switch translation based address.
+    tlbi vmalle1is // invalidate all TLB entries
+    dsb ish // ensure completion of TLB invalidatation
+    isb // clear pipeline
+    ret

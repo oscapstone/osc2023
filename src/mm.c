@@ -125,6 +125,9 @@ void *_buddy_alloc_pages(struct buddy *self, size_t page_no)
     for (; order < BUDDY_ORDERS; order++) {
         if (self->link_size[order]) {
             blk = &(self->blk_meta[self->free_head[order]]);
+            if (BLK_INUSE(self->blk_meta[self->free_head[order]])) {
+                uart_write_string("[Error] unlink block is not free!\n");
+            }
             _buddy_unlink_blk(self, blk, order);
             break;
         }
@@ -160,7 +163,14 @@ void *_buddy_alloc_pages(struct buddy *self, size_t page_no)
     return index2addr(self, index);
 }
 
-
+void _buddy_show_blk_by_addr(struct buddy *self, void *addr)
+{
+    disable_interrupt();
+    int index = addr2index(self, addr);
+    bd_blk_t *blk = &(self->blk_meta[index]);
+    _buddy_blk_show(self, blk);
+    test_enable_interrupt();
+}
 
 void _buddy_free(struct buddy *self, void *addr)
 {
@@ -231,7 +241,7 @@ void _buddy_free(struct buddy *self, void *addr)
 static void _buddy_internal_mem_reserve(struct buddy *self, int start, int end, int l, int order)
 {
     int r = l + (1 << order);
-#ifdef PRINT_LOG
+// #ifdef PRINT_LOG
     uart_write_string("Call internal memory reserve: ");
     uart_write_string("start: ");
     uart_write_no(start);
@@ -242,9 +252,10 @@ static void _buddy_internal_mem_reserve(struct buddy *self, int start, int end, 
     uart_write_string(", r: ");
     uart_write_no(r);
     uart_write_string("\n");
-#endif
+// #endif
     if (start < l || end > r || start >= end) {
         //not in range
+        uart_write_string("not in range\n");
         return;
     }
     if (start == l && end == r) {
@@ -280,14 +291,17 @@ static void _buddy_internal_mem_reserve(struct buddy *self, int start, int end, 
     }
 
     _buddy_internal_mem_reserve(self, start, min(mid, end), l, order-1);
-    _buddy_internal_mem_reserve(self, min(mid, end), end, mid, order-1);
+    _buddy_internal_mem_reserve(self, max(mid, start), end, mid, order-1);
 }
 
 void _buddy_mem_reserve(struct buddy *self, char *start, char *end)
 {
     disable_interrupt();
-    if (start < self->pool || end > alignToNextPowerOf2(self->pool_end))
+    // uart_write_string("in _buddy_mem_reserve\n");
+    if (start < self->pool || end > self->pool_end) {
+        test_enable_interrupt();
         return;
+    }
     //find start index
     int start_index = (start - self->pool) / PAGE_SIZE;
     //find end index
@@ -321,18 +335,24 @@ void init_buddy(buddy_t *self)
     //all reserve areas
     self->mem_reserve(self, self->pool_end, alignToNextPowerOf2(self->pool_end));
     //Spin tables for multicore boot (0x0000 - 0x1000)
-    self->mem_reserve(self, 0x0000, 0x1000);
+    self->mem_reserve(self, PA2VA(0x0000), PA2VA(0x1000));
+    self->mem_reserve(self, PA2VA(0x1000), PA2VA(0x2000));
+    self->mem_reserve(self, PA2VA(0x2000), PA2VA(0x3000));
     //Kernel image in the physical memory
     self->mem_reserve(self, &_proc_start, &_proc_end);
     //Initramfs
     self->mem_reserve(self, cpio_addr, cpio_end);
     //Devicetree (Optional, if you have implement it)
     //make sure this function is called after _fdt.fdt_traverse(&_fdt, initramfs_fdt_cb, NULL).
-    self->mem_reserve(self, _fdt.head_addr, _fdt.end_addr);
+    self->mem_reserve(self, PA2VA(_fdt.head_addr), PA2VA(_fdt.end_addr));
     //Your simple allocator (startup allocator)
     //No. It's within kernel
     //kernel init stack
-    self->mem_reserve(self, LOW_MEMORY - PAGE_SIZE, LOW_MEMORY);;
+    self->mem_reserve(self, PA2VA(LOW_MEMORY - PAGE_SIZE), PA2VA(LOW_MEMORY));
+
+#ifdef PRINT_LOG
+    uart_write_string("buddy initalized\n");
+#endif
 }
 
 void *alloc_pages(size_t no_pages)
