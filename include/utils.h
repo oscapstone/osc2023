@@ -47,6 +47,7 @@ extern char *strtok(char *str, const char *delm);
 extern unsigned long long hex2ull(char *s);
 extern unsigned long long alignToNextPowerOf2(unsigned long long num);
 extern unsigned ul_log2(unsigned long long n);
+extern void *memset(void *s, int c, size_t n);
 typedef unsigned int reg_t;
 #endif
 #endif
