@@ -6,13 +6,12 @@
 #include "oscos/drivers/l2ic.h"
 #include "oscos/libc/inttypes.h"
 #include "oscos/timer/timeout.h"
+#include "oscos/utils/core-id.h"
 
 void xcpt_irq_handler(void) {
   PERIPHERAL_READ_BARRIER();
 
-  uint64_t core_id;
-  __asm__ __volatile__("mrs %0, mpidr_el1" : "=r"(core_id));
-  core_id &= 0x3;
+  const size_t core_id = get_core_id();
 
   for (;;) {
     const uint32_t int_src = l1ic_get_int_src(core_id);

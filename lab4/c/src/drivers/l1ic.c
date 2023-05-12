@@ -30,6 +30,8 @@ uint32_t l1ic_get_int_src(const size_t core_id) {
 }
 
 void l1ic_enable_core_timer_irq(size_t core_id) {
+  PERIPHERAL_WRITE_BARRIER();
+
   // nCNTPNSIRQ IRQ control = 1
   (*CORE_TIMER_IRQCNTL)[core_id] = CORE_TIMER_IRQCNTL_TIMER1_IRQ;
 }

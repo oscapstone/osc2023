@@ -38,10 +38,11 @@ void mini_uart_init(void) {
   // The initialization procedure is taken from
   // https://oscapstone.github.io/labs/hardware/uart.html.
 
-  PERIPHERAL_WRITE_BARRIER();
-
   // Enable mini UART.
   aux_enable_mini_uart();
+
+  PERIPHERAL_WRITE_BARRIER();
+
   // Disable TX and RX.
   MINI_UART_REG->cntl = 0;
   // Disable interrupt.

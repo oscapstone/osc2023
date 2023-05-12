@@ -3,6 +3,7 @@
 #include <stddef.h>
 
 #include "oscos/drivers/l1ic.h"
+#include "oscos/utils/core-id.h"
 #include "oscos/utils/critical-section.h"
 #include "oscos/utils/heapq.h"
 #include "oscos/utils/time.h"
@@ -33,7 +34,7 @@ static int _timeout_entry_cmp_by_timestamp(const timeout_entry_t *const e1,
 
 void timeout_init(void) {
   __asm__ __volatile__("msr cntp_ctl_el0, %0" : : "r"(0x3));
-  l1ic_enable_core_timer_irq(0);
+  l1ic_enable_core_timer_irq(get_core_id());
 }
 
 bool timeout_add_timer(void (*const callback)(void *), void *const arg,

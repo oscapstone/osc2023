@@ -29,7 +29,7 @@ OBJS      = start main console devicetree initrd shell user-program \
             xcpt/default-handler xcpt/irq-handler xcpt/task-queue \
             xcpt/vector-table xcpt/xcpt \
             libc/ctype libc/stdio libc/string \
-            utils/fmt utils/heapq
+            utils/core-id utils/fmt utils/heapq
 LD_SCRIPT = $(SRC_DIR)/linker.ld
 
 # ------------------------------------------------------------------------------
