@@ -1,12 +1,12 @@
 #include "uart1.h"
 #include "shell.h"
 #include "dtb.h"
-
 #include "memory.h"
 #include "exception.h"
 #include "irqtask.h"
 #include "timer.h"
 #include "sched.h"
+#include "vfs.h"
 
 void main(char* arg){
     char input_buffer[CMD_MAX_LEN];
@@ -21,6 +21,8 @@ void main(char* arg){
     timer_list_init();
 
     init_thread_sched();
+
+    init_rootfs();
 
     uart_interrupt_enable();
     el1_interrupt_enable();  // enable interrupt in EL1 -> EL1
