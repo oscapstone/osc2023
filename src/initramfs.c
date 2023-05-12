@@ -162,9 +162,13 @@ int _cpio_exec(struct initramfs *self, char *argv[])
     }
     memcpy(load_addr, content_ptr, file_size);
     current->user_text = load_addr;
+    mappages(current->pgd, 0x0, file_size, VA2PA(load_addr));
+
     //////////////////////////////////////////////////////
     // run_user_prog(load_addr);
     //////////////////////////////////////////////////////
+    mappages(current->pgd, USER_STK_LOW, STACKSIZE, 0);
+    update_pgd(VA2PA(current->pgd));
     //write lr
     __asm__ __volatile__("mov x30, %[value]"
                          :
@@ -173,12 +177,12 @@ int _cpio_exec(struct initramfs *self, char *argv[])
     //write fp
     __asm__ __volatile__("mov x29, %[value]"
                          :
-                         : [value] "r" (STACK_BASE(current->user_stack, current->user_stack_size))
+                         : [value] "r" (USER_STK_HIGH)
                          : "x29");
     //allow interrupt
     write_sysreg(spsr_el1, 0);
-    write_sysreg(elr_el1, load_addr);
-    write_sysreg(sp_el0, STACK_BASE(current->user_stack, current->user_stack_size));
+    write_sysreg(elr_el1, 0x0);
+    write_sysreg(sp_el0, USER_STK_HIGH);
     asm volatile("eret");
     return -1;
 }

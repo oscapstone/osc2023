@@ -34,7 +34,9 @@ void syscall_uart_write(struct trap_frame *tf)
 void run_user_prog(char *user_text)
 {
     task_t *current = get_current_thread();
-    _run_user_prog(user_text, exit, STACK_BASE(current->user_stack, current->user_stack_size));
+    mappages(current->pgd, USER_STK_LOW, STACKSIZE, 0);
+    // _run_user_prog(user_text, exit, STACK_BASE(current->user_stack, current->user_stack_size));
+    _run_user_prog(user_text, exit, USER_STK_HIGH);
 }
 
 void _run_user_prog(char *user_text, char *callback, char *stack_base)
@@ -81,7 +83,11 @@ void syscall_fork(struct trap_frame *tf)
     //if is parent thread, retrurn child thread id
     //otherwise, return 0
     task_t *current = get_current_thread();
-    task_t *child = copy_run_thread(current);
+    //compile add following instruction truncating 0xffffxxxxxxxxxxxx to 0xxxxxxxxx
+    //sxtw    x0, w0
+    //task_t *child = copy_run_thread(current);
+    //fast fix
+    task_t *child = copy_run_thread(current) | KERN_BASE;
     tf->gprs[0] = child->tid;
 }
 void syscall_exit(struct trap_frame *tf)
@@ -92,8 +98,9 @@ void syscall_mbox_call(struct trap_frame *tf)
 {
     unsigned char ch = tf->gprs[0];
     unsigned int *mbox = tf->gprs[1];
-    mailbox_call(mbox, ch);
-    tf->gprs[0] = mbox[1];
+    unsigned int *kernel_addr = walk(get_current_thread()->pgd, mbox, 0);
+    mailbox_call(kernel_addr, ch);
+    tf->gprs[0] = kernel_addr[1];//mbox[1];
 }
 void syscall_kill(struct trap_frame *tf)
 {

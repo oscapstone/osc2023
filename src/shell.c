@@ -109,7 +109,8 @@ static void thread_cmd(int argc, char *argv[])
 
 static void demo_fork_test()
 {
-    run_user_prog(fork_test);
+    char *load_addr = load_program(fork_test, 0x1000);
+    run_user_prog(load_addr);
     // _exit(0);
 }
 
@@ -135,16 +136,9 @@ static void kill_cmd(int argc, char *argv[])
     create_thread(demo_kill);
 }
 
-static void help_cmd(int argc, char *argv[])
-{
-    for (size_t i = 0; i < shell_cmd_cnt; i++) {
-        uart_write_string(cmd_list[i].name);
-        uart_write_string("\t\t: ");
-        uart_write_string(cmd_list[i].help);
-    }
-}
-// static void hello_cmd(int argc, char *argv[])
 
+// static void hello_cmd(int argc, char *argv[])
+static void help_cmd(int argc, char *argv[]);
 struct shell_cmd cmd_list[] = {
     {.name="ls", .help="list files in initramfs\n", .func=ls_cmd},
     {.name="cat", .help="print content of a specific file in initramfs\n", .func=cat_cmd},
@@ -166,8 +160,16 @@ struct shell_cmd cmd_list[] = {
     {.name="preempt", .help="schedule a timer function which asynchronously write 'asyncw'.\n", .func=preempt_cmd},
     
 };
-
-size_t shell_cmd_cnt = ARRAY_SIZE(cmd_list);
+static void help_cmd(int argc, char *argv[])
+{
+    for (size_t i = 0; i < sizeof(cmd_list) / sizeof(cmd_list[0]); i++) {
+    // for (size_t i = 0; i < 18; i++) {
+        uart_write_string(cmd_list[i].name);
+        uart_write_string("\t\t: ");
+        uart_write_string(cmd_list[i].help);
+    }
+}
+size_t shell_cmd_cnt = sizeof(cmd_list) / sizeof(cmd_list[0]);//ARRAY_SIZE(cmd_list);
 
 enum ANSI_ESC
 {
@@ -292,7 +294,8 @@ shell_input_loop_end:
 
 int run_if_builtin(int argc, char *argv[])
 {
-    for (size_t i = 0; i < shell_cmd_cnt; i++) {
+    // shell_cmd_cnt = sizeof(cmd_list) / sizeof(cmd_list[0]);//ARRAY_SIZE(cmd_list);
+    for (size_t i = 0; i < ARRAY_SIZE(cmd_list); i++) {
         if (strcmp(argv[0], cmd_list[i].name) == 0) {
             cmd_list[i].func(argc, argv);
             return 1;

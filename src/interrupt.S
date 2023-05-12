@@ -1,4 +1,11 @@
-#define CORE0_TIMER_IRQ_CTRL 0x40000040
+#include "mmio.h"
+#define ARM_PERI_BASE        (KERN_BASE | 0x40000000)
+//https://github.com/Tekki/raspberrypi-documentation/blob/master/hardware/raspberrypi/bcm2836/QA7_rev3.4.pdf p7
+//https://datasheets.raspberrypi.com/bcm2836/bcm2836-peripherals.pdf 4.6
+#define CORE0_TIMER_IRQ_CTRL (ARM_PERI_BASE + 0x40)
+//https://datasheets.raspberrypi.com/bcm2836/bcm2836-peripherals.pdf 4.10
+#define CORE0_INTERRUPT_SOURCE (ARM_PERI_BASE + 0x60)
+
 .global core_timer_enable
 core_timer_enable:
   mov x0, 1

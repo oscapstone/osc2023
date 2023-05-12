@@ -3,6 +3,7 @@
 #include "stdint.h"
 #include "initramfs.h"
 #include "uart.h"
+#include "mmu.h"
 struct fdt _fdt;
 uint32_t fdt2hou(unsigned char *s) 
 {
@@ -42,12 +43,12 @@ void initramfs_fdt_cb(struct fdt *self, dtb_node_t *node, dtb_property_t *prop, 
             uart_write_string(prop_name);
             uart_write_string("\n");
             
-            cpio_addr = (char *)fdt2hou(&(prop->data));
+            cpio_addr = (char *)PA2VA(fdt2hou(&(prop->data)));
         } else if (strcmp(prop_name, "linux,initrd-end") == 0) {
             uart_write_string(prop_name);
             uart_write_string("\n");
             
-            cpio_end = (char *)fdt2hou(&(prop->data));
+            cpio_end = (char *)PA2VA(fdt2hou(&(prop->data)));
         }
     }
 }

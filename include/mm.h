@@ -1,6 +1,6 @@
 #ifndef	_MM_H
 #define	_MM_H
-
+#include "mmu.h"
 #include "utils.h"
 
 #define PAGE_SHIFT	 		12
@@ -8,6 +8,7 @@
 #define SECTION_SHIFT			(PAGE_SHIFT + TABLE_SHIFT)
 
 #define PAGE_SIZE   			(1 << PAGE_SHIFT)
+#define PAGE_MASK               (~(PAGE_SIZE-1))
 #define SECTION_SIZE			(1 << SECTION_SHIFT)	
 
 #define LOW_MEMORY              	(2 * SECTION_SIZE)
@@ -15,14 +16,14 @@
 #ifndef __ASSEMBLER__
 extern void my_bzero(void *src, unsigned long n);
 
-#define MEM_START 0x0
-#define MEM_END 0x3C000000
+#define MEM_START PA2VA(0x0)
+#define MEM_END PA2VA(0x3C000000)
 #define PAGE_CNT ((MEM_END - MEM_START) >> PAGE_SHIFT)
 ////////////////////////// startup allocator //////////////////////
 extern void *simple_malloc(unsigned long long size);
 
 ////////////////////////// buddy system ////////////////////////
-// #define PRINT_LOG 0
+// #define PRINT_LOG 1
 #define BUDDY_ORDERS 16
 #define BLK_INVALID (~(unsigned)0)
 #define BLK_INUSE(blk) ( GETBIT((blk).flags, (sizeof(unsigned) << 3)-1) )
