@@ -43,6 +43,8 @@ int main(void)
     //meory init
     init_buddy(&_buddy);
     init_mem_pool(&_mem_pool);
+    //map kernel space
+    kspace_map();
 
     init_note();
     print_hw_info();

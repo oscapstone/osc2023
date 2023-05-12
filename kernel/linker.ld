@@ -1,9 +1,11 @@
-ENTRY(_start)
+_proc_start = 0xffff000000080000;
 
+
+ENTRY(_start)
 SECTIONS 
 {
-  . = 0x80000;
-  _proc_start = .;
+  . = _proc_start;
+  
   _stext = .;
   .text : { 
     *(.text.boot)
@@ -14,7 +16,7 @@ SECTIONS
   _etext = .;
 
   _sdata = .;
-  .data : { *(.data) }
+  .data (NOLOAD): { *(.data) }
   . = ALIGN(0x1000);
   _edata = .;
 
@@ -26,11 +28,10 @@ SECTIONS
 
   .heap (NOLOAD):
   {
-    /*__heap_size = 16M;*/
     __heap_start = .;
-    /*. += __heap_size;*/
     . += 0x1000000;
     __heap_end = .;
   }
   _proc_end = .;
+  
 }

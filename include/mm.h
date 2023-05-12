@@ -1,6 +1,6 @@
 #ifndef	_MM_H
 #define	_MM_H
-
+#include "mmu.h"
 #include "utils.h"
 
 #define PAGE_SHIFT	 		12
@@ -15,8 +15,8 @@
 #ifndef __ASSEMBLER__
 extern void my_bzero(void *src, unsigned long n);
 
-#define MEM_START 0x0
-#define MEM_END 0x3C000000
+#define MEM_START PA2VA(0x0)
+#define MEM_END PA2VA(0x3C000000)
 #define PAGE_CNT ((MEM_END - MEM_START) >> PAGE_SHIFT)
 ////////////////////////// startup allocator //////////////////////
 extern void *simple_malloc(unsigned long long size);

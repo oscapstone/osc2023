@@ -286,7 +286,7 @@ static void _buddy_internal_mem_reserve(struct buddy *self, int start, int end, 
 void _buddy_mem_reserve(struct buddy *self, char *start, char *end)
 {
     disable_interrupt();
-    if (start < self->pool || end > alignToNextPowerOf2(self->pool_end))
+    if (start < self->pool || end > self->pool_end)
         return;
     //find start index
     int start_index = (start - self->pool) / PAGE_SIZE;
@@ -321,7 +321,8 @@ void init_buddy(buddy_t *self)
     //all reserve areas
     self->mem_reserve(self, self->pool_end, alignToNextPowerOf2(self->pool_end));
     //Spin tables for multicore boot (0x0000 - 0x1000)
-    self->mem_reserve(self, 0x0000, 0x1000);
+    self->mem_reserve(self, PA2VA(0x0000), PA2VA(0x1000));
+    self->mem_reserve(self, PA2VA(0x1000), PA2VA(0x2000));
     //Kernel image in the physical memory
     self->mem_reserve(self, &_proc_start, &_proc_end);
     //Initramfs
