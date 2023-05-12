@@ -139,6 +139,9 @@ void current_irq_exception_router(void)
 {
     // uart_write_string("In current_irq_exception_router\n");
     irq_router();
+    // uart_write_string("current_irq_exception_router return\n");
+    // handle_current_signal();
+    // check_before_switch_back();
 }
 
 static void syscall_handler(struct trap_frame *tf)
@@ -174,9 +177,11 @@ void synchronous_exception_router(struct trap_frame *tf)
         break;
     case ESR_ELx_EC_DABT_LOW:
         uart_write_string("in Data Abort\n");
+        default_handler();
         break;
     case ESR_ELx_EC_IABT_LOW:
         uart_write_string("in Instruction  Abort\n");
+        default_handler();
         break;
     default:
         default_handler();
@@ -202,6 +207,8 @@ void lower_irq_exception_router(void)
     // uart_write_string("In lower_irq_exception_router\n");
     // default_handler();
     irq_router();
+    // handle_current_signal();
+    // check_before_switch_back();
 }
 
 void _insert_qbin(struct interrupt_scheduler *self, list_t *head, struct interrupt_task_node *task)

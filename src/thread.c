@@ -21,6 +21,7 @@ static void real_thread()
 
 task_t *_new_thread()
 {
+    uart_write_string("in _new_thread\n");
     task_t *new_thread_ptr = (task_t *)kmalloc(sizeof(task_t));
     INIT_LIST_HEAD(&(new_thread_ptr->node));
     new_thread_ptr->state = TASK_RUNNING;
@@ -34,6 +35,7 @@ task_t *_new_thread()
 
     new_thread_ptr->arg_loaded = 0;
     new_thread_ptr->argc = 0;
+    
     my_bzero(new_thread_ptr->argv, sizeof(new_thread_ptr->argv));
 
     my_bzero(&(new_thread_ptr->old_reg_set), sizeof(new_thread_ptr->old_reg_set));
@@ -42,8 +44,14 @@ task_t *_new_thread()
     new_thread_ptr->old_reg_set.sp = (uint64_t)STACK_BASE(new_thread_ptr->kernel_stack, new_thread_ptr->kernel_stack_size);
     new_thread_ptr->exit_code = new_thread_ptr->exit_state = new_thread_ptr->exit_signal = 0;
     new_thread_ptr->need_reschedule = 0;
+    
     my_bzero(&(new_thread_ptr->reg_sig_handlers), sizeof(new_thread_ptr->reg_sig_handlers));
     INIT_LIST_HEAD(&(new_thread_ptr->pending_signal_list));
+
+    disable_interrupt();
+    create_pgd(&new_thread_ptr->pgd);
+    mappages(new_thread_ptr->pgd, 0x3C000000, 0x3000000, 0x3C000000);
+    test_enable_interrupt();
     return new_thread_ptr;
 }
 
@@ -96,15 +104,19 @@ task_t *copy_thread(task_t *src)
     dst_tf->gprs[0] = 0;
 
     //copy user stack
-    // memcpy(dst->user_stack, src->user_stack, src->user_stack_size);
-    stk_base = STACK_BASE(src->user_stack, src->user_stack_size);//src->user_stack + src->user_stack_size;
-    //user stack pointer is in the trap frame
-    stk_top = (char *)src_tf->sp;
-    offset = stk_base - stk_top;
-    memcpy(STACK_BASE(dst->user_stack, dst->user_stack_size) - offset, stk_top, offset);
-    //update user stack pointer
-    dst_tf->sp = (uint64_t)STACK_BASE(dst->user_stack, dst->user_stack_size) - offset;
+    // stk_base = STACK_BASE(src->user_stack, src->user_stack_size);//src->user_stack + src->user_stack_size;
+    // //user stack pointer is in the trap frame
+    // stk_top = (char *)src_tf->sp;
+    // offset = stk_base - stk_top;
+    // memcpy(STACK_BASE(dst->user_stack, dst->user_stack_size) - offset, stk_top, offset);
+    // //update user stack pointer
+    // dst_tf->sp = (uint64_t)STACK_BASE(dst->user_stack, dst->user_stack_size) - offset;
     
+    //setup user stack
+    disable_interrupt();
+    fork_pgd(src->pgd, dst->pgd);
+    test_enable_interrupt();
+
     dst->exit_state = src->exit_state;
     dst->exit_code = src->exit_code;
     dst->exit_signal = src->exit_signal;
@@ -152,6 +164,7 @@ void destruct_thread(task_t *t)
 {
     free_page(t->kernel_stack);
     free_page(t->user_stack);
+    free_pgd(t->pgd);
     if (t->user_text) {
         free_page(t->user_text);
     }
@@ -167,7 +180,9 @@ void schedule()
         task_t *current = get_current_thread();
         if ((current->state | current->exit_state) == TASK_RUNNING)
             list_add_tail(&(current->node), &running_queue);
+        // switch_to(&(current->old_reg_set), &(next_task->old_reg_set));
         test_enable_interrupt();
+        // update_pgd(VA2PA(next_task->pgd));
         //context switch
         switch_to(&(current->old_reg_set), &(next_task->old_reg_set));
     } else {
@@ -267,13 +282,15 @@ void init_startup_thread(char *main_addr)
     task_t *startup_thread_ptr = _new_thread();
     free_page(startup_thread_ptr->kernel_stack);
     startup_thread_ptr->kernel_stack_size = PAGE_SIZE;
-    startup_thread_ptr->kernel_stack = LOW_MEMORY - PAGE_SIZE;
+    startup_thread_ptr->kernel_stack = KERN_BASE + LOW_MEMORY - PAGE_SIZE;
     startup_thread_ptr->text = main_addr;
     startup_thread_ptr->old_reg_set.lr = (uint64_t)main_addr;
     startup_thread_ptr->state = TASK_RUNNING;
     startup_thread_ptr->tid = next_free_tid();
     tid2task[startup_thread_ptr->tid] = startup_thread_ptr;
     write_sysreg(tpidr_el1, &(startup_thread_ptr->old_reg_set));
+    // startup_thread_ptr->pgd = read_sysreg(ttbr0_el1);
+    update_pgd(startup_thread_ptr->pgd);
 }
 
 void demo_thread()
@@ -318,7 +335,22 @@ char *load_program(char *text, size_t file_size)
         return NULL;
     }
     memcpy(load_addr, text, file_size);
-    return current->user_text = load_addr;
+    current->user_text = load_addr;
+    mappages(current->pgd, 0x0, file_size, VA2PA(load_addr));
+    return 0;
+    // task_t *current = get_current_thread();
+    // if (current->user_text != NULL) {
+    //     free_page(current->user_text);
+    //     current->user_text = NULL;
+    // }
+    // size_t page_needed = ALIGN(file_size, PAGE_SIZE) / PAGE_SIZE;
+    // char *load_addr = alloc_pages(page_needed);
+    // if (load_addr == NULL) {
+    //     uart_write_string("No enough space for loading program.\n");
+    //     return NULL;
+    // }
+    // memcpy(load_addr, text, file_size);
+    // return current->user_text = load_addr;
 }
 
 //return void to avoid setting x0
@@ -348,8 +380,11 @@ void check_load_args()
 
 void check_before_switch_back()
 {
+    // disable_interrupt();
+    update_pgd(VA2PA(get_current_thread()->pgd));
     check_load_args();
     handle_current_signal();
+    // test_enable_interrupt();
     // asm volatile("b check_load_args\n\t");
     // asm volatile("b handle_current_signal\n\t");
 }

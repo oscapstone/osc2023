@@ -1,11 +1,9 @@
-_proc_start = 0xffff000000080000;
-
-
 ENTRY(_start)
 SECTIONS 
 {
-  . = _proc_start;
-  
+  . = 0xffff000000000000;
+  . += 0x80000;
+  _proc_start = .;
   _stext = .;
   .text : { 
     *(.text.boot)

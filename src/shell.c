@@ -109,7 +109,8 @@ static void thread_cmd(int argc, char *argv[])
 
 static void demo_fork_test()
 {
-    run_user_prog(fork_test);
+    char *load_addr = load_program(fork_test, 0x1000);
+    run_user_prog(load_addr);
     // _exit(0);
 }
 
