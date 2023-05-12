@@ -77,8 +77,14 @@ $(KERNEL_IMG): $(KERNEL_DIR)/linker.ld $(KERNEL_OBJ_FILES) $(SRC_OBJ_FILES)
 test_kernel:
 	qemu-system-aarch64 -M raspi3b -kernel $(KERNEL_IMG) -serial null -serial stdio -initrd $(INITRAMFS_CPIO) -dtb $(RPI3_DTB) -display none -S -s
 
+quick_test_kernel:
+	qemu-system-aarch64 -M raspi3b -kernel $(KERNEL_IMG) -serial null -serial stdio -initrd $(INITRAMFS_CPIO) -dtb $(RPI3_DTB) -display none
+
 test_video:
 	qemu-system-aarch64 -M raspi3b -kernel $(KERNEL_IMG) -serial null -serial stdio -initrd $(INITRAMFS_CPIO) -dtb $(RPI3_DTB) -S -s
+
+quick_video:
+	qemu-system-aarch64 -M raspi3b -kernel $(KERNEL_IMG) -serial null -serial stdio -initrd $(INITRAMFS_CPIO) -dtb $(RPI3_DTB)
 
 test:
 	#qemu-system-aarch64 -M raspi3b -kernel kernel8.img -display none -d in_asm
