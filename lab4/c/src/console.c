@@ -1,5 +1,7 @@
 #include "oscos/console.h"
 
+#include <stdbool.h>
+
 #include "oscos/drivers/gpio.h"
 #include "oscos/drivers/l2ic.h"
 #include "oscos/drivers/mini-uart.h"
@@ -15,14 +17,60 @@ static volatile unsigned char _console_read_buf[READ_BUF_SZ],
 static volatile size_t _console_read_buf_start = 0, _console_read_buf_len = 0,
                        _console_write_buf_start = 0, _console_write_buf_len = 0;
 
+// Buffer operations.
+
+static void _console_recv_to_buf(void) {
+  // Read until the read buffer is full or there are nothing to read.
+
+  int read_result;
+  while (_console_read_buf_len != READ_BUF_SZ &&
+         (read_result = mini_uart_recv_byte_nonblock()) >= 0) {
+    _console_read_buf[(_console_read_buf_start + _console_read_buf_len++) %
+                      READ_BUF_SZ] = read_result;
+  }
+
+  // Disable the receive interrupt if the read buffer is full. Otherwise, the
+  // interrupt will fire again and again after exception return, blocking the
+  // main code from executing.
+  if (_console_read_buf_len == READ_BUF_SZ) {
+    mini_uart_disable_rx_interrupt();
+  }
+}
+
+static void _console_send_from_buf(void) {
+  while (_console_write_buf_len != 0 &&
+         mini_uart_send_byte_nonblock(
+             _console_write_buf[_console_write_buf_start]) >= 0) {
+    _console_write_buf_start = (_console_write_buf_start + 1) % WRITE_BUF_SZ;
+    _console_write_buf_len--;
+  }
+
+  // Disable the transmit interrupt if the write buffer is full. Otherwise, the
+  // interrupt will fire again and again after exception return, blocking the
+  // main code from executing.
+  if (_console_write_buf_len == 0) {
+    mini_uart_disable_tx_interrupt();
+  }
+}
+
 // Raw operations.
 
 static unsigned char _console_recv_byte(void) {
-  while (_console_read_buf_len == 0) {
-    __asm__ __volatile__("wfi");
+  bool suspend_cond_val = true;
+  uint64_t daif_val;
+
+  // Wait for data in the read buffer.
+  while (suspend_cond_val) {
+    CRITICAL_SECTION_ENTER(daif_val);
+
+    if ((suspend_cond_val = _console_read_buf_len == 0)) {
+      __asm__ __volatile__("wfi");
+      _console_recv_to_buf();
+    }
+
+    CRITICAL_SECTION_LEAVE(daif_val);
   }
 
-  uint64_t daif_val;
   CRITICAL_SECTION_ENTER(daif_val);
 
   const unsigned char result = _console_read_buf[_console_read_buf_start];
@@ -38,12 +86,21 @@ static unsigned char _console_recv_byte(void) {
 }
 
 static void _console_send_byte(const unsigned char b) {
+  bool suspend_cond_val = true;
+  uint64_t daif_val;
+
   // Wait for the write buffer to clear.
-  while (_console_write_buf_len == WRITE_BUF_SZ) {
-    __asm__ __volatile__("wfi");
+  while (suspend_cond_val) {
+    CRITICAL_SECTION_ENTER(daif_val);
+
+    if ((suspend_cond_val = _console_write_buf_len == WRITE_BUF_SZ)) {
+      __asm__ __volatile__("wfi");
+      _console_send_from_buf();
+    }
+
+    CRITICAL_SECTION_LEAVE(daif_val);
   }
 
-  uint64_t daif_val;
   CRITICAL_SECTION_ENTER(daif_val);
 
   _console_write_buf[(_console_write_buf_start + _console_write_buf_len++) %
@@ -177,37 +234,6 @@ int console_vprintf(const char *const restrict format, va_list ap) {
 }
 
 void mini_uart_interrupt_handler(void) {
-  // Read.
-
-  // Read until the read buffer is full or there are nothing to read.
-
-  int read_result;
-  while (_console_read_buf_len != READ_BUF_SZ &&
-         (read_result = mini_uart_recv_byte_nonblock()) >= 0) {
-    _console_read_buf[(_console_read_buf_start + _console_read_buf_len++) %
-                      READ_BUF_SZ] = read_result;
-  }
-
-  // Disable the receive interrupt if the read buffer is full. Otherwise, the
-  // interrupt will fire again and again after exception return, blocking the
-  // main code from executing.
-  if (_console_read_buf_len == READ_BUF_SZ) {
-    mini_uart_disable_rx_interrupt();
-  }
-
-  // Write.
-
-  while (_console_write_buf_len != 0 &&
-         mini_uart_send_byte_nonblock(
-             _console_write_buf[_console_write_buf_start]) >= 0) {
-    _console_write_buf_start = (_console_write_buf_start + 1) % WRITE_BUF_SZ;
-    _console_write_buf_len--;
-  }
-
-  // Disable the transmit interrupt if the write buffer is full. Otherwise, the
-  // interrupt will fire again and again after exception return, blocking the
-  // main code from executing.
-  if (_console_write_buf_len == 0) {
-    mini_uart_disable_tx_interrupt();
-  }
+  _console_recv_to_buf();
+  _console_send_from_buf();
 }
