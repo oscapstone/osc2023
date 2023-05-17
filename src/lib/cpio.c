@@ -91,7 +91,7 @@ void cpio_cat(char *cpio, char *filename){
     }
 }
 
-char *cpio_load_prog(char *cpio, char *filename){
+uint32 cpio_load_prog(char *cpio, const char *filename, char **output_data){
     char *cur = cpio;
 
     while(1){
@@ -99,7 +99,7 @@ char *cpio_load_prog(char *cpio, char *filename){
         cur += sizeof(struct cpio_newc_header);
         if(!strcmp(pheader->c_magic, "070701")){
             uart_printf("Only support new ASCII format for cpio. \r\n");
-            return NULL;
+            return 0;
         }
         
         uint32 namesize = cpio_read_hex(pheader->c_namesize);
@@ -117,14 +117,14 @@ char *cpio_load_prog(char *cpio, char *filename){
         cur += aligned_filesize;
 
         if(!strcmp(curfilename, filename)){
-            char *mem = (char*)kmalloc(filesize);
-            memncpy(mem, curfilecontent, (unsigned long)filesize);
-            return mem;
+            *output_data = (char*)kmalloc(filesize);
+            memncpy(*output_data, curfilecontent, (unsigned long)filesize);
+            return filesize;
         }
 
         if(!strcmp(curfilename, "TRAILER!!!")){
             uart_printf("%s: no such file.\r\n", filename);
-            return NULL;
+            return 0;
         }
     }
 }

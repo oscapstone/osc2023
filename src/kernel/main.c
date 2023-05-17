@@ -9,6 +9,8 @@
 #include <mm.h>
 #include <sched.h>
 #include <kthread.h>
+#include <task.h>
+#include <exec.h>
 
 #define BUFSIZE 0x100
 char shell_buf[BUFSIZE];
@@ -89,7 +91,7 @@ void kernel_main(char *fdt){
     initramfs_init(fdt);
     mm_init(fdt);
     timer_init();
-
+    task_init();
     scheduler_init();
     kthread_init();
 
@@ -97,6 +99,7 @@ void kernel_main(char *fdt){
     uart_printf("[*] fdt base: %x\r\n", fdt);
 
     kthread_create(shell_interact);
+    // sched_new_user_prog(fdt, "syscall.img");
 
     enable_irqs1();
     enable_interrupt();

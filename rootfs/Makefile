@@ -1,12 +1,17 @@
 CROSS_COMPILE ?= aarch64-linux-gnu-
 CC := $(CROSS_COMPILE)gcc
 LD := $(CROSS_COMPILE)ld
-INC := ../inc
-LIB := ../obj/lib
-LIB_OBJ = $(wildcard $(LIB)/*.o)
-CFLAGS  = -Wall -nostdlib -nostartfiles -ffreestanding -mgeneral-regs-only \
-				-I$(INC)
+CFLAGS := -Wall -nostdlib -nostartfiles -ffreestanding -mgeneral-regs-only
 all: userprog2
+
+# userprog1: userprog1.elf
+# 	$(CROSS_COMPILE)objcopy -O binary $^ $@
+
+# userprog1.elf: linker.ld userprog1.o
+# 	$(LD) $(LDFLAGS) -T -Iinc $< -o $@ userprog1.o
+
+# userprog1.o: userprog1.c
+# 	$(CC) $(CFLAGS) -c $< -o $@
 
 userprog2: userprog2.elf
 	$(CROSS_COMPILE)objcopy -O binary $^ $@
@@ -23,4 +28,4 @@ clean:
 
 .PHONY: clean-all
 clean-all: clean
-	rm -f userprog1
+	rm -f userprog1 userprog2

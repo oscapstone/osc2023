@@ -4,6 +4,7 @@
 #include <timer.h>
 #include <list.h>
 #include <preempt.h>
+#include <task.h>
 
 #define SCHED_TIMER_FREQ 32
 #define SCHED_WATERMARK 1
@@ -33,10 +34,13 @@ void sched_tick(){
 }
 
 void sched_add_task(task_struct *task){
-    uint32 daif;
-    daif = save_and_disable_interrupt();
+    preempt_disable();
+
+    task->status = TASK_RUNNING;
+
     list_add_tail(&task->list, &run_queue);
-    restore_interrupt(daif);
+
+    preempt_enable();
 }
 
 void schedule(void){

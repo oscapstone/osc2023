@@ -3,7 +3,7 @@
 
 int strcmp(const char *X, const char *Y);
 int strncmp(const char *X, const char *Y, int n);
-int strlen(char *str);
-int atoi(char *str);
+int strlen(const char *str);
+int atoi(const char *str);
 
 #endif  /* _STRING_H */

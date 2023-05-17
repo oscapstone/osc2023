@@ -26,6 +26,11 @@ char uart_recv(void){
     return (uart_recv_fp)();
 }
 
+void uart_recvn(char *buff, int n){
+    while(n--)
+        *buff++ = (uart_recv_fp)();
+}
+
 void uart_send(char c){
     (uart_send_fp)(c);
 }
@@ -171,7 +176,7 @@ static void uart_send_num(int32 num, int base, int type)
     }
 }
 
-void uart_printf(char *fmt, ...){
+void uart_printf(const char *fmt, ...){
 
     const char *s;
     char c;
@@ -222,7 +227,7 @@ void uart_printf(char *fmt, ...){
     }
 }
 
-void uart_sendn(char *str, int n){
+void uart_sendn(const char *str, int n){
     while (n--) 
         uart_send(*str++);
 }

@@ -5,9 +5,10 @@ _start:
 1:
     add x0, x0, 1
 
-    // syscall test
+    // syscall_test
     mov x8, 10
     svc 0
+
     cmp x0, 5
     blt 1b
 1:

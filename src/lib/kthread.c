@@ -7,34 +7,7 @@
 #include <preempt.h>
 #include <task.h>
 
-#define STACK_SIZE (2 * PAGE_SIZE)
-
-uint32 max_tid;
-
 static wait_queue_head *wait_queue;
-
-static uint32 alloc_tid(void)
-{
-    uint32 tid;
-
-    tid = max_tid;
-    max_tid += 1;
-
-    return tid;
-}
-
-void kthread_fini(void)
-{    
-    preempt_disable();
-
-    sched_del_task(current);
-
-    wq_add_task(current, wait_queue);
-
-    preempt_enable();
-
-    schedule();
-}
 
 static void kthread_start(void)
 {
@@ -83,6 +56,25 @@ void kthread_create(void (*start)(void)){
     pt_regs_init(&task->regs, start);
 
     sched_add_task(task);
+}
+
+void kthread_fini(void)
+{    
+    preempt_disable();
+
+    current->status = TASK_DEAD;
+
+    sched_del_task(current);
+
+    wq_add_task(current, wait_queue);
+
+    preempt_enable();
+
+    schedule();
+}
+
+void kthread_add_wait_queue(task_struct *task){
+    wq_add_task(task, wait_queue);
 }
 
 void kthread_kill_zombies(void){

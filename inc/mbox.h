@@ -25,7 +25,7 @@ struct arm_info{
     unsigned int base_addr, size;
 }typedef arm_info;
 
-int mbox_call(unsigned char ch);
+int mbox_call(unsigned char ch, volatile unsigned int *mb);
 void get_board_revision(unsigned int *revision);
 void get_arm_memory(arm_info *arm_mem);
 

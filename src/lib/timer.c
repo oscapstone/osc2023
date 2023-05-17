@@ -111,13 +111,17 @@ static timer_node *tn_alloc(){
 }
 
 void timer_init(){
+    uint64 cntkctl_el1;
     timer_set_boot_cnt();
     INIT_LIST_HEAD(&t_meta.lh);
     t_meta.size = 0;
     t_meta.t_interval = 0;
     t_meta.t_status = 0xffffffff;
     timer_show_enable = 0;
-    // timer_add_after(boot_time_callback,NULL,2);
+    cntkctl_el1 = read_sysreg(CNTKCTL_EL1);
+    cntkctl_el1 |= 1;
+    write_sysreg(CNTKCTL_EL1, cntkctl_el1);
+    timer_add_after(boot_time_callback,NULL,2);
 }
 
 void boot_time_callback(){

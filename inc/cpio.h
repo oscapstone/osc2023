@@ -1,6 +1,7 @@
 #ifndef _CPIO_H
 #define _CPIO_H
 
+#include <type.h>
 struct cpio_newc_header {
 		   char	   c_magic[6];
 		   char	   c_ino[8];
@@ -20,6 +21,12 @@ struct cpio_newc_header {
 
 void cpio_ls(char *cpio);
 void cpio_cat(char *cpio, char *filename);
-char *cpio_load_prog(char *cpio, char *filename);
+
+/*	
+ * Allocate a memory chunk and load the @filename program on it.
+ * @output_data point to a pointer to the memory address.
+ * Return the size of the file, return 0 if no such file.
+ */
+uint32 cpio_load_prog(char *cpio, const char *filename, char **output_data);
 
 #endif

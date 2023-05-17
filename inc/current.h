@@ -1,4 +1,4 @@
-#ifndef _CUURENT_H
+#ifndef _CURRENT_H
 #define _CURRENT_H
 
 #include <utils.h>

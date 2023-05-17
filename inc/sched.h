@@ -20,6 +20,8 @@ struct pt_regs {
     void *sp;
 };
 
+struct signal_head_t;
+struct sighand_t;
 typedef struct _task_struct {
     /* This must be the first element */
     struct pt_regs regs;
@@ -27,10 +29,16 @@ typedef struct _task_struct {
     void *user_stack;
     /* TODO: Update to address_space*/
     void *data;
+    uint32 datalen;
     struct list_head list;
-    uint32 need_resched:1;
+    struct list_head task_list;
+    uint16 status;
+    uint16 need_resched:1;
     uint32 tid;
     uint32 preempt;
+    /* Signal */
+    struct signal_head_t *signal;
+    struct sighand_t *sighand;
 } task_struct;
 
 void switch_to(task_struct *from, task_struct *to);

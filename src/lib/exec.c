@@ -2,8 +2,9 @@
 #include <current.h>
 #include <sched.h>
 #include <task.h>
-
-#define STACK_SIZE ( 2 * PAGE_SIZE)
+#include <cpio.h>
+#include <mm.h>
+#include <kthread.h>
 
 void enter_el0_run_user_prog(void *entry, void *user_sp);
 
@@ -32,26 +33,30 @@ static inline void pt_regs_init(struct pt_regs *regs){
     regs->lr = user_prog_start;
 }
 
-void exec_user_prog(char* cpio, char *filename){
+void sched_new_user_prog(char* cpio, char *filename){
     task_struct *task;
+    void *data;
+    uint32 datalen;
+
+    datalen = cpio_load_prog(cpio, filename, (char **)&data);
+
+    if(datalen == 0)
+        goto EXEC_USER_PROG_END;
+
     task = task_create();
 
     task->kernel_stack = kmalloc(STACK_SIZE);
     task->user_stack = kmalloc(STACK_SIZE);
-    task->data = cpio_load_prog(cpio, filename);
-
-    if(task->data == NULL)
-        goto EXEC_USER_PROG_END;
+    task->data = data;
+    task->datalen = datalen;
 
     task->regs.sp = (char *)task->kernel_stack + STACK_SIZE -0x10;
     pt_regs_init(&task->regs);
 
     sched_add_task(task);
 
-    return;
-
 EXEC_USER_PROG_END:
-    task_free(task);
+    return;
 }
 
 
