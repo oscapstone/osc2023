@@ -94,7 +94,7 @@ int thread_exec(char *data, unsigned int filesize)
 
     //disable echo when going to userspace
     curr_thread = t;
-    add_timer(schedule_timer, 1, "", 0);
+    //add_timer(schedule_timer, 1, "", 0);
     // eret to exception level 0
     asm("msr tpidr_el1, %0\n\t"
         "msr elr_el1, %1\n\t"
@@ -137,6 +137,7 @@ thread_t *thread_create(void *start, unsigned int filesize)
     r->datasize = filesize;
     r->context.sp = (unsigned long long)r->kernel_stack_alloced_ptr + KSTACK_SIZE;
     r->context.fp = r->context.sp;
+    strcpy(r->curr_working_dir, "/");
 
     r->context.pgd = kmalloc(0x1000);
     memset(r->context.pgd, 0, 0x1000);

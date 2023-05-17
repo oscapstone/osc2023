@@ -8,15 +8,9 @@
 #define MAX_DIR_ENTRY 17
 #define MAX_FILE_SIZE 4096
 
-enum tmpfs_type
-{
-    dir_t,
-    file_t
-};
-
 struct tmpfs_inode
 {
-    enum tmpfs_type type;
+    enum fsnode_type type;
     char name[FILE_NAME_MAX];
     struct vnode *entry[MAX_DIR_ENTRY];
     char *data;
@@ -31,11 +25,12 @@ int tmpfs_read(struct file *file, void *buf, size_t len);
 int tmpfs_open(struct vnode *file_node, struct file **target);
 int tmpfs_close(struct file *file);
 long tmpfs_lseek64(struct file *file, long offset, int whence);
+long tmpfs_getsize(struct vnode *vd);
 
 int tmpfs_lookup(struct vnode *dir_node, struct vnode **target, const char *component_name);
 int tmpfs_create(struct vnode *dir_node, struct vnode **target, const char *component_name);
 int tmpfs_mkdir(struct vnode *dir_node, struct vnode **target, const char *component_name);
 
-struct vnode *tmpfs_create_vnode(struct mount *_mount, enum tmpfs_type type);
+struct vnode *tmpfs_create_vnode(struct mount *_mount, enum fsnode_type type);
 
 #endif /* _TMPFS_H_ */

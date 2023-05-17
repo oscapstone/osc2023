@@ -33,7 +33,14 @@ void sync_64_router(trapframe_t* tpf)
     else if (syscall_no == 8)  { signal_register(tpf->x0, (void (*)())tpf->x1);                               }
     else if (syscall_no == 9)  { signal_kill(tpf->x0, tpf->x1);                                               }
     else if (syscall_no == 10) { mmap(tpf,(void *)tpf->x0,tpf->x1,tpf->x2,tpf->x3,tpf->x4,tpf->x5);           }
-    else if (syscall_no == 50) { sigreturn(tpf);                                                              }
+    else if (syscall_no == 11) { open(tpf, (char*)tpf->x0, tpf->x1);                                                     }
+    else if (syscall_no == 12) { close(tpf, tpf->x0);                                                                    }
+    else if (syscall_no == 13) { write(tpf, tpf->x0, (char *)tpf->x1, tpf->x2);                                          }
+    else if (syscall_no == 14) { read(tpf, tpf->x0, (char *)tpf->x1, tpf->x2);                                           }
+    else if (syscall_no == 15) { mkdir(tpf, (char *)tpf->x0, tpf->x1);                                                   }
+    else if (syscall_no == 16) { mount(tpf, (char *)tpf->x0, (char *)tpf->x1, (char *)tpf->x2, tpf->x3, (void*)tpf->x4); }
+    else if (syscall_no == 17) { chdir(tpf, (char *)tpf->x0);                                                            }
+    else if (syscall_no == 50) { sigreturn(tpf);                                                                         }
 }
 
 void irq_router(trapframe_t* tpf)

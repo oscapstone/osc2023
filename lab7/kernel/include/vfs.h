@@ -5,8 +5,16 @@
 
 #define MAX_PATH_NAME 255
 #define MAX_FD 16
-#define O_CREAT 1
+#define O_CREAT 00000100
+#define SEEK_SET 0
 #define MAX_FS_REG 0x50
+
+enum fsnode_type
+{
+    dir_t,
+    file_t
+};
+
 
 struct vnode
 {
@@ -44,6 +52,7 @@ struct file_operations
     int (*open)(struct vnode *file_node, struct file **target);
     int (*close)(struct file *file);
     long (*lseek64)(struct file *file, long offset, int whence);
+    long (*getsize)(struct vnode *vd);
 };
 
 struct vnode_operations
@@ -68,5 +77,6 @@ int vfs_lookup(const char *pathname, struct vnode **target);
 
 void init_rootfs();
 void vfs_test();
+char* get_absolute_path(char* path,char* curr_working_dir);
 
 #endif /* _VFS_H_ */

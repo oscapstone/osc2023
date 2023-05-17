@@ -125,6 +125,13 @@ unsigned long long strlen(const char *str)
     return count;
 }
 
+char* strcat (char *dest, const char *src)
+{
+  strcpy (dest + strlen (dest), src);
+  return dest;
+}
+
+
 int strcmp(const char* p1, const char* p2)
 {
     const unsigned char *s1 = (const unsigned char*) p1;

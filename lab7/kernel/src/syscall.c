@@ -44,8 +44,15 @@ int exec(trapframe_t *tpf,const char *name, char *const argv[])
     mmu_del_vma(curr_thread);
     INIT_LIST_HEAD(&curr_thread->vma_list);
 
-    curr_thread->datasize = get_file_size((char *)name);
-    char *new_data = get_file_start((char *)name);
+    // use virtual file system
+    char abs_path[MAX_PATH_NAME];
+    strcpy(abs_path, name);
+    get_absolute_path(abs_path, curr_thread->curr_working_dir);
+
+    struct vnode *target_file;
+    vfs_lookup(abs_path,&target_file);
+    curr_thread->datasize = target_file->f_ops->getsize(target_file);
+
     curr_thread->data = kmalloc(curr_thread->datasize);
     curr_thread->stack_alloced_ptr = kmalloc(USTACK_SIZE);
 
@@ -61,7 +68,12 @@ int exec(trapframe_t *tpf,const char *name, char *const argv[])
     mmu_add_vma(curr_thread,              PERIPHERAL_START, PERIPHERAL_END - PERIPHERAL_START,                                     PERIPHERAL_START, 0b011, 0);
     mmu_add_vma(curr_thread,        USER_SIGNAL_WRAPPER_VA,                            0x2000,         (size_t)VIRT_TO_PHYS(signal_handler_wrapper), 0b101, 0);
 
-    memcpy(curr_thread->data, new_data, curr_thread->datasize);
+    //memcpy(curr_thread->data, new_data, curr_thread->datasize);
+    struct file *f;
+    vfs_open(abs_path, 0, &f);
+    vfs_read(f, curr_thread->data, curr_thread->datasize);
+    vfs_close(f);
+
     for (int i = 0; i <= SIGNAL_MAX; i++)
     {
         curr_thread->signal_handler[i] = signal_default_handler;
@@ -215,6 +227,97 @@ void *mmap(trapframe_t *tpf, void *addr, size_t len, int prot, int flags, int fd
     return (void*)tpf->x0;
 }
 
+
+int open(trapframe_t *tpf, const char *pathname, int flags)
+{
+    char abs_path[MAX_PATH_NAME];
+    strcpy(abs_path, pathname);
+    get_absolute_path(abs_path, curr_thread->curr_working_dir);
+    for (int i = 0; i < MAX_FD; i++)
+    {
+        if(!curr_thread->file_descriptors_table[i])
+        {
+            if(vfs_open(abs_path, flags, &curr_thread->file_descriptors_table[i])!=0)
+            {
+                break;
+            }
+
+            tpf->x0 = i;
+            return i;
+        }
+    }
+
+    tpf->x0 = -1;
+    return -1;
+}
+
+int close(trapframe_t *tpf, int fd)
+{
+    if(curr_thread->file_descriptors_table[fd])
+    {
+        vfs_close(curr_thread->file_descriptors_table[fd]);
+        curr_thread->file_descriptors_table[fd] = 0;
+        tpf->x0 = 0;
+        return 0;
+    }
+
+    tpf->x0 = -1;
+    return -1;
+}
+
+long write(trapframe_t *tpf, int fd, const void *buf, unsigned long count)
+{
+    if (curr_thread->file_descriptors_table[fd])
+    {
+        tpf->x0 = vfs_write(curr_thread->file_descriptors_table[fd], buf, count);
+        return tpf->x0;
+    }
+
+    tpf->x0 = -1;
+    return tpf->x0;
+}
+
+long read(trapframe_t *tpf, int fd, void *buf, unsigned long count)
+{
+    if (curr_thread->file_descriptors_table[fd])
+    {
+        tpf->x0 = vfs_read(curr_thread->file_descriptors_table[fd], buf, count);
+        return tpf->x0;
+    }
+
+    tpf->x0 = -1;
+    return tpf->x0;
+}
+
+int mkdir(trapframe_t *tpf, const char *pathname, unsigned mode)
+{
+    char abs_path[MAX_PATH_NAME];
+    strcpy(abs_path, pathname);
+    get_absolute_path(abs_path, curr_thread->curr_working_dir);
+    tpf->x0 = vfs_mkdir(abs_path);
+    return tpf->x0;
+}
+
+int mount(trapframe_t *tpf, const char *src, const char *target, const char *filesystem, unsigned long flags, const void *data)
+{
+    char abs_path[MAX_PATH_NAME];
+    strcpy(abs_path, target);
+    get_absolute_path(abs_path, curr_thread->curr_working_dir);
+
+    tpf->x0 = vfs_mount(abs_path,filesystem);
+    return tpf->x0;
+}
+
+int chdir(trapframe_t *tpf, const char *path)
+{
+    char abs_path[MAX_PATH_NAME];
+    strcpy(abs_path, path);
+    get_absolute_path(abs_path, curr_thread->curr_working_dir);
+    strcpy(curr_thread->curr_working_dir, abs_path);
+
+    return 0;
+}
+
 void sigreturn(trapframe_t *tpf)
 {
     //unsigned long signal_ustack = tpf->sp_el0 % USTACK_SIZE == 0 ? tpf->sp_el0 - USTACK_SIZE : tpf->sp_el0 & (~(USTACK_SIZE - 1));
@@ -258,3 +361,4 @@ unsigned int get_file_size(char *thefilepath)
     }
     return 0;
 }
+

@@ -144,7 +144,7 @@ void mmu_memfail_abort_handle(esr_el1_t* esr_el1)
         (esr_el1->iss & 0x3f) == TF_LEVEL2 ||
         (esr_el1->iss & 0x3f) == TF_LEVEL3)
     {
-        uart_sendline("[Translation fault]: 0x%x\r\n",far_el1); // far_el1: Fault address register.
+        //uart_sendline("[Translation fault]: 0x%x\r\n",far_el1); // far_el1: Fault address register.
                                            // Holds the faulting Virtual Address for all synchronous Instruction or Data Abort, PC alignment fault and Watchpoint exceptions that are taken to EL1.
 
         size_t addr_offset = (far_el1 - the_area_ptr->virt_addr);
