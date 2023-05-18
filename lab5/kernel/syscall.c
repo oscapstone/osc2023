@@ -17,11 +17,6 @@ unsigned int syscall_uartread(char buf[], unsigned int size)
         char c = '\0';
         for (int i = 0; i < size; i++) {
                 c = uart_recv();
-                if (c == '\r' || c == '\n') {
-                        uart_endl();
-                } else {
-                        uart_send(c);
-                }
                 buf[i] = c;
         }
         return size;
@@ -32,11 +27,7 @@ unsigned int syscall_uartwrite(const char buf[], unsigned int size)
         int i;
         for (i = 0; i < size; i++) {
                 if (buf[i] == '\0') break;
-                if (buf[i] == '\r' || buf[i] == '\n') {
-                        uart_endl();
-                } else {
-                        uart_send(buf[i]);
-                }
+                uart_send(buf[i]);
         }
         return i;
 }
@@ -73,12 +64,12 @@ void syscall_enterance(void)
         asm volatile("mov x13, x1");
 
         unsigned long syscall_num, arg0, arg1;
-        unsigned long *sp_on_exception;
+        // unsigned long *sp_on_exception;
         asm volatile("mov %0, x15": "=r" (syscall_num));
         asm volatile("mov %0, x14": "=r" (arg0));
         asm volatile("mov %0, x13": "=r" (arg1));
-        asm volatile("mov %0, x12" : "=r"(sp_on_exception));
-        set_sp_on_exception((char*)sp_on_exception);
+        // asm volatile("mov %0, x12" : "=r"(sp_on_exception));
+        // set_sp_on_exception((char*)sp_on_exception);
 
         int return_value = 0;
         switch (syscall_num)
@@ -95,20 +86,28 @@ void syscall_enterance(void)
                         (int)syscall_uartwrite((char*)arg0, (unsigned int)arg1);
                 break;
         case SYSCALL_NUM_EXEC:
+                disable_interrupts_in_el1();
                 return_value = syscall_exec((char*)arg0, (char**)arg1);
+                enable_interrupts_in_el1();
                 break;
         case SYSCALL_NUM_FORK:
+                disable_interrupts_in_el1();
                 return_value = syscall_fork();
+                enable_interrupts_in_el1();
                 break;
         case SYSCALL_NUM_EXIT:
+                disable_interrupts_in_el1();
                 syscall_exit((int)arg0);
+                enable_interrupts_in_el1();
                 break;
         case SYSCALL_NUM_MBOX_CALL:
                 return_value = syscall_mbox_call((unsigned char)arg0,
                                                  (unsigned int*)arg1);
                 break;
         case SYSCALL_NUM_KILL:
+                disable_interrupts_in_el1();
                 syscall_kill((int)arg0);
+                enable_interrupts_in_el1();
                 break;
         default:
                 uart_send_string("[ERROR] invalid system call number\r\n");
@@ -118,7 +117,8 @@ void syscall_enterance(void)
         return_value_64 |= return_value;
         if (syscall_num != SYSCALL_NUM_EXIT
                 && syscall_num != SYSCALL_NUM_KILL) {
-                *sp_on_exception = return_value;
+                unsigned long* return_ptr = return_value_ptr();
+                *return_ptr = return_value;
         }
 }
 
@@ -126,7 +126,7 @@ void syscall_enterance(void)
 //   DEMO                                              //
 /////////////////////////////////////////////////////////
 
-// TODO: complelte demo syscall or delete it
+// TODO(lab5): complelte demo syscall or delete it
 void demo_getpid(void)
 {        
         uart_send_int(getpid());

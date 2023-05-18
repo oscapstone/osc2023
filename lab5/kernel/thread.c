@@ -18,23 +18,23 @@ struct collee_saved_register {
         unsigned long x28;
 };
 
-struct context {
+struct el1_context {
         struct collee_saved_register reg;
         unsigned long fp;
         unsigned long lr;
         unsigned long sp;
 
-        struct context *next;
+        struct el1_context *next;
 
         unsigned int id;
         unsigned int dead;
 };
-struct context* threads[MAX_NUM_THREAD];
+struct el1_context* threads[MAX_NUM_THREAD];
 
-struct context *ready_q_front, *ready_q_end;
+struct el1_context *ready_q_front, *ready_q_end;
 
 extern void switch_context(void *prev_ptr, void *next_ptr);
-extern struct context* get_current_thread(void);
+extern struct el1_context* get_current_thread(void);
 
 void init_thread(void)
 {
@@ -42,7 +42,7 @@ void init_thread(void)
                 threads[i] = NULL;
         }
 
-        struct context *new_thread = allocate_frame(0);
+        struct el1_context *new_thread = allocate_frame(0);
         new_thread->id = 0;
         new_thread->next = NULL;
         new_thread->dead = 0;
@@ -67,11 +67,11 @@ void schedule(void)
                 asm volatile("bl shell_loop");
         }
 
-        struct context *next_thread = ready_q_front;
+        struct el1_context *next_thread = ready_q_front;
         ready_q_front = next_thread->next;
         next_thread->next = NULL;
 
-        struct context *current_thread = get_current_thread();
+        struct el1_context *current_thread = get_current_thread();
         if (current_thread->dead) {
                 threads[current_thread->id] = NULL;
                 free_frame(current_thread);
@@ -91,11 +91,11 @@ void thread_wrapper(void)
         asm volatile("mov %0, x19" : "=r"(thread_func));
         thread_func();
 
-        struct context *current_thread = get_current_thread();
+        struct el1_context *current_thread = get_current_thread();
         current_thread->dead = 1;
 
         schedule();
-        // TODO: return if all thread is done?
+
         while (1) {}
 }
 
@@ -112,7 +112,7 @@ int thread_create(void (*thread_func)(void))
                 return -1;
         }
 
-        struct context *new_thread = allocate_frame(0);
+        struct el1_context *new_thread = allocate_frame(0);
         new_thread->reg.x19 = (unsigned long)thread_func;
         new_thread->lr = (unsigned long)thread_wrapper;
         new_thread->sp = (unsigned long)new_thread + FRAME_SIZE;

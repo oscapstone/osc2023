@@ -3,6 +3,7 @@
 #include "utils.h"
 #include "timer.h"
 #include "syscall.h"
+#include "user_process.h"
 #include "peripherals/exception.h"
 #include "peripherals/mini_uart.h"
 
@@ -48,7 +49,7 @@ void system_call(void)
         syscall_enterance();
 }
 
-void el0_timer_interrupt()
+void print_el0_timer_interrupt_info()
 {
         uart_send_string("Timer interrupt info -------------\r\n");
         print_current_time();
@@ -77,7 +78,11 @@ void irq_64_el0(void)
                 /*
                  * CNTPNSIRQ interrupt
                  */
-                el0_timer_interrupt();
+                if (running_user_process()) {
+                        // TODO(lab5): preemption
+                        uart_send_string("[DEBUG] irq el0\r\n");
+                        reset_core_timer_in_second(1);
+                }
         }
 
         enable_interrupts_in_el1();
@@ -86,14 +91,22 @@ void irq_64_el0(void)
 void irq_64_el1(void)
 {
         disable_interrupts_in_el1();
+
         unsigned int interrupt_source = get32(CORE0_IRQ_SOURCE);
         if (interrupt_source & (1 << 1)) {
                 /*
                  * CNTPNSIRQ interrupt
                  */
-                el1_timer_handler();
+                if (running_user_process()) {
+                        // TODO(lab5): preemption
+                        uart_send_string("[DEBUG] irq el1\r\n");
+                        reset_core_timer_in_second(1);
+                } else {
+                        timer_expired();
+                }
         } else if (interrupt_source & (1 << 8)) {
                 gpu_interrupt();
         }
+
         enable_interrupts_in_el1();
 }

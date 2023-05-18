@@ -60,8 +60,10 @@ void parse_cmd(void)
         } else if (!strcmp(buffer, "exec")) {
                 shell_exec();
         } else if (!strcmp(buffer, "demo-async")) {
-                reset_core_timer_in_second(600);
-                branch_to_address_el0(demo_uart_async, USER_STACK_POINTER);
+                // TODO: create and ececute
+                uart_send_string("[INFO] not implemented\r\n");
+                // reset_core_timer_in_second(600);
+                // branch_to_address_el0(demo_uart_async, USER_STACK_POINTER);
         } else if (!strncmp(buffer, "set-timeout ", strlen("set-timeout "))) {
                 cmd_add_timer(buffer);
         } else if (!strcmp(buffer, "demo-frame")) {

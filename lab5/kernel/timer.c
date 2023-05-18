@@ -76,7 +76,7 @@ void set_next_expire(void)
         reset_core_timer_absolute(next_expire_cycle);
 }
 
-void el1_timer_handler(void)
+void timer_expired(void)
 {
         int id = next_expire_id;
         if (id < MAX_NUM_TIMER && timer_list[id].in_use) {

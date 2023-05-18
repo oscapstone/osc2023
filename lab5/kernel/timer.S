@@ -18,6 +18,12 @@ enable_core_timer:
         mov     x0, 2
         ldr     x1, =CORE0_TIMER_IRQ_CTRL
         str     w0, [x1]
+        /*
+         * allows cpu timer register access
+         */
+        mrs     x0, cntkctl_el1
+        orr     x0, x0, #1
+        msr     cntkctl_el1, x0
         ret
 
 .globl reset_core_timer_in_cycle
