@@ -54,6 +54,10 @@ void init_memory()
 {
     init_buddy();
     init_object_allocator();
+    memory_reserve(0x0, 0x1000);
+    memory_reserve(0x80000, 0x100000);
+    memory_reserve(0x8000000, (0x8000000 + 6656));
+    // memory_reserve(0x3c000000, 0x40000000);
 }
 
 struct page *block_allocation(int order)
@@ -170,12 +174,7 @@ void *object_allocation(int token)
             temp_page = (struct page *)allocator->partial.next;
             list_crop(&temp_page->list, &temp_page->list);
         }
-        // // use the preserved empty page if there is one
-        // else if (allocator->preserved_empty != NULL)
-        // {
-        //     temp_page = allocator->preserved_empty;
-        //     allocator->preserved_empty = NULL;
-        // }
+
         // demand a new page
         else
         {
@@ -281,22 +280,6 @@ void object_free(void *object)
         block_free(page);
     }
 
-    // if (page != allocator->current_page)
-    // {
-    //     list_crop(&page->list, &page->list);
-    //     // full to partial
-    //     if (page->object_count > 0)
-    //         list_add_tail(&page->list, &allocator->partial);
-    //     // partial to empty
-    //     else
-    //     {
-    //         if (allocator->preserved_empty == NULL)
-    //             allocator->preserved_empty = page;
-    //         else
-    //             block_free(page);
-    //     }
-    // }
-
     printf("[object_free] done\n\n");
 }
 
@@ -352,18 +335,16 @@ int find_buddy(int page_number, int order)
 }
 void memory_reserve(void *start, void *end)
 {
-    int start_page_number = (long)(start - MEMORY_START) >> PAGE_SHIFT;
-    int end_page_number = (long)(end - MEMORY_START) >> PAGE_SHIFT;
-
-    for (int i = start_page_number; i < end_page_number; i++)
+    int indx = (long)(start - MEMORY_START) / PAGE_SIZE;
+    int page = (long)((end + PAGE_SIZE - 1) - start) / PAGE_SIZE;
+    printf("reserve indx: %d, page: %d\n", indx, page);
+    for (int i = 0; i < page; i++)
     {
-        struct page *page = &bookkeep[i];
-        page->order = -1;
-        page->allocator = NULL;
-        page->object_count = 0;
-        page->first_free = NULL;
-        page->start_address = MEMORY_START + (i << PAGE_SHIFT);
-        page->page_number = i;
-        page->used = 1;
+        bookkeep[indx + i].used = 1;
+        bookkeep[indx + i].order = -1;
+        bookkeep[indx + i].allocator = NULL;
+        bookkeep[indx + i].object_count = 0;
+        bookkeep[indx + i].first_free = NULL;
+        list_crop(&bookkeep[indx + i].list, &bookkeep[indx + i].list);
     }
 }
