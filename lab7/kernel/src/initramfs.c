@@ -134,8 +134,6 @@ int initramfs_lookup(struct vnode *dir_node, struct vnode **target, const char *
             return 0;
         }
     }
-
-    uart_sendline("initramfs lookup not found\r\n");
     return -1;
 }
 

@@ -109,8 +109,6 @@ int tmpfs_lookup(struct vnode *dir_node, struct vnode **target, const char *comp
             return 0;
         }
     }
-
-    uart_sendline("tmpfs lookup not found\r\n");
     return -1;
 }
 
@@ -146,7 +144,7 @@ int tmpfs_create(struct vnode *dir_node, struct vnode **target, const char *comp
     inode->entry[child_idx] = _vnode;
     if (strlen(component_name) > FILE_NAME_MAX)
     {
-        uart_sendline("FILE NAME TOO　LONG\r\n");
+        uart_sendline("FILE NAME TOO LONG\r\n");
         return -1;
     }
 
@@ -184,7 +182,7 @@ int tmpfs_mkdir(struct vnode *dir_node, struct vnode **target, const char *compo
 
     if (strlen(component_name) > FILE_NAME_MAX)
     {
-        uart_sendline("FILE NAME TOO　LONG\r\n");
+        uart_sendline("FILE NAME TOO LONG\r\n");
         return -1;
     }
 

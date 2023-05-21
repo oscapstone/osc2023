@@ -94,6 +94,11 @@ int thread_exec(char *data, unsigned int filesize)
 
     //disable echo when going to userspace
     curr_thread = t;
+
+    vfs_open("/dev/uart", 0, &curr_thread->file_descriptors_table[0]);
+    vfs_open("/dev/uart", 0, &curr_thread->file_descriptors_table[1]);
+    vfs_open("/dev/uart", 0, &curr_thread->file_descriptors_table[2]);
+
     //add_timer(schedule_timer, 1, "", 0);
     // eret to exception level 0
     asm("msr tpidr_el1, %0\n\t"
