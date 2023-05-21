@@ -63,6 +63,11 @@ void kill_zombies(){
             list_del_entry(curr);
             mmu_free_page_tables(t->context.pgd,0);
             mmu_del_vma(t);
+            for(int i = 0; i < MAX_FD;i++)
+            {
+                if (t->file_descriptors_table[i])
+                    vfs_close(t->file_descriptors_table[i]);
+            }
             kfree(t->kernel_stack_alloced_ptr);
             kfree(PHYS_TO_VIRT(t->context.pgd));
             t->iszombie = 0;
@@ -99,7 +104,8 @@ int thread_exec(char *data, unsigned int filesize)
     vfs_open("/dev/uart", 0, &curr_thread->file_descriptors_table[1]);
     vfs_open("/dev/uart", 0, &curr_thread->file_descriptors_table[2]);
 
-    //add_timer(schedule_timer, 1, "", 0);
+    //disable echo when going to userspace
+    add_timer(schedule_timer, 1, "", 0);
     // eret to exception level 0
     asm("msr tpidr_el1, %0\n\t"
         "msr elr_el1, %1\n\t"

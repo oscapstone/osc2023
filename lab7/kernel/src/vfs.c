@@ -5,6 +5,7 @@
 #include "uart1.h"
 #include "initramfs.h"
 #include "dev_uart.h"
+#include "dev_framebuffer.h"
 
 struct mount *rootfs;
 struct filesystem reg_fs[MAX_FS_REG];
@@ -183,7 +184,7 @@ int vfs_lookup(const char *pathname, struct vnode **target)
             component_name[c_idx++] = 0;
             if (dirnode->v_ops->lookup(dirnode, &dirnode, component_name) != 0)return -1;
             // redirect to new mounted filesystem
-            if (dirnode->mount)
+            while (dirnode->mount)
             {
                 dirnode = dirnode->mount->root;
             }
@@ -198,7 +199,7 @@ int vfs_lookup(const char *pathname, struct vnode **target)
     component_name[c_idx++] = 0;
     if (dirnode->v_ops->lookup(dirnode, &dirnode, component_name) != 0)return -1;
     // redirect to new mounted filesystem
-    if (dirnode->mount)
+    while (dirnode->mount)
     {
         dirnode = dirnode->mount->root;
     }
@@ -232,8 +233,10 @@ void init_rootfs()
     vfs_mkdir("/dev");
     int uart_id = init_dev_uart();
     vfs_mknod("/dev/uart", uart_id);
+    int framebuffer_id = init_dev_framebuffer();
+    vfs_mknod("/dev/framebuffer", framebuffer_id);
 
-    vfs_test();
+    //vfs_test();
 }
 
 void vfs_test()

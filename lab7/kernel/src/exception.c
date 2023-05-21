@@ -40,7 +40,10 @@ void sync_64_router(trapframe_t* tpf)
     else if (syscall_no == 15) { mkdir(tpf, (char *)tpf->x0, tpf->x1);                                                   }
     else if (syscall_no == 16) { mount(tpf, (char *)tpf->x0, (char *)tpf->x1, (char *)tpf->x2, tpf->x3, (void*)tpf->x4); }
     else if (syscall_no == 17) { chdir(tpf, (char *)tpf->x0);                                                            }
+    else if (syscall_no == 18) { lseek64(tpf, tpf->x0, tpf->x1, tpf->x2);                                                }
+    else if (syscall_no == 19) { ioctl(tpf, tpf->x0, tpf->x1, (void*)tpf->x2);                                           }
     else if (syscall_no == 50) { sigreturn(tpf);                                                                         }
+    el1_interrupt_disable();
 }
 
 void irq_router(trapframe_t* tpf)
@@ -63,10 +66,11 @@ void irq_router(trapframe_t* tpf)
         irqtask_add(core_timer_handler, TIMER_IRQ_PRIORITY);
         irqtask_run_preemptive();
         core_timer_enable();
-
+        el1_interrupt_disable();
         if (run_queue->next->next != run_queue) schedule();
     }
     if ((tpf->spsr_el1 & 0b1100) == 0) { check_signal(tpf); }
+    el1_interrupt_disable();
 }
 
 void invalid_exception_router(unsigned long long x0){

@@ -1,7 +1,7 @@
 #ifndef _MBOX_H_
 #define _MBOX_H_
 
-extern volatile unsigned int pt[64];
+extern volatile unsigned int pt[36];
 
 // Mailbox Register MMIO
 // https://jsandler18.github.io/extra/mailbox.html

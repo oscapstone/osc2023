@@ -9,6 +9,7 @@
 #include "signal.h"
 #include "mmu.h"
 #include "string.h"
+#include "dev_framebuffer.h"
 
 int getpid(trapframe_t* tpf)
 {
@@ -95,6 +96,15 @@ int fork(trapframe_t *tpf)
     for (int i = 0; i <= SIGNAL_MAX;i++)
     {
         newt->signal_handler[i] = curr_thread->signal_handler[i];
+    }
+
+    for (int i = 0; i <= MAX_FD; i++)
+    {
+        if (curr_thread->file_descriptors_table[i])
+        {
+            newt->file_descriptors_table[i] = kmalloc(sizeof(struct file));
+            *newt->file_descriptors_table[i] = *curr_thread->file_descriptors_table[i];
+        }
     }
 
     list_head_t *pos;
@@ -317,6 +327,40 @@ int chdir(trapframe_t *tpf, const char *path)
 
     return 0;
 }
+
+long lseek64(trapframe_t *tpf, int fd, long offset, int whence)
+{
+    if(whence == SEEK_SET)
+    {
+        curr_thread->file_descriptors_table[fd]->f_pos = offset;
+        tpf->x0 = offset;
+    }
+    else
+    {
+        tpf->x0 = -1;
+    }
+
+    return tpf->x0;
+}
+extern unsigned int height;
+extern unsigned int isrgb;
+extern unsigned int pitch;
+extern unsigned int width;
+int ioctl(trapframe_t *tpf, int fb, unsigned long request, void *info)
+{
+    if(request == 0)
+    {
+        struct framebuffer_info *fb_info = info;
+        fb_info->height = height;
+        fb_info->isrgb = isrgb;
+        fb_info->pitch = pitch;
+        fb_info->width = width;
+    }
+
+    tpf->x0 = 0;
+    return tpf->x0;
+}
+
 
 void sigreturn(trapframe_t *tpf)
 {
