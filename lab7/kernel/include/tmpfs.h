@@ -4,14 +4,15 @@
 #include "stddef.h"
 #include "vfs.h"
 
-#define FILE_NAME_MAX 16
-#define MAX_DIR_ENTRY 17
+// SPEC basic Note #3
+#define MAX_FILE_NAME 15
+#define MAX_DIR_ENTRY 16
 #define MAX_FILE_SIZE 4096
 
 struct tmpfs_inode
 {
     enum fsnode_type type;
-    char name[FILE_NAME_MAX];
+    char name[MAX_FILE_NAME];
     struct vnode *entry[MAX_DIR_ENTRY];
     char *data;
     size_t datasize;

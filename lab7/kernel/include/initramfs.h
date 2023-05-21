@@ -6,6 +6,8 @@
 
 #define INITRAMFS_MAX_DIR_ENTRY 100
 
+// initramfs basically is same as tmpfs, but it is read-only
+
 struct initramfs_inode
 {
     enum fsnode_type type;

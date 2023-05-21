@@ -72,6 +72,7 @@ struct vnode *initramfs_create_vnode(struct mount *_mount, enum fsnode_type type
 // file operations
 int initramfs_write(struct file *file, const void *buf, size_t len)
 {
+    // read-only
     return -1;
 }
 
@@ -139,11 +140,13 @@ int initramfs_lookup(struct vnode *dir_node, struct vnode **target, const char *
 
 int initramfs_create(struct vnode *dir_node, struct vnode **target, const char *component_name)
 {
+    // read-only
     return -1;
 }
 
 int initramfs_mkdir(struct vnode *dir_node, struct vnode **target, const char *component_name)
 {
+    // read-only
     return -1;
 }
 

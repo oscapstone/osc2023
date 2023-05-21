@@ -40,18 +40,19 @@ struct vnode* tmpfs_create_vnode(struct mount* _mount, enum fsnode_type type)
 int tmpfs_write(struct file *file, const void *buf, size_t len)
 {
     struct tmpfs_inode *inode = file->vnode->internal;
-
+    // write from f_pos
     memcpy(inode->data + file->f_pos, buf, len);
+    // update f_pos and size
     file->f_pos += len;
-
-    if(inode->datasize < file->f_pos)inode->datasize = file->f_pos;
+    if(inode->datasize < file->f_pos) inode->datasize = file->f_pos;
     return len;
 }
 
 int tmpfs_read(struct file *file, void *buf, size_t len)
 {
     struct tmpfs_inode *inode = file->vnode->internal;
-
+    // if buffer overflow, shrink the request read length
+    // read from f_pos
     if(len+file->f_pos > inode->datasize)
     {
         len = inode->datasize - file->f_pos;
@@ -98,7 +99,8 @@ int tmpfs_lookup(struct vnode *dir_node, struct vnode **target, const char *comp
 {
     struct tmpfs_inode *dir_inode = dir_node->internal;
     int child_idx = 0;
-    for (; child_idx < MAX_DIR_ENTRY; child_idx++)
+    // BFS search tree
+    for (; child_idx <= MAX_DIR_ENTRY; child_idx++)
     {
         struct vnode *vnode = dir_inode->entry[child_idx];
         if(!vnode) break;
@@ -123,7 +125,7 @@ int tmpfs_create(struct vnode *dir_node, struct vnode **target, const char *comp
     }
 
     int child_idx = 0;
-    for (; child_idx < MAX_DIR_ENTRY; child_idx++)
+    for (; child_idx <= MAX_DIR_ENTRY; child_idx++)
     {
         if (!inode->entry[child_idx]) break;
         struct tmpfs_inode *child_inode = inode->entry[child_idx]->internal;
@@ -134,19 +136,20 @@ int tmpfs_create(struct vnode *dir_node, struct vnode **target, const char *comp
         }
     }
 
-    if (child_idx == MAX_DIR_ENTRY)
+    if (child_idx > MAX_DIR_ENTRY)
     {
         uart_sendline("DIR ENTRY FULL\r\n");
         return -1;
     }
 
-    struct vnode *_vnode = tmpfs_create_vnode(0, file_t);
-    inode->entry[child_idx] = _vnode;
-    if (strlen(component_name) > FILE_NAME_MAX)
+    if (strlen(component_name) > MAX_FILE_NAME)
     {
         uart_sendline("FILE NAME TOO LONG\r\n");
         return -1;
     }
+
+    struct vnode *_vnode = tmpfs_create_vnode(0, file_t);
+    inode->entry[child_idx] = _vnode;
 
     struct tmpfs_inode *newinode = _vnode->internal;
     strcpy(newinode->name, component_name);
@@ -166,7 +169,7 @@ int tmpfs_mkdir(struct vnode *dir_node, struct vnode **target, const char *compo
     }
 
     int child_idx = 0;
-    for (; child_idx < MAX_DIR_ENTRY; child_idx++)
+    for (; child_idx <= MAX_DIR_ENTRY; child_idx++)
     {
         if (!inode->entry[child_idx])
         {
@@ -174,13 +177,13 @@ int tmpfs_mkdir(struct vnode *dir_node, struct vnode **target, const char *compo
         }
     }
 
-    if(child_idx == MAX_DIR_ENTRY)
+    if(child_idx > MAX_DIR_ENTRY)
     {
         uart_sendline("DIR ENTRY FULL\r\n");
         return -1;
     }
 
-    if (strlen(component_name) > FILE_NAME_MAX)
+    if (strlen(component_name) > MAX_FILE_NAME)
     {
         uart_sendline("FILE NAME TOO LONG\r\n");
         return -1;
