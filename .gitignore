@@ -1,7 +1,8 @@
 # Ignore Output Files
 **/build
 *.o
-*.img
 *.elf
+*kernel8.img
+*bootloader.img
 */kernel/*.cpio
 */bootloader/*.cpio
