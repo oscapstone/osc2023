@@ -31,14 +31,16 @@ int Thread(void (*func)())
 		{
 			thd->next = null;
 			thd->tid = i;
+			thd->user_stack_base = d_alloc(0x10000);
+			thd->user_stack = ((uint64_t)(thd->user_stack_base + 0x10000) & 0xFFFFFFF0);
 			//thd->reg.x19 = fork_test;			//for fork_test use
 			thd->reg.x19 = video_prog();
-			thd->reg.x20 = ((uint64_t)(thd->stack + 0x10000) & 0xFFFFFFF0);		//for user_stack
+			thd->reg.x20 = thd->user_stack;		//for user_stack
 			thd->kernel_stack_base = d_alloc(0x10000);
 			thd->kernel_stack = ((uint64_t)(thd->kernel_stack_base + 0x10000) & 0xFFFFFFF0);
 			thd->reg.LR = func;
 			thd->reg.SP = thd->kernel_stack;									//set EL1 kernel_stack
-			thd->reg.FP = thd->kernel_stack;
+			thd->reg.FP = thd->kernel_stack_base;
 			thd->status = 1;
 			thd->sig = 0;						//no signal
 			for(int i=0;i<10;i++)
@@ -165,7 +167,7 @@ void push_idle()
 	thd->tid = 0;
 	thd->kernel_stack_base = d_alloc(0x10000);
 	thd->kernel_stack = ((uint64_t)(thd->kernel_stack_base + 0x10000) & 0xFFFFFFF0);
-	thd->reg.FP = thd->kernel_stack;
+	thd->reg.FP = thd->kernel_stack_base;
 	thd->reg.LR = idle;
 	thd->reg.SP = thd->kernel_stack;
 	thd->status = 1;
