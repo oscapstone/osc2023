@@ -16,7 +16,6 @@ enum fsnode_type
     file_t
 };
 
-
 struct vnode
 {
     struct mount *mount;            // Superblock        : represents mounted fs

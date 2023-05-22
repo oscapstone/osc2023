@@ -6,6 +6,8 @@
 #include "initramfs.h"
 #include "dev_uart.h"
 #include "dev_framebuffer.h"
+#include "sdhost.h"
+#include "fat32.h"
 
 struct mount *rootfs;
 struct filesystem reg_fs[MAX_FS_REG];
@@ -233,6 +235,9 @@ int vfs_mknod(char* pathname, int id)
 
 void init_rootfs()
 {
+    // sd_init
+    sd_init();
+
     // tmpfs
     int idx = register_tmpfs();
     rootfs = kmalloc(sizeof(struct mount));
@@ -242,6 +247,10 @@ void init_rootfs()
     vfs_mkdir("/initramfs");
     register_initramfs();
     vfs_mount("/initramfs","initramfs");
+
+    // fat32
+    vfs_mkdir("/boot");
+    register_fat32();
 
     // dev_fs
     vfs_mkdir("/dev");
