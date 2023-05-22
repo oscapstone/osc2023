@@ -7,5 +7,5 @@
 #    newc: SVR4 portable format
 
 cd rootfs
-find . | cpio -o -H newc > ../initramfs.cpio
+find . | cpio -o -H newc > ../initfs.gz
 cd ..
