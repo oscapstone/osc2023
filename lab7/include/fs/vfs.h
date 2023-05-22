@@ -15,10 +15,10 @@ enum node_type
 
 struct vnode
 {
-    struct mount *mount;
-    struct vnode_operations *v_ops;
-    struct file_operations *f_ops;
-    void *internal;
+    struct mount *mount;            // Superblock        : represents mounted fs
+    struct vnode_operations *v_ops; // inode & dentry Ops: represents kernel methods for vnode
+    struct file_operations *f_ops;  // file Ops          : represents process methods for opened file
+    void *internal;                 // vnode itself      : directly point to fs's vnode
 };
 
 // file handle
