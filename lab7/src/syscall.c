@@ -271,13 +271,14 @@ int sys_open(trapframe_t *tpf, const char *pathname, int flags)
     path_to_absolute(abs_path, curr_thread->curr_working_dir);
     for (int i = 0; i < MAX_FD; i++)
     {
+        // available entry is found
         if(!curr_thread->file_descriptors_table[i])
         {
             if(vfs_open(abs_path, flags, &curr_thread->file_descriptors_table[i])!=0)
             {
                 break;
             }
-
+            // store the file descriptor
             tpf->x0 = i;
             return i;
         }

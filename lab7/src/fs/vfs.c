@@ -233,52 +233,27 @@ long vfs_lseek64(struct file *file, long offset, int whence)
 
 void init_rootfs()
 {
+    // tmpfs
     int idx = register_tmpfs();
     rootfs = kmalloc(sizeof(struct mount));
     reg_fs[idx].setup_mount(&reg_fs[idx], rootfs);
 
+    // initramfs
     vfs_mkdir("/initramfs");
     register_initramfs();
     vfs_mount("/initramfs","initramfs");
 
-    // for dev
+    // dev_fs
     vfs_mkdir("/dev");
     int uart_id = init_dev_uart();
     vfs_mknod("/dev/uart", uart_id);
     int framebuffer_id = init_dev_framebuffer();
     vfs_mknod("/dev/framebuffer", framebuffer_id);
-
-    //vfs_test();
 }
-
-/*
-void vfs_test()
-{
-    // test read/write
-    vfs_mkdir("/lll");
-    vfs_mkdir("/lll/ddd");
-    // test mount
-    vfs_mount("/lll/ddd", "tmpfs");
-
-    struct file* testfilew;
-    struct file *testfiler;
-    char testbufw[0x30] = "ABCDEABBBBBBDDDDDDDDDDD";
-    char testbufr[0x30] = {};
-    vfs_open("/lll/ddd/ggg", O_CREAT, &testfilew);
-    vfs_open("/lll/ddd/ggg", O_CREAT, &testfiler);
-    vfs_write(testfilew, testbufw, 10);
-    vfs_read(testfiler, testbufr, 10);
-    uart_printf("%s",testbufr);
-
-    struct file *testfile_initramfs;
-    vfs_open("/initramfs/get_simpleexec.sh", O_CREAT, &testfile_initramfs);
-    vfs_read(testfile_initramfs, testbufr, 30);
-    uart_printf("%s", testbufr);
-}*/
 
 char *path_to_absolute(char *path, char *curr_working_dir)
 {
-    //relative path
+    //relative path -> concatenated with the curr_working_dir to form an absolute path.
     if(path[0] != '/')
     {
         char tmp[MAX_PATH_NAME];
@@ -300,6 +275,7 @@ char *path_to_absolute(char *path, char *curr_working_dir)
                 if(absolute_path[j] == '/')
                 {
                     absolute_path[j] = 0;
+                    // the last valid character
                     idx = j;
                 }
             }

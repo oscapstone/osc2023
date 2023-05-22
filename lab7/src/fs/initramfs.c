@@ -4,6 +4,8 @@
 #include "malloc.h"
 #include "cpio.h"
 
+// initramfs basically is same as tmpfs, but it is read-only
+
 struct file_operations initramfs_file_operations = {initramfs_write, initramfs_read, initramfs_open, initramfs_close, vfs_lseek64, initramfs_getsize};
 struct vnode_operations initramfs_vnode_operations = {initramfs_lookup, initramfs_create, initramfs_mkdir};
 
@@ -71,6 +73,7 @@ struct vnode *initramfs_create_vnode(struct mount *_mount, enum node_type type)
 // file operations
 int initramfs_write(struct file *file, const void *buf, size_t len)
 {
+    // read-only
     return -1;
 }
 
@@ -80,9 +83,10 @@ int initramfs_read(struct file *file, void *buf, size_t len)
 
     if (len + file->f_pos > inode->datasize)
     {
+        len = inode->datasize - file->f_ops;
         memcpy(buf, inode->data + file->f_pos, inode->datasize - file->f_pos);
         file->f_pos += inode->datasize - file->f_pos;
-        return inode->datasize - file->f_pos;
+        return len;
     }
     else
     {
@@ -130,6 +134,7 @@ int initramfs_lookup(struct vnode *dir_node, struct vnode **target, const char *
 
 int initramfs_create(struct vnode *dir_node, struct vnode **target, const char *component_name)
 {
+    // read-only
     return -1;
 }
 

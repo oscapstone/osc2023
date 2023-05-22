@@ -119,9 +119,11 @@ int tmpfs_create(struct vnode *dir_node, struct vnode **target, const char *comp
     int child_idx = 0;
     for (; child_idx < MAX_DIR_ENTRY; child_idx++)
     {
+        //  found an available slot to create the new file
         if (!inode->entry[child_idx])break;
 
         struct tmpfs_inode *child_inode = inode->entry[child_idx]->internal;
+        // already exists in the directory.
         if (strcmp(child_inode->name,component_name)==0)
         {
             uart_printf("tmpfs create file exists\r\n");
@@ -139,7 +141,7 @@ int tmpfs_create(struct vnode *dir_node, struct vnode **target, const char *comp
     inode->entry[child_idx] = _vnode;
     if (strlen(component_name) > FILE_NAME_MAX)
     {
-        uart_printf("FILE NAME TOO　LONG\r\n");
+        uart_printf("FILE NAME TOO LONG\r\n");
         return -1;
     }
 
@@ -163,6 +165,7 @@ int tmpfs_mkdir(struct vnode *dir_node, struct vnode **target, const char *compo
     int child_idx = 0;
     for (; child_idx < MAX_DIR_ENTRY; child_idx++)
     {
+        //  found an available slot to create the new dict
         if (!inode->entry[child_idx])
         {
             break;
