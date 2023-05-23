@@ -10,7 +10,7 @@
 ///
 /// \param start The starting address of where the user program is currently
 ///              located. (Do not confuse it with the entry point of the user
-///              program. The latter is hardcoded in the kernel.)
+///              program.)
 /// \param len The length of the user program.
 /// \return true if the loading succeeds.
 /// \return false if the loading failed due to the user program being too long.

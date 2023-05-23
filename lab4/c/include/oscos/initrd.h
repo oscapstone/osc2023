@@ -97,6 +97,9 @@ bool initrd_is_init(void);
 /// \brief Returns the loading address of the initial ramdisk.
 const void *initrd_get_start(void);
 
+/// \brief Returns the ending address of the initial ramdisk.
+const void *initrd_get_end(void);
+
 /// \brief Parses the given header field of a New ASCII format CPIO archive.
 ///
 /// The given header field must be valid.

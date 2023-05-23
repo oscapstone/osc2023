@@ -2,7 +2,7 @@
 
 #include "oscos/devicetree.h"
 
-static const void *_initrd_start;
+static const void *_initrd_start, *_initrd_end;
 
 static bool _cpio_newc_is_header_field_valid(const char field[const static 8]) {
   for (size_t i = 0; i < 8; i++) {
@@ -14,10 +14,13 @@ static bool _cpio_newc_is_header_field_valid(const char field[const static 8]) {
 }
 
 static bool _initrd_is_valid(void) {
+  const cpio_newc_entry_t *entry;
+
   // Cannot use INITRD_FOR_ENTRY here, since it will evaluate
   // `CPIO_NEWC_IS_ENTRY_LAST(entry)` before `entry` is validated.
-  for (const cpio_newc_entry_t *entry = INITRD_HEAD;;
-       entry = CPIO_NEWC_NEXT_ENTRY(entry)) {
+  for (entry = INITRD_HEAD;; entry = CPIO_NEWC_NEXT_ENTRY(entry)) {
+    if (entry >= (cpio_newc_entry_t *)_initrd_end)
+      return false;
     if (!(strncmp(entry->header.c_magic, "070701", 6) == 0 &&
           _cpio_newc_is_header_field_valid(entry->header.c_mode) &&
           _cpio_newc_is_header_field_valid(entry->header.c_uid) &&
@@ -37,23 +40,34 @@ static bool _initrd_is_valid(void) {
       break;
   }
 
-  return true;
+  return CPIO_NEWC_NEXT_ENTRY(entry) <= (cpio_newc_entry_t *)_initrd_end;
 }
 
-static control_flow_t
-_initrd_init_dtb_traverse_callback(void *const _arg,
-                                   const fdt_item_t *const node) {
-  (void)_arg;
+typedef struct {
+  bool start_done, end_done;
+} initrd_init_dtb_traverse_callback_arg_t;
 
-  if (strcmp(FDT_NODE_NAME(node), "chosen") == 0) {
+static control_flow_t _initrd_init_dtb_traverse_callback(
+    initrd_init_dtb_traverse_callback_arg_t *const arg,
+    const fdt_item_t *const node,
+    const fdt_traverse_parent_list_node_t *const parent) {
+  if (parent && !parent->parent &&
+      strcmp(FDT_NODE_NAME(node), "chosen") == 0) { // Current node is /chosen.
     FDT_FOR_ITEM(node, item) {
       if (FDT_TOKEN(item) == FDT_PROP) {
         const fdt_prop_t *const prop = (const fdt_prop_t *)item->payload;
         if (strcmp(FDT_PROP_NAME(prop), "linux,initrd-start") == 0) {
           const uint32_t adr = rev_u32(*(const uint32_t *)FDT_PROP_VALUE(prop));
           _initrd_start = (const void *)(uintptr_t)adr;
-          break;
+          arg->start_done = true;
+        } else if (strcmp(FDT_PROP_NAME(prop), "linux,initrd-end") == 0) {
+          const uint32_t adr = rev_u32(*(const uint32_t *)FDT_PROP_VALUE(prop));
+          _initrd_end = (const void *)(uintptr_t)adr;
+          arg->end_done = true;
         }
+
+        if (arg->start_done && arg->end_done)
+          break;
       }
     }
     return CF_BREAK;
@@ -66,15 +80,33 @@ bool initrd_init(void) {
   _initrd_start = NULL;
 
   if (devicetree_is_init()) {
-    fdt_traverse(_initrd_init_dtb_traverse_callback, NULL);
+    // Discover the initrd loading address through the devicetree.
+
+    initrd_init_dtb_traverse_callback_arg_t arg = {.start_done = false,
+                                                   .end_done = false};
+    fdt_traverse((fdt_traverse_callback_t *)_initrd_init_dtb_traverse_callback,
+                 &arg);
+    if (!(arg.start_done &&
+          arg.end_done)) { // Either the /chosen/linux,initrd-start or the
+                           // /chosen/linux,initrd-end property is missing from
+                           // the devicetree.
+      _initrd_start = NULL;
+    }
   }
 
-  return _initrd_start && _initrd_is_valid();
+  // Validate the initial ramdisk.
+  if (!(_initrd_start && _initrd_is_valid())) {
+    _initrd_start = NULL;
+  }
+
+  return _initrd_start;
 }
 
 bool initrd_is_init(void) { return _initrd_start; }
 
 const void *initrd_get_start(void) { return _initrd_start; }
+
+const void *initrd_get_end(void) { return _initrd_end; }
 
 uint32_t cpio_newc_parse_header_field(const char field[static 8]) {
   uint32_t result = 0;

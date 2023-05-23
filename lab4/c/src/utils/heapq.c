@@ -4,16 +4,6 @@
 
 // TODO: Check integer overflows.
 
-static void _memswp(void *const restrict xs, void *const restrict ys,
-                    const size_t n) {
-  unsigned char *const restrict xs_c = xs, *const restrict ys_c = ys;
-  for (size_t i = 0; i < n; i++) {
-    const unsigned char tmp = xs_c[i];
-    xs_c[i] = ys_c[i];
-    ys_c[i] = tmp;
-  }
-}
-
 static void _heap_sift_up(void *const base, const size_t size, const size_t i,
                           int (*const compar)(const void *, const void *,
                                               void *),
@@ -24,7 +14,7 @@ static void _heap_sift_up(void *const base, const size_t size, const size_t i,
     void *const pc = (char *)base + ic * size, *const pp =
                                                    (char *)base + ip * size;
     if (compar(pc, pp, arg) < 0) {
-      _memswp(pc, pp, size);
+      memswp(pc, pp, size);
       ic = ip;
     } else {
       break;
@@ -53,7 +43,7 @@ static void _heap_sift_down(
     }
 
     if (compar(pt, pc, arg) < 0) {
-      _memswp(pt, pc, size);
+      memswp(pt, pc, size);
       ic = it;
     } else {
       break;

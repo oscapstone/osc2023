@@ -5,6 +5,7 @@
 #include "oscos/drivers/gpio.h"
 #include "oscos/drivers/l2ic.h"
 #include "oscos/drivers/mini-uart.h"
+#include "oscos/mem/startup-alloc.h"
 #include "oscos/utils/critical-section.h"
 #include "oscos/utils/fmt.h"
 #include "oscos/xcpt.h"
@@ -12,8 +13,7 @@
 #define READ_BUF_SZ 1024
 #define WRITE_BUF_SZ 1024
 
-static volatile unsigned char _console_read_buf[READ_BUF_SZ],
-    _console_write_buf[WRITE_BUF_SZ];
+static volatile unsigned char *_console_read_buf, *_console_write_buf;
 static volatile size_t _console_read_buf_start = 0, _console_read_buf_len = 0,
                        _console_write_buf_start = 0, _console_write_buf_len = 0;
 
@@ -161,6 +161,10 @@ void console_init(void) {
   mini_uart_enable_rx_interrupt();
   // Enable AUX interrupt on the L2 interrupt controller.
   l2ic_enable_irq_0(INT_L2_IRQ_0_SRC_AUX);
+
+  // Allocate the buffers.
+  _console_read_buf = startup_alloc(READ_BUF_SZ * sizeof(unsigned char));
+  _console_write_buf = startup_alloc(WRITE_BUF_SZ * sizeof(unsigned char));
 }
 
 void console_set_mode(const console_mode_t mode) {

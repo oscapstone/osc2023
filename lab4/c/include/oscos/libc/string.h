@@ -13,4 +13,13 @@ int strncmp(const char *s1, const char *s2, size_t n);
 
 size_t strlen(const char *s);
 
+// Extensions.
+
+/// \brief Swap two non-overlapping blocks of memory.
+///
+/// \param xs The pointer to the beginning of the first block of memory.
+/// \param ys The pointer to the beginning of the second block of memory.
+/// \param n The size of the memory blocks.
+void memswp(void *restrict xs, void *restrict ys, size_t n);
+
 #endif

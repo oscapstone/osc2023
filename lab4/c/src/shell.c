@@ -9,7 +9,8 @@
 #include "oscos/libc/ctype.h"
 #include "oscos/libc/inttypes.h"
 #include "oscos/libc/string.h"
-#include "oscos/mem/simple-alloc.h"
+#include "oscos/mem/malloc.h"
+#include "oscos/mem/page-alloc.h"
 #include "oscos/timer/timeout.h"
 #include "oscos/user-program.h"
 #include "oscos/utils/time.h"
@@ -41,14 +42,8 @@ static size_t _shell_read_line(char *const buf, const size_t n) {
     }
   }
 
-  if (n == 0) {
-    cmd_len = 0;
-  } else if (cmd_len >= n - 1) {
-    cmd_len = n - 1;
-  }
-
   if (n > 0) {
-    buf[cmd_len] = '\0';
+    buf[cmd_len > n - 1 ? n - 1 : cmd_len] = '\0';
   }
 
   return cmd_len;
@@ -56,14 +51,18 @@ static size_t _shell_read_line(char *const buf, const size_t n) {
 
 static void _shell_do_cmd_help(void) {
   console_puts(
-      "help       : print this help menu\n"
-      "hello      : print Hello World!\n"
-      "hwinfo     : get the hardware's information by mailbox\n"
-      "reboot     : reboot the device\n"
-      "ls         : list all files in the initial ramdisk\n"
-      "cat        : print the content of a file in the initial ramdisk\n"
-      "exec       : run a user program in the initial ramdisk\n"
-      "setTimeout : print a message after a timeout");
+      "help        : print this help menu\n"
+      "hello       : print Hello World!\n"
+      "hwinfo      : get the hardware's information by mailbox\n"
+      "reboot      : reboot the device\n"
+      "ls          : list all files in the initial ramdisk\n"
+      "cat         : print the content of a file in the initial ramdisk\n"
+      "exec        : run a user program in the initial ramdisk\n"
+      "setTimeout  : print a message after a timeout\n"
+      "alloc-pages : allocates a block of page frames using the page frame "
+      "allocator\n"
+      "free-pages  : frees a block of page frames allocated using the page "
+      "frame allocator");
 }
 
 static void _shell_do_cmd_hello(void) { console_puts("Hello World!"); }
@@ -168,6 +167,11 @@ static void _shell_do_cmd_exec(void) {
   run_user_program();
 }
 
+static void _shell_cmd_set_timeout_timer_callback(char *const message) {
+  console_puts(message);
+  free(message);
+}
+
 static void _shell_do_cmd_set_timeout(const char *const args) {
   const char *c = args;
 
@@ -213,17 +217,78 @@ static void _shell_do_cmd_set_timeout(const char *const args) {
 
   // Copy the string.
 
-  char *const message_copy = simple_alloc(message_len + 1);
+  char *const message_copy = malloc(message_len + 1);
+  if (!message_copy) {
+    console_puts("oscsh: setTimeout: out of memory");
+    return;
+  }
   memcpy(message_copy, message_start, message_len);
   message_copy[message_len] = '\0';
 
   // Register the callback.
-  timeout_add_timer((void (*)(void *))console_puts, message_copy,
-                    seconds * NS_PER_SEC);
+  timeout_add_timer((void (*)(void *))_shell_cmd_set_timeout_timer_callback,
+                    message_copy, seconds * NS_PER_SEC);
   return;
 
 invalid:
   console_puts("oscsh: setTimeout: invalid command format");
+}
+
+static void _shell_do_cmd_alloc_pages(void) {
+  console_fputs("Order (decimal, leave blank for 0): ");
+
+  char digit_buf[3];
+  const size_t digit_len = _shell_read_line(digit_buf, 3);
+  if (digit_len > 2)
+    goto invalid;
+
+  size_t order = 0;
+  for (const char *c = digit_buf; *c; c++) {
+    if (!isdigit(*c))
+      goto invalid;
+    order = order * 10 + (*c - '0');
+  }
+
+  const spage_id_t page = alloc_pages(order);
+  if (page < 0) {
+    console_puts("oscsh: alloc-pages: out of memory");
+    return;
+  }
+
+  console_printf("Page ID: 0x%" PRIxPAGEID "\n", (page_id_t)page);
+  return;
+
+invalid:
+  console_puts("oscsh: alloc-pages: invalid order");
+}
+
+static void _shell_do_cmd_free_pages(void) {
+  console_fputs(
+      "Page number of the first page (lowercase hexadecimal without prefix): ");
+
+  char digit_buf[9];
+  const size_t digit_len = _shell_read_line(digit_buf, 9);
+  if (digit_len > 8)
+    goto invalid;
+
+  page_id_t page_id = 0;
+  for (const char *c = digit_buf; *c; c++) {
+    page_id_t digit_value;
+    if (isdigit(*c)) {
+      digit_value = *c - '0';
+    } else if ('a' <= *c && *c <= 'f') {
+      digit_value = *c - 'a' + 10;
+    } else {
+      goto invalid;
+    }
+    page_id = page_id << 4 | digit_value;
+  }
+
+  free_pages(page_id);
+  return;
+
+invalid:
+  console_puts("oscsh: free-pages: invalid page number");
 }
 
 static void _shell_cmd_not_found(const char *const cmd) {
@@ -256,6 +321,10 @@ void run_shell(void) {
     } else if (strncmp(cmd_buf, "setTimeout", 10) == 0 &&
                (!cmd_buf[10] || cmd_buf[10] == ' ')) {
       _shell_do_cmd_set_timeout(cmd_buf + 10);
+    } else if (strcmp(cmd_buf, "alloc-pages") == 0) {
+      _shell_do_cmd_alloc_pages();
+    } else if (strcmp(cmd_buf, "free-pages") == 0) {
+      _shell_do_cmd_free_pages();
     } else {
       _shell_cmd_not_found(cmd_buf);
     }

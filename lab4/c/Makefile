@@ -7,7 +7,7 @@ CC      = aarch64-linux-gnu-gcc
 CPP     = aarch64-linux-gnu-cpp
 OBJCOPY = aarch64-linux-gnu-objcopy
 
-CPPFLAGS_BASE = -Iinclude
+CPPFLAGS_BASE = -Iinclude -DPAGE_ALLOC_ENABLE_LOG
 
 ASFLAGS_DEBUG = -g
 
@@ -21,14 +21,14 @@ LDFLAGS_RELEASE = -flto -Xlinker --gc-sections
 
 LDLIBS_BASE = -lgcc
 
-OBJS      = start main console devicetree initrd shell user-program \
+OBJS      = start main console devicetree initrd panic shell user-program \
             drivers/aux drivers/gpio drivers/l1ic drivers/l2ic drivers/mailbox \
             drivers/mini-uart drivers/pm \
-            mem/simple-alloc \
+            mem/malloc mem/memmap mem/page-alloc mem/startup-alloc mem/vm \
             timer/delay timer/timeout \
             xcpt/default-handler xcpt/irq-handler xcpt/task-queue \
             xcpt/vector-table xcpt/xcpt \
-            libc/ctype libc/stdio libc/string \
+            libc/ctype libc/stdio libc/stdlib/qsort libc/string \
             utils/core-id utils/fmt utils/heapq
 LD_SCRIPT = $(SRC_DIR)/linker.ld
 
