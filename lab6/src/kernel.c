@@ -48,7 +48,7 @@ void kernel_main(void* dtb)		//x0 is the first argument
 	//memory_reserve(ramdisk_start,ramdisk_end);		//Initramfs
 	//memory_reserve(dtb,dtb + 0x16000);				//Devicetree
 	
-	memory_reserve(0x0,0x9000000);
+	memory_reserve(0xFFFF000000000000,0xFFFF000009000000);
 
 	enable_interrupt();
 

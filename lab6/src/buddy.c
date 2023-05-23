@@ -312,7 +312,7 @@ char* d_alloc(int size)
 	}
 	tmp->next = use_pool;
 	use_pool = tmp;
-	return tmp->start;												//return space's start 
+	return (uint64_t)tmp->start | 0xFFFF000000000000;				//return space's start & change to virtual memory form
 }
 
 void d_free(char* start)

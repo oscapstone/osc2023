@@ -111,9 +111,10 @@ int exec(char *name,char *argv)		//not pretty sure works well , should consider 
 {
 	char* prog_start = find_prog(ramdisk_start,name);
 	char* code = null;
+	int size = 0;
 	if(prog_start != null)
 	{
-		int size = find_prog_size(ramdisk_start,name);
+		size = find_prog_size(ramdisk_start,name);
 		code = d_alloc(size);
 		for(int i=0;i<size;i++)
 		{
@@ -121,7 +122,8 @@ int exec(char *name,char *argv)		//not pretty sure works well , should consider 
 		}
 		void* prog = (void*)code;
 		struct thread *thd = get_current();
-		char* stack = (uint64_t)(thd->stack + 0x10000) & 0xFFFFFFF0;
+		mappage(thd->PGD,0x0,size,prog);
+		char* stack = 0xFFFFFFFFEFFC;
 		asm volatile("mov x19,%0;"
 					 "mov x20,%1;" :: "r" (prog), "r" (stack)
 					);
@@ -136,12 +138,18 @@ int fork(struct trap_frame *tf)
 	int ctid = Thread(to_child);								//create new child thread
 	char *child_copy = thread_list[ctid];						//for child copy
 	int gap = (int)child_copy - (int)thd;						//parent & child gap
-	for(int i=0;i<sizeof(struct thread) - sizeof(char*)*2;i++)	//avoid change kernel_stack pointer
+	for(int i=0;i<sizeof(struct thread) - sizeof(char*) * 4;i++)	//avoid change kernel_stack pointer
 	{
 		child_copy[i] = thd[i];									//copy whole thread data to child , include stack
 	}
 
 	struct thread *parent = thd;
+
+	for(int i=0;i<0x10000;i++)									//copy whole user_stack
+	{
+		thread_list[ctid]->user_stack_base[i] = parent->user_stack_base[i];
+	}
+
 	for(int i=0;i<0x10000;i++)									//copy whole kernel_stack
 	{
 		thread_list[ctid]->kernel_stack_base[i] = parent->kernel_stack_base[i];
@@ -159,7 +167,7 @@ int fork(struct trap_frame *tf)
 	thread_list[ctid]->tid = ctid;								//update child tid
 	thread_list[ctid]->reg.SP = c_tf;
 	thread_list[ctid]->reg.LR = to_child;						//return to child & load register
-	thread_list[ctid]->reg.FP = (uint64_t)thread_list[ctid]->kernel_stack;
+	thread_list[ctid]->reg.FP = (uint64_t)thread_list[ctid]->kernel_stack_base;
 	thread_list[ctid]->next = null;
 	thread_list[ctid]->sig = 0;									//not copy sig
 

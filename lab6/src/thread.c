@@ -3,12 +3,15 @@
 #include "system_call.h"
 #include "ramdisk.h"
 #include "timer.h"
+#include "virtual_mem.h"
+#include "map_kernel.h"
 
 #define null 0
 
 extern void switch_to(struct thread *thd1 , struct thread *thd2);
 extern struct thread* get_current();
 extern char* ramdisk_start;
+extern void vm_switch(uint64_t PGD);
 
 struct thread *thread_list[65536];
 struct thread *run_queue = null;
@@ -25,22 +28,29 @@ void init_thread()
 int Thread(void (*func)())
 {
 	struct thread *thd = d_alloc(sizeof(struct thread));
+	thd->PGD = (uint64_t)alloc_page_table() & ~(0xFFFF000000000000);		//create a PGD (can be recognized in EL0)
 	for(int i=0;i<65536;i++)
 	{
-		if(thread_list[i] == null)				//find empty thread
+		if(thread_list[i] == null)					//find empty thread
 		{
 			thd->next = null;
 			thd->tid = i;
-			//thd->reg.x19 = fork_test;			//for fork_test use
-			thd->reg.x19 = video_prog();
-			thd->reg.x20 = ((uint64_t)(thd->stack + 0x10000) & 0xFFFFFFF0);		//for user_stack
+
+			uint64_t tmp_user_stack_base = d_alloc(0x10000);
+			mappage(thd->PGD,0xFFFFFFFFB000,0x4000,tmp_user_stack_base);		//map user stack
+
+			thd->user_stack_base = 0xFFFFFFFFB000;	//stack region in SPEC
+			thd->user_stack = 0xFFFFFFFFEFFC;
+			//thd->reg.x19 = fork_test;				//for fork_test use
+			thd->reg.x19 = 0x0;						//had map video() in 0x0
+			thd->reg.x20 = thd->user_stack;			//for user_stack
 			thd->kernel_stack_base = d_alloc(0x10000);
-			thd->kernel_stack = ((uint64_t)(thd->kernel_stack_base + 0x10000) & 0xFFFFFFF0);
+			thd->kernel_stack = ((uint64_t)(thd->kernel_stack_base + 0x10000) & 0xFFFFFFFFFFFFFFF0);
 			thd->reg.LR = func;
-			thd->reg.SP = thd->kernel_stack;									//set EL1 kernel_stack
-			thd->reg.FP = thd->kernel_stack;
+			thd->reg.SP = thd->kernel_stack;		//set EL1 kernel_stack
+			thd->reg.FP = thd->kernel_stack_base;
 			thd->status = 1;
-			thd->sig = 0;						//no signal
+			thd->sig = 0;							//no signal
 			for(int i=0;i<10;i++)
 			{
 				thd->sig_handler[i] = null;
@@ -109,7 +119,7 @@ again:
 	uart_send_string(", next id :");
 	uart_int(next->tid);
 	uart_send_string("\r\n");
-*/	
+*/
 	run_queue = run_queue->next;
 	if(now->tid != 0)
 	{
@@ -117,6 +127,7 @@ again:
 	}
 	if(next->status == 1)						//1 : RUN
 	{
+		vm_switch(next->PGD);
 		switch_to(now,next);
 	}
 	else if(next->status == 2)					//2 : DEAD
@@ -161,11 +172,12 @@ void idle()
 void push_idle()
 {
 	struct thread *thd = d_alloc(sizeof(struct thread));
+	thd->PGD = (uint64_t)alloc_page_table() & ~(0xFFFF000000000000);	//create a PGD (recognized in EL0)
 	thd->next = null;
 	thd->tid = 0;
 	thd->kernel_stack_base = d_alloc(0x10000);
-	thd->kernel_stack = ((uint64_t)(thd->kernel_stack_base + 0x10000) & 0xFFFFFFF0);
-	thd->reg.FP = thd->kernel_stack;
+	thd->kernel_stack = (thd->kernel_stack_base + 0x10000);
+	thd->reg.FP = thd->kernel_stack_base;
 	thd->reg.LR = idle;
 	thd->reg.SP = thd->kernel_stack;
 	thd->status = 1;
@@ -227,13 +239,14 @@ void exit()				//end of a thread
 	return;
 }
 
-void* video_prog()
+void video_prog()
 {
-	char* prog_start = find_prog(ramdisk_start,"syscall.img");
+	char* prog_start = find_prog(ramdisk_start,"vm.img");
 	char* code = null;
+	int size = 0;
 	if(prog_start != null)
     {
-        int size = find_prog_size(ramdisk_start,"syscall.img");
+        size = find_prog_size(ramdisk_start,"vm.img");
         code = d_alloc(size);
         for(int i=0;i<size;i++)
         {
@@ -241,5 +254,7 @@ void* video_prog()
         }
     }
 	void* prog = (void*)code;
-	return prog;
+	struct thread *thd = thread_list[1];
+	mappage(thd->PGD,0x0,size,prog);
+	return;
 }
