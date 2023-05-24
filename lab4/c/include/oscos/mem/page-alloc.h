@@ -40,6 +40,13 @@ void mark_pages(page_id_range_t range, bool is_avail);
 /// \brief Converts the given page ID into its corresponding physical address.
 pa_t page_id_to_pa(page_id_t page) __attribute__((pure));
 
+/// \brief Converts the given physical address into its corresponding page ID.
+///
+/// Before conversion, the physical address is rounded down to the page
+/// boundary. I.e., the returned page ID is the page ID whose corresponding
+/// physical address range covers the given physical address.
+page_id_t pa_to_page_id(pa_t pa) __attribute__((pure));
+
 /// \brief Converts the given physical address range into its corresponding page
 ///        ID range.
 ///

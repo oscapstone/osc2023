@@ -405,6 +405,10 @@ pa_t page_id_to_pa(const page_id_t page) {
   return _pa_start + (page << PAGE_ORDER);
 }
 
+page_id_t pa_to_page_id(const pa_t pa) {
+  return (pa - _pa_start) >> PAGE_ORDER;
+}
+
 page_id_range_t pa_range_to_page_id_range(const pa_range_t range) {
   return (page_id_range_t){
       .start = (range.start - _pa_start) >> PAGE_ORDER,
