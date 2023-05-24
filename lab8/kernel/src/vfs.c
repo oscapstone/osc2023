@@ -176,6 +176,9 @@ int vfs_mount(const char *target, const char *filesystem)
 
 int vfs_lookup(const char *pathname, struct vnode **target)
 {
+    int is_fat = 0;
+    if (pathname[1]=='b' && pathname[2]=='o' && pathname[3]=='o' && pathname[4]=='t')
+        is_fat = 1;
     // if no path input, return root
     if(strlen(pathname)==0)
     {
@@ -198,6 +201,7 @@ int vfs_lookup(const char *pathname, struct vnode **target)
             while (dirnode->mount)
             {
                 dirnode = dirnode->mount->root;
+                if(is_fat) break;
             }
             c_idx = 0;
         }
@@ -214,6 +218,7 @@ int vfs_lookup(const char *pathname, struct vnode **target)
     // redirect to mounted filesystem
     while (dirnode->mount)
     {
+        if(is_fat) break;
         dirnode = dirnode->mount->root;
     }
     // return file's vnode
@@ -251,6 +256,7 @@ void init_rootfs()
     // fat32
     vfs_mkdir("/boot");
     register_fat32();
+    vfs_mount("/boot", "fat32");
 
     // dev_fs
     vfs_mkdir("/dev");

@@ -1,6 +1,8 @@
 #ifndef LIST_H
 #define LIST_H
 
+#include <stddef.h>
+
 /*
  * Circular doubly linked list implementation.
  *
@@ -133,5 +135,78 @@ static inline int list_size(const struct list_head *head)
 	}
 	return i;
 }
+
+/* "typeof" is a GNU extension.
+ * Reference: https://gcc.gnu.org/onlinedocs/gcc/Typeof.html
+ */
+#if defined(__GNUC__)
+#define __LIST_HAVE_TYPEOF 1
+#endif /* defined(__GNUC__) */
+
+/**
+ * container_of() - Calculate address of object that contains address ptr
+ * @ptr: pointer to member variable
+ * @type: type of the structure containing ptr
+ * @member: name of the member variable in struct @type
+ *
+ * Return: @type pointer of object containing ptr
+ */
+#ifndef container_of
+#ifdef __LIST_HAVE_TYPEOF
+#define container_of(ptr, type, member)                            \
+    __extension__({                                                \
+        const __typeof__(((type *) 0)->member) *__pmember = (ptr); \
+        (type *) ((char *) __pmember - offsetof(type, member));    \
+    })
+#else /* __LIST_HAVE_TYPEOF */
+#define container_of(ptr, type, member) \
+    ((type *) ((char *) (ptr) -offsetof(type, member)))
+#endif /* __LIST_HAVE_TYPEOF */
+#endif /* container_of */
+
+/**
+ * list_entry() - Calculate address of entry that contains list node
+ * @node: pointer to list node
+ * @type: type of the entry containing the list node
+ * @member: name of the list_head member variable in struct @type
+ *
+ * Return: @type pointer of entry containing node
+ */
+#define list_entry(node, type, member) container_of(node, type, member)
+
+/**
+ * list_for_each_entry - iterate over list entries
+ * @entry: pointer used as iterator
+ * @head: pointer to the head of the list
+ * @member: name of the list_head member variable in struct type of @entry
+ *
+ * The nodes and the head of the list must be kept unmodified while
+ * iterating through it. Any modifications to the the list will cause undefined
+ * behavior.
+ *
+ * FIXME: remove dependency of __typeof__ extension
+ */
+#ifdef __LIST_HAVE_TYPEOF
+#define list_for_each_entry(entry, head, member)                       \
+    for (entry = list_entry((head)->next, __typeof__(*entry), member); \
+         &entry->member != (head);                                     \
+         entry = list_entry(entry->member.next, __typeof__(*entry), member))
+#endif /* __LIST_HAVE_TYPEOF */
+
+/**
+ * iter_for_each_entry - iterate over list entries from @iter
+ * @entry: pointer used as iterator
+ * @iter: pointer to the start of this iteration
+ * @head: pointer to the head of the list
+ * @member: name of the list_head member variable in struct type of @entry
+ *
+ * FIXME: remove dependency of __typeof__ extension
+ */
+#ifdef __LIST_HAVE_TYPEOF
+#define iter_for_each_entry(entry, iter, head, member)                 \
+    for (entry = list_entry(iter, __typeof__(*entry), member);         \
+         &entry->member != (head);                                     \
+         entry = list_entry(entry->member.next, __typeof__(*entry), member))
+#endif /* __LIST_HAVE_TYPEOF */
 
 #endif

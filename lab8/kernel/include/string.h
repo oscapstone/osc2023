@@ -9,6 +9,8 @@ unsigned int vsprintf(char *dst,char* fmt, __builtin_va_list args);
 
 unsigned long long strlen(const char *str);
 char*              strcat(char *dest, const char *src);
+char*              strncat(char *dest, const char *src, int n);
+int                strcasecmp(const char *s1, const char *s2);
 int                strcmp(const char*, const char*);
 int                strncmp(const char*, const char*, unsigned long long);
 char*              memcpy(void *dest, const void *src, unsigned long long len);

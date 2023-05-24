@@ -7,6 +7,8 @@
 #define MAX_FD 16
 #define O_CREAT 00000100
 #define SEEK_SET 0
+#define SEEK_CUR 1
+#define SEEK_END 2
 #define MAX_FS_REG 0x50
 #define MAX_DEV_REG 0x10
 
@@ -22,6 +24,7 @@ struct vnode
     struct vnode_operations *v_ops; // inode & dentry Ops: represents kernel methods for vnode
     struct file_operations *f_ops;  // file Ops          : represents process methods for opened file
     void *internal;                 // vnode itself      : directly point to fs's vnode
+    struct vnode *parent;
 };
 
 // file handle
@@ -57,12 +60,12 @@ struct file_operations
 
 struct vnode_operations
 {
-    int (*lookup)(struct vnode *dir_node, struct vnode **target,
-                  const char *component_name);
-    int (*create)(struct vnode *dir_node, struct vnode **target,
-                  const char *component_name);
-    int (*mkdir)(struct vnode *dir_node, struct vnode **target,
-                 const char *component_name);
+    int (*lookup)(struct vnode *dir_node, struct vnode **target, const char *component_name);
+    int (*create)(struct vnode *dir_node, struct vnode **target, const char *component_name);
+    int (*mkdir)(struct vnode *dir_node, struct vnode **target, const char *component_name);
+    int (*isdir)(struct vnode *dir_node);
+    int (*getname)(struct vnode *dir_node, const char **name);
+    int (*getsize)(struct vnode *dir_node);
 };
 
 int register_filesystem(struct filesystem *fs);

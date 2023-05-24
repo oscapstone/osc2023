@@ -125,12 +125,61 @@ unsigned long long strlen(const char *str)
     return count;
 }
 
+char *strncat(char *dest, const char *src, int n)
+{
+    char *t;
+
+    t = dest;
+
+    while (*t) {
+        t++;
+    }
+
+    while (n > 0 && *src) {
+        *t = *src;
+        t++;
+        src++;
+        n--;
+    }
+
+    *t = '\0';
+
+    return dest;
+}
+
 char* strcat (char *dest, const char *src)
 {
   strcpy (dest + strlen (dest), src);
   return dest;
 }
 
+int strcasecmp(const char *s1, const char *s2)
+{
+    char c1, c2;
+
+    while (1) {
+        c1 = *s1++;
+        c2 = *s2++;
+
+        if (!c1 || !c2) {
+            break;
+        }
+
+        if ('A' <= c1 && c1 <= 'Z') {
+            c1 |= 0x20;
+        }
+
+        if ('A' <= c2 && c2 <= 'Z') {
+            c2 |= 0x20;
+        }
+
+        if (c1 != c2) {
+            break;
+        }
+    }
+
+    return c1 - c2;
+}
 
 int strcmp(const char* p1, const char* p2)
 {
