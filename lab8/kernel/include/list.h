@@ -175,6 +175,17 @@ static inline int list_size(const struct list_head *head)
 #define list_entry(node, type, member) container_of(node, type, member)
 
 /**
+ * list_first_entry() - get first entry of the list
+ * @head: pointer to the head of the list
+ * @type: type of the entry containing the list node
+ * @member: name of the list_head member variable in struct @type
+ *
+ * Return: @type pointer of first entry in list
+ */
+#define list_first_entry(head, type, member) \
+    list_entry((head)->next, type, member)
+
+/**
  * list_for_each_entry - iterate over list entries
  * @entry: pointer used as iterator
  * @head: pointer to the head of the list
