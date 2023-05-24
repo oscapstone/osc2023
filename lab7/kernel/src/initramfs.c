@@ -20,6 +20,7 @@ int initramfs_setup_mount(struct filesystem *fs, struct mount *_mount)
 {
     _mount->fs = fs;
     _mount->root = initramfs_create_vnode(0, dir_t);
+    // create entry under _mount, cpio files should be attached on it
     struct initramfs_inode *ramdir_inode = _mount->root->internal;
 
     // add all file in initramfs to filesystem
@@ -79,7 +80,7 @@ int initramfs_write(struct file *file, const void *buf, size_t len)
 int initramfs_read(struct file *file, void *buf, size_t len)
 {
     struct initramfs_inode *inode = file->vnode->internal;
-
+    // overflow, shrink size
     if (len + file->f_pos > inode->datasize)
     {
         memcpy(buf, inode->data + file->f_pos, inode->datasize - file->f_pos);

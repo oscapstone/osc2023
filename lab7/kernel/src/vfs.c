@@ -52,7 +52,7 @@ struct filesystem* find_filesystem(const char* fs_name)
 }
 
 
-
+// file ops
 int vfs_open(const char *pathname, int flags, struct file **target)
 {
     // 1. Lookup pathname
@@ -60,6 +60,7 @@ int vfs_open(const char *pathname, int flags, struct file **target)
     struct vnode *node;
     if (vfs_lookup(pathname, &node) != 0 && (flags & O_CREAT))
     {
+        // grep all of the directory path
         int last_slash_idx = 0;
         for (int i = 0; i < strlen(pathname); i++)
         {
@@ -72,19 +73,23 @@ int vfs_open(const char *pathname, int flags, struct file **target)
         char dirname[MAX_PATH_NAME+1];
         strcpy(dirname, pathname);
         dirname[last_slash_idx] = 0;
+        // update dirname to node
         if (vfs_lookup(dirname,&node)!=0)
         {
             uart_sendline("cannot ocreate no dir name\r\n");
             return -1;
         }
+        // create a new file node on node, &node is new file, 3rd arg is filename
         node->v_ops->create(node, &node, pathname+last_slash_idx+1);
         *target = kmalloc(sizeof(struct file));
+        // attach opened file on the new node
         node->f_ops->open(node, target);
         (*target)->flags = flags;
         return 0;
     }
     else // 2. Create a new file handle for this vnode if found.
     {
+        // attach opened file on the node
         *target = kmalloc(sizeof(struct file));
         node->f_ops->open(node, target);
         (*target)->flags = flags;
@@ -96,6 +101,7 @@ int vfs_open(const char *pathname, int flags, struct file **target)
     return -1;
 }
 
+// file ops
 int vfs_close(struct file *file)
 {
     // 1. release the file handle
@@ -104,6 +110,7 @@ int vfs_close(struct file *file)
     return 0;
 }
 
+// file ops
 int vfs_write(struct file *file, const void *buf, size_t len)
 {
     // 1. write len byte from buf to the opened file.
@@ -111,6 +118,7 @@ int vfs_write(struct file *file, const void *buf, size_t len)
     return file->f_ops->write(file,buf,len);
 }
 
+// file ops
 int vfs_read(struct file *file, void *buf, size_t len)
 {
     // 1. read min(len, readable size) byte to buf from the opened file.
@@ -119,6 +127,7 @@ int vfs_read(struct file *file, void *buf, size_t len)
     return file->f_ops->read(file, buf, len);
 }
 
+// file ops
 int vfs_mkdir(const char *pathname)
 {
     char dirname[MAX_PATH_NAME] = {};    // before add folder
@@ -141,6 +150,7 @@ int vfs_mkdir(const char *pathname)
     struct vnode *node;
     if(vfs_lookup(dirname,&node)==0)
     {
+        // node is the old dir, &node is new dir
         node->v_ops->mkdir(node,&node,newdirname);
         return 0;
     }
@@ -159,13 +169,14 @@ int vfs_mount(const char *target, const char *filesystem)
         uart_sendline("vfs_mount cannot find filesystem\r\n");
         return -1;
     }
-    // get its upper directory, if no, create new mountpoint
+    
     if(vfs_lookup(target, &dirnode)==-1)
     {
         uart_sendline("vfs_mount cannot find dir\r\n");
         return -1;
     }else
     {
+        // mount fs on dirnode
         dirnode->mount = kmalloc(sizeof(struct mount));
         fs->setup_mount(fs, dirnode->mount);
     }

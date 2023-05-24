@@ -18,7 +18,7 @@ int register_tmpfs()
 int tmpfs_setup_mount(struct filesystem *fs, struct mount *_mount)
 {
     _mount->fs = fs;
-    _mount->root = tmpfs_create_vnode(0,dir_t);
+    _mount->root = tmpfs_create_vnode(0, dir_t);
     return 0;
 }
 
@@ -114,7 +114,7 @@ int tmpfs_lookup(struct vnode *dir_node, struct vnode **target, const char *comp
     return -1;
 }
 
-
+// file ops
 int tmpfs_create(struct vnode *dir_node, struct vnode **target, const char *component_name)
 {
     struct tmpfs_inode *inode = dir_node->internal;
@@ -158,6 +158,7 @@ int tmpfs_create(struct vnode *dir_node, struct vnode **target, const char *comp
     return 0;
 }
 
+// dir ops
 int tmpfs_mkdir(struct vnode *dir_node, struct vnode **target, const char *component_name)
 {
     struct tmpfs_inode *inode = dir_node->internal;

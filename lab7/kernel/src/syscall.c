@@ -242,9 +242,11 @@ int open(trapframe_t *tpf, const char *pathname, int flags)
 {
     char abs_path[MAX_PATH_NAME];
     strcpy(abs_path, pathname);
+    // update abs_path
     get_absolute_path(abs_path, curr_thread->curr_working_dir);
     for (int i = 0; i < MAX_FD; i++)
     {
+        // find a usable fd
         if(!curr_thread->file_descriptors_table[i])
         {
             if(vfs_open(abs_path, flags, &curr_thread->file_descriptors_table[i])!=0)
@@ -263,6 +265,7 @@ int open(trapframe_t *tpf, const char *pathname, int flags)
 
 int close(trapframe_t *tpf, int fd)
 {
+    // find an opened fd
     if(curr_thread->file_descriptors_table[fd])
     {
         vfs_close(curr_thread->file_descriptors_table[fd]);
@@ -277,6 +280,7 @@ int close(trapframe_t *tpf, int fd)
 
 long write(trapframe_t *tpf, int fd, const void *buf, unsigned long count)
 {
+    // find an opened fd
     if (curr_thread->file_descriptors_table[fd])
     {
         tpf->x0 = vfs_write(curr_thread->file_descriptors_table[fd], buf, count);
@@ -289,6 +293,7 @@ long write(trapframe_t *tpf, int fd, const void *buf, unsigned long count)
 
 long read(trapframe_t *tpf, int fd, void *buf, unsigned long count)
 {
+    // find an opened fd
     if (curr_thread->file_descriptors_table[fd])
     {
         tpf->x0 = vfs_read(curr_thread->file_descriptors_table[fd], buf, count);
@@ -330,12 +335,12 @@ int chdir(trapframe_t *tpf, const char *path)
 
 long lseek64(trapframe_t *tpf, int fd, long offset, int whence)
 {
-    if(whence == SEEK_SET)
+    if(whence == SEEK_SET) // used for dev_framebuffer
     {
         curr_thread->file_descriptors_table[fd]->f_pos = offset;
         tpf->x0 = offset;
     }
-    else
+    else // other is not supported
     {
         tpf->x0 = -1;
     }
@@ -348,7 +353,7 @@ extern unsigned int pitch;
 extern unsigned int width;
 int ioctl(trapframe_t *tpf, int fb, unsigned long request, void *info)
 {
-    if(request == 0)
+    if(request == 0) // used for get info (SPEC)
     {
         struct framebuffer_info *fb_info = info;
         fb_info->height = height;
