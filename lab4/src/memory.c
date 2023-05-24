@@ -75,8 +75,6 @@ void init_memory()
     memory_reserve(0x80000, 0x80000 + 0x3000);
     memory_reserve(0x8000000, (0x8000000 + 6656));
     memory_reserve(base_addr, base);
-
-    // memory_reserve(0x3c000000, 0x40000000);
 }
 
 struct page *block_allocation(int order)
@@ -357,13 +355,13 @@ void memory_reserve(void *start, void *end)
     int indx = (long)(start - MEMORY_START) / PAGE_SIZE;
     int page = (long)((end + PAGE_SIZE - 1) - start) / PAGE_SIZE;
     printf("reserve indx: %d, page: %d\n", indx, page);
-    for (int i = 0; i < page; i++)
+    for (int i = 0; i < page; i += MAX_BLOCK_SIZE)
     {
-        bookkeep[indx + i].used = 1;
-        bookkeep[indx + i].order = -1;
-        bookkeep[indx + i].allocator = NULL;
-        bookkeep[indx + i].object_count = 0;
-        bookkeep[indx + i].first_free = NULL;
-        list_crop(&bookkeep[indx + i].list, &bookkeep[indx + i].list);
-    }
+        bookkeep[indx & i].used = 1;
+        bookkeep[indx & i].order = -1;
+        bookkeep[indx & i].allocator = NULL;
+        bookkeep[indx & i].object_count = 0;
+        bookkeep[indx & i].first_free = NULL;
+        list_crop(&bookkeep[indx & i].list, &bookkeep[indx & i].list);
+    };
 }

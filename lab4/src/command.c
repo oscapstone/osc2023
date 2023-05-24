@@ -136,5 +136,6 @@ void command_malloc()
     uart_getline(size);
     int size_int = atoi(size);
     void *address = memory_allocation(size_int);
+    printf("address: %x\n", address);
     memory_free(address);
 }
