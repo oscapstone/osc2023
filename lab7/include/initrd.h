@@ -27,4 +27,8 @@ int initrd_getLo(void);
 // Loading program
 void *initrd_content_getLo(const char *);
 int initrd_content_getSize(const char *);
+const char* initrd_getName(void*);
+char* initrd_getData(void*);
+int initrd_getMode(void*);
+void *initrd_jumpNext(void*);
 #endif // INITRD_H

@@ -15,7 +15,10 @@ OBJCOPY = /home/elvis/Downloads/arm-gnu-toolchain-12.2.rel1-x86_64-aarch64-none-
 QEMU = qemu-system-aarch64
 
 
-all: clean kernel8.img 
+all: clean kernel8.img initramfs.cpio
+
+initramfs.cpio: initramfs
+	cd initramfs; find . -print -depth | cpio -H newc -o > $@; mv $@ ..
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.S
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c -o $@ $<

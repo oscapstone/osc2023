@@ -86,7 +86,7 @@ int sys_exec(const char *name, char *const argv[]) {
   Thread *t = get_current();
   // Put the user program in the vm_list for future map
   for (int i = 0; i < 64; i++)
-    vm_list_add(phy2vir(&(t->vm_list)), 0 + i * 0x1000, dest + i * 0x1000);
+    vm_list_add(phy2vir(&(t->vm_list)), 0 + i * 0x1000, dest + i * 0x1000, /*R*/ 0);
   // map_vm(phy2vir(t->pgd), 0, dest, 64);	// Map the program to 0x0
   dest = phy2vir(dest);
   setup_program_loc(dest);
@@ -316,16 +316,17 @@ uint64_t sys_mmap(uint64_t addr, size_t len, int prot, int flags, int fd,
     phy_mem = pmalloc(l);
     // uart_puthl(phy_mem);
     // uart_puti(len >> 12);
+    
 
     //  Anonymous means no backup file -> content = 0
     memset(phy2vir(phy_mem), 0, len);
-    vm_list_add(phy2vir(&(t->vm_list)), addr, phy_mem);
+    vm_list_add(phy2vir(&(t->vm_list)), addr, phy_mem, /*R*/ (~prot) & 1);
     // uart_puthl(vm_list_delete(phy2vir(&(t->vm_list)), addr));
     map_vm(phy2vir(t->pgd), addr, phy_mem, len >> 12, prot);
   } else if (flags == MAP_POPULATE) {
     phy_mem = fd + file_offset;
     phy_mem = vir2phy(phy_mem);
-    vm_list_add(phy2vir(&(t->vm_list)), addr, phy_mem);
+    vm_list_add(phy2vir(&(t->vm_list)), addr, phy_mem, prot & 0x1);
     map_vm(phy2vir(t->pgd), addr, phy_mem, len >> 12, prot);
   } else {
     uart_puts("MMAP FLAG ERROR!!\n");

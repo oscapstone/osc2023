@@ -10,8 +10,12 @@
 #include "thread.h"
 #include "uart.h"
 #include <stdint.h>
+#include "vfs.h"
+#include "ramfs.h"
 
 extern void set_exception_vector_table(void);
+extern struct vnode* fsRoot;
+extern struct mount* fsRootMount;
 
 int main(void *dtb_location) {
   uart_setup();
@@ -25,6 +29,19 @@ int main(void *dtb_location) {
   smalloc_init();
   fdt_find_do(dtb_location, "linux,initrd-start", initrd_fdt_callback);
   uart_puts("test_thread\n");
+  // Initial Fs
+  fsRootMount = (struct mount *)malloc(sizeof(struct mount));
+  fsRootMount->root = (struct vnode*) malloc(sizeof(struct vnode));
+  fsRoot  = fsRootMount->root;
+  fsRoot->parent = NULL;
+  fsRoot->mount = fsRootMount;
+  struct filesystem* fs = getRamFs();
+  register_filesystem(fs);
+  fs->setup_mount(fs, fsRootMount);
+  ramfs_initFsCpio(fsRoot);
+  uart_puts("\nDump\n");
+  ramfs_dump(fsRoot, 0);
+  //
   core_timer_enable();
   terminal_run_thread();
   // idle();

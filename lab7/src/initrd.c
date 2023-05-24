@@ -187,3 +187,48 @@ int initrd_content_getSize(const char *name) {
   }
   return NULL;
 }
+
+const char* initrd_getName(void* f){
+    // file name
+    //uart_puts(f + sizeof(cpio_t));
+
+    return f + sizeof(cpio_t);
+}
+
+char* initrd_getData(void* f){
+
+  int ns = 0;
+  int fs = 0;
+  int pad_n = 0;
+  int pad_f = 0;
+  // uart_puts(name);
+    cpio_t *header = (cpio_t *)f;
+    ns = hex2bin(header->namesize, 8); // Get the size of name
+    fs = hex2bin(header->filesize, 8); // Get teh size of file content
+    pad_n = (4 - ((sizeof(cpio_t) + ns) % 4)) % 4; // Padding size
+    pad_f = (4 - (fs % 4)) % 4;
+    return  f + sizeof(cpio_t) + ns + pad_n;
+
+}
+
+int initrd_getMode(void* f){
+    cpio_t *header = (cpio_t *)f;
+    return header->mode;
+}
+
+void* initrd_jumpNext(void* f){
+  int ns = 0;
+  int fs = 0;
+  int pad_n = 0;
+  int pad_f = 0;
+  // uart_puts(name);
+    cpio_t *header = (cpio_t *)f;
+    ns = hex2bin(header->namesize, 8); // Get the size of name
+    fs = hex2bin(header->filesize, 8); // Get teh size of file content
+    pad_n = (4 - ((sizeof(cpio_t) + ns) % 4)) % 4; // Padding size
+    pad_f = (4 - (fs % 4)) % 4;
+    f += (sizeof(cpio_t) + ns + fs + pad_n + pad_f); // Jump to next record
+    return f;
+}
+
+

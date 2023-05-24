@@ -145,13 +145,14 @@ Thread *thread_create(void (*fn)(void *)) {
   // uart_puthl(&(cur->vm_list));
   for (int i = 0; i < 4; i++)
     vm_list_add(phy2vir(&(cur->vm_list)), 0xffffffffb000 + 0x1000 * i,
-                tmp_sp + 0x1000 * i);
+                tmp_sp + 0x1000 * i, /*RW*/1);
   // vm_list_add(cur->vm_list, 0xffffffffb000, tmp_sp, 4); // Demand Paging
   // map_vm(phy2vir(cur->pgd), 0xffffffffb000, tmp_sp, 4); // Map the phyaddr to
   // vm cur->sp_el0 = pmalloc(2) + 0x1000 - 16;     // Separate kernel stack
   cur->sp_el0 = 0xffffffffeff0;         // This is virtual address ,
   cur->sp_el0_kernel = phy2vir(tmp_sp); // For fork
   thread_q_add(&running, cur);          // Add to thread queue
+  uart_puts("all done");
   enable_int();
   // disable_int();
   return cur;

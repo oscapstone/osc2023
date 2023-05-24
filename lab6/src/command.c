@@ -243,7 +243,7 @@ int exec() {
     Thread *user = thread_create(sys_run_program);
     // map_vm(user->pgd, 0, dest, 10);
     for (int i = 0; i < 64; i++) {
-      vm_list_add(phy2vir(&(user->vm_list)), 0 + i * 0x1000, dest + i * 0x1000);
+      vm_list_add(phy2vir(&(user->vm_list)), 0 + i * 0x1000, dest + i * 0x1000, /*R*/ 0);
     }
     uart_puts("map done\n");
     user->mapped = 1;

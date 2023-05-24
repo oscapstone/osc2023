@@ -351,6 +351,10 @@ static int cow_handler() {
 		:[f] "r" (f));
   // Wnr is at [6]
   RW = (esr >> 6) & 0x1;
+  uint64_t che = walk_vm( phy2vir(t->pgd), f);
+  uart_puthl(che);
+  che = (che >> 7) & 0x1;
+  uart_puthl(che);
   trans &= 0xFFFFFFFFFFFFF000;
   esr = esr & 0x2f;
   if (esr >= 4 || esr <= 7) {
@@ -371,6 +375,10 @@ static int cow_handler() {
       uart_puts("map vm\n");
       map_vm(phy2vir(t->pgd), f, vir2phy(tmp), 1, 0);
       return;
+    }
+    else{
+	    uart_puts("[Segmentation fault]\n");
+	    return;
     }
     uart_puts("[Translation fault] ");
     phy = vm_list_delete(phy2vir(&(t->vm_list)), f);

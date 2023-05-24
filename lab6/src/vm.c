@@ -36,6 +36,32 @@ static uint64_t page_table_init() {
   // t = phy2vir(t);		// NOTE: this addr should be kernel addr
   return (t | BOOT_PGD_ATTR);
 }
+uint64_t walk_vm(uint64_t *pt, uint64_t vm){
+	int i = 0;
+  if (pt == NULL)
+    return 1;
+
+  pt = phy2vir(pt);
+  // uart_puthl(pt);
+  int pud, pmd, pte, pgd;
+  uint64_t *ptr_pte, *ptr_pmd, *ptr_pud, *ptr_pgd;
+    uint64_t tmp_vm = vm + i * 0x1000;
+    pte = (tmp_vm >> 12) & 0x1ff;
+    pmd = (tmp_vm >> 21) & 0x1ff;
+    pud = (tmp_vm >> 30) & 0x1ff;
+    pgd = (tmp_vm >> 39) & 0x1ff;
+
+    ptr_pgd = pt[pgd] & 0xfffffffffffff000;
+    ptr_pgd = phy2vir(ptr_pgd);
+    ptr_pud = ptr_pgd[pud] & 0xfffffffffffff000;
+    ptr_pud = phy2vir(ptr_pud);
+    // ptr_pud[0] = 0x0 |  BOOT_NORMAL_ATTR;
+    ptr_pmd = ptr_pud[pmd] & 0xfffffffffffff000;
+    ptr_pmd = phy2vir(ptr_pmd);
+    return ptr_pmd[pte];
+
+
+}
 
 /*************************************************************************
  * Mapping physical memory to physical memory
@@ -221,8 +247,9 @@ uart_puthl(to_ptr_pmd);
  * @head: The head of the vm_node, usually &(thread->vm_list)
  * @vir: The virtual address the page will map to
  * @phy: The physical address will be mapped
+ * @prop: The property of the page (R or RW)
  ***********************************************************************/
-int vm_list_add(vm_node **head, uint64_t vir, uint64_t phy) {
+int vm_list_add(vm_node **head, uint64_t vir, uint64_t phy, int prop) {
   disable_int();
   vm_node *n = smalloc(sizeof(vm_node));
   vm_node *cur = phy2vir(*head);
@@ -234,6 +261,8 @@ int vm_list_add(vm_node **head, uint64_t vir, uint64_t phy) {
   */
   n->phy = phy;
   n->vir = vir;
+  // R -> 0, RW -> 1;
+  //n->prop = prop;
   if (*head == NULL) {
     *head = n;
     n->next = NULL;
