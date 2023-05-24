@@ -2,9 +2,21 @@
 #include "memory.h"
 #include "math.h"
 
-struct page bookkeep[MAX_PAGE_NUMBER];
-struct list_head free_buddy_list[MAX_BUDDY_ORDER + 1]; // 0 ~ 9, so 10 elements in total
-struct object_allocator allocator_pool[MAX_ALLOCATOR_NUMBER];
+// struct page bookkeep[MAX_PAGE_NUMBER];
+// struct list_head free_buddy_list[MAX_BUDDY_ORDER + 1]; // 0 ~ 9, so 10 elements in total
+// struct object_allocator allocator_pool[MAX_ALLOCATOR_NUMBER];
+struct page *bookkeep;
+struct list_head *free_buddy_list; // 0 ~ 9, so 10 elements in total
+struct object_allocator *allocator_pool;
+
+extern char _end;
+
+void *simple_malloc(void **now, int size)
+{
+    void *ret = *now;
+    *now = *(char **)now + size;
+    return ret;
+}
 
 void init_buddy()
 {
@@ -52,11 +64,18 @@ void init_object_allocator()
 
 void init_memory()
 {
+    void *base = (void *)&_end;
+    long base_addr = (long)base;
+    bookkeep = (struct page *)simple_malloc(&base, sizeof(struct page) * MAX_PAGE_NUMBER);
+    free_buddy_list = (struct list_head *)simple_malloc(&base, sizeof(struct list_head) * (MAX_BUDDY_ORDER + 1));
+    allocator_pool = (struct object_allocator *)simple_malloc(&base, sizeof(struct object_allocator) * MAX_ALLOCATOR_NUMBER);
     init_buddy();
     init_object_allocator();
     memory_reserve(0x0, 0x1000);
-    memory_reserve(0x80000, 0x100000);
+    memory_reserve(0x80000, 0x80000 + 0x3000);
     memory_reserve(0x8000000, (0x8000000 + 6656));
+    memory_reserve(base_addr, base);
+
     // memory_reserve(0x3c000000, 0x40000000);
 }
 

@@ -4,16 +4,16 @@
 #define MEMORY_START 0x0
 
 #define PAGE_SHIFT 12
-#define PAGE_SIZE (1 << PAGE_SHIFT) // 4096
-#define MAX_BUDDY_ORDER 9
+#define PAGE_SIZE (1 << PAGE_SHIFT)           // 4096
+#define MAX_BUDDY_ORDER 9                     //
 #define MAX_BLOCK_SIZE (1 << MAX_BUDDY_ORDER) // 512
 #define MAX_PAGE_NUMBER 4096
 
-#define MIN_OBJECT_ORDER 4
-#define MAX_OBJECT_ORDER 11
-#define MIN_OBJECT_SIZE (1 << MIN_OBJECT_ORDER) // 16
-#define MAX_OBJECT_SIZE (1 << MAX_OBJECT_ORDER) // 2048
-#define MAX_ALLOCATOR_NUMBER MAX_OBJECT_ORDER - MIN_OBJECT_ORDER + 1
+#define MIN_OBJECT_ORDER 4                                           // 16 bytes
+#define MAX_OBJECT_ORDER 11                                          // 2048 bytes
+#define MIN_OBJECT_SIZE (1 << MIN_OBJECT_ORDER)                      // 16
+#define MAX_OBJECT_SIZE (1 << MAX_OBJECT_ORDER)                      // 2048
+#define MAX_ALLOCATOR_NUMBER MAX_OBJECT_ORDER - MIN_OBJECT_ORDER + 1 // 8
 
 static void *NULL = 0;
 
@@ -23,14 +23,14 @@ struct page
 {
     struct list_head list; // must be put in the front
 
-    int order;
+    int order; // 0-9
 
-    void *first_free;
-    struct object_allocator *allocator;
-    int object_count; // how many objects this page stores currently
+    void *first_free;                   // first free address in this page
+    struct object_allocator *allocator; // which allocator this page belongs to
+    int object_count;                   // how many objects this page stores currently
 
-    int page_number;
-    int used;
+    int page_number; // the number of this page
+    int used;        // 0: not used, 1: used
     void *start_address;
 };
 
