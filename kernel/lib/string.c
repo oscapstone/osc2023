@@ -1,4 +1,6 @@
+#include <stddef.h>
 #define NULL ((void *)0)
+
 
 int isalpha(char c){
     return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z');
@@ -137,4 +139,28 @@ unsigned int parse_hex_str(char *arr, int size) {
     }
 
     return result;
+}
+
+char* strchr (register const char *s, int c) {
+  do {
+    if (*s == c) {
+        return (char*)s;
+      }
+  } while (*s++);
+  return (0);
+}
+
+
+void *memset(void *s, int c, size_t n) {
+  char *start = s;
+  for (size_t i = 0; i < n; i++) {
+    start[i] = c;
+  }
+
+  return s;
+}
+char* strcat (char *dest, const char *src)
+{
+  strcpy (dest + strlen (dest), src);
+  return dest;
 }

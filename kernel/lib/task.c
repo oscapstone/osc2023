@@ -1,16 +1,27 @@
 #include "task.h"
+#include "irq.h"
+#include "string.h"
+#include "malloc.h"
+#include "uart.h"
+#include "timer.h"
 
 list_head_t task_list;
 int cur_priority = 10;
 
+void task_list_init() {
+    INIT_LIST_HEAD(&task_list);
+}
 void add_task(task_callback_t callback, int priority){
     // init task
-
-    task_t *t = (task_t*)smalloc(sizeof(task_t));
-    // uart_puts("a\n");
-    t->callback = callback;
-    // uart_puts("b\n");
+    //uart_puts("t1\n");
+    task_t *t = malloc(sizeof(task_t));
+    //uart_puts("t2\n");
     t->priority = priority;
+    
+    //uart_puts("t3\n");
+    t->callback = callback;
+    //uart_puts("t4\n");
+
     INIT_LIST_HEAD(&t->listhead);
     
     disable_interrupt();

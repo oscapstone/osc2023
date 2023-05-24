@@ -1,5 +1,7 @@
-
+#ifndef DTB_H
+#define DTB_H
 #include "uint.h"
+
 
 struct fdt_header {
     unsigned int magic;
@@ -27,3 +29,5 @@ unsigned int endian_big2little(unsigned int x);
 void fdt_traverse(dtb_callback callback);
 void dtb_callback_show_tree(uint32_t node_type, char *name, void *value, uint32_t name_size);
 void initramfs_callback(unsigned int node_type, char *name, void *value, unsigned int name_size);
+
+#endif

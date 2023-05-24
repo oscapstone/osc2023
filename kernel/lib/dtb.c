@@ -3,6 +3,7 @@
 #include "string.h"
 #include "uart.h"
 #include "string.h"
+#include "mmu.h"
 
 char *dtb_base;
 extern char *cpio_start;
@@ -132,9 +133,10 @@ void dtb_callback_show_tree(uint32_t node_type, char *name, void *data, uint32_t
 
 void initramfs_callback(unsigned int node_type, char *name, void *value, unsigned int name_size)
 {
-    if (!strcmp(name, "linux,initrd-start"))
-        cpio_start = (char *)(unsigned long long)endian_big2little(*(unsigned int *)value);
+    if (node_type == FDT_PROP && strcmp(name, "linux,initrd-start") == 0)
+        cpio_start = (void *)PHYS_TO_VIRT((unsigned long long)endian_big2little(*(uint32_t *)value));
 
-    if (!strcmp(name, "linux,initrd-end"))
-        cpio_end = (char *)(unsigned long long)endian_big2little(*(unsigned int *)value);
+    if (node_type == FDT_PROP && strcmp(name, "linux,initrd-end") == 0)
+        cpio_end = (void *)PHYS_TO_VIRT((unsigned long long)endian_big2little(*(uint32_t *)value));
+
 }

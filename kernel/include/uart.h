@@ -5,7 +5,7 @@
 #include "irq.h"
 #include "sprintf.h"
 
-#define MAX_BUF_SIZE 0x400
+#define MAX_BUF_SIZE 0x1000
 
 #define INT_SRC_0
 #define INT_AUX_RECV 0b00000100

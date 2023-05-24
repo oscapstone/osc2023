@@ -2,6 +2,8 @@
 #define SCHED_H
 
 #include "list.h"
+#include "filesystem/vfs.h"
+#include "syscall.h"
 
 #define PIDMAX 32768
 #define USTACK_SIZE 0x10000
@@ -11,7 +13,7 @@
 typedef void (*signal_handler_t)(void);
 
 typedef enum thread_status {
-    FREE,
+    NEW,
     RUNNING,
     DEAD,
 } thread_status_t;
@@ -33,6 +35,7 @@ typedef struct thread_context
     unsigned long fp;
     unsigned long lr;
     unsigned long sp;
+    void *ttbr0_el1;
 } thread_context_t;
 
 typedef struct thread
@@ -74,6 +77,14 @@ typedef struct thread
     // before running handler 
     // save origin context
     thread_context_t signal_saved_context;
+
+    /* VMA */
+    list_head_t vma_list;
+
+     /* Filesystem */
+    char cwd[MAX_PATH_NAME + 1];
+    struct file *fdt[MAX_FD + 1];
+    
 } thread_t;
 
 // track curr_thread
@@ -88,7 +99,7 @@ void idle();
 void schedule();
 void kill_zombies();
 void thread_exit();
-thread_t *thread_create(void *start);
+thread_t *thread_create(void *start, unsigned int filesize);
 int exec_thread(char *data, unsigned int filesize);
 
 #endif

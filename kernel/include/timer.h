@@ -4,7 +4,7 @@
 #include "list.h"
 
 //https://github.com/Tekki/raspberrypi-documentation/blob/master/hardware/raspberrypi/bcm2836/QA7_rev3.4.pdf p13
-#define CORE0_TIMER_IRQ_CTRL ((0x40000040))
+#define CORE0_TIMER_IRQ_CTRL PHYS_TO_VIRT(0x40000040)
 #define STR(x) #x
 #define XSTR(x) STR(x)
 

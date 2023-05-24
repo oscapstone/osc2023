@@ -5,6 +5,8 @@
 #include "malloc.h"
 #include "registers.h"
 #include "string.h"
+#include "utils.h"
+
 
 struct list_head *timer_event_list;
 
@@ -19,8 +21,7 @@ struct list_head *timer_event_list;
 
 void timer_list_init()
 {
-    
-
+    cpu_timer_enable();
     timer_event_list = malloc(sizeof(list_head_t));
     INIT_LIST_HEAD(timer_event_list);
 }
@@ -56,18 +57,19 @@ void core_timer_interrupt_enable(){
     asm volatile (
         "mov x2, 2\n\t"
         "ldr x1, =" XSTR(CORE0_TIMER_IRQ_CTRL) "\n\t"
-        "str w2, [x1]\n\t");
+        "str w2, [x1]\n\t" // unmask timer interrupt
+    :::"x1","x2");
     
     //*CORE0_TIMER_IRQ_CTRL = 2;
 }
 void core_timer_interrupt_disable(){
     
-    asm volatile (
+    __asm__ __volatile__(
         "mov x2, 0\n\t"
         "ldr x1, =" XSTR(CORE0_TIMER_IRQ_CTRL) "\n\t"
-        "str w2, [x1]\n\t");
+        "str w2, [x1]\n\t" // unmask timer interrupt
+    :::"x1","x2");
     
-   //*CORE0_TIMER_IRQ_CTRL = 0;
 }
 
 

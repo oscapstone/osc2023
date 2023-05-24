@@ -130,8 +130,8 @@ sync_el1h:
     eret
 irq_el1h:
     save_all
-    mov x0,sp   // debug
-    bl irq_handler  
+    mov x0,sp
+    bl irq_handler
     load_all
     eret
 fiq_el1h:
@@ -148,12 +148,13 @@ error_el1h:
     eret
 
 
-// svc exception 
+
 sync_el0_64:
     save_all
     mov x0,sp
+    mrs x1, esr_el1
     bl sync_el0_64_handler
-    // get trapframe 
+
     mov x0,sp // check signal when going back to user mode (el0)
     bl check_signal
     load_all
@@ -161,7 +162,7 @@ sync_el0_64:
 irq_el0_64:
     save_all
     bl irq_handler
-    // get trapframe
+
     mov x0,sp // check signal when going back to user mode (el0)
     bl check_signal
     load_all

@@ -1,8 +1,12 @@
-
-#include "shell.h"
 #include "uart.h"
+#include "string.h"
+#include "shell.h"
+#include "mbox.h"
+#include "system.h"
+#include "cpio.h"
+#include "dtb.h"
 #include "timer.h"
-#include "mm.h"
+#include "task.h"
 
 void cmd(char *s1) {
     
@@ -43,7 +47,7 @@ void cmd(char *s1) {
         uart_puts("Hello World!\n");
     }
     else if(!strcmp(arg[0], "mailbox") && i == 1) {
-        mbox_info();
+        print_system_messages();
     }
     else if(!strcmp(arg[0], "reboot") && i == 1) {
         reset(1);
@@ -99,10 +103,10 @@ void cmd(char *s1) {
         test_preemption();
     }
     else if(!strcmp(arg[0], "pfa") && i == 1) {
-        page_frame_allocator_test();
+        alloctest();
     }
     else if(!strcmp(arg[0], "csa") && i == 1) {
-        chunk_slot_allocator_test();
+        alloctest();
     }
     else {
         uart_async_printf("Unknown command: %s\n", s1);
@@ -142,4 +146,17 @@ void shell() {
         cmd(str);
 
     }
+}
+void print_system_messages()
+{
+    unsigned int board_revision;
+    get_board_revision(&board_revision);
+    uart_async_printf("Board revision is : 0x%x\n", board_revision);
+
+    unsigned int arm_mem_base_addr;
+    unsigned int arm_mem_size;
+
+    get_arm_memory_info(&arm_mem_base_addr, &arm_mem_size);
+    uart_async_printf("ARM memory base address in bytes : 0x%x\n", arm_mem_base_addr);
+    uart_async_printf("ARM memory size in bytes : 0x%x\n", arm_mem_size);
 }

@@ -15,8 +15,8 @@ LK     = $(ARMGNU)-ld
 OBJCPY = $(ARMGNU)-objcopy
 QEMU   = qemu-system-aarch64
 
-A_SRCS = $(wildcard lib/*.S)
-C_SRCS = $(wildcard lib/*.c)
+A_SRCS = $(wildcard lib/*.S) $(wildcard lib/*/*.S)
+C_SRCS = $(wildcard lib/*.c) $(wildcard lib/*/*.c)
 SRC_DIR = lib
 OBJ_DIR = build
 OBJS = $(A_SRCS:$(SRC_DIR)/%.S=$(OBJ_DIR)/%_s.o) $(C_SRCS:$(SRC_DIR)/%.c=$(OBJ_DIR)/%_c.o)
@@ -36,11 +36,11 @@ $(IMAGE).elf: $(OBJS)
 	$(LK) $(OBJS) -T linker.ld -o $(IMAGE).elf
 
 $(OBJ_DIR)/%_s.o: lib/%.S
-	@if [ ! -d "$(OBJ_DIR)" ]; then mkdir $(OBJ_DIR); fi
+	@mkdir -p $(dir $@)
 	$(CC) -c $< $(CFLAGS) -o $@
 
 $(OBJ_DIR)/%_c.o: lib/%.c
-	@if [ ! -d "$(OBJ_DIR)" ]; then mkdir $(OBJ_DIR); fi
+	@mkdir -p $(dir $@)
 	$(CC) -c $< $(CFLAGS) -o $@
 
 run: $(IMAGE).img 

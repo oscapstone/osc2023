@@ -1,12 +1,9 @@
 #include "uart.h"
 
-//#define IRQ_PENDING_1 ((volatile unsigned int*)((MMIO_BASE+0xB000)+0x204))
-//#define IRQ_PENDING_1_AUX_INT (1 << 29)
 
 char uart_tx_buffer[MAX_BUF_SIZE] = {};
 char uart_rx_buffer[MAX_BUF_SIZE] = {};
 
-int echo = 1;
 
 static unsigned int uart_tx_buffer_r_idx;
 static unsigned int uart_tx_buffer_w_idx;
@@ -63,7 +60,7 @@ void uart_send(unsigned int c) {
         asm volatile("nop");
     }while(!(*AUX_MU_LSR & 0x20));
     /* write the character to the buffer */
-    *AUX_MU_IO = c;
+    *AUX_MU_IO = (unsigned int)c;
 }
 
 

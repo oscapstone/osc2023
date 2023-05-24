@@ -1,12 +1,9 @@
 #ifndef SHELL_H
 #define SHELL_H
 
-#include "malloc.h"
-#include "cpio.h"
-#include "timer.h"
-#include "irq.h"
 
+extern char *dtb_base;
 void cmd(char *s1);
 void shell();
-
+void print_system_messages();
 #endif

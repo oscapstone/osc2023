@@ -1,4 +1,34 @@
+/*
+ * Copyright (C) 2018 bzt (bztsrc@github)
+ *
+ * Permission is hereby granted, free of charge, to any person
+ * obtaining a copy of this software and associated documentation
+ * files (the "Software"), to deal in the Software without
+ * restriction, including without limitation the rights to use, copy,
+ * modify, merge, publish, distribute, sublicense, and/or sell copies
+ * of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+ * DEALINGS IN THE SOFTWARE.
+ *
+ */
+
+/**
+ * minimal sprintf implementation
+ */
+
 #include "uart.h"
+#include "string.h"
 
 unsigned int vsprintf(char *dst, char* fmt, __builtin_va_list args)
 {
@@ -14,10 +44,11 @@ unsigned int vsprintf(char *dst, char* fmt, __builtin_va_list args)
     // main loop
     arg = 0;
     while(*fmt) {
-        if(dst-orig > MAX_BUF_SIZE-0x10)
+        if (strlen(fmt) > MAX_BUF_SIZE - 0x10 || dst - orig > MAX_BUF_SIZE - 0x10)
         {
-            uart_printf("Error!!! format string too long!!!!");
-            return -1;
+            uart_puts("Error!!! format string too long!!!!");
+            *dst = 0;
+            return dst - orig;
         }
         // argument access
         if(*fmt=='%') {
@@ -87,9 +118,12 @@ unsigned int vsprintf(char *dst, char* fmt, __builtin_va_list args)
                     tmpstr[--i]=n+(n>9?0x37:0x30);
                     arg>>=4;
                 } while(arg!=0 && i>0);
-                while(i>8) 
-                    tmpstr[--i]='0';
-                
+                // padding, only leading zeros
+                if(len>0 && len<=16) {
+                    while(i>16-len) {
+                        tmpstr[--i]='0';
+                    }
+                }
                 p=&tmpstr[i];
                 goto copystring;
             } else

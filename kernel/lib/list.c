@@ -54,3 +54,11 @@ void list_del(list_head_t * entry)
 }
 
 
+int list_size(const list_head_t *head) {
+        list_head_t *pos;
+ 	int i= 0;
+ 	list_for_each(pos, head) {
+ 	    i++;
+ 	}
+ 	return i; 
+}

@@ -3,6 +3,8 @@
 
 #define SIGKILL_NO 9
 
+#define USER_SIG_WRAPPER_VIRT_ADDR_ALIGNED 0xffffffff9000L
+
 #include "syscall.h"
 #include "sched.h"
 #include "malloc.h"

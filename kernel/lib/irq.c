@@ -6,10 +6,9 @@
 #include "task.h"
 #include "signal.h"
 #include "syscall.h"
-
-#define AUX_MU_IIR  ((volatile unsigned int*)(MMIO_BASE+0x00215048))
-
-
+#include "mmu.h"
+#include "stddef.h"
+#include "trapframe.h"
 
 #define UART_IRQ_PRIORITY 4
 #define TIMER_IRQ_PRIORITY 3
@@ -60,7 +59,7 @@ void irq_handler()
         //uart_printf("a2\n");
         pop_task();
         //uart_printf("a3\n");
-        core_timer_interrupt_enable();
+        core_timer_enable();
 
         // timer interrupt to be round robin
         if (run_queue->next->next != run_queue) // runqueue size > 1
@@ -80,7 +79,20 @@ void cpacr_el1_off(){
     );
 }
 
-void sync_el0_64_handler(trapframe_t *tpf) {
+void sync_el0_64_handler(trapframe_t *tpf, unsigned long x1) {
+
+    esr_el1_t *esr = (esr_el1_t *)&x1;
+    // ec 0x20(instruction abort) 0x24(data abort)
+    // iss [5 : 0] 0b001LL (translation fault) 
+    // ec : reason of exception
+    // iss : detailed reason of exception
+    if (esr->ec == DATA_ABORT_LOWER || esr->ec == INS_ABORT_LOWER)
+    {
+        handle_abort(esr);
+        return;
+    }
+
+
     enable_interrupt();
     // get trapframe x8
     // which is system call number
@@ -119,6 +131,37 @@ void sync_el0_64_handler(trapframe_t *tpf) {
         break;
     case 9:
         signal_kill(tpf->x0, tpf->x1);
+        break;
+    case 10:
+        sys_mmap(tpf, (void *)tpf->x0, tpf->x1, tpf->x2, tpf->x3, tpf->x4, tpf->x5);
+        break;
+    case 11:
+        sys_open(tpf, (char*)tpf->x0, tpf->x1);
+        break;
+    case 12:
+        sys_close(tpf, tpf->x0);
+        break;
+    case 13:
+        sys_write(tpf, tpf->x0, (char *)tpf->x1, tpf->x2);
+        break;
+    case 14:
+        sys_read(tpf, tpf->x0, (char *)tpf->x1, tpf->x2);
+        break;
+    case 15:
+        sys_mkdir(tpf, (char *)tpf->x0, tpf->x1);
+        break;
+    case 16:
+        sys_mount(tpf, (char *)tpf->x0, (char *)tpf->x1, (char *)tpf->x2, tpf->x3, (void*)tpf->x4);
+        break;
+    case 17:
+        sys_chdir(tpf, (char *)tpf->x0);
+        break;
+    case 18:
+        sys_lseek64(tpf, tpf->x0, tpf->x1, tpf->x2);
+        break;
+    case 19:
+        sys_ioctl(tpf, tpf->x0, tpf->x1, (void*)tpf->x2);
+        tpf->x0 = 0;
         break;
     case 50:
         // self-defined signal return
@@ -161,7 +204,7 @@ void unlock()
     lock_count--;
     if (lock_count<0)
     {
-        uart_printf("lock error !!!\r\n");
+        uart_printf("lock error !!!\n");
         while(1);
     }
     if (lock_count == 0)

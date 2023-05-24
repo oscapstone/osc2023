@@ -1,3 +1,5 @@
+#include "mmu.h"
+
 .section ".text.boot"
 
 .global _start
@@ -18,13 +20,66 @@ busyloop:
 from_el2_to_el1:
     bl _from_el2_to_el1
 
+
+setup_kernel_vm:
+    // set paging configuration (up : 0xffffxxxxxxxxxxxx low : 0x0000xxxxxxxxxxxx)
+    ldr     x4, = TCR_CONFIG_DEFAULT
+    // 5:0   T0SZ : user space X bits for address translation (x = 64 - value)
+    // 21:15 T1SZ : kenel space X bits for address translation
+    // x = 16 -> 0xffff_ or 0x0000_ to determine kernel or user
+    // 15:14 TG0 : user space page granule size (0b00 -> 4k)
+    // 31:30 TG1 : kernel space page granule size (0b10 -> 4k)
+    msr     tcr_el1, x4
+
+    // set Used Memory Attributes
+    // every 8 bits is different attribute
+    // page table entry bits 4:2 corresponding to MAIR_EL1 attribute
+    // device memory : nGnRnE
+    // normal memory : no cache
+    ldr     x4, =((MAIR_DEVICE_nGnRnE << (MAIR_IDX_DEVICE_nGnRnE * 8)) | (MAIR_NORMAL_NOCACHE << (MAIR_IDX_NORMAL_NOCACHE * 8)))
+    msr     mair_el1, x4
+
+    // set and enable MMU
+    mov     x4, 0x1000 // PGD's page frame at 0x1000
+    mov     x1, 0x2000 // PUD's page frame at 0x2000
+
+    // PGD 12 ~ 2 ignore
+    // set up PGD_attribute, pd table , 0b11
+    ldr     x2, = BOOT_PGD_ATTR
+    // | physical_address | attribute |
+    orr     x2, x1, x2 // combine the physical address of next level page with attribute.
+    // make first entry in PGD points to PUD
+    str     x2, [x4]
+
+    // set stack pointer location
+    mov     sp, 0x3c000000 // startup stack
+    bl      set_2M_kernel_mmu
+
+    // load PGD to the bottom (user-space) translation-based register.
+    msr     ttbr0_el1, x4 
+    // load PGD to the upper  (kernel-space) translation based register.
+    msr     ttbr1_el1, x4 
+
+    // MMU enable for EL1 & 0 stage 1 address translation
+    // cache remains disable
+    // bits 0 : M
+    mrs     x2, sctlr_el1
+    orr     x2 , x2, 1
+    msr     sctlr_el1, x2 
+
+    ldr     x2, =master
+    br      x2
+
 master:
     ldr     x1, =(3 << 20)           // close advanced SIMD exception
     msr     CPACR_EL1, x1           // printf builtin_va might use
     adr     x1, exception_vector_table // set exception_vector_table
     msr     vbar_el1, x1
 
-    ldr     x1, =_start
+    // set top of stack at 0xffff00003c000000 (last usable memory)
+    movz    x1, 0x0000
+    movk    x1, 0x3c00, lsl 16
+    movk    x1, 0xffff, lsl 48
     mov     sp, x1
 
     ldr     x1, =__bss_start

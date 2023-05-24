@@ -1,19 +1,22 @@
 SECTIONS
 {
-    . = 0x80000;
-    __text_start = .;
-    .text : { KEEP(*(.text.boot)) *(.text .text.*) }
-    .bss : 
-    {
+    . = 0xffff000000000000;
+    . += 0x80000;
+    .text : { KEEP(*(.text.boot)) *(.text .text.* .gnu.linkonce.t*) }
+    /* read only data */
+    .rodata : { *(.rodata .rodata.* .gnu.linkonce.r*) }
+    PROVIDE(_data = .);
+    .data : { *(.data .data.* .gnu.linkonce.d*) }
+    .bss (NOLOAD) : {
         . = ALIGN(16);
         __bss_start = .;
-        *(.bss*)
+        *(.bss .bss.*)
+        *(COMMON)
         __bss_end = .;
     }
-
-    __heap_start = .;
+    _heap_start = .;
     _end = .;
+    /* input section不會被輸出成output section */
+   /DISCARD/ : { *(.comment) *(.gnu*) *(.note*) *(.eh_frame*) }
 }
 __bss_size = (__bss_end - __bss_start)>>3;
-__startup_allocator_start = 0x3b000000;
-__startup_allocator_end = __startup_allocator_start + 0x1000000;

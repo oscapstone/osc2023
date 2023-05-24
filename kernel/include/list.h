@@ -1,7 +1,7 @@
 #ifndef LIST_H
 #define LIST_H
 
-#include "malloc.h"
+
 
 typedef struct list_head {
     struct list_head *next, *prev;
@@ -35,6 +35,7 @@ void list_add_tail( list_head_t *new_lst, list_head_t *head);
 void list_insert(list_head_t *new_lst, list_head_t *prev, list_head_t *next);
 static  void __list_del(list_head_t * prev, list_head_t * next);
 void list_del(list_head_t * entry);
+int list_size(const list_head_t *head);
 
 static inline int list_is_head(const struct list_head *list, const struct list_head *head)
 {

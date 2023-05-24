@@ -1,5 +1,6 @@
 #ifndef MAILBOX_H
 #define MAILBOX_H
+#include "gpio.h"
 
 extern volatile unsigned int mbox[36];
 
@@ -33,7 +34,6 @@ extern volatile unsigned int mbox[36];
 #define MBOX_TAG_LAST           0
 
 int mbox_call(unsigned char ch);
-void get_board_revision();
-void mbox_info();
+
 
 #endif
