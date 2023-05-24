@@ -73,7 +73,7 @@ int vfs_close(struct file* file);
 int vfs_read(struct file* file , void *buf, size_t len);
 int vfs_write(struct file* file , const void* buf, size_t len);
 
-int vfs_mkdir(const char* pathname);
+int vfs_mkdir(char* pathname);
 int vfs_create(struct vnode* dir_node, struct vnode** target, const char* name);
 
 int vfs_mount(const char* target, const char* filesystem);
@@ -97,5 +97,6 @@ typedef struct {
 
 // Helper
 char* getFileName(char* dest, const char* from);
+int vfs_getLastDir(char* path, struct vnode *dir, struct vnode** t);
 
 #endif // VFS_H

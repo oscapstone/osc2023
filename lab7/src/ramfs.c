@@ -108,12 +108,16 @@ int ramfs_lookup(struct vnode *dir, struct vnode** target, const char* name){
 	for(int i = 0; i < fs->size; i++){
 		struct vnode* ch = c[i];
 		FsAttr *cfs = (FsAttr*)ch->internal;
+		/*
 		uart_puts(" lookup: ");
 		uart_puts(cfs->name);
+		*/
 		if(!strcmp(cfs->name, name)){
 			*target = ch;
+			/*
 		uart_puts(" found: ");
 		uart_puts(cfs->name);
+		*/
 		uart_puts("\n");
 			return 0;
 		}
@@ -159,7 +163,7 @@ int ramfs_init(struct filesystem* fs, struct mount* m){
 	root->v_ops = (struct vnode_operations*) malloc(sizeof(struct vnode_operations));
 	root->v_ops->lookup = ramfs_lookup;
 	root->v_ops->create = ramfs_create;
-	//root->v_ops->mkdir = ramfs_mkdir;
+	root->v_ops->mkdir = ramfs_mkdir;
 
 	/*
 	root->f_ops = (struct file_operations*) smalloc(64);
@@ -189,3 +193,9 @@ int ramfs_init(struct filesystem* fs, struct mount* m){
 	return 0;
 }
 
+int ramfs_mkdir(struct vnode* dir, struct vnode** target, const char* name){
+	ramfs_create(dir, target, name);
+	FsAttr* attr = (FsAttr*)(*target)->internal;
+	attr->type = DIRTYPE;
+	return 0;
+}

@@ -19,6 +19,10 @@ static struct vnode *root;
 char* getFileName(char* dest, const char* from){	
 	int tmp = 0;
 	char *f = from;
+	if(from == NULL){
+		*dest = 0;
+		return NULL;
+	}
 	for(int i = 0; i < 16; i ++){
 		*dest = *f++;
 		if((*dest) == 0){
@@ -49,17 +53,35 @@ int register_filesystem(struct filesystem *fs){
  * TODO: Support recursive create
  */
 int vfs_open(const char* pathName, int flags, struct file **target){
-	*target = (struct file*)pmalloc(0); // Create teh File
+	*target = malloc(sizeof(struct file)); // Create the File
+	struct vnode *dir = NULL;
 	int ret;
 	struct vnode *target_v = NULL;
+	char *name = pathName;
+	char *tmp = pathName;
+	
+	// Get the basename of the pathName
+	for(int i = 0; i < 16; i ++){
+		if(*name == '/'){
+			tmp = name + 1;
+		}
+		if(*name == 0)
+			break;
+		name ++;
+	}
+	name = tmp;
+
+	// Lookup if the file exist
 	ret = vfs_lookup(pathName, &target_v);
 	// If File not exist and the create not set
-	if(target_v == NULL && flags | O_CREAT == 0){
+	if(target_v == NULL && (flags | O_CREAT) == 0){
 		uart_puts("File Not exist\n");
 		return 0;
 	}
 	if(target_v == NULL){
-		dir->v_ops->create(dir, &target_v, pathName);
+		// Get the last dir to link to
+		vfs_getLastDir(pathName, dir, &dir);
+		dir->v_ops->create(dir, &target_v, name);
 	}
 	(*target)->vnode = target_v;
 	(*target)->f_pos = 0;	// initial position
@@ -70,28 +92,30 @@ int vfs_open(const char* pathName, int flags, struct file **target){
 
 int vfs_create(struct vnode* dir_node, struct vnode** target,
 		const char * component_name){
-	*target = (struct vnode*) pmalloc(0);
-	(*target)->parent = dir_node;
-	(*target)->mount = NULL;
-	(*target)->v_ops = dir_node->v_ops;
-	(*target)->f_ops = dir_node->f_ops;
-	char * n = (*target)->name;
-	for(int i = 0; i < 16; i ++){
-		*n ++ = *component_name++;
-		if(*n == 0)
-			break;
-	}
-	(*target)->type = NORMAL;
+	dir_node->v_ops->create(dir_node, target, component_name);
 	return 0;
 }
 
-int vfs_lookup(const char *name , struct vnode** target){
-	char tmp[32];
-	int i = 0;
-	struct vnode* dir = *target;
-	int ret;
-	dir->v_ops->lookup(dir, &target, tmp);
-	uart_puts("VFS lookup: \n");
+int vfs_lookup(const char *path , struct vnode** target){
+	struct vnode* dir = fsRoot;
+	char *name = path;
+	char buf[16] = {0};
+	while(1){
+		memset(buf, 0, 16);
+		name = getFileName(buf, name);
+		uart_puts(buf);
+		if(name == NULL && *buf == 0)
+			break;
+		else if(*buf != 0){
+			dir->v_ops->lookup(dir, target, buf);
+		}
+		if(name == NULL)
+			break;
+		if(*target == NULL)
+			break;
+		dir = *target;
+		*target = NULL;
+	}
 	return 0;
 }
 
@@ -113,18 +137,68 @@ int vfs_write(struct file *f, const void* buf, size_t len){
 /* similiar to the create but the file type is dir
  * TODO: Recursive mkdir
  */
-int vfs_mkdir(const char* path){
-	// First, try to open the dir
-	struct vnode* new_dir = NULL;
-	struct file* file = NULL;
-	vfs_open(path, O_CREAT, &file);
-	if(file == NULL){
-		uart_puts("Fail to MKDIR\n");
-		return 1;
+int vfs_mkdir(char* path){
+	struct vnode* dir = fsRoot;
+	struct vnode *target = NULL;
+	char *name = path;
+	char buf[16] = {0};
+	while(1){
+		memset(buf, 0, 16);
+		name = getFileName(buf, name);
+		if(name == NULL && *buf == 0)
+			break;
+		if(name == NULL && *buf != 0){
+			dir->v_ops->lookup(dir, &target, buf);
+			if(target != NULL){
+				uart_puts("MKDIR file already exist\n");
+				return 1;
+			}
+			dir->v_ops->mkdir(dir, &target, buf);
+		}
+		else if(*buf != 0){
+			dir->v_ops->lookup(dir, &target, buf);
+			if(target == NULL)
+				dir->v_ops->create(dir, &target, buf);
+		}
+		if(target == NULL)
+			break;
+		dir = target;
+		target = NULL;
 	}
-	new_dir = file->vnode;
-	new_dir->type = DIRTYPE;
+	return 0;
+}
+
+int vfs_getLastDir(char* path, struct vnode *dir_node, struct vnode **t){
+	struct vnode* dir = NULL;
+	if(dir_node == NULL){
+		dir = fsRoot;
+	}
+	else
+		dir = dir_node;
+
+	char *name = path;
+	char buf[16] = {0};
+	struct vnode* target = NULL;
+	while(1){
+		memset(buf, 0, 16);
+		name = getFileName(buf, name);
+		if(name == NULL)
+			break;
+		if(*buf != 0){
+			dir->v_ops->lookup(dir, &target, buf);
+			if(target == NULL){
+			//	uart_puts("Cannot get the DIR\n");
+				dir->v_ops->mkdir(dir, &target, buf);
+			}
+		}
+		if(target == NULL)
+			break;
+		dir = target;
+		target = NULL;
+	}
+	*t = dir;
 	return 0;
 }
 	
 
+	

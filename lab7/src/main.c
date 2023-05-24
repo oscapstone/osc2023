@@ -40,7 +40,17 @@ int main(void *dtb_location) {
   fs->setup_mount(fs, fsRootMount);
   ramfs_initFsCpio(fsRoot);
   uart_puts("\nDump\n");
+  struct vnode* test;
+  //ramfs_mkdir(fsRoot, &test, "mkdir");
+  vfs_mkdir("mkdir");
+  vfs_lookup("mkdir", &test);
+  vfs_create(test, &test, "vfs_creast");
+  struct file *f = NULL;
+  vfs_open("mkdir/vfs", O_CREAT, &f);
+  //ramfs_dump(f->vnode, 6);
   ramfs_dump(fsRoot, 0);
+  //ramfs_dump(test, 6);
+
   //
   core_timer_enable();
   terminal_run_thread();
