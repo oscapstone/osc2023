@@ -1,4 +1,8 @@
-lab1/*.o
-lab1/*.S
+.vscode
+.vscode/*
+**/*.o
+**/*.dtb
+**/*.img
+**/*.elf
 .DS_Store
 ..DS_Store/*
