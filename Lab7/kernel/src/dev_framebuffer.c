@@ -14,6 +14,7 @@ unsigned char *lfb;                       /* raw frame buffer address */
 
 struct file_operations dev_framebuffer_operations = {dev_framebuffer_write, (void *)dev_framebuffer_op_deny, dev_framebuffer_open, dev_framebuffer_close, dev_framebuffer_lseek64, (void *)dev_framebuffer_op_deny};
 
+// https://github.com/raspberrypi/firmware/wiki/Mailbox-property-interface
 int init_dev_framebuffer()
 {
     //The following code is for mailbox initialize used in lab7.
@@ -85,7 +86,7 @@ int dev_framebuffer_write(struct file *file, const void *buf, size_t len)
     lock();
     if (len + file->f_pos > pitch * height)
     {
-        uart_puts("????\r\n");
+        uart_puts("dev_framebuffer_write to no where!\r\n");
         len = pitch * height - file->f_pos;
     }
     memcpy(lfb + file->f_pos, buf, len);

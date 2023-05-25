@@ -56,7 +56,7 @@ int tmpfs_write(struct file *file, const void *buf, size_t len)
 int tmpfs_read(struct file *file, void *buf, size_t len)
 {
     struct tmpfs_inode *inode = file->vnode->internal;
-    // if buffer overflow, shrink the request read length
+    // if buffer overflow, reduce the request read length
     // read from f_pos
     if(len+file->f_pos > inode->datasize)
     {
@@ -102,18 +102,21 @@ long tmpfs_lseek64(struct file *file, long offset, int whence)
 
 
 // vnode operations
+// dir_node is a pointer to the directory node, target is a pointer to the target node pointer, and component_name is the file name to find.
 int tmpfs_lookup(struct vnode *dir_node, struct vnode **target, const char *component_name)
 {
+    // Obtain the internal structure pointer of the directory node from the internal member of the dir_node pointer, and assign it to dir_inode.
     struct tmpfs_inode *dir_inode = dir_node->internal;
     int child_idx = 0;
     // BFS search tree
     for (; child_idx <= MAX_DIR_ENTRY; child_idx++)
     {
         struct vnode *vnode = dir_inode->entry[child_idx];
-        if(!vnode) break;
+        if(!vnode) break; // If vnode is a NULL, meaning there are no more child nodes, then break out of the loop.
         struct tmpfs_inode *inode = vnode->internal;
-        if (strcmp(component_name, inode->name) == 0)
+        if (strcmp(component_name, inode->name) == 0) // If they are equal, the target file was found.
         {
+            // Store the node pointer of the target file in the target pointer
             *target = vnode;
             return 0;
         }

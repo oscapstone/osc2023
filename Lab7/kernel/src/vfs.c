@@ -25,6 +25,7 @@ int register_filesystem(struct filesystem *fs)
     return -1;
 }
 
+// Device File Registration
 int register_dev(struct file_operations *fo)
 {
     for (int i = 0; i < MAX_FS_REG; i++)
@@ -135,8 +136,9 @@ int vfs_mkdir(const char *pathname)
             last_slash_idx = i;
         }
     }
-
+    // void *memcpy(void *src, const void *dest, size_t n)
     memcpy(dirname, pathname, last_slash_idx);
+    // char *strcpy(char *dest, const char *src)
     strcpy(newdirname, pathname + last_slash_idx + 1);
 
     // create new directory if upper directory is found

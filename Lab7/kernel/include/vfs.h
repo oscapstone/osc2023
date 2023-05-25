@@ -3,20 +3,23 @@
 
 #include "stddef.h"
 
-#define MAX_PATH_NAME 255
-#define MAX_FD 16
-#define O_CREAT 00000100
-#define SEEK_SET 0
-#define MAX_FS_REG 0x50
-#define MAX_DEV_REG 0x10
+#define MAX_PATH_NAME 255 // The maximum length of a path name
+#define MAX_FD 16         // The maximum number of file descriptors (file descriptors) that each process can open
+#define O_CREAT 00000100  // Indicates one of the flags when opening a file. When this flag is specified, a new file is created if the file does not exist.
+#define SEEK_SET 0        // Indicates the starting position of the file read and write position indicator. In this implementation, is set to 0, which means read and write operations from the beginning of the file.
+#define MAX_FS_REG 0x50   // Indicates the maximum number of registered file systems.
+#define MAX_DEV_REG 0x10  // Indicates the maximum number of registered devices
 
+// Defines two types of file system nodes: 
+// 1. directories (dir_t)
+// 2. files (file_t).
 enum fsnode_type
 {
     dir_t,
     file_t
 };
 
-
+// Node in the file system
 struct vnode
 {
     struct mount *mount;            // Superblock        : represents mounted fs
@@ -25,7 +28,7 @@ struct vnode
     void *internal;                 // vnode itself      : directly point to fs's vnode
 };
 
-// file handle
+// File handle in the file system
 struct file
 {
     struct vnode *vnode;
@@ -34,16 +37,17 @@ struct file
     int flags;
 };
 
+// Mount point in the file system
 struct mount
 {
-    struct vnode *root;
-    struct filesystem *fs;
+    struct vnode *root;     // the root node of the mount point
+    struct filesystem *fs;  // the mounted file system.
 };
 
 struct filesystem
 {
-    const char *name;
-    int (*setup_mount)(struct filesystem *fs, struct mount *mount);
+    const char *name;  // : The name of the file system.
+    int (*setup_mount)(struct filesystem *fs, struct mount *mount); // A function pointer for initializing the mount point of the file system.
 };
 
 struct file_operations
