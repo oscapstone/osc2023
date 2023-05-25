@@ -81,9 +81,10 @@ int initramfs_read(struct file *file, void *buf, size_t len)
 {
     struct initramfs_inode *inode = file->vnode->internal;
 
+    // not enough data remaining in the file to satisfy the full read request.
     if (len + file->f_pos > inode->datasize)
     {
-        len = inode->datasize - file->f_ops;
+        len = inode->datasize - file->f_pos;
         memcpy(buf, inode->data + file->f_pos, inode->datasize - file->f_pos);
         file->f_pos += inode->datasize - file->f_pos;
         return len;

@@ -274,6 +274,7 @@ int sys_open(trapframe_t *tpf, const char *pathname, int flags)
         // available entry is found
         if(!curr_thread->file_descriptors_table[i])
         {
+            // the resulting file descriptor is stored in the curr_thread->file_descriptors_table[i]
             if(vfs_open(abs_path, flags, &curr_thread->file_descriptors_table[i])!=0)
             {
                 break;
@@ -377,6 +378,8 @@ extern unsigned int height;
 extern unsigned int isrgb;
 extern unsigned int pitch;
 extern unsigned int width;
+
+// ioctl 0 will be use to get inf
 int sys_ioctl(trapframe_t *tpf, int fb, unsigned long request, void *info)
 {
     if(request == 0)
