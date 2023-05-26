@@ -21,6 +21,7 @@ int register_filesystem(struct filesystem *fs)
         {
             reg_fs[i].name = fs->name;
             reg_fs[i].setup_mount = fs->setup_mount;
+            reg_fs[i].sync = fs->sync;
             return i;
         }
     }
@@ -236,6 +237,11 @@ int vfs_mknod(char* pathname, int id)
     f->vnode->f_ops = &reg_dev[id];
     vfs_close(f);
     return 0;
+}
+
+int vfs_sync(struct filesystem *fs)
+{
+    return fs->sync(fs);
 }
 
 void init_rootfs()

@@ -30,6 +30,7 @@ long initramfs_getsize(struct vnode *vd);
 int initramfs_lookup(struct vnode *dir_node, struct vnode **target, const char *component_name);
 int initramfs_create(struct vnode *dir_node, struct vnode **target, const char *component_name);
 int initramfs_mkdir(struct vnode *dir_node, struct vnode **target, const char *component_name);
+int initramfs_sync(struct filesystem *fs);
 
 struct vnode *initramfs_create_vnode(struct mount *_mount, enum fsnode_type type);
 

@@ -42,6 +42,7 @@ void sync_64_router(trapframe_t* tpf)
     else if (syscall_no == 17) { chdir(tpf, (char *)tpf->x0);                                                            }
     else if (syscall_no == 18) { lseek64(tpf, tpf->x0, tpf->x1, tpf->x2);                                                }
     else if (syscall_no == 19) { ioctl(tpf, tpf->x0, tpf->x1, (void*)tpf->x2);                                           }
+    else if (syscall_no == 20) { sync(tpf);                                                                              }
     else if (syscall_no == 50) { sigreturn(tpf);                                                                         }
     el1_interrupt_disable();
 }

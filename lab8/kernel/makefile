@@ -37,7 +37,7 @@ run:
 	-display none \
 	-kernel kernel8.img \
 	-serial null -serial stdio \
-	-initrd initfs.gz \
+	-initrd initramfs.cpio \
 	-drive if=sd,file=sdcard.img,format=raw \
 	-dtb bcm2710-rpi-3-b-plus.dtb
 

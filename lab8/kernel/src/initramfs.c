@@ -13,6 +13,7 @@ int register_initramfs()
     struct filesystem fs;
     fs.name = "initramfs";
     fs.setup_mount = initramfs_setup_mount;
+    fs.sync = initramfs_sync;
     return register_filesystem(&fs);
 }
 
@@ -148,6 +149,11 @@ int initramfs_mkdir(struct vnode *dir_node, struct vnode **target, const char *c
 {
     // read-only
     return -1;
+}
+
+int initramfs_sync(struct filesystem *fs)
+{
+    return 0;
 }
 
 long initramfs_getsize(struct vnode *vd)

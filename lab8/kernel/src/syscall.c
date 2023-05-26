@@ -361,6 +361,16 @@ int ioctl(trapframe_t *tpf, int fb, unsigned long request, void *info)
     return tpf->x0;
 }
 
+int sync(trapframe_t *tpf)
+{
+    for (int i = 0; i < MAX_FS_REG;i++)
+    {
+        if(!reg_fs[i].name) continue;
+        vfs_sync(&reg_fs[i]);
+    }
+    tpf->x0 = 0;
+    return tpf->x0;
+}
 
 void sigreturn(trapframe_t *tpf)
 {

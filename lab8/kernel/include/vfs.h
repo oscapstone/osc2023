@@ -46,6 +46,7 @@ struct filesystem
 {
     const char *name;
     int (*setup_mount)(struct filesystem *fs, struct mount *mount);
+    int (*sync)(struct filesystem *fs);
 };
 
 struct file_operations
@@ -68,6 +69,8 @@ struct vnode_operations
     int (*getsize)(struct vnode *dir_node);
 };
 
+extern struct filesystem reg_fs[MAX_FS_REG];
+
 int register_filesystem(struct filesystem *fs);
 int register_dev(struct file_operations* fo);
 struct filesystem *find_filesystem(const char *fs_name);
@@ -79,6 +82,7 @@ int vfs_mkdir(const char *pathname);
 int vfs_mount(const char *target, const char *filesystem);
 int vfs_lookup(const char *pathname, struct vnode **target);
 int vfs_mknod(char* pathname, int id);
+int vfs_sync(struct filesystem *fs);
 
 void init_rootfs();
 void vfs_test();

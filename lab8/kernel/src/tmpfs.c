@@ -12,6 +12,7 @@ int register_tmpfs()
     struct filesystem fs;
     fs.name = "tmpfs";
     fs.setup_mount = tmpfs_setup_mount;
+    fs.sync = tmpfs_sync;
     return register_filesystem(&fs);
 }
 
@@ -203,4 +204,9 @@ long tmpfs_getsize(struct vnode* vd)
 {
     struct tmpfs_inode *inode = vd->internal;
     return inode->datasize;
+}
+
+int tmpfs_sync(struct filesystem *fs)
+{
+    return 0;
 }

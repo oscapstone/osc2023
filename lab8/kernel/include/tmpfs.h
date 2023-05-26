@@ -31,6 +31,7 @@ long tmpfs_getsize(struct vnode *vd);
 int tmpfs_lookup(struct vnode *dir_node, struct vnode **target, const char *component_name);
 int tmpfs_create(struct vnode *dir_node, struct vnode **target, const char *component_name);
 int tmpfs_mkdir(struct vnode *dir_node, struct vnode **target, const char *component_name);
+int tmpfs_sync(struct filesystem *fs);
 
 struct vnode *tmpfs_create_vnode(struct mount *_mount, enum fsnode_type type);
 

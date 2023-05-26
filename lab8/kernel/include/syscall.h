@@ -26,6 +26,7 @@ int    mount(trapframe_t *tpf, const char *src, const char *target, const char *
 int    chdir(trapframe_t *tpf, const char *path);
 long   lseek64(trapframe_t *tpf, int fd, long offset, int whence);
 int    ioctl(trapframe_t *tpf, int fd, unsigned long request, void *info);
+int    sync(trapframe_t *tpf);
 
 unsigned int get_file_size(char *thefilepath);
 char        *get_file_start(char *thefilepath);
