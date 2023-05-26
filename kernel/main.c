@@ -8,11 +8,14 @@
 #include "time_interrupt.h"
 #include "exception.h"
 #include "mm.h"
+#include "vfs.h"
 extern char *_dtb_ptr;
 extern char _stext;
 extern char _etext;
 extern void core_timer_enable();
 extern void enable_local_all_interrupt();
+
+
 int main(void)
 {
     int el = get_el();
@@ -56,6 +59,9 @@ int main(void)
     uart_write_string("\n");
     init_interrupt_scheduler(&_interrupt_scheduler);
     timer_task_scheduler_init(&_timer_task_scheduler);
+
+    vfs_init();
+
     enable_el0_access_pcnter();
     core_timer_enable();
     enable_local_all_interrupt();
@@ -72,7 +78,11 @@ int main(void)
 
     create_thread(idle_thread);
     // shell_main_thread();
-    char *argv[] = {"vm.img", NULL};
+    char *argv[] = {"/initramfs/vfs1.img", NULL};
     _initramfs.exec(&_initramfs, argv);
+
+    //test code used in lab6
+    // char *argv[] = {"vm.img", NULL};
+    // _initramfs.exec(&_initramfs, argv);
     return 0;
 }

@@ -174,6 +174,7 @@ void _buddy_show_blk_by_addr(struct buddy *self, void *addr)
 
 void _buddy_free(struct buddy *self, void *addr)
 {
+    if (!addr) return;
     disable_interrupt();
     int index = addr2index(self, addr);
     //no double free
@@ -241,7 +242,7 @@ void _buddy_free(struct buddy *self, void *addr)
 static void _buddy_internal_mem_reserve(struct buddy *self, int start, int end, int l, int order)
 {
     int r = l + (1 << order);
-// #ifdef PRINT_LOG
+#ifdef PRINT_LOG
     uart_write_string("Call internal memory reserve: ");
     uart_write_string("start: ");
     uart_write_no(start);
@@ -252,10 +253,10 @@ static void _buddy_internal_mem_reserve(struct buddy *self, int start, int end, 
     uart_write_string(", r: ");
     uart_write_no(r);
     uart_write_string("\n");
-// #endif
+#endif
     if (start < l || end > r || start >= end) {
         //not in range
-        uart_write_string("not in range\n");
+        // uart_write_string("not in range\n");
         return;
     }
     if (start == l && end == r) {
@@ -315,8 +316,11 @@ extern char _proc_start, _proc_end;
 
 void init_buddy(buddy_t *self)
 {
+    uart_write_string("in init_buddy\n");
     self->blk_meta = (bd_blk_t *)simple_malloc((1 << BUDDY_ORDERS) * sizeof(bd_blk_t));
+    // uart_write_string("buddy chk1\n");
     my_bzero(self->blk_meta, sizeof(self->blk_meta));
+    // uart_write_string("buddy chk2\n");
     //not in use and order is 14
     self->blk_meta[0].flags = BUDDY_ORDERS-1;
     self->blk_meta[0].next_free_index = 0;
@@ -332,22 +336,31 @@ void init_buddy(buddy_t *self)
     self->alloc_pages = _buddy_alloc_pages;
     self->free = _buddy_free;
     self->mem_reserve = _buddy_mem_reserve;
+    // uart_write_string("buddy chk3\n");
     //all reserve areas
     self->mem_reserve(self, self->pool_end, alignToNextPowerOf2(self->pool_end));
+    // uart_write_string("buddy chk4\n");
     //Spin tables for multicore boot (0x0000 - 0x1000)
+    // uart_write_string("buddy chk5\n");
     self->mem_reserve(self, PA2VA(0x0000), PA2VA(0x1000));
+    // uart_write_string("buddy chk6\n");
     self->mem_reserve(self, PA2VA(0x1000), PA2VA(0x2000));
+    // uart_write_string("buddy chk7\n");
     self->mem_reserve(self, PA2VA(0x2000), PA2VA(0x3000));
+    // uart_write_string("buddy chk8\n");
     //Kernel image in the physical memory
     self->mem_reserve(self, &_proc_start, &_proc_end);
+    // uart_write_string("buddy chk9\n");
     //Initramfs
     self->mem_reserve(self, cpio_addr, cpio_end);
     //Devicetree (Optional, if you have implement it)
     //make sure this function is called after _fdt.fdt_traverse(&_fdt, initramfs_fdt_cb, NULL).
+    // uart_write_string("buddy chk10\n");
     self->mem_reserve(self, PA2VA(_fdt.head_addr), PA2VA(_fdt.end_addr));
     //Your simple allocator (startup allocator)
     //No. It's within kernel
     //kernel init stack
+    // uart_write_string("buddy chk11\n");
     self->mem_reserve(self, PA2VA(LOW_MEMORY - PAGE_SIZE), PA2VA(LOW_MEMORY));
 
 #ifdef PRINT_LOG
@@ -415,6 +428,7 @@ void *_mem_pool_malloc(struct mem_pool *self, size_t size)
     uart_write_no_hex((unsigned long long)ret);
     uart_write_string("\n");
 #endif
+    memset(ret, 0, size);
     test_enable_interrupt();
     return ret;
 }
@@ -450,7 +464,17 @@ void *kmalloc(size_t size)
     return _mem_pool.malloc(&_mem_pool, size);
 }
 
+void *malloc(size_t size)
+{
+    return _mem_pool.malloc(&_mem_pool, size);
+}
+
 void kfree(void *addr)
+{
+    _mem_pool.free(&_mem_pool, addr);
+}
+
+void free(void *addr)
 {
     _mem_pool.free(&_mem_pool, addr);
 }
