@@ -15,4 +15,5 @@
 #define RESPONSE_CODE_SUCCESS 0x80000000
 
 extern void mailbox_call(unsigned int *mailbox, int channel);
+extern unsigned char *set_display(unsigned *width, unsigned *height, unsigned *pitch, unsigned *isrgb);
 #endif

@@ -56,6 +56,7 @@ extern void init_buddy(buddy_t *self);
 extern buddy_t _buddy;
 extern void *alloc_pages(size_t no_pages);
 extern void free_page(void *addr);
+#define NEEDED_PAGES(size) (ceil((size), PAGE_SIZE))
 ///////////////////// dynamic memory allocator //////////////////
 //slab memory
 typedef struct mem_chunk {
@@ -65,7 +66,7 @@ typedef struct mem_chunk {
     size_t order;
     char data[0];
 } mem_chunk_t;
-#define CHUNK_ORDERS 64
+#define CHUNK_ORDERS 128
 // #define SET_CHUNK_ORDER(chunk, order) ((chunk)->next = (mem_chunk_t *)(((uint64_t)((chunk)->next) & ~(CHUNK_ORDERS-1)) | ((order) & (CHUNK_ORDERS-1))))
 #define SET_CHUNK_ORDER(chunk, set_order) ((chunk)->order = (set_order))
 // #define GET_CHUNK_ORDER(chunk) ((uint64_t)((chunk)->next) & (CHUNK_ORDERS-1))

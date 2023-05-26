@@ -5,6 +5,7 @@
 #include "list.h"
 #include "time_interrupt.h"
 #include "signal.h"
+#include "vfs.h"
 
 #define USER_STK_HIGH 0xfffffffff000
 #define USER_STK_LOW  0xffffffffb000
@@ -87,6 +88,9 @@ typedef struct task_struct {
     list_t pending_signal_list;
 
     unsigned long *pgd;
+
+    struct vnode *cwd;
+    struct file open_files[MAX_FD+1];
 } task_t;
 extern task_t *tid2task[MAX_TASK_CNT];
 extern void init_startup_thread(char *main_addr);

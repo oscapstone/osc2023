@@ -5,6 +5,7 @@
 #include "list.h"
 #include "exception.h"
 #include "signal.h"
+#include "vfs.h"
 
 pid_t pid_cnter;
 task_t *tid2task[MAX_TASK_CNT];
@@ -23,6 +24,12 @@ task_t *_new_thread()
 {
     uart_write_string("in _new_thread\n");
     task_t *new_thread_ptr = (task_t *)kmalloc(sizeof(task_t));
+    // if (!new_thread_ptr) {
+    //     uart_write_string("_new_thread: Unable to allocate new_thread_ptr!\n");
+    //     return NULL;
+    // }
+    memset(new_thread_ptr, 0, sizeof(task_t));
+
     INIT_LIST_HEAD(&(new_thread_ptr->node));
     new_thread_ptr->state = TASK_RUNNING;
     new_thread_ptr->kernel_stack = (char *)alloc_pages(1);
@@ -48,10 +55,29 @@ task_t *_new_thread()
     my_bzero(&(new_thread_ptr->reg_sig_handlers), sizeof(new_thread_ptr->reg_sig_handlers));
     INIT_LIST_HEAD(&(new_thread_ptr->pending_signal_list));
 
-    disable_interrupt();
+    uart_write_string("in _new_thread-2\n");
+
+    // disable_interrupt();
     create_pgd(&new_thread_ptr->pgd);
     mappages(new_thread_ptr->pgd, 0x3C000000, 0x3000000, 0x3C000000);
-    test_enable_interrupt();
+    // test_enable_interrupt();
+
+    uart_write_string("in _new_thread-3\n");
+    // inherit from current thread.
+    // task_t *current = get_current_thread();
+    // new_thread_ptr->cwd = current->cwd;
+    new_thread_ptr->cwd = rootfs->root;
+
+    uart_write_string("in _new_thread-4\n");
+
+    struct file *dummy;
+    //stdin
+    _vfs_open("/dev/uart", FILE_READ, &dummy, &(new_thread_ptr->open_files[0]));
+    //stdout
+    _vfs_open("/dev/uart", FILE_WRITE, &dummy, &(new_thread_ptr->open_files[1]));
+    //stderr
+    _vfs_open("/dev/uart", FILE_WRITE, &dummy, &(new_thread_ptr->open_files[2]));
+    uart_write_string("in _new_thread-5\n");
     return new_thread_ptr;
 }
 
@@ -291,6 +317,8 @@ void init_startup_thread(char *main_addr)
     write_sysreg(tpidr_el1, &(startup_thread_ptr->old_reg_set));
     // startup_thread_ptr->pgd = read_sysreg(ttbr0_el1);
     update_pgd(startup_thread_ptr->pgd);
+
+    startup_thread_ptr->cwd = rootfs->root;
 }
 
 void demo_thread()
@@ -380,11 +408,13 @@ void check_load_args()
 
 void check_before_switch_back()
 {
-    // disable_interrupt();
+    disable_interrupt();
     update_pgd(VA2PA(get_current_thread()->pgd));
+    test_enable_interrupt();
+    
     check_load_args();
     handle_current_signal();
-    // test_enable_interrupt();
+    
     // asm volatile("b check_load_args\n\t");
     // asm volatile("b handle_current_signal\n\t");
 }
