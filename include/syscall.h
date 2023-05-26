@@ -15,6 +15,15 @@ enum {
     SYS_SIGNAL,
     SYS_SIGKILL,
     SYS_SIGRETURN,  //10
+    SYS_OPEN,
+    SYS_CLOSE,
+    SYS_WRITE,
+    SYS_READ,
+    SYS_MKDIR,      //15
+    SYS_MNT,
+    SYS_CHDIR,
+    SYS_LSEEK64,
+    SYS_IOCTL,
     NUM_syscalls
 };
 extern syscall_t default_syscall_table[];

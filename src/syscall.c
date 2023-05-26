@@ -5,6 +5,11 @@
 #include "initramfs.h"
 #include "mm.h"
 #include "mailbox.h"
+#include "vfs.h"
+
+// #define SYSCALL_DBG 1
+
+extern void print_tree();
 
 void syscall_getpid(struct trap_frame *tf)
 {
@@ -180,6 +185,226 @@ void syscall_sigreturn(struct trap_frame *tf)
     kfree(handled);
     //do not modify the original trap frame so that user process don't aware of enter of signal
 }
+//TODO syscalls related to vfs
+
+//int open(const char *pathname, int flags);
+void syscall_open(struct trap_frame *tf)
+{
+    const char *pathname = tf->gprs[0];
+    //The test program do not know FILE_READ, FILE_WRITE, and FILE_APPEND
+    //ADD THESE FLAGS MANUALLY.
+    int flags = tf->gprs[1] | FILE_READ | FILE_WRITE | FILE_APPEND;
+    struct file *target;
+    if (vfs_open(pathname, flags, &target)) {
+        tf->gprs[0] = -1;
+        return;
+    }
+    task_t *current = get_current_thread();
+    int fd = (target - (current->open_files));
+    tf->gprs[0] = fd;
+#ifdef SYSCALL_DBG
+    uart_write_string("open ");
+    uart_write_string(pathname);
+    uart_write_string(" with flags: ");
+    uart_write_no_hex(flags);
+    uart_write_string(" fd: ");
+    // uart_write_no(((char *)target - (char *)(current->open_files)) / sizeof(struct file));
+    uart_write_no(fd);
+    uart_write_string("\n");
+    print_tree();
+#endif
+}
+
+//int close(int fd);
+void syscall_close(struct trap_frame *tf)
+{
+    int fd = tf->gprs[0];
+    task_t *current = get_current_thread();
+    tf->gprs[0] = (fd >= 0 && fd <= MAX_FD) ? vfs_close(&(current->open_files[fd])) : -1;
+#ifdef SYSCALL_DBG
+    uart_write_string("close ");
+    uart_write_no(fd);
+    uart_write_string("\n");
+    print_tree();
+#endif
+}
+
+// remember to return read size or error code
+// long write(int fd, const void *buf, unsigned long count);
+void syscall_write(struct trap_frame *tf)
+{
+    disable_interrupt();
+    int fd = tf->gprs[0];
+    if (fd < 0 || fd > MAX_FD) {
+        tf->gprs[0] = 0;
+        test_enable_interrupt();
+        return;
+    }
+    task_t *current = get_current_thread();
+    struct file *f = &(current->open_files[fd]);
+    const void *buf = tf->gprs[1];
+    unsigned long count = tf->gprs[2];
+    
+    tf->gprs[0] = vfs_write(f, buf, count);
+    for (int idle = 1000; idle; idle--);
+    test_enable_interrupt();
+#ifdef SYSCALL_DBG
+    uart_write_string("write ");
+    uart_write_no(fd);
+    uart_write_string(" with ");
+    uart_write_string((char *)buf);
+    uart_write_string("\n");
+    print_tree();
+#endif
+}
+
+// remember to return read size or error code
+// long read(int fd, void *buf, unsigned long count);
+void syscall_read(struct trap_frame *tf)
+{
+    disable_interrupt();
+    int fd = tf->gprs[0];
+    if (fd < 0 || fd > MAX_FD) {
+        tf->gprs[0] = 0;
+        test_enable_interrupt();
+        return;
+    }
+    task_t *current = get_current_thread();
+    struct file *f = &(current->open_files[fd]);
+    
+    void *buf = tf->gprs[1];
+    unsigned long count = tf->gprs[2];
+    tf->gprs[0] = vfs_read(f, buf, count);
+    test_enable_interrupt();
+#ifdef SYSCALL_DBG
+    uart_write_string("read ");
+    uart_write_no(fd);
+    uart_write_string(" with ");
+    uart_write_string((char *)buf);
+    uart_write_string("\n");
+    print_tree();
+#endif
+}
+
+// you can ignore mode, since there is no access control
+// int mkdir(const char *pathname, unsigned mode);
+void syscall_mkdir(struct trap_frame *tf)
+{
+    disable_interrupt();
+    const char *pathname = tf->gprs[0];
+    //this field will be ignored
+    // unsigned mode = tf->gprs[1];
+    tf->gprs[0] = vfs_mkdir(pathname);
+    test_enable_interrupt();
+#ifdef SYSCALL_DBG
+    uart_write_string("mkdir ");
+    uart_write_string(pathname);
+    uart_write_string("\n");
+    print_tree();
+#endif
+}
+
+// you can ignore arguments other than target (where to mount) and filesystem (fs name)
+// int mount(const char *src, const char *target, const char *filesystem, unsigned long flags, const void *data);
+void syscall_mnt(struct trap_frame *tf)
+{
+    disable_interrupt();
+    // const char *src = tf->gprs[0]; //ignored
+    const char *target = tf->gprs[1];
+    const char *filesystem = tf->gprs[2];
+    // unsigned long flags = tf->gprs[3]; //ignored
+    // const void *data = tf->gprs[4]; //ignored
+    tf->gprs[0] = vfs_mount(target, filesystem);
+    test_enable_interrupt();
+#ifdef SYSCALL_DBG
+    uart_write_string("mnt ");
+    uart_write_string(target);
+    uart_write_string(" ");
+    uart_write_string(filesystem);
+    uart_write_string("\n");
+    print_tree();
+#endif
+}
+
+// int chdir(const char *path);
+void syscall_chdir(struct trap_frame *tf)
+{
+    disable_interrupt();
+    const char *path = tf->gprs[0];
+    tf->gprs[0] = vfs_chdir(path);
+    test_enable_interrupt();
+#ifdef SYSCALL_DBG
+    uart_write_string("chdir ");
+    uart_write_string(path);
+    uart_write_string("\n");
+    print_tree();
+#endif
+}
+
+// syscall number : 18
+// you only need to implement seek set
+// long lseek64(int fd, long offset, int whence);
+void syscall_lseek64(struct trap_frame *tf)
+{
+    disable_interrupt();
+    int fd = tf->gprs[0];
+    if (fd < 0 || fd > MAX_FD) {
+        tf->gprs[0] = -1;
+        test_enable_interrupt();
+        return;
+    }
+
+    task_t *current = get_current_thread();
+    struct file *f = &(current->open_files[fd]);
+
+    long offset = tf->gprs[1];
+    int whence = tf->gprs[2];
+    tf->gprs[0] = f->f_ops->lseek64(f, offset, whence);
+
+    test_enable_interrupt();
+}
+
+// syscall number : 19
+// int ioctl(int fd, unsigned long request, ...);
+//
+// // ioctl 0 will be use to get info
+// // there will be default value in info
+// // if it works with default value, you can ignore this syscall
+// ioctl(fb, 0, &fb_info)
+// // remember to translate userspace address to kernel space
+
+struct framebuffer_info {
+  unsigned int width;
+  unsigned int height;
+  unsigned int pitch;
+  unsigned int isrgb;
+};
+
+void syscall_ioctl(struct trap_frame *tf)
+{
+    disable_interrupt();
+    int fd = tf->gprs[0];
+    if (fd < 0 || fd > MAX_FD) {
+        tf->gprs[0] = -1;
+        return;
+    }
+    task_t *current = get_current_thread();
+    struct file *f = &(current->open_files[fd]);
+    unsigned long request = tf->gprs[1];
+    if (request != 0) return;
+    
+    struct framebuffer_info *fb_info = tf->gprs[2];
+    /* raw frame buffer address */
+    unsigned char *lfb = set_display(&fb_info->width, &fb_info->height, &fb_info->pitch, &fb_info->isrgb);
+    if (lfb != (unsigned char *)f->vnode->internal) {
+        //free tmpfs_file_node *fnode
+        kfree(f->vnode->internal);
+        //store lfb instead
+        f->vnode->internal = lfb;
+    }
+    tf->gprs[0] = 0;
+    test_enable_interrupt();
+}
 
 syscall_t default_syscall_table[NUM_syscalls] = {
     [SYS_GETPID] = &syscall_getpid,
@@ -193,6 +418,15 @@ syscall_t default_syscall_table[NUM_syscalls] = {
     [SYS_SIGNAL] = &syscall_signal,
     [SYS_SIGKILL] = &syscall_sigkill,
     [SYS_SIGRETURN] = &syscall_sigreturn,
+    [SYS_OPEN] = &syscall_open,
+    [SYS_CLOSE] = &syscall_close,
+    [SYS_WRITE] = &syscall_write,
+    [SYS_READ] = &syscall_read,
+    [SYS_MKDIR] = &syscall_mkdir,
+    [SYS_MNT] = &syscall_mnt,
+    [SYS_CHDIR] = &syscall_chdir,
+    [SYS_LSEEK64] = &syscall_lseek64,
+    [SYS_IOCTL] = &syscall_ioctl
 };
 
 void fork_test(){

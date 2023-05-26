@@ -43,6 +43,29 @@ static int in_delm(char c, const char *delm)
   return 0;
 }
 
+char* strncpy(char* dest, const char* src, size_t n) {
+    char* result = dest;
+    while (*src != '\0' && n--) {
+        *dest = *src;
+        dest++;
+        src++;
+    }
+    *dest = '\0';
+    return result;
+}
+
+char* strcpy(char* dest, const char* src) {
+    char* result = dest;
+    while (*src != '\0') {
+        *dest = *src;
+        dest++;
+        src++;
+    }
+    *dest = '\0';
+    return result;
+}
+
+
 char* strpbrk(const char* str, const char* delimiters) {
   const char* currentChar;
   const char* currentDelimiter;
