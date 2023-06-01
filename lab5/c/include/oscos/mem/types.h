@@ -6,6 +6,9 @@
 /// \brief Physical address.
 typedef uint32_t pa_t;
 
+/// \brief Maximum value of pa_t.
+#define PA_MAX UINT32_MAX
+
 /// \brief Format specifier for printing a pa_t in lowercase hexadecimal format.
 #define PRIxPA PRIx32
 

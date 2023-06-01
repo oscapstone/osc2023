@@ -24,7 +24,7 @@ LDLIBS_BASE = -lgcc
 OBJS      = start main console devicetree initrd panic shell user-program \
             drivers/aux drivers/gpio drivers/l1ic drivers/l2ic drivers/mailbox \
             drivers/mini-uart drivers/pm \
-            mem/malloc mem/memmap mem/page-alloc mem/startup-alloc mem/vm \
+            mem/malloc mem/page-alloc mem/startup-alloc mem/vm \
             timer/delay timer/timeout \
             xcpt/default-handler xcpt/irq-handler xcpt/task-queue \
             xcpt/vector-table xcpt/xcpt \

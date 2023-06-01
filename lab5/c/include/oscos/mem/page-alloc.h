@@ -14,8 +14,7 @@
 
 /// \brief Initializes the page frame allocator.
 ///
-/// The memory map must be well-formed when calling this function. After calling
-/// this function, the startup allocator should not be used.
+/// After calling this function, the startup allocator should not be used.
 void page_alloc_init(void);
 
 /// \brief Allocates a block of page frames.

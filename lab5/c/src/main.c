@@ -8,10 +8,8 @@
 #include "oscos/drivers/pm.h"
 #include "oscos/initrd.h"
 #include "oscos/mem/malloc.h"
-#include "oscos/mem/memmap.h"
 #include "oscos/mem/page-alloc.h"
 #include "oscos/mem/startup-alloc.h"
-#include "oscos/panic.h"
 #include "oscos/shell.h"
 #include "oscos/timer/timeout.h"
 #include "oscos/xcpt.h"
@@ -41,11 +39,6 @@ void main(const void *const dtb_start) {
   }
 
   // Initialize the memory allocators.
-  memmap_init();
-  scan_mem();
-  print_memmap();
-  if (!check_memmap())
-    PANIC("memmap: Memory map is not well-formed");
   page_alloc_init();
   malloc_init();
 
