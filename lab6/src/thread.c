@@ -28,7 +28,11 @@ void init_thread()
 int Thread(void (*func)())
 {
 	struct thread *thd = d_alloc(sizeof(struct thread));
-	thd->PGD = (uint64_t)alloc_page_table() & ~(0xFFFF000000000000);		//create a PGD (can be recognized in EL0)
+	thd->PGD = (uint64_t)alloc_page_table();		//create a PGD
+/*
+	uart_hex_64(thd->PGD);
+	uart_send_string(" -> PGD\n");
+*/
 	for(int i=0;i<65536;i++)
 	{
 		if(thread_list[i] == null)					//find empty thread
@@ -45,6 +49,10 @@ int Thread(void (*func)())
 			thd->reg.x19 = 0x0;						//had map video() in 0x0
 			thd->reg.x20 = thd->user_stack;			//for user_stack
 			thd->kernel_stack_base = d_alloc(0x10000);
+/*
+			uart_hex_64(thd->kernel_stack_base);
+			uart_send_string(" -> kernel base\n");
+*/
 			thd->kernel_stack = ((uint64_t)(thd->kernel_stack_base + 0x10000) & 0xFFFFFFFFFFFFFFF0);
 			thd->reg.LR = func;
 			thd->reg.SP = thd->kernel_stack;		//set EL1 kernel_stack
@@ -255,6 +263,10 @@ void video_prog()
     }
 	void* prog = (void*)code;
 	struct thread *thd = thread_list[1];
+
+	uart_hex_64(thd->PGD);
+	uart_send_string(" -> video\n");
+
 	mappage(thd->PGD,0x0,size,prog);
 	return;
 }

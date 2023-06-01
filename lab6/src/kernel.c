@@ -36,9 +36,9 @@ void kernel_main(void* dtb)		//x0 is the first argument
 	
 	char* (*func)(char*);							//define callback func
 	func = &cpio_addr;
-	ramdisk_start = fdt_api((char*)dtb,func,"linux,initrd-start");
+	ramdisk_start = (uint64_t)fdt_api((char*)dtb,func,"linux,initrd-start") | 0xFFFF000000000000;
 	init_rd(ramdisk_start);
-	ramdisk_end = fdt_api((char*)dtb,func,"linux,initrd-end");
+	ramdisk_end = (uint64_t)fdt_api((char*)dtb,func,"linux,initrd-end") | 0xFFFF000000000000;
 
 	set_exception_vector_table();					//set vbar_el1 for exception & interrupt
    
