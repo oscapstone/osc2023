@@ -3,4 +3,5 @@
 
 void invalid_exception_router(); // exception_handler.S
 void el0_sync_router();
+void el1h_irq_router();
 #endif /*_EXCEPTION_H_*/

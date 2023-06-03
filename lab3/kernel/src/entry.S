@@ -50,7 +50,7 @@
 .align 11         // vector table should be aligned to 0x800 (2^11)
 .global exception_vector_table
 
-// exception_vector_table definition
+
 exception_vector_table:
     //Exception from the current EL while using SP_EL0
     ventry    el1t_sync_invalid        // Synchronous EL1t
@@ -65,7 +65,7 @@ exception_vector_table:
     ventry    el1h_error_invalid       // Error EL1h
 
     //Exception from a lower EL and at least one lower EL is AArch64
-    ventry    el0_sync_64             // Synchronous 64-bit EL0
+    ventry    el0_sync_64             // Synchronous 64-bit EL0 (#basic1 target)
     ventry    el0_irq_64              // IRQ 64-bit EL0
     ventry    el0_fiq_invalid_64      // FIQ 64-bit EL0
     ventry    el0_error_invalid_64    // Error 64-bit EL0
@@ -112,7 +112,7 @@ el1h_sync:
 el1h_irq:
     save_all
     mov x0,5
-    bl invalid_exception_router
+    bl el1h_irq_router
     load_all
     eret
 el1h_fiq_invalid:
@@ -128,7 +128,7 @@ el1h_error_invalid:
     load_all
     eret
 
-el0_sync_64:
+el0_sync_64: 
     save_all
     mov x0,8
     bl el0_sync_router
@@ -178,3 +178,9 @@ el0_error_invalid_32:
     bl invalid_exception_router
     load_all
     eret
+
+
+/* 補充：macro知識
+在這個程式碼中，使用反斜線（\）是用來指示巨集的參數。當在巨集中使用參數時，需要在參數前面加上反斜線，以區分它是一個參數而不是普通的文字。
+在這個例子中，.macro ventry label 定義了一個 ventry 的巨集，並且接受一個叫做 label 的參數。在 b \label 這一行中，\label 使用了反斜線來指示它是一個參數。
+*/

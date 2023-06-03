@@ -8,6 +8,10 @@ void main(char* arg) {
 	dtb_ptr = arg; //get dtb from bootloader
 	traverse_device_tree(dtb_ptr, dtb_callback_initramfs);
 	shell_init();
+	el1_interrupt_enable();
+	core_timer_enable();
+
+
 	char cmd[100];
 	cli_cmd_clear(cmd, 100);
 	int status=0;

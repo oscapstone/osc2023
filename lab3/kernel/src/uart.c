@@ -1,5 +1,6 @@
 #include "peripherals/mini_uart.h"
 #include "peripherals/gpio.h"
+#include "string.h"
 
 //initial uart
 void uart_init()
@@ -106,3 +107,19 @@ void uart_send_cat_file(char *s, int len){
     }
 }
 
+int  uart_sendline(char* fmt, ...) {
+    __builtin_va_list args;
+    __builtin_va_start(args, fmt);
+    char buf[VSPRINT_MAX_BUF_SIZE];
+
+    char *str = (char*)buf;
+    int count = vsprintf(str,fmt,args);
+
+    while(*str) {
+        if(*str=='\n')
+            uart_send('\r');
+        uart_send(*str++);
+    }
+    __builtin_va_end(args);
+    return count;
+}

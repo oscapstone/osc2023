@@ -98,10 +98,10 @@ void exec_app(char *file_name){
       else{
         //load_app((void *)context, filesize); 
         char* ustack = malloc(0x10000);
-        asm("msr elr_el1, %0\n\t"
-            "msr spsr_el1, xzr\n\t"
-            "msr sp_el0, %1\n\t"
-            "eret\n\t"
+        asm("msr elr_el1, %0\n"
+            "msr spsr_el1, xzr\n" //write 0000000000000000 -> to el0
+            "msr sp_el0, %1\n" //stack pointer for el0
+            "eret\n"
             :: "r" (context),
                 "r" (ustack+0x10000));
         break;

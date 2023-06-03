@@ -4,6 +4,7 @@
 #include "mbox.h"
 #include "cpio.h"
 #include "malloc.h"
+#include "string.h"
 
 void shell_init(){
 	uart_init();
@@ -75,6 +76,7 @@ void shell_command(char *buffer){
 		uart_send_string("mailbox|print hardware information.\n");
 		uart_send_string("help   |print all available commands\n");
 		uart_send_string("exec   |execute a user program\n");
+		uart_send_string("timer2s|enable core timer's interrupt\n");
 		uart_send_string("reboot |reboot raspi\n");
 	}
 	else if (str_compare(cmd, "reboot")){
@@ -100,6 +102,9 @@ void shell_command(char *buffer){
 	else if (str_compare(cmd, "exec")){
 		char *filename = argv;
 		exec_app(filename);
+	}
+	else if (str_compare(cmd, "timer2s")){
+		timer_2s();
 	}
 	else{
 		uart_send_string(cmd);
@@ -134,24 +139,5 @@ int str_cmp(char *s1, char *s2){
   return 0;
 }
 
-int strcmp(const char* p1, const char* p2)
-{
-    const unsigned char *s1 = (const unsigned char*) p1;
-    const unsigned char *s2 = (const unsigned char*) p2;
-    unsigned char c1, c2;
 
-    do {
-        c1 = (unsigned char) *s1++;
-        c2 = (unsigned char) *s2++;
-        if ( c1 == '\0' ) return c1 - c2;
-    } while ( c1 == c2 );
-    return c1 - c2;
-}
-
-unsigned long long strlen(const char *str)
-{
-    size_t count = 0;
-    while((unsigned char)*str++)count++;
-    return count;
-}
 
