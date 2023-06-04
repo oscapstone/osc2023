@@ -43,6 +43,7 @@
 #include "oscos/mem/startup-alloc.h"
 #include "oscos/mem/vm.h"
 #include "oscos/panic.h"
+#include "oscos/utils/critical-section.h"
 
 // `MAX_BLOCK_ORDER` can be changed to any positive integer up to and
 // including 25 without modification to the code.
@@ -79,9 +80,9 @@ static void _mark_region(const pa_range_t region_limit, const pa_range_t region,
                  region_limit.end < region.end ? region_limit.end : region.end;
 
   if (effective_start < effective_end) {
-    mark_pages(pa_range_to_page_id_range((pa_range_t){.start = effective_start,
-                                                      .end = effective_end}),
-               is_avail);
+    mark_pages_unlocked(pa_range_to_page_id_range((pa_range_t){
+                            .start = effective_start, .end = effective_end}),
+                        is_avail);
   }
 }
 
@@ -452,6 +453,16 @@ static void _split_block(const page_id_t page) {
 }
 
 spage_id_t alloc_pages(const size_t order) {
+  uint64_t daif_val;
+  CRITICAL_SECTION_ENTER(daif_val);
+
+  const spage_id_t result = alloc_pages_unlocked(order);
+
+  CRITICAL_SECTION_LEAVE(daif_val);
+  return result;
+}
+
+spage_id_t alloc_pages_unlocked(const size_t order) {
 #ifdef PAGE_ALLOC_ENABLE_LOG
   console_printf("DEBUG: page-alloc: Allocating a block of order %zu\n", order);
 #endif
@@ -516,6 +527,15 @@ spage_id_t alloc_pages(const size_t order) {
 }
 
 void free_pages(const page_id_t page) {
+  uint64_t daif_val;
+  CRITICAL_SECTION_ENTER(daif_val);
+
+  free_pages_unlocked(page);
+
+  CRITICAL_SECTION_LEAVE(daif_val);
+}
+
+void free_pages_unlocked(const page_id_t page) {
   const size_t order = _page_frame_array[page].order;
 
 #ifdef PAGE_ALLOC_ENABLE_LOG
@@ -607,6 +627,15 @@ static void _mark_pages_rec(const page_id_range_t range, const bool is_avail,
 }
 
 void mark_pages(const page_id_range_t range, const bool is_avail) {
+  uint64_t daif_val;
+  CRITICAL_SECTION_ENTER(daif_val);
+
+  mark_pages_unlocked(range, is_avail);
+
+  CRITICAL_SECTION_LEAVE(daif_val);
+}
+
+void mark_pages_unlocked(const page_id_range_t range, const bool is_avail) {
 #ifdef PAGE_ALLOC_ENABLE_LOG
   console_printf("DEBUG: page-alloc: Marking pages 0x%" PRIxPAGEID
                  " - 0x%" PRIxPAGEID " as %s.\n",

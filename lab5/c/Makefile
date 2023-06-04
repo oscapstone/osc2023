@@ -7,7 +7,7 @@ CC      = aarch64-linux-gnu-gcc
 CPP     = aarch64-linux-gnu-cpp
 OBJCOPY = aarch64-linux-gnu-objcopy
 
-CPPFLAGS_BASE = -Iinclude -DPAGE_ALLOC_ENABLE_LOG
+CPPFLAGS_BASE = -Iinclude
 
 ASFLAGS_DEBUG = -g
 
@@ -25,6 +25,7 @@ OBJS      = start main console devicetree initrd panic shell user-program \
             drivers/aux drivers/gpio drivers/l1ic drivers/l2ic drivers/mailbox \
             drivers/mini-uart drivers/pm \
             mem/malloc mem/page-alloc mem/startup-alloc mem/vm \
+			sched/idle-thread sched/sched sched/schedule sched/thread-main \
             timer/delay timer/timeout \
             xcpt/default-handler xcpt/irq-handler xcpt/task-queue \
             xcpt/vector-table xcpt/xcpt \

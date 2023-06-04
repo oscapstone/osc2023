@@ -10,9 +10,31 @@
 #include "oscos/mem/malloc.h"
 #include "oscos/mem/page-alloc.h"
 #include "oscos/mem/startup-alloc.h"
+#include "oscos/panic.h"
+#include "oscos/sched.h"
 #include "oscos/shell.h"
+#include "oscos/timer/delay.h"
 #include "oscos/timer/timeout.h"
 #include "oscos/xcpt.h"
+
+static void _foo(void *const _arg) {
+  (void)_arg;
+
+  for (int i = 0; i < 10; i++) {
+    console_printf("TID %2zu: %d\n", current_thread()->id, i);
+    delay_ns(1000000);
+    schedule();
+  }
+}
+
+static void _delayed_shell(void *const _arg) {
+  (void)_arg;
+
+  for (int i = 0; i < 20; i++) {
+    schedule();
+  }
+  run_shell();
+}
 
 void main(const void *const dtb_start) {
   // Initialize interrupt-related subsystems.
@@ -46,6 +68,18 @@ void main(const void *const dtb_start) {
   mailbox_init();
   pm_init();
 
-  // Run the kernel-space shell.
-  run_shell();
+  // Initialize the scheduler.
+
+  if (!sched_init()) {
+    PANIC("Cannot initialize scheduler: out of memory");
+  }
+
+  // Test the scheduler.
+
+  for (int i = 0; i < 32; i++) {
+    thread_create(_foo, NULL);
+  }
+  thread_create(_delayed_shell, NULL);
+
+  idle();
 }

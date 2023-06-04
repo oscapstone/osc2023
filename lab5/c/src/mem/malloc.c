@@ -37,6 +37,7 @@
 #include "oscos/libc/string.h"
 #include "oscos/mem/page-alloc.h"
 #include "oscos/mem/vm.h"
+#include "oscos/utils/critical-section.h"
 #include "oscos/utils/math.h"
 
 /// \brief A node of a doubly-linked list.
@@ -126,6 +127,8 @@ static size_t _get_slab_type_id(const size_t n_units) {
 ///
 /// The `free_list_head` field of \p slab must be initialized and \p slab must
 /// not have been on any free list.
+///
+/// This function is safe to call only within a critical section.
 static void _add_slab_to_free_list(slab_t *const slab) {
   list_node_t *const free_list_first_entry = slab->free_list_head->next;
   slab->free_list_node.next = free_list_first_entry;
@@ -137,16 +140,20 @@ static void _add_slab_to_free_list(slab_t *const slab) {
 /// \brief Removes a slab from its free list.
 ///
 /// \p slab must have been on a free list.
+///
+/// This function is safe to call only within a critical section.
 static void _remove_slab_from_free_list(slab_t *const slab) {
   slab->free_list_node.prev->next = slab->free_list_node.next;
   slab->free_list_node.next->prev = slab->free_list_node.prev;
 }
 
 /// \brief Allocates a new slab and adds it onto its free list.
+///
+/// This function is safe to call only within a critical section.
 static slab_t *_alloc_slab(const size_t slab_type_id) {
   // Allocate space for the slab.
 
-  const spage_id_t page = alloc_pages(0);
+  const spage_id_t page = alloc_pages_unlocked(0);
   if (page < 0)
     return NULL;
 
@@ -158,7 +165,7 @@ static slab_t *_alloc_slab(const size_t slab_type_id) {
     // allocated page to the page frame allocator.
     // (In practice, this code path is never taken.)
 
-    const spage_id_t another_page = alloc_pages(0);
+    const spage_id_t another_page = alloc_pages_unlocked(0);
     free_pages(page);
     if (another_page < 0) {
       return NULL;
@@ -181,15 +188,22 @@ static slab_t *_alloc_slab(const size_t slab_type_id) {
 /// \brief Gets a slab of the given type with at least one free slot. If there
 ///        is none, allocates a new one.
 static slab_t *_get_or_alloc_slab(const size_t slab_type_id) {
+  uint64_t daif_val;
+  CRITICAL_SECTION_ENTER(daif_val);
+
+  slab_t *result;
   if (_slab_free_lists[slab_type_id].next ==
       &_slab_free_lists[slab_type_id]) { // The free list is empty.
-    return _alloc_slab(slab_type_id);
+    result = _alloc_slab(slab_type_id);
   } else {
     list_node_t *const free_list_first_entry =
         _slab_free_lists[slab_type_id].next;
-    return (slab_t *)((char *)free_list_first_entry -
-                      offsetof(slab_t, free_list_node));
+    result = (slab_t *)((char *)free_list_first_entry -
+                        offsetof(slab_t, free_list_node));
   }
+
+  CRITICAL_SECTION_LEAVE(daif_val);
+  return result;
 }
 
 /// \brief Gets the index of the first free slot of the given slab.
@@ -197,13 +211,16 @@ static slab_t *_get_or_alloc_slab(const size_t slab_type_id) {
 /// \p slab must have at least one free slot.
 static size_t _get_first_free_slot_ix(const slab_t *const slab) {
   for (size_t i = 0;; i++) {
+    uint64_t reversed_negated_bitset;
+    __asm__("rbit %0, %1"
+            : "=r"(reversed_negated_bitset)
+            : "r"(~slab->slots_reserved_bitset[i]));
+
     uint64_t j;
-    __asm__ __volatile__("clz %0, %1"
-                         : "=r"(j)
-                         : "r"(~slab->slots_reserved_bitset[i]));
-    if (j !=
-        64) { // The (63-j)th bit of `slab->slots_reserved_bitset[i]` is clear.
-      return i * 64 + (63 - j);
+    __asm__("clz %0, %1" : "=r"(j) : "r"(reversed_negated_bitset));
+
+    if (j != 64) { // The jth bit of `slab->slots_reserved_bitset[i]` is clear.
+      return i * 64 + j;
     }
   }
 }
@@ -212,12 +229,16 @@ static size_t _get_first_free_slot_ix(const slab_t *const slab) {
 ///
 /// \p slab must have at least one free slot.
 static void *_alloc_from_slab(slab_t *const slab) {
+  uint64_t daif_val;
+  CRITICAL_SECTION_ENTER(daif_val);
+
   const size_t free_slot_ix = _get_first_free_slot_ix(slab);
 
   // Mark the `free_slot_ix`th slot as reserved.
 
   slab->n_slots_reserved++;
-  slab->slots_reserved_bitset[free_slot_ix / 64] |= 1 << (free_slot_ix % 64);
+  slab->slots_reserved_bitset[free_slot_ix / 64] |= (uint64_t)1
+                                                    << (free_slot_ix % 64);
 
   // Remove itself from its free list if there are no free slots.
 
@@ -225,6 +246,7 @@ static void *_alloc_from_slab(slab_t *const slab) {
     _remove_slab_from_free_list(slab);
   }
 
+  CRITICAL_SECTION_LEAVE(daif_val);
   return slab->slots + free_slot_ix * (slab->metadata.slot_size * 16);
 }
 
@@ -233,6 +255,9 @@ static void *_alloc_from_slab(slab_t *const slab) {
 /// \param slab The slab.
 /// \param ptr The pointer to the slot.
 static void _free_to_slab(slab_t *const slab, void *const ptr) {
+  uint64_t daif_val;
+  CRITICAL_SECTION_ENTER(daif_val);
+
   const size_t slot_ix =
       ((uintptr_t)ptr - (uintptr_t)slab) / (slab->metadata.slot_size * 16);
 
@@ -253,6 +278,8 @@ static void _free_to_slab(slab_t *const slab, void *const ptr) {
     _remove_slab_from_free_list(slab);
     free_pages(pa_to_page_id(kernel_va_to_pa(slab)));
   }
+
+  CRITICAL_SECTION_LEAVE(daif_val);
 }
 
 // Large allocation.
