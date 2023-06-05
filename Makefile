@@ -102,8 +102,8 @@ qemuk: all $(INITRAMFS_CPIO) $(RPI3_DTB)
 qemutest: all $(INITRAMFS_CPIO) $(RPI3_DTB)
 		qemu-system-aarch64 -M raspi3 -kernel $(KERNEL_IMG) -display none \
 											-dtb $(RPI3_DTB) \
-											-initrd initramfs.cpio \
-											-serial null -serial pty -s -S
+											-initrd test/initramfs.cpio \
+											-serial null -serial stdio
 
 
 qemutty: $(KERNEL_IMG)

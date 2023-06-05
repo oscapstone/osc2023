@@ -8,7 +8,7 @@
 
 void enter_el0_run_user_prog(void *entry, void *user_sp);
 
-static void user_prog_start(void){
+void user_prog_start(void){
     char *user_sp;
 
     user_sp = (char *)current->user_stack + STACK_SIZE - 0x10;

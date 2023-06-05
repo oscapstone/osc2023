@@ -1,6 +1,8 @@
 #ifndef _EXEC_H
 #define _EXEC_H
 
+void user_prog_start(void);
+
 // pass the user stack pointer and process memory location (program loaded)
 void sched_new_user_prog(char *cpio, char *file_name);
 

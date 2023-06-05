@@ -14,6 +14,7 @@
 #include <current.h>
 #include <kthread.h>
 #include <sched.h>
+#include <task.h>
 
 static void timeout_print(char *str)
 {
@@ -96,7 +97,17 @@ void *_malloc(char *size){
 }
 
 void _exec(uint64 _initramfs_addr,char *filename){
-   sched_new_user_prog((char *)_initramfs_addr, filename);
+    void *data;
+    uint32 datalen;
+
+    datalen = cpio_load_prog((char*)_initramfs_addr, filename, (char**) &data);
+    if(datalen == 0)
+        return;
+
+    current->user_stack = kmalloc(STACK_SIZE);
+    current->data = data;
+    current->datalen = datalen;
+    user_prog_start();
 }
 
 void _chmod_uart(){
