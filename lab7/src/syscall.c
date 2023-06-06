@@ -265,6 +265,42 @@ void posix_kill(int pid, int sig) {
   return;
 }
 
+int sys_open(const char* pathname, int flags){
+	uart_puts("sys_open\n");
+	return 0;
+}
+
+int sys_close(int fd){
+	uart_puts("sys_close\n");
+	return 0;
+}
+
+int sys_write(int fd, const void* buf, int count){
+	uart_puts("sys_write\n");
+	return 0;
+}
+
+int sys_read(int fd, void * buf, int count){
+	uart_puts("sys_read\n");
+	return 0;
+}
+
+int sys_mkdir(const char* pathname){
+	uart_puts("sys_mkdir\n");
+	return 0;
+}
+
+int sys_mount(const char* src, const char *target, const char *filesystem, unsigned long ll, const void *aa){
+	uart_puts("sys_mount\n");
+	return 0;
+}
+
+int sys_chdir(const char *path){
+	uart_puts("sys_chdir\n");
+	return 0;
+}
+
+
 //============================================================
 // Test Functions.
 void fork_test() {

@@ -34,6 +34,7 @@ struct file{
 	size_t f_pos;
 	struct file_operations *f_ops;
 	int flags;
+	void* data;
 };
 
 /* This structure contain the filesystem name such as Ext3

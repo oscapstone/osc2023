@@ -5,17 +5,17 @@
 #include "interrupt.h"
 #include "loader.h"
 #include "mem.h"
+#include "ramfs.h"
 #include "syscall.h"
 #include "terminal.h"
 #include "thread.h"
 #include "uart.h"
-#include <stdint.h>
 #include "vfs.h"
-#include "ramfs.h"
+#include <stdint.h>
 
 extern void set_exception_vector_table(void);
-extern struct vnode* fsRoot;
-extern struct mount* fsRootMount;
+extern struct vnode *fsRoot;
+extern struct mount *fsRootMount;
 
 int main(void *dtb_location) {
   uart_setup();
@@ -31,25 +31,31 @@ int main(void *dtb_location) {
   uart_puts("test_thread\n");
   // Initial Fs
   fsRootMount = (struct mount *)malloc(sizeof(struct mount));
-  fsRootMount->root = (struct vnode*) malloc(sizeof(struct vnode));
-  fsRoot  = fsRootMount->root;
+  fsRootMount->root = (struct vnode *)malloc(sizeof(struct vnode));
+  fsRoot = fsRootMount->root;
   fsRoot->parent = NULL;
   fsRoot->mount = fsRootMount;
-  struct filesystem* fs = getRamFs();
+  struct filesystem *fs = getRamFs();
   register_filesystem(fs);
   fs->setup_mount(fs, fsRootMount);
   ramfs_initFsCpio(fsRoot);
   uart_puts("\nDump\n");
-  struct vnode* test;
-  //ramfs_mkdir(fsRoot, &test, "mkdir");
+  struct vnode *test;
+  // ramfs_mkdir(fsRoot, &test, "mkdir");
   vfs_mkdir("mkdir");
   vfs_lookup("mkdir", &test);
   vfs_create(test, &test, "vfs_creast");
-  struct file *f = NULL;
+  struct file *f = NULL, *f2 = NULL;
   vfs_open("mkdir/vfs", O_CREAT, &f);
-  //ramfs_dump(f->vnode, 6);
+  vfs_open("mkdir/vfs", O_CREAT, &f2);
+  char ttt[20] = {0};
+  uart_puts("test R/W\n");
+  f->f_ops->write(f, "written data\n", 14);
+  f2->f_ops->read(f2, ttt, 14);
+  uart_puts(ttt);
+  // ramfs_dump(f->vnode, 6);
   ramfs_dump(fsRoot, 0);
-  //ramfs_dump(test, 6);
+  // ramfs_dump(test, 6);
 
   //
   core_timer_enable();

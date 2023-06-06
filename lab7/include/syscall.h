@@ -30,4 +30,13 @@ void check_timer();
 // Container
 void handler_container();
 
+// FS
+int sys_open(const char* pathname, int flags);
+int sys_close(int fd);
+int sys_write(int fd, const void* buf, int count);
+int sys_read(int fd, void*, int count);
+int sys_mkdir(const char* );
+int sys_mount(const char* src, const char *target, const char *filesystem, unsigned long, const void *);
+int sys_chdir(const char *path);
+
 #endif //SYSCALL_H
