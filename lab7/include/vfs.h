@@ -69,19 +69,19 @@ struct file_operations {
  *
  */
 int register_filesystem(struct filesystem* fs);
-int vfs_open(const char* pathname, int flags, struct file **target);
+int vfs_open(const char* pathname, int flags, struct file **target, struct vnode *root);
 int vfs_close(struct file* file);
 int vfs_read(struct file* file , void *buf, size_t len);
 int vfs_write(struct file* file , const void* buf, size_t len);
 
-int vfs_mkdir(char* pathname);
+int vfs_mkdir(char* pathname, struct vnode *root);
 int vfs_create(struct vnode* dir_node, struct vnode** target, const char* name);
 
 int vfs_mount(const char* target, const char* filesystem);
 /* To look up an inode need VFS xall `lookup()`of the parent DIR of the 
  * inode. We need to get the Dentry -> Inode. then we can do `open()` ...
  */
-int vfs_lookup(const char* pathname, struct vnode** target);
+int vfs_lookup(const char* pathname, struct vnode** target, struct vnode *root);
 
 
 /*
@@ -94,10 +94,11 @@ typedef struct {
 }FsAttr;
 */
 
-#define O_CREAT 0x0100
+#define O_CREAT 0b0100
 
 // Helper
 char* getFileName(char* dest, const char* from);
 int vfs_getLastDir(char* path, struct vnode *dir, struct vnode** t);
+struct vnode* vfs_reWritePath(char* pathName, struct vnode *dir, char ** new_pathName);
 
 #endif // VFS_H

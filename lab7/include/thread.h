@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include <stddef.h>
 
+#define FDMAX 16
+
 // Store the thread status
 enum Thread_status{
 	run = 0,
@@ -46,6 +48,8 @@ typedef struct THread{
 	enum Thread_status status;
 	struct THread *prev;
 	struct THread *next;
+	struct file* fdTable[FDMAX];
+	struct vnode *curDir;	// Track the current dir
 }Thread;
 
 // Data structure of the thread Queue.

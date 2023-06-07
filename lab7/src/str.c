@@ -58,3 +58,12 @@ void *memset(void *s, char c, const unsigned int n) {
   }
   return s;
 }
+
+int strcpy(char *to, const char* from){
+	while(1){
+		*to ++ = *from++;
+		if(*(from - 1) == 0)
+			return 0;
+	}
+	return 0;
+}

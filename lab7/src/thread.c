@@ -8,6 +8,9 @@
 extern void switch_to(Thread *, Thread *);
 extern Thread *get_current(void);
 
+// VFS
+extern struct vnode* fsRoot;
+
 //=======================================================
 // thread queues
 extern Thread_q running = {NULL, NULL};
@@ -103,6 +106,7 @@ Thread *thread_create(void (*fn)(void *)) {
   cur->id = thread_count++;                   // Set ID
   cur->status = run;                          // Set the status
   cur->sp_el0 = pmalloc(0) + 0x1000 - 16;     // Separate kernel stack
+  cur->curDir = fsRoot;
   thread_q_add(&running, cur);                // Add to thread queue
   return cur;
 }
