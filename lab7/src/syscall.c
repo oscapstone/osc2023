@@ -18,6 +18,9 @@ extern void load_reg_ret(void);
 // From thread.c
 extern Thread_q *running, deleted;
 
+// From Vfs.h
+extern struct vnode *fsRoot;
+
 /********************************************************************
  * Systemcall getpid()
  ********************************************************************/
@@ -346,6 +349,17 @@ int sys_mount(const char *src, const char *target, const char *filesystemc,
 
 int sys_chdir(const char *path) {
   uart_puts("sys_chdir\n");
+  char *t = path;
+  Thread *thread = get_current();
+  struct vnode *dir = thread->curDir;
+  if(*t == '/' && *(t + 1) == 0){
+	  thread->curDir = fsRoot;
+	  return 0;
+  }
+  char* newPath;
+  struct vnode *n = vfs_reWritePath(path, dir, &newPath);
+  vfs_lookup(newPath, &dir, n);
+  thread->curDir = dir;
   return 0;
 }
 
