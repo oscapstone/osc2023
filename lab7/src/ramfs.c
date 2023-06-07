@@ -21,20 +21,22 @@ int ramfs_initFsCpio(struct vnode *root) {
   while (1) {
     char *fname = initrd_getName(f);
     char *fdata = initrd_getData(f);
+    int fsize = initrd_getSize(f);
     int fmode = initrd_getMode(f);
     // uart_puts(fname);
     //  End
     if (strcmp(fname, "TRAILER!!!") == 0)
       break;
-    struct vnode *dir_node = fsRoot;
+    struct vnode *dir_node = root;
     while (fname != NULL) {
       memset(buf, 0, 16);
       fname = getFileName(buf, fname);
 
       // The Directory must be the directory type
       ((FsAttr *)(dir_node->internal))->type = DIRTYPE;
-      uart_puts(buf);
-      uart_puts("\n");
+      //uart_puts(buf);
+      //uart_puth(fdata);
+      //uart_puts("\n");
       if (*buf != 0) {
         // Find if the dir is exist
         dir_node->v_ops->lookup(dir_node, &target, buf);
@@ -43,6 +45,8 @@ int ramfs_initFsCpio(struct vnode *root) {
           dir_node->v_ops->create(dir_node, &target, buf);
       }
       dir_node = target;
+      ((FsAttr*)(target->internal))->data = fdata; 
+      ((FsAttr*)(target->internal))->Eof = fsize; 
       target = NULL;
     }
     f = initrd_jumpNext(f);
@@ -226,13 +230,12 @@ int ramfs_write(struct file *f, const void *buf, size_t len) {
 int ramfs_read(struct file *f, void *buf, size_t len) {
   char *c = (char *)buf;
   char *data = (char *)f->data;
+  //uart_puth(data);
   if (f->data == NULL)
     return 0;
   for (size_t i = 0; i < len; i++) {
     *c++ = *(data + (f->f_pos));
     (f->f_pos)++;
-    if (*(c - 1) == 0)
-      break;
   }
   if (f->f_pos > f->Eof)
     return f->Eof;

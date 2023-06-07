@@ -270,7 +270,7 @@ void posix_kill(int pid, int sig) {
 }
 
 int sys_open(const char *pathname, int flags) {
-  uart_puts("sys_open\n");
+  //uart_puts("sys_open\n");
   Thread *t = get_current();
   struct vnode *cur = t->curDir;
   char *path;
@@ -282,13 +282,12 @@ int sys_open(const char *pathname, int flags) {
       break;
     }
   }
-  // ramfs_dump(cur, 0);
   return i;
 }
 
 int sys_close(int fd) {
   Thread *t = get_current();
-  uart_puts("sys_close\n");
+  //uart_puts("sys_close\n");
   if (fd < 0 || fd >= FDMAX || (t->fdTable)[fd] == NULL) {
     uart_puts("vfs_close error, fd out of bound\n");
     return 1;
@@ -300,7 +299,7 @@ int sys_close(int fd) {
 int sys_write(int fd, const void *buf, int count) {
   Thread *t = get_current();
   struct file *file = (t->fdTable)[fd];
-  uart_puts("sys_write\n");
+  //uart_puts("sys_write\n");
   int ret = vfs_write(file, buf, count);
   return ret;
 }
@@ -308,7 +307,7 @@ int sys_write(int fd, const void *buf, int count) {
 int sys_read(int fd, void *buf, int count) {
   Thread *t = get_current();
   struct file *file = (t->fdTable)[fd];
-  uart_puts("sys_read\n");
+  //uart_puts("sys_read\n");
   int ret = vfs_read(file, buf, count);
   return ret;
 }
@@ -326,8 +325,7 @@ int sys_mkdir(const char *pathname) {
 
 int sys_mount(const char *src, const char *target, const char *filesystemc,
               unsigned long ll, const void *aa) {
-  uart_puts("sys_mount\n");
-  uart_puts(target);
+  //uart_puts("sys_mount\n");
   Thread *t = get_current();
   struct vnode *dir = t->curDir;
   struct filesystem *fs = NULL;
@@ -348,7 +346,7 @@ int sys_mount(const char *src, const char *target, const char *filesystemc,
 }
 
 int sys_chdir(const char *path) {
-  uart_puts("sys_chdir\n");
+  //uart_puts("sys_chdir\n");
   char *t = path;
   Thread *thread = get_current();
   struct vnode *dir = thread->curDir;

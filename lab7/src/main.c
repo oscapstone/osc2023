@@ -38,30 +38,14 @@ int main(void *dtb_location) {
   struct filesystem *fs = getRamFs();
   register_filesystem(fs);
   fs->setup_mount(fs, fsRootMount);
-  ramfs_initFsCpio(fsRoot);
-  uart_puts("\nDump\n");
+  // Mount the Ramfs
+  vfs_mkdir("initramfs", NULL);
   struct vnode *test;
-  // ramfs_mkdir(fsRoot, &test, "mkdir");
-  vfs_mkdir("mkdir", NULL);
-  vfs_lookup("mkdir", &test, NULL);
-  // vfs_create(test, &test, "vfs_creast");
-  struct file *f = NULL, *f2 = NULL;
-  vfs_open("mkdir/vfs", O_CREAT, &f, NULL);
-  vfs_open("mkdir/vfs", O_CREAT, &f2, NULL);
-  char ttt[20] = {0};
-  uart_puts("test R/W\n");
-  f->f_ops->write(f, "written data\n", 14);
-  f2->f_ops->read(f2, ttt, 14);
-  uart_puts(ttt);
-  // ramfs_dump(f->vnode, 6);
-  ramfs_dump(fsRoot, 0);
-  // ramfs_dump(test, 6);
-
-  //
+  vfs_lookup("initramfs", &test, NULL);
+  ramfs_initFsCpio(test);
+  //ramfs_dump(fsRoot, 0);
   core_timer_enable();
   terminal_run_thread();
-  // idle();
-  // terminal_run();
 
   return 0;
 }

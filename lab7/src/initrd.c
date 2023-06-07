@@ -195,6 +195,20 @@ const char *initrd_getName(void *f) {
   return f + sizeof(cpio_t);
 }
 
+int initrd_getSize(void *f) {
+  int ns = 0;
+  int fs = 0;
+  int pad_n = 0;
+  int pad_f = 0;
+  cpio_t *header = (cpio_t *)f;
+  ns = hex2bin(header->namesize, 8);             // Get the size of name
+  fs = hex2bin(header->filesize, 8);             // Get teh size of file content
+  pad_n = (4 - ((sizeof(cpio_t) + ns) % 4)) % 4; // Padding size
+  pad_f = (4 - (fs % 4)) % 4;
+
+  return fs;
+}
+
 char *initrd_getData(void *f) {
 
   int ns = 0;
