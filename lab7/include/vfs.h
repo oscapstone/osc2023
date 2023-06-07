@@ -32,6 +32,7 @@ struct mount{
 struct file{
 	struct vnode *vnode;
 	size_t f_pos;
+	size_t Eof;
 	struct file_operations *f_ops;
 	int flags;
 	void* data;

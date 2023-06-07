@@ -111,7 +111,7 @@ int ramfs_lookup(struct vnode *dir, struct vnode **target, const char *name) {
 uart_puts(" found: ");
 uart_puts(cfs->name);
 */
-      //uart_puts("\n");
+      // uart_puts("\n");
       return 0;
     }
   }
@@ -158,7 +158,8 @@ int ramfs_init(struct filesystem *fs, struct mount *m) {
   root->v_ops->create = ramfs_create;
   root->v_ops->mkdir = ramfs_mkdir;
 
-  root->f_ops = (struct file_operations*) malloc(sizeof(struct file_operations));
+  root->f_ops =
+      (struct file_operations *)malloc(sizeof(struct file_operations));
   root->f_ops->open = ramfs_open;
   root->f_ops->write = ramfs_write;
   root->f_ops->read = ramfs_read;
@@ -167,22 +168,25 @@ int ramfs_init(struct filesystem *fs, struct mount *m) {
   char *name = NULL;
 
   // is not mount at the root of the whole FS
-  if (root->internal != NULL)
+  if (root->internal != NULL) {
     name = ((FsAttr *)root->internal)->name;
-  else {
+  } else {
     name = malloc(sizeof(char) * 16);
     memset(name, 0, 16);
     *name = '/';
   }
-  if(root->internal == NULL)
-	  root->internal = (FsAttr *)malloc(sizeof(FsAttr));
+  if (root->internal == NULL) {
+    root->internal = (FsAttr *)malloc(sizeof(FsAttr));
+  }
 
   FsAttr *attr = root->internal;
   attr->name = name;
   attr->type = DIRTYPE;
   attr->size = 0;
-  if(attr->dirs == NULL)
-	  attr->dirs = (void *)smalloc(8 * sizeof(void *));
+  // Preserve the created dirs
+  if (attr->dirs == NULL) {
+    attr->dirs = (void *)smalloc(8 * sizeof(void *));
+  }
   return 0;
 }
 
@@ -193,47 +197,49 @@ int ramfs_mkdir(struct vnode *dir, struct vnode **target, const char *name) {
   return 0;
 }
 
-int ramfs_open(struct vnode *v, struct file** target){
-	if(*target == NULL){
-		*target = (struct file *) malloc(sizeof(struct file));
-	}
-	(*target)->vnode = v;
-	(*target)->f_pos = 0;
-	(*target)->f_ops = v->f_ops;
-	(*target)->data = ((FsAttr*)(v->internal))->data;
-	return 0;
+int ramfs_open(struct vnode *v, struct file **target) {
+  if (*target == NULL) {
+    *target = (struct file *)malloc(sizeof(struct file));
+  }
+  (*target)->vnode = v;
+  (*target)->f_pos = 0;
+  (*target)->f_ops = v->f_ops;
+  (*target)->Eof = ((FsAttr *)(v->internal))->Eof;
+  (*target)->data = ((FsAttr *)(v->internal))->data;
+  return 0;
 }
 
-
-int ramfs_write(struct file *f,const void *buf, size_t len){
-	const char* c = (const char*) buf;
-	char* data = (char*)f->data;
-	if(f->data == NULL)
-		return 1;
-	for(size_t i = 0; i < len; i++){
-		*(data + (f->f_pos)) = *c++;
-		(f->f_pos)++;
-	}
-	return f->f_pos;
+int ramfs_write(struct file *f, const void *buf, size_t len) {
+  const char *c = (const char *)buf;
+  char *data = (char *)f->data;
+  if (f->data == NULL)
+    return 1;
+  for (size_t i = 0; i < len; i++) {
+    *(data + (f->f_pos)) = *c++;
+    (f->f_pos)++;
+  }
+  if (f->f_pos > f->Eof)
+    f->Eof = f->f_pos;
+  return f->f_pos;
 }
 
-int ramfs_read(struct file *f, void* buf, size_t len){
-	char* c = (char*) buf;
-	char* data = (char*)f->data;
-	if(f->data == NULL)
-		return 0;
-	for(size_t i = 0; i < len; i++){
-		*c++ = *(data + (f->f_pos));
-		(f->f_pos)++;
-		if(*(c - 1) == 0)
-			break;
-	}
-	return f->f_pos;
+int ramfs_read(struct file *f, void *buf, size_t len) {
+  char *c = (char *)buf;
+  char *data = (char *)f->data;
+  if (f->data == NULL)
+    return 0;
+  for (size_t i = 0; i < len; i++) {
+    *c++ = *(data + (f->f_pos));
+    (f->f_pos)++;
+    if (*(c - 1) == 0)
+      break;
+  }
+  if (f->f_pos > f->Eof)
+    return f->Eof;
+  return f->f_pos;
 }
 
-int ramfs_close(struct file* f){
-	// FIXME: Sould free the structure
-	return 0;
+int ramfs_close(struct file *f) {
+  ((FsAttr *)(f->vnode->internal))->Eof = f->Eof;
+  return 0;
 }
-		
-

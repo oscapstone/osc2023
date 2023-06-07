@@ -52,17 +52,18 @@ int register_filesystem(struct filesystem *fs) {
 /***************************************************************
  * TODO: Support recursive create
  **************************************************************/
-int vfs_open(const char *pathName, int flags, struct file **target, struct vnode* root) {
+int vfs_open(const char *pathName, int flags, struct file **target,
+             struct vnode *root) {
   *target = malloc(sizeof(struct file)); // Create the File
   struct vnode *dir = NULL;
   int ret;
   struct vnode *target_v = NULL;
   char *name = pathName;
   char *tmp = pathName;
-  if(root == NULL)
-	  dir = fsRoot;
+  if (root == NULL)
+    dir = fsRoot;
   else
-	  dir = root;
+    dir = root;
 
   // Get the basename of the pathName
   for (int i = 0; i < 16; i++) {
@@ -76,10 +77,10 @@ int vfs_open(const char *pathName, int flags, struct file **target, struct vnode
   name = tmp;
 
   // Lookup if the file exist
-  if(pathName[0] == '/')
-  ret = vfs_lookup(pathName + 1, &target_v, root);
-  else 
-  ret = vfs_lookup(pathName, &target_v, root);
+  if (pathName[0] == '/')
+    ret = vfs_lookup(pathName + 1, &target_v, root);
+  else
+    ret = vfs_lookup(pathName, &target_v, root);
   // If File not exist and the create not set
   if (target_v == NULL && (flags | O_CREAT) == 0) {
     uart_puts("File Not exist\n");
@@ -102,21 +103,20 @@ int vfs_create(struct vnode *dir_node, struct vnode **target,
   return 0;
 }
 
-int vfs_lookup(const char *path, struct vnode **target, struct vnode* root) {
+int vfs_lookup(const char *path, struct vnode **target, struct vnode *root) {
   struct vnode *dir = NULL;
-  if(root == NULL){
-	  dir = fsRoot;
- }
-  else 
-	  dir = root;
+  if (root == NULL) {
+    dir = fsRoot;
+  } else
+    dir = root;
   char *name = path;
-  if(*name == '/')
-	  name = name + 1;
+  if (*name == '/')
+    name = name + 1;
   char buf[16] = {0};
   while (1) {
     memset(buf, 0, 16);
     name = getFileName(buf, name);
-    //uart_puts(buf);
+    // uart_puts(buf);
     if (name == NULL && *buf == 0)
       break;
     else if (*buf != 0) {
@@ -150,16 +150,16 @@ int vfs_write(struct file *f, const void *buf, size_t len) {
 /* similiar to the create but the file type is dir
  * TODO: Recursive mkdir
  */
-int vfs_mkdir(char *path, struct vnode* root) {
+int vfs_mkdir(char *path, struct vnode *root) {
   struct vnode *dir = NULL;
-  if(root == NULL)
-	  dir = fsRoot;
+  if (root == NULL)
+    dir = fsRoot;
   else
-	  dir = root;
+    dir = root;
   struct vnode *target = NULL;
   char *name = path;
-  if(*name == '/')
-	  name += 1;
+  if (*name == '/')
+    name += 1;
   char buf[16] = {0};
   while (1) {
     memset(buf, 0, 16);
@@ -192,8 +192,8 @@ int vfs_getLastDir(char *path, struct vnode *dir_node, struct vnode **t) {
     dir = fsRoot;
   } else
     dir = dir_node;
-  if(*path == '/')
-	  path += 1;
+  if (*path == '/')
+    path += 1;
 
   char *name = path;
   char buf[16] = {0};
@@ -219,33 +219,32 @@ int vfs_getLastDir(char *path, struct vnode *dir_node, struct vnode **t) {
   return 0;
 }
 
-//Rewrite the path to support .. and .
-struct vnode* vfs_reWritePath(char* pathName, struct vnode *dir, char ** new_pathName){
-	char* tmp = (char*) malloc(16);
-	struct vnode* ret =  dir;
-	memset(tmp, 0, 16);
-	int p = 0;
-	for(int i = 0; i < 16;){
-		if(pathName[i] == '/'){
-			strcpy(tmp + p, pathName + i);
-			*new_pathName = tmp;
-			return ret;
-		}
-		if(pathName[i] == '.' && pathName[i+1] == '.'){
-			i += 3;
-			ret = ret->parent;
-		}
-		if(pathName[i] == '.'){
-			i += 2;
-			ret = ret;
-		}
-		else{
-			strcpy(tmp +p, pathName + i);
-			*new_pathName = tmp;
-			return ret;
-		}
-	}
-	*new_pathName = tmp;
-	return ret;
+// Rewrite the path to support .. and .
+struct vnode *vfs_reWritePath(char *pathName, struct vnode *dir,
+                              char **new_pathName) {
+  char *tmp = (char *)malloc(16);
+  struct vnode *ret = dir;
+  memset(tmp, 0, 16);
+  int p = 0;
+  for (int i = 0; i < 16;) {
+    if (pathName[i] == '/') {
+      strcpy(tmp + p, pathName + i);
+      *new_pathName = tmp;
+      return ret;
+    }
+    if (pathName[i] == '.' && pathName[i + 1] == '.') {
+      i += 3;
+      ret = ret->parent;
+    }
+    if (pathName[i] == '.') {
+      i += 2;
+      ret = ret;
+    } else {
+      strcpy(tmp + p, pathName + i);
+      *new_pathName = tmp;
+      return ret;
+    }
+  }
+  *new_pathName = tmp;
+  return ret;
 }
-

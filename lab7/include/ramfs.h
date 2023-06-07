@@ -10,6 +10,7 @@ typedef struct{
 	char* name;
 	int type;
 	int size;
+	size_t Eof;
 	void *dirs;
 	void *data;
 }FsAttr;

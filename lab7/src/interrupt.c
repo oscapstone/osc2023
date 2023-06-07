@@ -351,25 +351,27 @@ void low_syn_handler(Trap_frame *trap_frame) {
       posix_kill(regs[0], regs[1]);
       break;
     case 11:
-      regs[0] = sys_open((const char*)regs[0], (int)regs[1]);
+      regs[0] = sys_open((const char *)regs[0], (int)regs[1]);
       break;
     case 12:
       regs[0] = sys_close((int)regs[0]);
       break;
     case 13:
-      regs[0] = sys_write((int)regs[0], (const void*) regs[1], (int )regs[2]);
+      regs[0] = sys_write((int)regs[0], (const void *)regs[1], (int)regs[2]);
       break;
     case 14:
-      regs[0] = sys_read((int)regs[0], (void*) regs[1], (int)regs[2]);
+      regs[0] = sys_read((int)regs[0], (void *)regs[1], (int)regs[2]);
       break;
     case 15:
-      regs[0] = sys_mkdir((const char*) regs[0]);
+      regs[0] = sys_mkdir((const char *)regs[0]);
       break;
     case 16:
-      regs[0] = sys_mount((const char*) regs[0], (const char*) regs[1], (const char*) regs[2], (unsigned long)regs[3], (const void*)regs[4]);
+      regs[0] = sys_mount((const char *)regs[0], (const char *)regs[1],
+                          (const char *)regs[2], (unsigned long)regs[3],
+                          (const void *)regs[4]);
       break;
     case 17:
-      regs[0] = sys_chdir((const char*)regs[0]);
+      regs[0] = sys_chdir((const char *)regs[0]);
       break;
     default:
       uart_puts("***UNKNOWN INT***\n");
