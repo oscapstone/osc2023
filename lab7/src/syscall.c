@@ -5,6 +5,7 @@
 #include "thread.h"
 #include "time.h"
 #include "uart.h"
+#include "vfs.h"
 // FIXME: should disable INT in the critical section.
 
 // k From switch.S
@@ -267,31 +268,78 @@ void posix_kill(int pid, int sig) {
 
 int sys_open(const char* pathname, int flags){
 	uart_puts("sys_open\n");
-	return 0;
+	Thread *t = get_current();
+	struct vnode* cur = t->curDir;
+	char *path;
+	cur = vfs_reWritePath(pathname, cur, &path);
+	int i = 0;
+	for(i = 0; i < FDMAX; i++){
+		if((t->fdTable)[i] == NULL){
+			vfs_open(path, flags, &(t->fdTable)[i], cur);
+			break;
+		}
+	}
+	//ramfs_dump(cur, 0);
+	return i;
 }
 
 int sys_close(int fd){
+	Thread *t = get_current();
 	uart_puts("sys_close\n");
+	if(fd < 0 || fd >= FDMAX || (t->fdTable)[fd] == NULL){
+		uart_puts("vfs_close error, fd out of bound\n");
+		return 1;
+	}
+	vfs_close((t->fdTable)[fd]);
 	return 0;
 }
 
 int sys_write(int fd, const void* buf, int count){
+	Thread *t = get_current();
+	struct file* file = (t->fdTable)[fd];
 	uart_puts("sys_write\n");
-	return 0;
+	int ret = vfs_write(file, buf, count);
+	return ret;
 }
 
 int sys_read(int fd, void * buf, int count){
+	Thread *t = get_current();
+	struct file* file = (t->fdTable)[fd];
 	uart_puts("sys_read\n");
-	return 0;
+	int ret = vfs_read(file, buf, count);
+	return ret;
 }
 
 int sys_mkdir(const char* pathname){
-	uart_puts("sys_mkdir\n");
+	//uart_puts("sys_mkdir\n");
+	Thread *t = get_current();
+	struct vnode* cur = t->curDir;
+	char *path;
+	cur = vfs_reWritePath(pathname, cur, &path);
+	//uart_puts(pathname);
+	vfs_mkdir(path, cur);
 	return 0;
 }
 
-int sys_mount(const char* src, const char *target, const char *filesystem, unsigned long ll, const void *aa){
+int sys_mount(const char* src, const char *target, const char *filesystemc, unsigned long ll, const void *aa){
 	uart_puts("sys_mount\n");
+	uart_puts(target);
+	Thread *t = get_current();
+	struct vnode *dir = t->curDir;
+	struct filesystem *fs = NULL;
+	if(strcmp(filesystemc, "tmpfs") == 0){
+		fs = getRamFs();
+	}else{
+		uart_puts(filesystemc);
+		uart_puts("connot found\n");
+		return 1;
+	}
+	struct mount* m= (struct mount*)malloc(sizeof(struct mount));
+	struct vnode* mountPoint;
+	vfs_lookup(target, &mountPoint, dir);
+	mountPoint->mount = m;
+	m->root = mountPoint;
+	//fs->setup_mount(fs, m);
 	return 0;
 }
 

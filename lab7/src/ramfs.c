@@ -111,7 +111,7 @@ int ramfs_lookup(struct vnode *dir, struct vnode **target, const char *name) {
 uart_puts(" found: ");
 uart_puts(cfs->name);
 */
-      uart_puts("\n");
+      //uart_puts("\n");
       return 0;
     }
   }
@@ -174,13 +174,15 @@ int ramfs_init(struct filesystem *fs, struct mount *m) {
     memset(name, 0, 16);
     *name = '/';
   }
-  root->internal = (FsAttr *)malloc(sizeof(FsAttr));
+  if(root->internal == NULL)
+	  root->internal = (FsAttr *)malloc(sizeof(FsAttr));
 
   FsAttr *attr = root->internal;
   attr->name = name;
   attr->type = DIRTYPE;
   attr->size = 0;
-  attr->dirs = (void *)smalloc(8 * sizeof(void *));
+  if(attr->dirs == NULL)
+	  attr->dirs = (void *)smalloc(8 * sizeof(void *));
   return 0;
 }
 
@@ -212,19 +214,21 @@ int ramfs_write(struct file *f,const void *buf, size_t len){
 		*(data + (f->f_pos)) = *c++;
 		(f->f_pos)++;
 	}
-	return 0;
+	return f->f_pos;
 }
 
 int ramfs_read(struct file *f, void* buf, size_t len){
 	char* c = (char*) buf;
 	char* data = (char*)f->data;
 	if(f->data == NULL)
-		return 1;
+		return 0;
 	for(size_t i = 0; i < len; i++){
 		*c++ = *(data + (f->f_pos));
 		(f->f_pos)++;
+		if(*(c - 1) == 0)
+			break;
 	}
-	return 0;
+	return f->f_pos;
 }
 
 int ramfs_close(struct file* f){

@@ -44,7 +44,7 @@ int main(void *dtb_location) {
   // ramfs_mkdir(fsRoot, &test, "mkdir");
   vfs_mkdir("mkdir", NULL);
   vfs_lookup("mkdir", &test, NULL);
-  vfs_create(test, &test, "vfs_creast");
+  //vfs_create(test, &test, "vfs_creast");
   struct file *f = NULL, *f2 = NULL;
   vfs_open("mkdir/vfs", O_CREAT, &f, NULL);
   vfs_open("mkdir/vfs", O_CREAT, &f2, NULL);

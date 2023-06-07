@@ -59,6 +59,10 @@ int vfs_open(const char *pathName, int flags, struct file **target, struct vnode
   struct vnode *target_v = NULL;
   char *name = pathName;
   char *tmp = pathName;
+  if(root == NULL)
+	  dir = fsRoot;
+  else
+	  dir = root;
 
   // Get the basename of the pathName
   for (int i = 0; i < 16; i++) {
@@ -72,6 +76,9 @@ int vfs_open(const char *pathName, int flags, struct file **target, struct vnode
   name = tmp;
 
   // Lookup if the file exist
+  if(pathName[0] == '/')
+  ret = vfs_lookup(pathName + 1, &target_v, root);
+  else 
   ret = vfs_lookup(pathName, &target_v, root);
   // If File not exist and the create not set
   if (target_v == NULL && (flags | O_CREAT) == 0) {
@@ -103,11 +110,13 @@ int vfs_lookup(const char *path, struct vnode **target, struct vnode* root) {
   else 
 	  dir = root;
   char *name = path;
+  if(*name == '/')
+	  name = name + 1;
   char buf[16] = {0};
   while (1) {
     memset(buf, 0, 16);
     name = getFileName(buf, name);
-    uart_puts(buf);
+    //uart_puts(buf);
     if (name == NULL && *buf == 0)
       break;
     else if (*buf != 0) {
@@ -149,6 +158,8 @@ int vfs_mkdir(char *path, struct vnode* root) {
 	  dir = root;
   struct vnode *target = NULL;
   char *name = path;
+  if(*name == '/')
+	  name += 1;
   char buf[16] = {0};
   while (1) {
     memset(buf, 0, 16);
@@ -181,6 +192,8 @@ int vfs_getLastDir(char *path, struct vnode *dir_node, struct vnode **t) {
     dir = fsRoot;
   } else
     dir = dir_node;
+  if(*path == '/')
+	  path += 1;
 
   char *name = path;
   char buf[16] = {0};
