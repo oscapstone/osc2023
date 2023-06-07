@@ -1,21 +1,21 @@
 #ifndef SYSCALL_H
 #define SYSCALL_H
-#include <stddef.h>
 #include "thread.h"
+#include <stddef.h>
 
 int sys_getpid(void);
-size_t sys_uart_read(char*, size_t size);
-size_t sys_uart_write(const char*, size_t size);
-int sys_exec(const char*, char* const argv[]);
-int sys_fork(Trap_frame*);
+size_t sys_uart_read(char *, size_t size);
+size_t sys_uart_write(const char *, size_t size);
+int sys_exec(const char *, char *const argv[]);
+int sys_fork(Trap_frame *);
 void sys_exit(int status);
 int sys_mbox_call(unsigned char ch, unsigned int *mbox);
 void sys_kill(int pid);
 
 int get_pid(void);
-size_t uart_read(char*, size_t size);
-size_t uart_write(const char*, size_t size);
-int exec(const char*, char* const argv[]);
+size_t uart_read(char *, size_t size);
+size_t uart_write(const char *, size_t size);
+int exec(const char *, char *const argv[]);
 int fork();
 void uexit();
 int mbox_call(unsigned char ch, unsigned int *mbox);
@@ -31,12 +31,13 @@ void check_timer();
 void handler_container();
 
 // FS
-int sys_open(const char* pathname, int flags);
+int sys_open(const char *pathname, int flags);
 int sys_close(int fd);
-int sys_write(int fd, const void* buf, int count);
-int sys_read(int fd, void*, int count);
-int sys_mkdir(const char* );
-int sys_mount(const char* src, const char *target, const char *filesystem, unsigned long, const void *);
+int sys_write(int fd, const void *buf, int count);
+int sys_read(int fd, void *, int count);
+int sys_mkdir(const char *);
+int sys_mount(const char *src, const char *target, const char *filesystem,
+              unsigned long, const void *);
 int sys_chdir(const char *path);
 
-#endif //SYSCALL_H
+#endif // SYSCALL_H

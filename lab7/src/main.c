@@ -10,12 +10,16 @@
 #include "terminal.h"
 #include "thread.h"
 #include "uart.h"
+#include "uartfs.h"
 #include "vfs.h"
 #include <stdint.h>
 
 extern void set_exception_vector_table(void);
 extern struct vnode *fsRoot;
 extern struct mount *fsRootMount;
+struct file *uart_stdin = NULL;
+struct file *uart_stdout = NULL;
+struct file *uart_stderr = NULL;
 
 int main(void *dtb_location) {
   uart_setup();
@@ -43,7 +47,22 @@ int main(void *dtb_location) {
   struct vnode *test;
   vfs_lookup("initramfs", &test, NULL);
   ramfs_initFsCpio(test);
-  //ramfs_dump(fsRoot, 0);
+
+  // InitUartFs
+  vfs_mkdir("/dev", NULL);
+  vfs_mkdir("/dev/uart", NULL);
+  struct filesystem *ufs = getUartFs();
+  register_filesystem(ufs);
+  vfs_lookup("/dev/uart", &test, NULL);
+  struct mount *uartM = (struct mount *)malloc(sizeof(struct mount));
+  uartM->root = test;
+  test->mount = uartM;
+  ufs->setup_mount(test, uartM);
+  vfs_open("/dev/uart", 0, &uart_stdin, NULL);
+  vfs_open("/dev/uart", 0, &uart_stdout, NULL);
+  vfs_open("/dev/uart", 0, &uart_stderr, NULL);
+
+  ramfs_dump(fsRoot, 0);
   core_timer_enable();
   terminal_run_thread();
 

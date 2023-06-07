@@ -224,9 +224,9 @@ struct vnode *vfs_reWritePath(char *pathName, struct vnode *dir,
                               char **new_pathName) {
   char *tmp = (char *)malloc(16);
   struct vnode *ret = dir;
-  if(*pathName == '/'){
-	  *new_pathName = pathName;
-	  return fsRoot;
+  if (*pathName == '/') {
+    *new_pathName = pathName;
+    return fsRoot;
   }
   memset(tmp, 0, 16);
   int p = 0;

@@ -10,6 +10,6 @@ int strcmp(const char *, const char *);
 int strncmp(const char *, const char *, int n);
 int strlen(const char *);
 void *memset(void *, char, unsigned int);
-int strcpy(char * to, const char* from);
+int strcpy(char *to, const char *from);
 
 #endif // STR_H

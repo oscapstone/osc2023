@@ -10,6 +10,8 @@ extern Thread *get_current(void);
 
 // VFS
 extern struct vnode *fsRoot;
+extern struct file *uart_stdin;
+extern struct file *uart_stdout;
 
 //=======================================================
 // thread queues
@@ -106,7 +108,10 @@ Thread *thread_create(void (*fn)(void *)) {
   cur->id = thread_count++;                   // Set ID
   cur->status = run;                          // Set the status
   cur->sp_el0 = pmalloc(0) + 0x1000 - 16;     // Separate kernel stack
-  cur->curDir = fsRoot;
+  cur->curDir = fsRoot;                       // Setup current Dir
+  (cur->fdTable)[0] = uart_stdin;
+  (cur->fdTable)[1] = uart_stdout;
+  (cur->fdTable)[2] = uart_stdout;
   thread_q_add(&running, cur); // Add to thread queue
   return cur;
 }
