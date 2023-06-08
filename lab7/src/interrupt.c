@@ -373,6 +373,12 @@ void low_syn_handler(Trap_frame *trap_frame) {
     case 17:
       regs[0] = sys_chdir((const char *)regs[0]);
       break;
+    case 18:
+      regs[0] = sys_lseek64(regs[0], regs[1], regs[2]);
+      break;
+    case 19:
+      regs[0] = sys_ioctl(regs[0], regs[1]);
+      break;
     default:
       uart_puts("***UNKNOWN INT***\n");
     }

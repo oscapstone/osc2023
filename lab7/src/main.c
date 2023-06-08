@@ -1,5 +1,6 @@
 #include "dtb.h"
 #include "exception.h"
+#include "framefs.h"
 #include "heap.h"
 #include "initrd.h"
 #include "interrupt.h"
@@ -61,6 +62,16 @@ int main(void *dtb_location) {
   vfs_open("/dev/uart", 0, &uart_stdin, NULL);
   vfs_open("/dev/uart", 0, &uart_stdout, NULL);
   vfs_open("/dev/uart", 0, &uart_stderr, NULL);
+
+  // InitFramFs
+  vfs_mkdir("/dev/framebuffer", NULL);
+  struct filesystem *ffs = getFrameFs();
+  register_filesystem(ffs);
+  vfs_lookup("/dev/framebuffer", &test, NULL);
+  struct mount *frameM = (struct mount *)malloc(sizeof(struct mount));
+  frameM->root = test;
+  test->mount = frameM;
+  ffs->setup_mount(test, frameM);
 
   ramfs_dump(fsRoot, 0);
   core_timer_enable();

@@ -39,5 +39,7 @@ int sys_mkdir(const char *);
 int sys_mount(const char *src, const char *target, const char *filesystem,
               unsigned long, const void *);
 int sys_chdir(const char *path);
+long sys_lseek64(int fd, long offset, int whence);
+int sys_ioctl(int fd, unsigned long request);
 
 #endif // SYSCALL_H

@@ -97,6 +97,7 @@ typedef struct {
 */
 
 #define O_CREAT 0b0100
+#define SEEK_SET 0
 
 // Helper
 char *getFileName(char *dest, const char *from);

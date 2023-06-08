@@ -361,6 +361,21 @@ int sys_chdir(const char *path) {
   return 0;
 }
 
+long sys_lseek64(int fd, long offset, int whence) {
+  Thread *t = get_current();
+  struct file *file = (t->fdTable)[fd];
+  if (whence == SEEK_SET) {
+    file->f_pos = offset;
+  }
+  uart_puts("lseek\n");
+  return 0;
+}
+
+int sys_ioctl(int fd, unsigned long request) {
+  uart_puts("ioctl\n");
+  return 0;
+}
+
 //============================================================
 // Test Functions.
 void fork_test() {
