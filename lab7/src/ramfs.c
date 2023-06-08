@@ -135,11 +135,13 @@ int ramfs_create(struct vnode *dir, struct vnode **target, const char *name) {
   struct vnode **c = (struct vnode **)fs->dirs;
   //*c = malloc(sizeof(void*) * 16);
   *target = (struct vnode *)malloc(sizeof(struct vnode));
+  memset(*target, 0, sizeof(struct vnode));
   (*target)->mount = dir->mount;
   (*target)->parent = dir;
   (*target)->v_ops = dir->v_ops;
   (*target)->f_ops = dir->f_ops;
   (*target)->internal = malloc(sizeof(FsAttr));
+  memset((*target)->internal, 0, sizeof(FsAttr));
   FsAttr *cfs = (FsAttr *)(*target)->internal;
   cfs->name = malloc(16);
   char *t = cfs->name;
@@ -171,16 +173,19 @@ int ramfs_init(struct filesystem *fs, struct mount *m) {
 
   char *name = NULL;
 
+  // Check if the data already exist
+  if (root->internal == NULL) {
+    root->internal = (FsAttr *)malloc(sizeof(FsAttr));
+    memset(root->internal, 0, sizeof(FsAttr));
+  }
+
   // is not mount at the root of the whole FS
-  if (root->internal != NULL) {
+  if (root->internal != NULL && ((FsAttr *)root->internal)->name != NULL) {
     name = ((FsAttr *)root->internal)->name;
   } else {
     name = malloc(sizeof(char) * 16);
     memset(name, 0, 16);
     *name = '/';
-  }
-  if (root->internal == NULL) {
-    root->internal = (FsAttr *)malloc(sizeof(FsAttr));
   }
 
   FsAttr *attr = root->internal;

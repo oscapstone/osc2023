@@ -17,8 +17,11 @@ QEMU = qemu-system-aarch64
 
 all: clean kernel8.img initramfs.cpio
 
-initramfs.cpio: initramfs
-	cd initramfs; find . -print -depth | cpio -H newc -o > $@; mv $@ ..
+#initramfs.cpio: initramfs
+#	cd initramfs; find . -print -depth | cpio -H newc -o > $@; mv $@ ..
+
+initramfs.cpio: vfs1.img
+	ls $^ | cpio -H newc -o > $@
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.S
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c -o $@ $<
@@ -62,7 +65,7 @@ $(OBJ_DIR):
 	mkdir -p $@
 
 clean:
-	@rm *.img *.o *.d *.elf >/dev/null 2>/dev/null || true
+	@rm kernel8.img *.o *.d *.elf >/dev/null 2>/dev/null || true
 	@rm -r $(OBJ_DIR) >/dev/null 2>/dev/null || true
 
 -include $(OBJS:.o=.d)	

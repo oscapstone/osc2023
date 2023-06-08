@@ -36,8 +36,10 @@ int main(void *dtb_location) {
   uart_puts("test_thread\n");
   // Initial Fs
   fsRootMount = (struct mount *)malloc(sizeof(struct mount));
+  memset(fsRootMount, 0, sizeof(struct mount));
   fsRootMount->root = (struct vnode *)malloc(sizeof(struct vnode));
   fsRoot = fsRootMount->root;
+  memset(fsRoot, 0, sizeof(struct vnode));
   fsRoot->parent = NULL;
   fsRoot->mount = fsRootMount;
   struct filesystem *fs = getRamFs();

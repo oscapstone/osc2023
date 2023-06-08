@@ -100,6 +100,7 @@ Thread *thread_q_delete_id(Thread_q *Q, int id) {
  ***********************************************************************/
 Thread *thread_create(void (*fn)(void *)) {
   Thread *cur = pmalloc(0); // Get the small size
+  memset(cur, 0, 0x1000);
   cur->child = 0;
   cur->handler = NULL;
   cur->regs.lr = fn;

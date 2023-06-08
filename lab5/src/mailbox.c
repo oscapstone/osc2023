@@ -19,9 +19,12 @@ int mailbox_config(unsigned char ch) {
     while (*MAILBOX_STATUS & MAILBOX_EMPTY) {
       asm volatile("nop");
     }
-
-    if (r == *MAILBOX_READ)
+    if (r == *MAILBOX_READ){
+	    uart_puth(mbox[28]);
+	    uart_puts("\n");
       return mbox[1] == MAILBOX_RES;
+    }
+
   }
   return 0;
 }
@@ -43,8 +46,11 @@ int sys_mailbox_config(unsigned char ch, unsigned int *mailbox) {
       asm volatile("nop");
     }
 
-    if (r == *MAILBOX_READ)
+    if (r == *MAILBOX_READ){
+	    uart_puth(mailbox[28]);
+	    uart_puts("\n");
       return mailbox[1] == MAILBOX_RES;
+    }
   }
   return 0;
 }
