@@ -5,7 +5,6 @@ ASMFLAGS = -Iinclude
 
 BUILD_DIR = build
 SRC_DIR = src
-#---------------------------------------------------------------------------------------
 
 C_FILES = $(wildcard $(SRC_DIR)/*.c)
 ASM_FILES = $(wildcard $(SRC_DIR)/*.S)

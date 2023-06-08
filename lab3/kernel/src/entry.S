@@ -1,7 +1,7 @@
 // save general registers to stack
 .macro save_all
-    sub sp, sp, 32 * 8
-    stp x0, x1, [sp ,16 * 0]
+    sub sp, sp, 32 * 9
+    stp x0, x1, [sp ,16 * 0]  // store pair of registers
     stp x2, x3, [sp ,16 * 1]
     stp x4, x5, [sp ,16 * 2]
     stp x6, x7, [sp ,16 * 3]
@@ -17,6 +17,12 @@
     stp x26, x27, [sp ,16 * 13]
     stp x28, x29, [sp ,16 * 14]
     str x30, [sp, 16 * 15]
+    // information for nested interrupt
+    mrs x0, spsr_el1
+    str x0, [sp, 16 * 16]
+    mrs x0, elr_el1
+    str x0, [sp, 16 * 17]
+    ldp x0, x1, [sp ,16 * 0]  // restore x0 instead of elr_el1
 .endm
 
 // load general registers from stack
@@ -37,10 +43,14 @@
     ldp x26, x27, [sp ,16 * 13]
     ldp x28, x29, [sp ,16 * 14]
     ldr x30, [sp, 16 * 15]
-    add sp, sp, 32 * 8
+    // information for nested interrupt
+    ldr x0, [sp, 16 * 16]
+    msr spsr_el1,x0
+    ldr x0, [sp, 16 * 17]
+    msr elr_el1, x0
+    ldp x0, x1, [sp ,16 * 0]  // restore x0 instead of elr_el1
+    add sp, sp, 32 * 9
 .endm
-
-
 
 .macro    ventry    label
     .align    7   // entry should be aligned to 0x80 (2^7)
@@ -50,7 +60,8 @@
 .align 11         // vector table should be aligned to 0x800 (2^11)
 .global exception_vector_table
 
-
+// exception_vector_table definition
+// https://github.com/torvalds/linux/blob/v4.14/arch/arm64/kernel/entry.S#L367
 exception_vector_table:
     //Exception from the current EL while using SP_EL0
     ventry    el1t_sync_invalid        // Synchronous EL1t
@@ -65,7 +76,7 @@ exception_vector_table:
     ventry    el1h_error_invalid       // Error EL1h
 
     //Exception from a lower EL and at least one lower EL is AArch64
-    ventry    el0_sync_64             // Synchronous 64-bit EL0 (#basic1 target)
+    ventry    el0_sync_64             // Synchronous 64-bit EL0
     ventry    el0_irq_64              // IRQ 64-bit EL0
     ventry    el0_fiq_invalid_64      // FIQ 64-bit EL0
     ventry    el0_error_invalid_64    // Error 64-bit EL0
@@ -128,7 +139,7 @@ el1h_error_invalid:
     load_all
     eret
 
-el0_sync_64: 
+el0_sync_64:
     save_all
     mov x0,8
     bl el0_sync_router
@@ -137,7 +148,7 @@ el0_sync_64:
 el0_irq_64:
     save_all
     mov x0,9
-    bl invalid_exception_router
+    bl el0_irq_64_router
     load_all
     eret
 el0_fiq_invalid_64:
@@ -178,9 +189,3 @@ el0_error_invalid_32:
     bl invalid_exception_router
     load_all
     eret
-
-
-/* 補充：macro知識
-在這個程式碼中，使用反斜線（\）是用來指示巨集的參數。當在巨集中使用參數時，需要在參數前面加上反斜線，以區分它是一個參數而不是普通的文字。
-在這個例子中，.macro ventry label 定義了一個 ventry 的巨集，並且接受一個叫做 label 的參數。在 b \label 這一行中，\label 使用了反斜線來指示它是一個參數。
-*/
