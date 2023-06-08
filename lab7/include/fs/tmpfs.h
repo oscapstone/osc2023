@@ -12,7 +12,7 @@ struct tmpfs_inode
 {
     enum node_type type;
     char name[FILE_NAME_MAX];
-    struct vnode *entry[MAX_DIR_ENTRY];
+    struct vnode *entry[MAX_DIR_ENTRY];  // record the vnode under dir_t
     char *data;
     size_t datasize;
 };

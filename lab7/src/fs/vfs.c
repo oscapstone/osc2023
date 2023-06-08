@@ -26,7 +26,7 @@ int register_dev(struct file_operations *fo)
 {
     for (int i = 0; i < MAX_FS_REG; i++)
     {
-        // mpty slot to store the file operation details
+        // empty slot to store the file operation details
         if (!reg_dev[i].open)
         {
             reg_dev[i] = *fo;
@@ -52,6 +52,7 @@ int vfs_open(const char *pathname, int flags, struct file **target)
 {
     // 1. Lookup pathname
     // 3. Create a new file if O_CREAT is specified in flags and vnode not found
+    // O_CREAT is a flag used to decide whether it is not exist -> create
     struct vnode *node;
     if (vfs_lookup(pathname, &node) != 0 && (flags&O_CREAT))
     {
@@ -116,8 +117,8 @@ int vfs_read(struct file *file, void *buf, size_t len)
 
 int vfs_mkdir(const char *pathname)
 {
-    char dirname[MAX_PATH_NAME] = {};
-    char newdirname[MAX_PATH_NAME] = {};
+    char dirname[MAX_PATH_NAME] = {};    // store parent directory
+    char newdirname[MAX_PATH_NAME] = {}; // store new directory
 
     int last_slash_idx = 0;
     for (int i = 0; i < strlen(pathname); i++)
@@ -133,7 +134,7 @@ int vfs_mkdir(const char *pathname)
 
     struct vnode *node;
     // retrieve the vnode of the parent directory.
-    if(vfs_lookup(dirname,&node)==0)
+    if(vfs_lookup(dirname,&node)==0) // after lookup node become parent directory vnode 
     {
         node->v_ops->mkdir(node,&node,newdirname);
         return 0;
@@ -167,7 +168,7 @@ int vfs_mount(const char *target, const char *filesystem)
 
 int vfs_lookup(const char *pathname, struct vnode **target)
 {
-    // root directory
+    // if no path input, return root
     if(strlen(pathname)==0)
     {
         *target = rootfs->root;
@@ -183,8 +184,8 @@ int vfs_lookup(const char *pathname, struct vnode **target)
         {
             component_name[c_idx++] = 0;
             if (dirnode->v_ops->lookup(dirnode, &dirnode, component_name) != 0) return -1;
-            // redirect to new mounted filesystem
 
+            // redirect to new mounted filesystem
             while (dirnode->mount)
             {
                 dirnode = dirnode->mount->root;
@@ -197,6 +198,7 @@ int vfs_lookup(const char *pathname, struct vnode **target)
         }
     }
 
+    // deal with file
     component_name[c_idx++] = 0;
     if (dirnode->v_ops->lookup(dirnode, &dirnode, component_name) != 0)return -1;
     // redirect to new mounted filesystem
