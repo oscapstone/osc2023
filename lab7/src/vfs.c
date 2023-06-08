@@ -12,10 +12,11 @@ static int FsCounter = 0;
 static struct vnode *dir; // FIXME: MT-unsafe
 static struct vnode *root;
 
-/*
+/***************************************************************
+ * Helper function
  * Split the file name from /
  * similiar to strtok()
- */
+ **************************************************************/
 char *getFileName(char *dest, const char *from) {
   int tmp = 0;
   char *f = from;
@@ -37,7 +38,9 @@ char *getFileName(char *dest, const char *from) {
   return NULL;
 }
 
-// Register file system, using a global array to store it in the array
+/****************************************************************
+ * Register the file system, nothing much to do
+ ***************************************************************/
 int register_filesystem(struct filesystem *fs) {
   uart_puts("Register: ");
   uart_puts(fs->name);
@@ -50,7 +53,13 @@ int register_filesystem(struct filesystem *fs) {
 }
 
 /***************************************************************
- * TODO: Support recursive create
+ * Open the file from target Vnode.
+ * This file handle the traverse of the diretory tree.
+ *
+ * @pathName: The path to the target file.
+ * @flags:	The attribute of the file.
+ * @target:	Where store the opend file.
+ * @root:	From where start to lookup the path.
  **************************************************************/
 int vfs_open(const char *pathName, int flags, struct file **target,
              struct vnode *root) {
@@ -97,12 +106,22 @@ int vfs_open(const char *pathName, int flags, struct file **target,
   return 0;
 }
 
+/***************************************************************
+ * Create the Vnode in the FS.
+ **************************************************************/
 int vfs_create(struct vnode *dir_node, struct vnode **target,
                const char *component_name) {
   dir_node->v_ops->create(dir_node, target, component_name);
   return 0;
 }
 
+/******************************************************************
+ * Recursive Lookup file in the directory.
+ *
+ * @path:	The path of the target file.
+ * @target:	The location to store the created Vnode.
+ * @root:	From where to search the file.
+ *****************************************************************/
 int vfs_lookup(const char *path, struct vnode **target, struct vnode *root) {
   struct vnode *dir = NULL;
   if (root == NULL) {
@@ -132,6 +151,9 @@ int vfs_lookup(const char *path, struct vnode **target, struct vnode *root) {
   return 0;
 }
 
+/***************************************************************
+ * TODO: Implement close.
+ **************************************************************/
 int vfs_close(struct file *f) {
   if (f != NULL) {
     f->f_ops->close(f);
@@ -147,9 +169,10 @@ int vfs_write(struct file *f, const void *buf, size_t len) {
   return f->f_ops->write(f, buf, len);
 }
 
-/* similiar to the create but the file type is dir
- * TODO: Recursive mkdir
- */
+/*****************************************************************
+ * Make the New Directory in FS.
+ * Similiar to the create but set to DIR type.
+ *****************************************************************/
 int vfs_mkdir(char *path, struct vnode *root) {
   struct vnode *dir = NULL;
   if (root == NULL)
@@ -186,6 +209,10 @@ int vfs_mkdir(char *path, struct vnode *root) {
   return 0;
 }
 
+/***************************************************************
+ * Helper function which will return the last DIR in the path
+ *
+ ***************************************************************/
 int vfs_getLastDir(char *path, struct vnode *dir_node, struct vnode **t) {
   struct vnode *dir = NULL;
   if (dir_node == NULL) {
@@ -219,7 +246,14 @@ int vfs_getLastDir(char *path, struct vnode *dir_node, struct vnode **t) {
   return 0;
 }
 
-// Rewrite the path to support .. and .
+/***************************************************************
+ * Rewrite the path to support .. and .
+ *
+ * @return: The new root of search path.
+ * @pathName: The original Path.
+ * @dir: Current dir(root).
+ * @new_pathName: Rewrited Pathname.
+ *************************************************************/
 struct vnode *vfs_reWritePath(char *pathName, struct vnode *dir,
                               char **new_pathName) {
   char *tmp = (char *)malloc(16);
@@ -236,10 +270,12 @@ struct vnode *vfs_reWritePath(char *pathName, struct vnode *dir,
       *new_pathName = tmp;
       return ret;
     }
+    // .. goto upper dir
     if (pathName[i] == '.' && pathName[i + 1] == '.') {
       i += 3;
       ret = ret->parent;
     }
+    // . use the current DIR as root
     if (pathName[i] == '.') {
       i += 2;
       ret = ret;

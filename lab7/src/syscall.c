@@ -270,7 +270,7 @@ void posix_kill(int pid, int sig) {
 }
 
 int sys_open(const char *pathname, int flags) {
-  //uart_puts("sys_open\n");
+  // uart_puts("sys_open\n");
   Thread *t = get_current();
   struct vnode *cur = t->curDir;
   char *path;
@@ -287,7 +287,7 @@ int sys_open(const char *pathname, int flags) {
 
 int sys_close(int fd) {
   Thread *t = get_current();
-  //uart_puts("sys_close\n");
+  // uart_puts("sys_close\n");
   if (fd < 0 || fd >= FDMAX || (t->fdTable)[fd] == NULL) {
     uart_puts("vfs_close error, fd out of bound\n");
     return 1;
@@ -297,10 +297,10 @@ int sys_close(int fd) {
 }
 
 int sys_write(int fd, const void *buf, int count) {
-	disable_int();
+  disable_int();
   Thread *t = get_current();
   struct file *file = (t->fdTable)[fd];
-  //uart_puts("sys_write\n");
+  // uart_puts("sys_write\n");
   int ret = vfs_write(file, buf, count);
   enable_int();
   return ret;
@@ -309,13 +309,13 @@ int sys_write(int fd, const void *buf, int count) {
 int sys_read(int fd, void *buf, int count) {
   Thread *t = get_current();
   struct file *file = (t->fdTable)[fd];
-  //uart_puts("sys_read\n");
+  // uart_puts("sys_read\n");
   int ret = vfs_read(file, buf, count);
   return ret;
 }
 
 int sys_mkdir(const char *pathname) {
-  //uart_puts("sys_mkdir\n");
+  // uart_puts("sys_mkdir\n");
   Thread *t = get_current();
   struct vnode *cur = t->curDir;
   char *path;
@@ -325,9 +325,12 @@ int sys_mkdir(const char *pathname) {
   return 0;
 }
 
+/*****************************************************************
+ * Mount the fs on the dir
+ ****************************************************************/
 int sys_mount(const char *src, const char *target, const char *filesystemc,
               unsigned long ll, const void *aa) {
-  //uart_puts("sys_mount\n");
+  // uart_puts("sys_mount\n");
   Thread *t = get_current();
   struct vnode *dir = t->curDir;
   struct filesystem *fs = NULL;
@@ -347,6 +350,9 @@ int sys_mount(const char *src, const char *target, const char *filesystemc,
   return 0;
 }
 
+/******************************************************************
+ * Change Dir which store in the cuurent thread.(defalut: root
+ ****************************************************************/
 int sys_chdir(const char *path) {
   // uart_puts("sys_chdir\n");
   char *t = path;
@@ -363,9 +369,12 @@ int sys_chdir(const char *path) {
   return 0;
 }
 
+/***************************************************************
+ * Set the file position of the desired value
+ **************************************************************/
 long sys_lseek64(int fd, long offset, int whence) {
-	disable_int();
-	static count = 0;
+  disable_int();
+  static count = 0;
   Thread *t = get_current();
   struct file *file = (t->fdTable)[fd];
   if (whence == SEEK_SET) {
@@ -375,10 +384,15 @@ long sys_lseek64(int fd, long offset, int whence) {
   return offset;
 }
 
-int sys_ioctl(int fd, unsigned long request, void* fb_info) {
+/***************************************************************
+ * IO Control of the file
+ *
+ * only support framFS now.
+ *************************************************************/
+int sys_ioctl(int fd, unsigned long request, void *fb_info) {
   Thread *t = get_current();
   struct file *file = (t->fdTable)[fd];
-  //uart_puts("ioctl\n");
+  // uart_puts("ioctl\n");
   framefs_ioctl(file, fb_info);
   return 0;
 }

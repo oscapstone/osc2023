@@ -10,9 +10,11 @@
 extern struct mount *fsRootMount;
 extern struct vnode *fsRoot;
 
-/*
- * This function will build the hiechrachy of the cpio format
- */
+/**************************************************************
+ * This function will initialize the FS from CPIO archive
+ *
+ * @root: The root of this file system.
+ *************************************************************/
 int ramfs_initFsCpio(struct vnode *root) {
   void *f = initrd_getLo(); // get the location of cpio
   struct vnode *target = NULL;
@@ -34,9 +36,6 @@ int ramfs_initFsCpio(struct vnode *root) {
 
       // The Directory must be the directory type
       ((FsAttr *)(dir_node->internal))->type = DIRTYPE;
-      // uart_puts(buf);
-      // uart_puth(fdata);
-      // uart_puts("\n");
       if (*buf != 0) {
         // Find if the dir is exist
         dir_node->v_ops->lookup(dir_node, &target, buf);
@@ -54,6 +53,9 @@ int ramfs_initFsCpio(struct vnode *root) {
   return 0;
 }
 
+/**************************************************************
+ * Get the initialize function of the Ramfs
+ *************************************************************/
 struct filesystem *getRamFs(void) {
   struct filesystem *fs = malloc(sizeof(struct filesystem));
   fs->name = "Ramfs";
@@ -67,6 +69,12 @@ void data_init(FsAttr *fs) {
   }
 }
 
+/***************************************************************
+ * Debug helper function which can dump the Fs tree from root.
+ *
+ * @cur:	The root of where to start.
+ * @depth:	The idention of output.
+ **************************************************************/
 void ramfs_dump(struct vnode *cur, int depth) {
   if (cur == NULL || cur->internal == NULL)
     return;
@@ -80,10 +88,7 @@ void ramfs_dump(struct vnode *cur, int depth) {
     uart_puts("\n");
     struct vnode **f = (struct vnode **)(fs->dirs);
     for (unsigned i = 0; i < fs->size; i++) {
-      // uart_puth(f);
-      // uart_puts(((FsAttr*)f[i]->internal)->name);
       ramfs_dump(f[i], depth + 1);
-      // uart_puth(f[i]);
     }
   } else if (fs->type == NORMAL) {
     uart_puts("normal: ");
@@ -95,6 +100,9 @@ void ramfs_dump(struct vnode *cur, int depth) {
   return;
 }
 
+/****************************************************************
+ * Lookup Implemention.
+ ****************************************************************/
 int ramfs_lookup(struct vnode *dir, struct vnode **target, const char *name) {
   FsAttr *fs = (FsAttr *)dir->internal;
   if (fs->type != DIRTYPE) {
@@ -105,17 +113,8 @@ int ramfs_lookup(struct vnode *dir, struct vnode **target, const char *name) {
   for (int i = 0; i < fs->size; i++) {
     struct vnode *ch = c[i];
     FsAttr *cfs = (FsAttr *)ch->internal;
-    /*
-    uart_puts(" lookup: ");
-    uart_puts(cfs->name);
-    */
     if (!strcmp(cfs->name, name)) {
       *target = ch;
-      /*
-uart_puts(" found: ");
-uart_puts(cfs->name);
-*/
-      // uart_puts("\n");
       return 0;
     }
   }
@@ -123,6 +122,9 @@ uart_puts(cfs->name);
   return 1;
 }
 
+/****************************************************************
+ * Create implementation. which will create a new Vnode.
+ ***************************************************************/
 int ramfs_create(struct vnode *dir, struct vnode **target, const char *name) {
   FsAttr *fs = (FsAttr *)dir->internal;
   if (fs->type != DIRTYPE) {
@@ -133,16 +135,18 @@ int ramfs_create(struct vnode *dir, struct vnode **target, const char *name) {
   if (fs->dirs == NULL)
     fs->dirs = (struct vnode **)malloc(sizeof(struct vnode *) * 16);
   struct vnode **c = (struct vnode **)fs->dirs;
-  //*c = malloc(sizeof(void*) * 16);
   *target = (struct vnode *)malloc(sizeof(struct vnode));
   memset(*target, 0, sizeof(struct vnode));
   (*target)->mount = dir->mount;
   (*target)->parent = dir;
   (*target)->v_ops = dir->v_ops;
   (*target)->f_ops = dir->f_ops;
+  // Initialize internal data
   (*target)->internal = malloc(sizeof(FsAttr));
   memset((*target)->internal, 0, sizeof(FsAttr));
+
   FsAttr *cfs = (FsAttr *)(*target)->internal;
+  // Initial each field in the interal data
   cfs->name = malloc(16);
   char *t = cfs->name;
   for (int i = 0; i < 16; i++) {
@@ -156,6 +160,11 @@ int ramfs_create(struct vnode *dir, struct vnode **target, const char *name) {
   return 0;
 }
 
+/****************************************************************
+ * The function which intialize the  whole file system.
+ *
+ * @mount: the mount point of the FS.
+ ***************************************************************/
 int ramfs_init(struct filesystem *fs, struct mount *m) {
   struct vnode *root = m->root;
   root->v_ops =
@@ -199,6 +208,9 @@ int ramfs_init(struct filesystem *fs, struct mount *m) {
   return 0;
 }
 
+/***************************************************************
+ * MKDIR
+ ***************************************************************/
 int ramfs_mkdir(struct vnode *dir, struct vnode **target, const char *name) {
   ramfs_create(dir, target, name);
   FsAttr *attr = (FsAttr *)(*target)->internal;
@@ -206,6 +218,9 @@ int ramfs_mkdir(struct vnode *dir, struct vnode **target, const char *name) {
   return 0;
 }
 
+/**************************************************************
+ * Open a file and setup properties.
+ *************************************************************/
 int ramfs_open(struct vnode *v, struct file **target) {
   if (*target == NULL) {
     *target = (struct file *)malloc(sizeof(struct file));
@@ -218,6 +233,9 @@ int ramfs_open(struct vnode *v, struct file **target) {
   return 0;
 }
 
+/************************************************************
+ * Write the file in Ramfs
+ ************************************************************/
 int ramfs_write(struct file *f, const void *buf, size_t len) {
   const char *c = (const char *)buf;
   char *data = (char *)f->data;
@@ -227,26 +245,33 @@ int ramfs_write(struct file *f, const void *buf, size_t len) {
     *(data + (f->f_pos)) = *c++;
     (f->f_pos)++;
   }
+  // Update the EOF 
   if (f->f_pos > f->Eof)
     f->Eof = f->f_pos;
   return f->f_pos;
 }
 
+/************************************************************
+ * Read the file in Ramfs
+ ************************************************************/
 int ramfs_read(struct file *f, void *buf, size_t len) {
   char *c = (char *)buf;
   char *data = (char *)f->data;
-  // uart_puth(data);
   if (f->data == NULL)
     return 0;
   for (size_t i = f->f_pos; i < len; i++) {
     *c++ = *(data + (f->f_pos));
     (f->f_pos)++;
   }
+  // IF the pos exceed EOF, just return EOF
   if (f->f_pos > f->Eof)
     return f->Eof;
   return f->f_pos;
 }
 
+/***************************************************************
+ * Update  the size of the file back to vnode when close
+ *************************************************************/
 int ramfs_close(struct file *f) {
   ((FsAttr *)(f->vnode->internal))->Eof = f->Eof;
   return 0;

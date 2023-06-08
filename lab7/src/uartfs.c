@@ -17,6 +17,9 @@ struct filesystem *getUartFs(void) {
   return fs;
 }
 
+/*****************************************************************
+ * U cannot do lots operations in the UARTFS.
+ ***************************************************************/
 int uartfs_init(struct filesystem *fs, struct mount *m) {
   struct vnode *root = m->root;
 
@@ -62,6 +65,9 @@ int uartfs_open(struct vnode *v, struct file **target) {
   return 0;
 }
 
+/*************************************************************
+ * Write a file in UARTFS == UART send
+ ************************************************************/
 int uartfs_write(struct file *f, const void *buf, size_t len) {
   const char *c = (const char *)buf;
   int count = 0;
@@ -72,6 +78,9 @@ int uartfs_write(struct file *f, const void *buf, size_t len) {
   return count;
 }
 
+/*************************************************************
+ * Write a file in UARTFS == UART read
+ ************************************************************/
 int uartfs_read(struct file *f, void *buf, size_t len) {
   char *c = (char *)buf;
   int count = 0;

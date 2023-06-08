@@ -33,7 +33,7 @@ int sys_mailbox_config(unsigned char ch, unsigned int *mailbox) {
 
   // Wait until the Mbox is not full
   while (*MAILBOX_STATUS & MAILBOX_FULL) {
-	  asm volatile("nop");
+    asm volatile("nop");
   }
 
   // Write the register
@@ -44,7 +44,7 @@ int sys_mailbox_config(unsigned char ch, unsigned int *mailbox) {
       asm volatile("nop");
     }
 
-    if (r == *MAILBOX_READ){
+    if (r == *MAILBOX_READ) {
       return mailbox[1] == MAILBOX_RES;
     }
   }
