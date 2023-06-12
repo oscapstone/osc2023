@@ -4,6 +4,7 @@
 #include "mini_uart.h"
 #include "ramdisk.h"
 #include "mbox.h"
+#include "vfs.h"
 
 #define null 0
 
@@ -16,6 +17,8 @@ extern void sig_from_EL1_to_EL0();
 
 void EL0_SVC_handler(struct trap_frame *tf)
 {
+	struct thread* thd;
+	struct vnode* target;
 	uint64_t esr_el1;
 	asm volatile("mrs %0, ESR_EL1;" : "=r" (esr_el1));
 	if(esr_el1>>26 == 0b010101)							//SVC instruction execution in AArch64 state
@@ -60,6 +63,65 @@ void EL0_SVC_handler(struct trap_frame *tf)
 				asm volatile("mov LR,x21;"
 							 "ret;"
 							);
+				break;
+			case 11:
+				uart_send_string("in open op!!\n");
+				int op_status;
+				op_status = vfs_open(tf->reg[0],tf->reg[1],&target);
+				if(op_status < 0)
+				{
+					uart_send_string("file can't open!!\n");
+					tf->reg[0] = op_status;
+					return;
+				}
+				struct thread* thd = get_current();
+				for(int i=0;i<100;i++)
+				{
+					if(thd->fd[i] == null)
+					{
+						thd->fd[i] = target;
+						tf->reg[0] = i;
+						return;
+					}
+				}
+				tf->reg[0] = -1;
+				break;
+			case 12:
+				uart_send_string("in close op!!\n");
+				thd = get_current();
+				int fd_index = tf->reg[0];
+				tf->reg[0] = vfs_close(thd->fd[fd_index]);
+				if(tf->reg[0] >= 0)
+				{
+					thd->fd[fd_index] = null;
+				}
+				break;
+			case 13:
+				uart_send_string("in write op!!\n");
+				thd = get_current();
+				tf->reg[0] = vfs_write(thd->fd[tf->reg[0]],tf->reg[1],tf->reg[2]);
+				break;
+			case 14:
+				uart_send_string("in read op!!\n");
+				thd = get_current();
+				tf->reg[0] = vfs_read(thd->fd[tf->reg[0]],tf->reg[1],tf->reg[2]);
+				break;
+			case 15:
+				uart_send_string("in mkdir op!!\n");
+				tf->reg[0] = vfs_mkdir(tf->reg[0]);
+				break;
+			case 16:
+				uart_send_string("in mount op!!\n");
+				tf->reg[0] = vfs_mount(tf->reg[1],tf->reg[2]);
+				break;
+			case 17:
+				uart_send_string("in chdir op!!\n");
+				tf->reg[0] = vfs_lookup(tf->reg[0],&target);
+				if(tf->reg[0] >= 0)
+				{
+					thd = get_current();
+					thd->cur_dir = target;
+				}
 				break;
 			default:
 				break;

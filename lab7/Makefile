@@ -30,7 +30,7 @@ dir:
 	mkdir -p $(OBJ_DIR)
 
 cpio:
-	ls program.img | cpio -H newc -o > initramfs.cpio
+	ls vfs1.img | cpio -H newc -o > initramfs.cpio
 
 kernel8.img: $(OBJ)
 	$(LD) $(OBJ) -T $(LINKER) -o kernel8.elf

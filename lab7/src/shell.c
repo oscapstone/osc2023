@@ -42,8 +42,8 @@ void shell_option(char* command,char* ramdisk)
 		uart_send_string("ls\t\t: show file name\r\n");
 		uart_send_string("cat\t\t: show file content\r\n");
 		uart_send_string("timer\t\t: show timer-multiplexing process\r\n");
-		uart_send_string("thread\t\t: show basic1\r\n");
-		uart_send_string("video\t\t: show basic3\r\n");
+		uart_send_string("thread\t\t: lab5 basic1\r\n");
+		uart_send_string("video\t\t: run test case\r\n");
 	}
 	else if(!strcmp(command,"hello"))
 	{

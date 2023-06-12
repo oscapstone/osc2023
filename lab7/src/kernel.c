@@ -6,6 +6,8 @@
 #include "check_interrupt.h"
 #include "buddy.h"
 #include "thread.h"
+#include "tmpfs.h"
+#include "vfs.h"
 
 extern void set_exception_vector_table();
 
@@ -14,6 +16,8 @@ static char* kernel_end = (char*)&_end;
 
 char* ramdisk_start;
 char* ramdisk_end;
+
+extern struct mount* rootfs;
 
 char* cpio_addr(char* value)	//callback func , do ramdisk address get
 {
@@ -54,6 +58,9 @@ void kernel_main(void* dtb)		//x0 is the first argument
 
 	init_thread();
 	push_idle();
+
+	rootfs_init();
+	tmpfs_init();
 
 	while (1)
     {

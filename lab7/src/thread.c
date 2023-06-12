@@ -47,6 +47,11 @@ int Thread(void (*func)())
 			{
 				thd->sig_handler[i] = null;
 			}
+			for(int i=0;i<100;i++)
+			{
+				thd->fd[i] = null;
+			}
+			vfs_lookup("/initramfs",&(thd->cur_dir));
 			thread_list[i] = thd;
 			break;
 		}
@@ -231,11 +236,11 @@ void exit()				//end of a thread
 
 void* video_prog()
 {
-	char* prog_start = find_prog(ramdisk_start,"syscall.img");
+	char* prog_start = find_prog(ramdisk_start,"vfs1.img");
 	char* code = null;
 	if(prog_start != null)
     {
-        int size = find_prog_size(ramdisk_start,"syscall.img");
+        int size = find_prog_size(ramdisk_start,"vfs1.img");
         code = d_alloc(size);
         for(int i=0;i<size;i++)
         {
