@@ -3,6 +3,8 @@
 #include <utils.h>
 #include <timer.h>
 #include <BCM.h>
+#include <current.h>
+#include <sched.h>
 
 #define IRQ_TASK_NUM 32
 
@@ -66,7 +68,7 @@ static void irq_remove(irq_node *irqn){
     irq_free(irqn);
 }
 
-static void irq_run(irq_node *irqn){
+static void irq_run(irq_node *irqn, void (*fini)(void)){
     if(!irqn)
         return;
     
@@ -75,6 +77,8 @@ static void irq_run(irq_node *irqn){
     enable_interrupt();
     (irqn->callback)(irqn->data);
     disable_interrupt();
+    (fini)();
+    
     irq_remove(irqn);
 }
 
@@ -94,15 +98,19 @@ static void irq_loop(){
         irq_node *cur = get_next_task();
         if(!cur)
             break;
-        irq_run(cur);
+        cur->running = 1;
+        enable_interrupt();
+        (cur->callback)(cur->data);
+        disable_interrupt();
+        irq_remove(cur);
     }
 }
 
-int add_task(void (*callback)(void *), void *data, uint32 priority){
+int irq_add_task(void (*task)(void *), void *data, void (*fini)(void), uint32 priority){
     irq_node *new_irqn = irq_alloc();
     if(!new_irqn)
         return -1;
-    new_irqn->callback = callback;
+    new_irqn->callback = task;
     new_irqn->data = data;
     new_irqn->priority = priority;
     new_irqn->running = 0;
@@ -111,13 +119,14 @@ int add_task(void (*callback)(void *), void *data, uint32 priority){
 
     int preempt = irq_insert(new_irqn);
     if(preempt)
-        irq_run(new_irqn);
+        irq_run(new_irqn, fini);
     irq_loop();
     return 0;
 }
 
 void irq_init(){
     i_meta.i_status = 0xffffffff;
+    i_meta.i_nested_layer = 0;
     INIT_LIST_HEAD(&i_meta.dp_head);
 }
 
@@ -126,8 +135,23 @@ void default_exception_handler(uint32 n){
 }
 
 void irq_handler(){
-    timer_irq_add();
-    uart_irq_add();
+
+    i_meta.i_nested_layer++;
+
+    if(!timer_irq_add()){}
+    else if(!uart_irq_add()){}
+
+    i_meta.i_nested_layer--;
+
+    if(i_meta.i_nested_layer || !current->need_resched || current->preempt){
+        return;
+    }
+
+    enable_interrupt();
+
+    schedule();
+
+    disable_interrupt();
 }
 
 void enable_irqs1(){

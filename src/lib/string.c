@@ -19,14 +19,14 @@ int strncmp(const char *X, const char *Y, int n){
     return *(const unsigned char*)X - *(const unsigned char*)Y;  
 }
 
-int strlen(char *str){
+int strlen(const char *str){
     int ret = 0 ;
     while(*str++)
         ret++;
     return ret;
 }
 
-int atoi(char *str){
+int atoi(const char *str){
     int i = 0 , j = 0;
     while(*str){
         if('0'>*str || *str>'9')

@@ -11,7 +11,7 @@ KERNEL_DIR = kernel
 LIB_DIR = lib
 ECHO = echo
 
-CFLAGS  = -Wall -nostdlib -nostartfiles -ffreestanding -mgeneral-regs-only -g3\
+CFLAGS  = -Wall -nostdlib -nostartfiles -ffreestanding -mgeneral-regs-only -g\
 				-I$(INC_DIR)
 LDFLAGS = -I$(INC_DIR)
 
@@ -36,6 +36,10 @@ LIB_ASM_FILE  = $(wildcard $(SRC_DIR)/$(LIB_DIR)/*.S)
 LIB_OBJ_FILE  = $(LIB_ASM_FILE:$(SRC_DIR)/$(LIB_DIR)/%.S=$(OBJ_DIR)/$(LIB_DIR)/%_s.o)
 LIB_OBJ_FILE += $(LIB_C_FILE:$(SRC_DIR)/$(LIB_DIR)/%.c=$(OBJ_DIR)/$(LIB_DIR)/%_c.o)
 INITRAMFS_FILE = $(wildcard rootfs/*)
+
+ifdef DEBUG
+   CFLAGS += -g3 -DDEBUG
+endif
 
 # echo:
 # 	@$(ECHO) "kernel object file is $(KERNEL_OBJ_FILE)"
@@ -93,7 +97,14 @@ qemuk: all $(INITRAMFS_CPIO) $(RPI3_DTB)
 		qemu-system-aarch64 -M raspi3 -kernel $(KERNEL_IMG) -display none \
 											-dtb $(RPI3_DTB) \
 											-initrd $(INITRAMFS_CPIO) \
-											-serial null -serial stdio -s -S
+											-serial null -serial stdio
+
+qemutest: all $(INITRAMFS_CPIO) $(RPI3_DTB)
+		qemu-system-aarch64 -M raspi3 -kernel $(KERNEL_IMG) -display none \
+											-dtb $(RPI3_DTB) \
+											-initrd test/initramfs.cpio \
+											-serial null -serial stdio
+
 
 qemutty: $(KERNEL_IMG)
 		qemu-system-aarch64 -M raspi3 -kernel $(KERNEL_IMG) -display none \

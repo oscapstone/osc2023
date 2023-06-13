@@ -1,19 +1,6 @@
 #ifndef _SYSCALL_H
 #define _SYSCALL_H
-
-#define ARRAY_SIZE(x) (sizeof(x) / sizeof(x[0]))
-
-#define read_sysreg(r) ({                       \
-    uint64 __val;                               \
-    asm volatile("mrs %0, " #r : "=r" (__val)); \
-    __val;                                      \
-})
-
-#define write_sysreg(r, v) {                \
-    uint64 __val = (uint64)(v);             \
-    asm volatile("msr " #r ", %x0"          \
-             : : "rZ" (__val));             \
-}
+#include <trapframe.h>
 
 typedef struct {
     unsigned int iss:25, // Instruction specific syndrome
@@ -21,12 +8,36 @@ typedef struct {
                  ec:6;   // Exception class
 } esr_el1;
 
-typedef void *(*funcp)();
+#define KSTACK_VARIABLE(x)                      \
+    (void *)((uint64)x -                        \
+             (uint64)current->kernel_stack +    \
+             (uint64)child->kernel_stack)
 
-void syscall_handler(uint32 syn);
-void *syscall_exit();
-void *syscall_test();
+#define USTACK_VARIABLE(x)                      \
+    (void *)((uint64)x -                        \
+             (uint64)current->user_stack +      \
+             (uint64)child->user_stack)
 
+#define DATA_VARIABLE(x)                        \
+    (void *)((uint64)x -                        \
+             (uint64)current->data +            \
+             (uint64)child->data)
 
+typedef void *(*syscall_funcp)();
+
+void syscall_handler(trapframe regs, uint32 syn);
+
+void syscall_getpid(trapframe *frame);
+void syscall_uart_read(trapframe *_, char buf[], size_t size);
+void syscall_uart_write(trapframe *_, const char buf[], size_t size);
+void syscall_exec(trapframe *_, const char* name, char *const argv[]);
+void syscall_fork(trapframe *frame);
+void syscall_exit(trapframe *_);
+void syscall_mbox_call(trapframe *_, unsigned char ch, unsigned int *mbox);
+void syscall_kill_pid(trapframe *_, int pid);
+
+void syscall_test(trapframe *_);
+
+void exit_to_user_mode(trapframe regs);
 
 #endif

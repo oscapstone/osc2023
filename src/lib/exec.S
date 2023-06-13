@@ -1,5 +1,7 @@
-.global exec_user_proc
-exec_user_proc:
+/* See src/lib/exec.c for function declaration */
+
+.global enter_el0_run_user_prog
+enter_el0_run_user_prog:
     // Set sp_el0 to the user program's stack pointer
     msr sp_el0, x0
     
@@ -8,6 +10,25 @@ exec_user_proc:
     msr spsr_el1, x0
     // set elr_el1 to the program start address
     msr elr_el1, x1
+
+    // return to EL0
+    eret
+
+
+.global exec_user_prog
+exec_user_prog:
+    // Set exception return address
+    msr elr_el1, x0
+
+    // Set user stack
+    msr sp_el0, x1
+
+    // Set kernel stack
+    mov sp, x2
+
+    // Enable interrupt, unmask spsr_el1 as 0
+    mov x0, 0
+    msr spsr_el1, x0
 
     // return to EL0
     eret

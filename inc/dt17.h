@@ -12,6 +12,7 @@ void initramfs_init(char *fdt_base);
 void dtb_traverse(char *fdt_base);
 
 uint64 _initramfs_addr;
+uint64 _initramfs_end;
 
 #define FDT_MAGIC_NUM  0xd00dfeed
 #define FDT_BEGIN_NODE 0x00000001

@@ -13,5 +13,6 @@ void *_malloc(char *size);
 void _exec(uint64 _initramfs_addr, char *filename);
 void _chmod_uart();
 int _setTimeout(char *shell_buf);
+void _thread_test();
 
 #endif

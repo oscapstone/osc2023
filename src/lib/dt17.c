@@ -2,6 +2,9 @@
 #include <type.h>
 #include <mini_uart.h>
 #include <string.h>
+
+uint32 initramfs_check_cnt = 0;
+
 static void print_tab(int level){
     while(level--)
         uart_printf("\t");
@@ -90,8 +93,15 @@ int initramfs_parse_fdt(int level, char *cur, char *dt_strings){
         if(!strcmp("linux,initrd-start", dt_strings + fdtp_nameoff(prop))){
             _initramfs_addr = fdt32_ld((fdt32_t*)cur);
             uart_printf("[*] initrd addr: %x\r\n", _initramfs_addr);
-            return 1;
+            initramfs_check_cnt++;
         }
+        else if(!strcmp("linux,initrd-end", dt_strings + fdtp_nameoff(prop))){
+            _initramfs_end = fdt32_ld((fdt32_t*)cur);
+            uart_printf("[*] initrd end: %x\r\n", _initramfs_end);
+            initramfs_check_cnt++;
+        }
+        if(initramfs_check_cnt==2)
+            return 1;
     }
     return 0;
 }

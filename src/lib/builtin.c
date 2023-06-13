@@ -11,6 +11,17 @@
 #include <exec.h>
 #include <mm.h>
 #include <timer.h>
+#include <current.h>
+#include <kthread.h>
+#include <sched.h>
+#include <task.h>
+
+static void timeout_print(char *str)
+{
+    uart_printf("%s\r\n", str);
+
+    kfree(str);
+}
 
 void _help(int mode){
     uart_printf(
@@ -29,7 +40,9 @@ void _help(int mode){
             "malloc <size>\t: " "allocate a block of memory with size" "\r\n"
             "exec <filename>\t: " "execute user program" "\r\n"
             "chmod_uart\t: " "change uart async/sync mode" "\r\n"
+            "chmod_timer\t: " "change timer show/not to show mode" "\r\n"
             "setTimeout <msg> <sec>\t: " "print @msg after @sec seconds" "\r\n"
+            "thread_test\t: " "test kernel thread" "\r\n"
         );
     }
 }
@@ -80,19 +93,21 @@ void *_malloc(char *size){
         return NULL;
     }
     uart_printf("Ready to allocate %d size of memory!\r\n",int_size);
-    return simple_malloc(int_size);
+    return kmalloc(int_size);
 }
 
 void _exec(uint64 _initramfs_addr,char *filename){
-    char *mem;
-    char *user_sp;
+    void *data;
+    uint32 datalen;
 
-    mem = cpio_load_prog((char*)_initramfs_addr, filename);
-    if(mem == NULL)
+    datalen = cpio_load_prog((char*)_initramfs_addr, filename, (char**) &data);
+    if(datalen == 0)
         return;
-    
-    user_sp = (char *)0x10000000;
-    exec_user_proc(user_sp, mem);
+
+    current->user_stack = kmalloc(STACK_SIZE);
+    current->data = data;
+    current->datalen = datalen;
+    user_prog_start();
 }
 
 void _chmod_uart(){
@@ -129,8 +144,22 @@ int _setTimeout(char *shell_buf){
     char *mem;
 
     len = strlen(msg) + 1;
-    mem = simple_malloc(len);
+    mem = kmalloc(len);
     memncpy(mem ,msg, len);
-    add_timer((void(*)(void *))uart_printf, mem, atoi(tsec));
+    timer_add_after((void(*)(void *))timeout_print, mem, atoi(tsec));
     return 0;
+}
+
+static void foo(){
+    for (int i = 0; i < 10; ++i) {
+        uart_printf("Thread id: %d %d\r\n", current->tid, i);
+        delay(1000000);
+        schedule();
+    }
+}
+
+void _thread_test(){
+    for (int i = 0; i < 3; ++i) {
+        kthread_create(foo);
+    }
 }

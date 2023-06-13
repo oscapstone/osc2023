@@ -23,11 +23,15 @@ typedef struct{
     struct list_head lh;
     uint32 t_status;
     uint32 t_interval;
+    int size;
 } timer_meta;
 
 void timer_init();
 void boot_time_callback();
-void add_timer(void (*callback)(void *), void *data, uint32 after);
-void timer_irq_add();
+int timer_irq_add();
 void timer_irq_handler();
+void timer_switch_info();
+void timer_add_after(void (*callback)(void *), void *data, uint32 after);
+void timer_add_freq(void (*callback)(void *), void *data, uint32 freq);
+
 #endif

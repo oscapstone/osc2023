@@ -7,6 +7,8 @@
 
 #define BUFSIZE 0x100
 
+static void uart_irq_fini(void);
+
 static int uart_sync_mode;
 
 typedef char (*recvfp)(void);
@@ -22,6 +24,11 @@ static int w_head, w_tail, r_head, r_tail;
 
 char uart_recv(void){
     return (uart_recv_fp)();
+}
+
+void uart_recvn(char *buff, int n){
+    while(n--)
+        *buff++ = (uart_recv_fp)();
 }
 
 void uart_send(char c){
@@ -169,7 +176,7 @@ static void uart_send_num(int32 num, int base, int type)
     }
 }
 
-void uart_printf(char *fmt, ...){
+void uart_printf(const char *fmt, ...){
 
     const char *s;
     char c;
@@ -220,7 +227,7 @@ void uart_printf(char *fmt, ...){
     }
 }
 
-void uart_sendn(char *str, int n){
+void uart_sendn(const char *str, int n){
     while (n--) 
         uart_send(*str++);
 }
@@ -256,31 +263,28 @@ void uart_init (void)
     uart_recv_fp = uart_sync_recv;
     uart_send_fp = uart_sync_send;
 }
-void uart_irq_add(){
+int uart_irq_add(){
     uint32 iir = get32(AUX_MU_IIR_REG);
     // No interrupt
     if(iir & 0x01)
-        return;
+        return 0;
 
     disable_RW_interrupt();
-    if(add_task(uart_irq_handler, NULL, UART_PRIO))
+    if(irq_add_task((void (*)(void *))uart_irq_handler, NULL,uart_irq_fini, UART_PRIO))
         enable_RW_interrupt();
+
+    return 1;
 }
-void uart_irq_handler(){
+void uart_irq_handler(void){
     uint32 iir = get32(AUX_MU_IIR_REG), ier = 0;
 
     // Transmit holding register empty
     if(iir & 0x02){
-        /* if head equals to tail ==> means the write buffer is empty.
-           Then we need to disable transmit interrupt*/
-        if(w_head == w_tail){
-            // uint32 ier = get32(AUX_MU_IER_REG);
-            // ier &= ~(0x02);
-            // put32(AUX_MU_IER_REG, ier);
-        }
+        /* if head equals to tail ==> means the write buffer is empty. */
+
         /* if head not equals to tail ==> means write buffer is not empty
            Then we need to write the buffer to IO register and move the buffer pointer backward*/
-        else{
+        if(w_head != w_tail){
             put32(AUX_MU_IO_REG, w_buffer[w_head]);
             w_head = (w_head+1)%BUFSIZE;
         }
@@ -296,6 +300,21 @@ void uart_irq_handler(){
     }
 
      if (r_head != (r_tail + 1) % BUFSIZE) {
+        ier = ier | 0x01;
+    }
+
+    if (w_head != w_tail) {
+        ier = ier | 0x02;
+    }
+
+    put32(AUX_MU_IER_REG, ier);
+}
+
+static void uart_irq_fini(){
+    uint32 ier = get32(AUX_MU_IER_REG);
+    ier &= ~(0x03);
+
+    if (r_head != (r_tail + 1) % BUFSIZE) {
         ier = ier | 0x01;
     }
 
