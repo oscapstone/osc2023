@@ -2,7 +2,7 @@
 
 void main()
 {
-    int size=3892;
+    int size=12378;
     char *kernel=(char*)0x80000;
 
     // set up serial console
@@ -16,7 +16,6 @@ void main()
 
     // restore arguments and jump to the new kernel.
     asm volatile (
-        "mov x0, x27;"
         // we must force an absolute address to branch to
         "mov x30, #0x80000;"
 	"ret"

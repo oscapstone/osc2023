@@ -20,6 +20,7 @@
 void uart_init()
 {
     register unsigned int r;
+
     /* map UART1 to GPIO pins */
     r=*GPFSEL1;
     r&=~((7<<12)|(7<<15)); // gpio14, gpio15
@@ -83,15 +84,6 @@ void uart_puts(char *s) {
     }
 }
 
-void uart_putsn(char *s, int n) {
-	  while (n-- > 0) {
-    		  if (*s == '\n') {
-		      uart_send('\r');
-	        }
-	          uart_send(*s++);
-	    }
-}
-
 // Display a binary value in hexadecimal
 void uart_hex(unsigned int d) {
     unsigned int n;
@@ -104,3 +96,26 @@ void uart_hex(unsigned int d) {
         uart_send(n);
     }
 }
+
+void l2s_r(char **p, long int i) {
+
+  char d = (i % 10) + '0';
+  if (i >= 10)
+    l2s_r(p, i / 10);
+  *((*p)++) = d;
+}
+
+void uart_puti(unsigned int i) {
+  static char buf[24];
+  char *p = buf;
+  if (i < 0) {
+    *p++ = '-';
+    i = 0 - i;
+  }
+  l2s_r(&p, i);
+  *p = '\0';
+  uart_puts(buf);
+  return;
+}
+
+

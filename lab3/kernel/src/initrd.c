@@ -2,6 +2,8 @@
 #include "initrd.h"
 #include "string.h"
 
+static void *lo_ramfs = 0x8000000;
+
 // add memory compare, gcc has a built-in for that, clang needs implementation
 int memcmp(void *s1, void *s2, int n)
 {
@@ -52,7 +54,7 @@ int hex2bin(char *s, int n)
  */
 void initrd_ls()
 {
-    char *buf = (unsigned char *)0x8000000;
+    char *buf = (unsigned char *)lo_ramfs;
     uart_puts("Mode\t\tFile size\t\tName size\tFile name\n");
 
     // uart_puts(buf);
@@ -81,9 +83,9 @@ void initrd_ls()
     }
 }
 
-void initrd_cat(const char *name)
+unsigned char* initrd_cat(const char *name)
 {
-    char *buf = (unsigned char *)0x8000000;
+    char *buf = (unsigned char *)lo_ramfs;
     int ns = 0;
     int fs = 0;
     int pad_n = 0; 
@@ -106,4 +108,5 @@ void initrd_cat(const char *name)
 	uart_putsn(buf + sizeof(cpio_t) + ns + pad_n, fs);      // content
  	uart_puts("\n");
     }
+    return (buf + sizeof(cpio_t) + ns + pad_n);    
 }

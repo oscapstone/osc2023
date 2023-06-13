@@ -4,7 +4,7 @@ OBJ_DIR := obj
 
 SRCS = $(wildcard $(SRC_DIR)/*.c)
 OBJS = $(SRCS:$(SRC_DIR)/%.c=$(OBJ_DIR)/%.o)
-CFLAGS = -Wall -O2 -nostdlib
+CFLAGS = -Wall -O3 -nostdlib -mgeneral-regs-only -fno-lto -fno-builtin
 
 CPPFLAGS := -Iinclude
 
