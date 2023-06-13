@@ -5,7 +5,7 @@
 #include "printf.h"
 #include "utils.h"
 #include "timer.h"
-
+#include "sys.h"
 void input_buffer_overflow_message ( char cmd[] )
 {
     uart_puts("Follow command: \"");
@@ -39,24 +39,24 @@ void command_hello ()
     uart_puts("Hello World!\n");
 }
 
-void command_timestamp ()
-{
-    unsigned long int cnt_freq, cnt_tpct;
-    char str[20];
+// void command_timestamp ()
+// {
+//     unsigned long int cnt_freq, cnt_tpct;
+//     char str[20];
 
-    asm volatile(
-        "mrs %0, cntfrq_el0 \n\t"
-        "mrs %1, cntpct_el0 \n\t"
-        : "=r" (cnt_freq),  "=r" (cnt_tpct)
-        :
-    );
+//     asm volatile(
+//         "mrs %0, cntfrq_el0 \n\t"
+//         "mrs %1, cntpct_el0 \n\t"
+//         : "=r" (cnt_freq),  "=r" (cnt_tpct)
+//         :
+//     );
 
-    ftoa( ((float)cnt_tpct) / cnt_freq, str, 6);
+//     ftoa( ((float)cnt_tpct) / cnt_freq, str, 6);
 
-    uart_send('[');
-    uart_puts(str);
-    uart_puts("]\n");
-}
+//     uart_send('[');
+//     uart_puts(str);
+//     uart_puts("]\n");
+// }
 
 void command_not_found (char * s) 
 {
@@ -72,7 +72,7 @@ void command_reboot ()
     *PM_WDOG = PM_PASSWORD | 0x20;
     *PM_RSTC = PM_PASSWORD | 100;
     
-	while(1);
+    while(1);
 }
 
 void command_cpio_ls(void *initramfs_addr) {
@@ -104,6 +104,15 @@ void command_cpio_svc()
     printf("cpio starting addres0x{%x}\n", result);
     printf("program starting address: 0x{%x}\n", program_address);
 
+
+    // Jump to user program in initramfs.cpio. And before jump to user program we should do following thing
+    // 1. set EL0 stack pointer before jump into user program(user mode)
+    // 2. set spsr_el1 to enable irq interrupt and use user stack
+    // 3. set elr_el1 with starting address of user program
+    // Note: 
+    // 1. In ARM, mov instrcution  can only encode an immediate constant that can be 
+    // represented as an 8-bit immediate value, shifted by any even power of two.
+    // 2. we hardcode starting address of user porgram, maybe there are other better metholds
     asm volatile(
         "mov x0, 0x340        \n \
          msr spsr_el1, x0     \n \
@@ -126,12 +135,12 @@ void command_current_el()
 
 void commnad_coreTimerOn()
 {
-    asm volatile("svc #2");
+    core_timer_enable();
 }
 
 void commnad_coreTimerOff()
 {
-    asm volatile("svc #3");
+    core_timer_disable();
 }
 
 void coomand_setTimeout(char *buf)
