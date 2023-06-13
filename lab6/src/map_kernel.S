@@ -73,9 +73,9 @@ MMIO_DONE:
 	ldr x2, =boot_rest							// indirect branch to the virtual address
 	br	x2
 
-.global context_switch
-.type context_switch , @function
-context_switch:
+.global vm_switch
+.type vm_switch , @function
+vm_switch:
 	dsb ish										//ensure write has completed
 	msr ttbr0_el1,x0							//switch translation based address
 	tlbi vmalle1is								//invalidate all TLB entries

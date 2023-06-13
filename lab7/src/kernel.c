@@ -6,6 +6,8 @@
 #include "check_interrupt.h"
 #include "buddy.h"
 #include "thread.h"
+#include "tmpfs.h"
+#include "vfs.h"
 
 extern void set_exception_vector_table();
 
@@ -14,6 +16,8 @@ static char* kernel_end = (char*)&_end;
 
 char* ramdisk_start;
 char* ramdisk_end;
+
+extern struct mount* rootfs;
 
 char* cpio_addr(char* value)	//callback func , do ramdisk address get
 {
@@ -36,9 +40,9 @@ void kernel_main(void* dtb)		//x0 is the first argument
 	
 	char* (*func)(char*);							//define callback func
 	func = &cpio_addr;
-	ramdisk_start = (uint64_t)fdt_api((char*)dtb,func,"linux,initrd-start") | 0xFFFF000000000000;
+	ramdisk_start = fdt_api((char*)dtb,func,"linux,initrd-start");
 	init_rd(ramdisk_start);
-	ramdisk_end = (uint64_t)fdt_api((char*)dtb,func,"linux,initrd-end") | 0xFFFF000000000000;
+	ramdisk_end = fdt_api((char*)dtb,func,"linux,initrd-end");
 
 	set_exception_vector_table();					//set vbar_el1 for exception & interrupt
    
@@ -48,12 +52,15 @@ void kernel_main(void* dtb)		//x0 is the first argument
 	//memory_reserve(ramdisk_start,ramdisk_end);		//Initramfs
 	//memory_reserve(dtb,dtb + 0x16000);				//Devicetree
 	
-	memory_reserve(0xFFFF000000000000,0xFFFF000009000000);
+	memory_reserve(0x0,0x9000000);
 
 	enable_interrupt();
 
 	init_thread();
 	push_idle();
+
+	rootfs_init();
+	tmpfs_init();
 
 	while (1)
     {

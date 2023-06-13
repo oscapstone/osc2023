@@ -1,9 +1,5 @@
 #include "mbox.h"
 #include "mini_uart.h"
-#include "virtual_mem.h"
-#include "thread.h"
-
-extern struct thread *get_current();
 
 int mbox_call(unsigned int* mbox,unsigned char ch)
 {

@@ -28,7 +28,9 @@ struct thread
 	int status;					//RUN : 1 , DEAD : 2
 	int sig;
 	void* sig_handler[10];
-	char stack[0x10000];
+	char* nothing[0x10000];
+	char* user_stack_base;
+	char* user_stack;
 	char* kernel_stack_base;
 	char* kernel_stack;
 };

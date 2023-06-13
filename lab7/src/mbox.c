@@ -1,12 +1,11 @@
 #include "mbox.h"
 #include "mini_uart.h"
-#include "virtual_mem.h"
-#include "thread.h"
-
-extern struct thread *get_current();
 
 int mbox_call(unsigned int* mbox,unsigned char ch)
 {
+	uart_hex_64(mbox);
+	uart_send_string(" -> mbox\n");
+
 	unsigned int r = (((unsigned int) ((unsigned long) mbox) & ~0xF) | (ch & 0xF));		//combine mbox(upper 28bit) with channel(lower 4bit) 
 	while(*MAILBOX_STATUS & MAILBOX_FULL){}												//check if MAILBOX0 status reg's full flag
 	*MAILBOX_WRITE = r;																	//write to MAILBOX1 read/write reg

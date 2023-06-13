@@ -45,7 +45,20 @@ void EL0_SVC_handler(struct trap_frame *tf)
 				enable_interrupt();
 				break;
 			case 6:
-				tf->reg[0] = mbox_call(tf->reg[1],tf->reg[0]);	//use previous mbox_call
+				uint32_t *mbox = d_alloc(*(uint32_t*)(tf->reg[1])) | 0xFFFF000000000000;	//copy mbox's content
+
+				for(int i=0;i<*(uint32_t*)(tf->reg[1]) / 4;i++)	//copy mbox request
+				{
+					uint32_t tmp = *((uint32_t*)tf->reg[1] + i);
+					mbox[i] = tmp;
+				}
+
+				tf->reg[0] = mbox_call(mbox,tf->reg[0]);	//use previous mbox_call
+
+				for(int i=0;i<*(uint32_t*)(tf->reg[1]) / 4;i++)	//store mbox result back
+				{
+					*((uint32_t*)tf->reg[1] + i) = mbox[i];
+				}
 				break;
 			case 7:
 				kill(tf->reg[0]);
@@ -111,19 +124,21 @@ int exec(char *name,char *argv)		//not pretty sure works well , should consider 
 {
 	char* prog_start = find_prog(ramdisk_start,name);
 	char* code = null;
+	int size = 0;
 	if(prog_start != null)
 	{
-		int size = find_prog_size(ramdisk_start,name);
-		code = d_alloc(size);
+		size = find_prog_size(ramdisk_start,name);
+		code = d_alloc(size) | 0xFFFF000000000000;		//don't know why d_alloc() not return a virtual form back
 		for(int i=0;i<size;i++)
 		{
 			code[i] = prog_start[i];
 		}
 		void* prog = (void*)code;
 		struct thread *thd = get_current();
-		char* stack = (uint64_t)(thd->stack + 0x10000) & 0xFFFFFFF0;
+		mappage(thd->PGD,0x0,size,prog);
+		char* user_stack = thd->user_stack;
 		asm volatile("mov x19,%0;"
-					 "mov x20,%1;" :: "r" (prog), "r" (stack)
+					 "mov x20,%1;" :: "r" (0x0), "r" (user_stack)
 					);
 		from_EL1_to_EL0();
 	}
@@ -136,18 +151,22 @@ int fork(struct trap_frame *tf)
 	int ctid = Thread(to_child);								//create new child thread
 	char *child_copy = thread_list[ctid];						//for child copy
 	int gap = (int)child_copy - (int)thd;						//parent & child gap
-	for(int i=0;i<sizeof(struct thread) - sizeof(char*)*2;i++)	//avoid change kernel_stack pointer
+	for(int i=0;i<sizeof(struct thread) - sizeof(char*) * 4 - sizeof(uint64_t);i++)	//avoid change (user & kernel_stack & PGD)'s pointer
 	{
 		child_copy[i] = thd[i];									//copy whole thread data to child , include stack
 	}
 
 	struct thread *parent = thd;
+
+	copy_PGD(thread_list[ctid]->PGD,parent->PGD);				//map whole user_stack
+
 	for(int i=0;i<0x10000;i++)									//copy whole kernel_stack
 	{
 		thread_list[ctid]->kernel_stack_base[i] = parent->kernel_stack_base[i];
 	}
 
 	struct trap_frame *c_tf = (char*)((uint64_t)tf + (uint64_t)thread_list[ctid]->kernel_stack_base - (uint64_t)parent->kernel_stack_base);
+
 	char* c_tmp = c_tf;
 	char* tmp = tf;
 	for(int i=0;i<sizeof(struct trap_frame);i++)				//copy whole trap_frame
@@ -159,16 +178,15 @@ int fork(struct trap_frame *tf)
 	thread_list[ctid]->tid = ctid;								//update child tid
 	thread_list[ctid]->reg.SP = c_tf;
 	thread_list[ctid]->reg.LR = to_child;						//return to child & load register
-	thread_list[ctid]->reg.FP = (uint64_t)thread_list[ctid]->kernel_stack;
+	thread_list[ctid]->reg.FP = (uint64_t)thread_list[ctid]->kernel_stack_base;
 	thread_list[ctid]->next = null;
 	thread_list[ctid]->sig = 0;									//not copy sig
 
 	//for user_thread
 	c_tf->SPSR_EL1 = 0;											//open interrupt & jump back to EL0
 	c_tf->reg[0] = 0;											//child's return value
-	c_tf->SP_EL0 += gap;										//update sp_el0
-	c_tf->reg[29] += gap;
 
+	mappage(thread_list[ctid]->PGD,0x3C000000,0x4000000,0xFFFF00003C000000);
 	return ctid;
 }
 
