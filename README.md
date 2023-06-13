@@ -4,16 +4,25 @@
 | Student ID | Name | GitHub Account | Email                      |
 | -----------| ---- | -------------- | -------------------------- |
 | 311555009  | 呂義信|  Richard-YH    | luyh@cs.nctu.edu.tw        |
+  
+  
+## Course Website
 
-## Environment
-- Operating System : macOS 13.2.1 (22D68)
-- Architecture : Intel x86_64
-- Programming language : C / C++
-- Compiler : clang  15.0.7
-- Development tools : Visual Studio Code
-
-
-
+- IOC5226: Operating System Capstone  
+&nbsp;
+https://oscapstone.github.io/
+  
+  
+## Labs 
+- Lab0 : Environment Setup
+- Lab1 : Hello World
+- Lab2 : Booting
+- Lab3 : Exception and Interrupt
+- Lab4 : Allocator
+- Lab5 : Thread and User Process
+- Lab6 : Virtual Memory
+- Lab7 : Virtual File System
+- Lab8 : Non-volatile Storage
 
 
 

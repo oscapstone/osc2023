@@ -1,0 +1,4 @@
+kernel_address=0x80000
+kernel=kernel8.img
+arm_64bit=1
+

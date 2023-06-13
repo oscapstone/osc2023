@@ -124,13 +124,6 @@ void command_clear (){
 
 
 
-void command_loading (){
-
-    loading();
-
-}
-
-
 
 void command_ls(){
 

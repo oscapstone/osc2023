@@ -108,7 +108,7 @@ void command_controller ( enum SPECIAL_CHARACTER input_parse, char c, char buffe
 
             if      ( !strcmp(buffer, "help"        ) ) command_help();
             else if ( !strcmp(buffer, "reboot"      ) ) command_reboot();
-            else if ( !strcmp(buffer, "loading"     ) ) command_loading();
+            else if ( !strcmp(buffer, "loadimg"     ) ) command_loadimg();
             else if ( !strcmp(buffer, "clear"       ) ) command_clear();
 
             else                                        command_not_found(buffer);

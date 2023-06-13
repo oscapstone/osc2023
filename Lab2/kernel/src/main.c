@@ -14,7 +14,7 @@ int kernel()
     
 
     //simple allocator
-    malloc(0x10);
+    //malloc(0x10);
 
 
     // set up serial console
