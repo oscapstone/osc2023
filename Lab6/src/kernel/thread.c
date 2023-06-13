@@ -12,6 +12,7 @@ extern void enable_interrupt();
 extern void disable_interrupt();
 extern void switch_to(task_struct *, task_struct *);
 extern void kernel_thread_init();
+extern unsigned long ttbr0_el1;
 
 long thread_cnt = 0;
 
@@ -25,8 +26,8 @@ void schedule()
     task_struct *next = del_rq();
 
     if (next == NULL)
-        next = &kernel_thread;
-    if (cur != &kernel_thread)
+        next = (void *)KERNEL_PA_TO_VA(&kernel_thread);
+    if (cur != (void *)KERNEL_PA_TO_VA(&kernel_thread))
         add_rq(cur);
 
     set_switch_timer();
@@ -35,16 +36,19 @@ void schedule()
     if (next->status == FORKING)
     {
         add_rq(next);
-        switch_to(cur, &kernel_thread);
+        // printf("[DEBUG] Context switch %d to kernel\n", cur->thread_info->id);
+        switch_to(cur, (void *)KERNEL_PA_TO_VA(&kernel_thread));
     }
     else if (next->status == ZOMBIE)
     {
         INIT_LIST_HEAD(&next->list);
         list_add_tail(&next->list, &task_zombieq_head);
-        switch_to(cur, &kernel_thread);
+        // printf("[DEBUG] Context switch %d to kernel\n", cur->thread_info->id);
+        switch_to(cur, (void *)KERNEL_PA_TO_VA(&kernel_thread));
     }
     else
     {
+        // printf("[DEBUG] Context switch %d to %d\n", cur->thread_info->id, next->thread_info->id);
         switch_to(cur, next);
     }
 }
@@ -72,7 +76,9 @@ void thread_init()
 {
     INIT_LIST_HEAD(&task_rq_head);
     INIT_LIST_HEAD(&task_zombieq_head);
-    kernel_thread_init(&kernel_thread);
+    kernel_thread_init(KERNEL_PA_TO_VA(&kernel_thread));
+    kernel_thread.thread_info = (thread_info *)my_malloc(sizeof(thread_info));
+    kernel_thread.thread_info->id = -1;
     return;
 }
 
@@ -84,17 +90,18 @@ thread_info *thread_create(func_ptr fp)
     new_task->thread_info = new_thread;
     new_thread->task = new_task;
 
-    new_task->kstack_start = (unsigned long)my_malloc(MIN_PAGE_SIZE);
-    new_task->ustack_start = (unsigned long)my_malloc(MIN_PAGE_SIZE);
+    new_task->kstack_start = (unsigned long)my_malloc(MIN_PAGE_SIZE * 4);
+    new_task->ustack_start = (unsigned long)my_malloc(MIN_PAGE_SIZE * 4);
     new_task->usrpgm_load_addr = USRPGM_BASE + thread_cnt * USRPGM_SIZE;
 
-    new_task->task_context.fp = new_task->kstack_start + MIN_PAGE_SIZE;
-    new_task->task_context.lr = (unsigned long)task_wrapper;
-    new_task->task_context.sp = new_task->kstack_start + MIN_PAGE_SIZE;
+    new_task->task_context.fp = new_task->kstack_start + MIN_PAGE_SIZE * 4;
+    new_task->task_context.lr = KERNEL_PA_TO_VA((unsigned long)task_wrapper);
+    new_task->task_context.sp = new_task->kstack_start + MIN_PAGE_SIZE * 4;
     new_task->thread_info->id = thread_cnt++;
     new_task->status = READY;
     new_task->job = fp;
     new_task->custom_signal = NULL;
+    new_task->task_context.ttbr0_el1 = read_sysreg(ttbr0_el1);
 
     add_rq(new_task);
 
@@ -152,7 +159,10 @@ void do_fork()
         task_struct *tmp;
         tmp = container_of(iter, task_struct, list);
         if (tmp->status == FORKING)
+        {
+            printf("pid %d fork\n", tmp->thread_info->id);
             create_child(tmp);
+        }
     }
 }
 
@@ -161,6 +171,10 @@ void create_child(task_struct *parent)
 {
     thread_info *child_thread = thread_create(0);
     task_struct *child = child_thread->task;
+
+    // Change to kernel virtual address
+    unsigned long parent_usrpgm_load_addr = KERNEL_PA_TO_VA(parent->usrpgm_load_addr_pa);
+    unsigned long parent_ustack_start = KERNEL_PA_TO_VA(parent->ustack_start_pa);
 
     char *parent_d, *child_d;
 
@@ -188,25 +202,23 @@ void create_child(task_struct *parent)
     // copy kernel stack
     parent_d = (char *)parent->kstack_start;
     child_d = (char *)child->kstack_start;
-    for (int i = 0; i < MIN_PAGE_SIZE; i++)
+    for (int i = 0; i < MIN_PAGE_SIZE * 4; i++)
         child_d[i] = parent_d[i];
 
     // copy user stack
-    parent_d = (char *)parent->ustack_start;
+    parent_d = (char *)parent_ustack_start;
     child_d = (char *)child->ustack_start;
-    for (int i = 0; i < MIN_PAGE_SIZE; i++)
+    for (int i = 0; i < MIN_PAGE_SIZE * 4; i++)
         child_d[i] = parent_d[i];
 
     // copy user program
-    parent_d = (char *)parent->usrpgm_load_addr;
+    parent_d = (char *)parent_usrpgm_load_addr;
     child_d = (char *)child->usrpgm_load_addr;
     for (int i = 0; i < USRPGM_SIZE; i++)
         child_d[i] = parent_d[i];
 
     // set offset to child's stack
     unsigned long kstack_offset = child->kstack_start - parent->kstack_start;
-    unsigned long ustack_offset = child->ustack_start - parent->ustack_start;
-    unsigned long usrpgm_offset = child->usrpgm_load_addr - parent->usrpgm_load_addr;
 
     // set child kernel space offset
     child->task_context.fp += kstack_offset;
@@ -214,10 +226,30 @@ void create_child(task_struct *parent)
     child->trapframe = parent->trapframe + kstack_offset;
 
     // set child user space offset
-    trapframe *ctrapframe = (trapframe *)child->trapframe; // because of data type problem
-    ctrapframe->x[29] += ustack_offset;
-    ctrapframe->sp_el0 += ustack_offset;
-    ctrapframe->elr_el1 += usrpgm_offset;
+    // trapframe *ctrapframe = (trapframe *)child->trapframe; // because of data type problem
+    // printf("ctrapframe->x[29] = %p\n", ctrapframe->x[29]);
+    // printf("ctrapframe->sp_el0 = %p\n", ctrapframe->sp_el0);
+    // printf("ctrapframe->elr_el1 = %p\n", ctrapframe->elr_el1);
+    // ctrapframe->x[29] += ustack_offset;
+    // ctrapframe->sp_el0 += ustack_offset;
+    // ctrapframe->elr_el1 += usrpgm_offset;
+
+    // Map custom virtual address to dynamic allocated address
+    // Note that my_malloc() return virtual (with kernel prefix), map_pages() remove it for physical
+    uint64_t *pgd = (uint64_t *)KERNEL_VA_TO_PA(new_page_table());
+    map_pages(pgd, DEFAULT_THREAD_VA_CODE_START, (uint64_t)child->usrpgm_load_addr, USRPGM_SIZE / PAGE_SIZE); // map for code space
+    map_pages(pgd, DEFAULT_THREAD_VA_STACK_START, (uint64_t)child->ustack_start, 4);                          // map for stack
+
+    // Use virtual address instead
+    child->usrpgm_load_addr_pa = KERNEL_VA_TO_PA(child->usrpgm_load_addr);
+    child->ustack_start_pa = KERNEL_VA_TO_PA(child->ustack_start);
+    child->usrpgm_load_addr = (unsigned long)DEFAULT_THREAD_VA_CODE_START;
+    child->ustack_start = (unsigned long)DEFAULT_THREAD_VA_STACK_START;
+
+    // Change ttbr0_el1
+    child->task_context.ttbr0_el1 = (uint64_t)pgd;
+
+    return;
 }
 
 void debug_task_rq()

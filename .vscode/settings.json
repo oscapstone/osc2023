@@ -27,7 +27,13 @@
         "list.h": "c",
         "thread.h": "c",
         "signal.h": "c",
-        "limits": "c"
+        "limits": "c",
+        "mbox.h": "c",
+        "virtual_mem.h": "c",
+        "string.h": "c",
+        "tmpfs.h": "c",
+        "vfs.h": "c",
+        "string": "c"
     },
     "C_Cpp.errorSquiggles": "enabled"
 }

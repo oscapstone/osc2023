@@ -5,6 +5,7 @@
 #include "reserve_mem.h"
 #include "list.h"
 #include "syscall.h"
+#include "vfs.h"
 
 extern task_struct *get_current();
 extern void set_switch_timer();
@@ -18,6 +19,10 @@ long thread_cnt = 0;
 task_struct kernel_thread = {0};
 struct list_head task_rq_head;      // run queue
 struct list_head task_zombieq_head; // zombie queue
+
+#define FD_STDIN 0
+#define FD_STDOUT 1
+#define FD_STDERR 2
 
 void schedule()
 {
@@ -95,6 +100,15 @@ thread_info *thread_create(func_ptr fp)
     new_task->status = READY;
     new_task->job = fp;
     new_task->custom_signal = NULL;
+
+    // Open stdin, stdout, stderr for the process
+    file_t *fh = NULL;
+    vfs_open("/dev/uart", 0, &fh);
+    new_task->fd_table[FD_STDIN] = fh;
+    vfs_open("/dev/uart", 0, &fh);
+    new_task->fd_table[FD_STDOUT] = fh;
+    vfs_open("/dev/uart", 0, &fh);
+    new_task->fd_table[FD_STDERR] = fh;
 
     add_rq(new_task);
 
@@ -254,4 +268,14 @@ void debug_task_zombieq()
         printf("thread_id %d -> ", tmp->thread_info->id);
     }
     printf("NULL\n\n");
+}
+
+int thread_get_idle_fd(task_struct *thd)
+{
+    for (int i = 0; i < VFS_PROCESS_MAX_OPEN_FILE; i++)
+    {
+        if (thd->fd_table[i] == NULL)
+            return i;
+    }
+    return -1;
 }

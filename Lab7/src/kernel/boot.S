@@ -7,6 +7,7 @@ _dtb_ptr: .dc.a 0x0
 .section ".text.boot"
 
 .globl _start
+.globl proc_hang
 _start:
 	cbz x24, x24c	// Check if bootloader, see bootloader's boot.S for more info
 x24nc:

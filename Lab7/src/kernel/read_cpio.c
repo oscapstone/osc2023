@@ -1,7 +1,11 @@
 #include "stdlib.h"
 #include "mini_uart.h"
+#include "vfs.h"
+#include "tmpfs.h"
+#include "read_cpio.h"
 
 extern char *cpioDestGlobal;
+cpio_node_t *cpio_list;
 
 typedef struct cpio_newc_header
 {
@@ -158,4 +162,173 @@ int load_userprogram(const char *filename, char *userDest)
         return 0;
 
     return 1;
+}
+
+/* For Lab7 */
+int get_size(cpio_t *root_addr, char *attr)
+{
+    char *temp_addr = (char *)root_addr;
+
+    if (!strcmp(attr, "name"))
+        temp_addr += 94;
+    else if (!strcmp(attr, "file"))
+        temp_addr += 54;
+
+    char size_string[9];
+    for (int i = 0; i < 8; i++)
+    {
+        size_string[i] = temp_addr[i];
+    }
+
+    size_string[8] = '\0';
+
+    // hexadecimal to decimal
+    return hex2int(size_string, 8);
+}
+
+int initramfs_mount(filesystem_t *fs, mount_t *mount)
+{
+    mount->root->v_ops = my_malloc(sizeof(vnode_operations_t));
+    mount->root->v_ops->lookup = initramfs_lookup;
+    mount->root->v_ops->create = initramfs_create;
+    mount->root->v_ops->mkdir = initramfs_mkdir;
+
+    mount->root->f_ops = my_malloc(sizeof(file_operations_t));
+    mount->root->f_ops->write = initramfs_write;
+    mount->root->f_ops->read = initramfs_read;
+    mount->root->f_ops->open = initramfs_open;
+    mount->root->f_ops->close = initramfs_close;
+
+    init_cpio();
+
+    cpio_node_t *tmp = cpio_list;
+    int i = 0;
+    while (tmp != NULL)
+    {
+        mount->root->internal->entry[i] = my_malloc(sizeof(vnode_t));
+        mount->root->internal->entry[i]->mount = NULL;
+        mount->root->internal->entry[i]->v_ops = mount->root->v_ops;
+        mount->root->internal->entry[i]->f_ops = mount->root->f_ops;
+
+        mount->root->internal->entry[i]->internal = my_malloc(sizeof(node_info_t));
+        mount->root->internal->entry[i]->internal->name = my_malloc(COMPONENT_NAME_MAX);
+        strcpy(mount->root->internal->entry[i]->internal->name, tmp->name);
+        mount->root->internal->entry[i]->internal->type = tmp->type;
+        mount->root->internal->entry[i]->internal->size = tmp->size;
+        mount->root->internal->entry[i]->internal->data = tmp->data;
+
+        mount->root->internal->size++;
+
+        tmp = tmp->next;
+        i++;
+    }
+
+    return 0;
+}
+
+void init_cpio()
+{
+    cpio_t *current_file = (cpio_t *)cpioDestGlobal;
+
+    int namesize = get_size(current_file, "name") - 1;
+    int filesize = get_size(current_file, "file");
+
+    char *temp_addr = (char *)(current_file + 1);
+
+    char temp_name[30];
+
+    for (int i = 0; i < namesize; i++)
+    {
+        temp_name[i] = temp_addr[i];
+    }
+
+    temp_name[namesize] = '\0';
+
+    if (!strcmp(temp_name, "TRAILER!!!"))
+        return;
+
+    cpio_list = my_malloc(sizeof(cpio_node_t));
+    cpio_node_t *tmp = cpio_list;
+
+    while (strcmp(temp_name, "TRAILER!!!"))
+    {
+        tmp->name = my_malloc(namesize + 10);
+        strcpy(tmp->name, temp_name);
+        tmp->type = FILE;
+        tmp->size = filesize;
+
+        int NUL_nums = 1;
+        char *next_file = (char *)(current_file + 1);
+
+        while ((2 + namesize + NUL_nums) % 4 != 0)
+            NUL_nums++;
+
+        next_file += (namesize + NUL_nums);
+        tmp->data = next_file;
+
+        NUL_nums = 0;
+        while ((filesize + NUL_nums) % 4 != 0)
+            NUL_nums++;
+
+        next_file += (filesize + NUL_nums);
+        current_file = (cpio_t *)next_file;
+
+        namesize = get_size(current_file, "name") - 1;
+        filesize = get_size(current_file, "file");
+
+        temp_addr = (char *)(current_file + 1);
+
+        for (int i = 0; i < namesize; i++)
+            temp_name[i] = temp_addr[i];
+
+        temp_name[namesize] = '\0';
+
+        if (strcmp(temp_name, "TRAILER!!!"))
+        {
+            tmp->next = my_malloc(sizeof(cpio_node_t));
+            tmp = tmp->next;
+        }
+        else
+            tmp->next = NULL;
+    }
+}
+
+/* vnode operations : defined in tmpfs.h not in cpio.h */
+int initramfs_lookup(struct vnode *dir_node, struct vnode **target, char *component_name)
+{
+    return tmpfs_lookup(dir_node, target, component_name);
+}
+
+int initramfs_create(struct vnode *dir_node, struct vnode **target, char *component_name)
+{
+    printf("/initramfs is read-only!!\n");
+    return -1;
+}
+
+int initramfs_mkdir(struct vnode *dir_node, struct vnode **target, char *component_name)
+{
+    printf("/initramfs is read-only!!\n");
+    return -1;
+}
+
+/* file operations */
+int initramfs_write(struct file *file, void *buf, size_t len)
+{
+    printf("/initramfs is read-only!!\n");
+    return -1;
+}
+
+int initramfs_read(struct file *file, void *buf, size_t len)
+{
+    return tmpfs_read(file, buf, len);
+}
+
+int initramfs_open(struct vnode *file_node, struct file **target)
+{
+    return tmpfs_open(file_node, target);
+}
+
+int initramfs_close(struct file *file)
+{
+    return tmpfs_close(file);
 }

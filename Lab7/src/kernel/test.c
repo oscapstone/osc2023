@@ -89,3 +89,28 @@ void load_usrpgm_in_umode()
         : "r"(target_addr), "r"(target_sp)
         : "x0");
 }
+
+void load_vfs1_usrpgm_in_umode()
+{
+    task_struct *current = get_current();
+    unsigned long target_addr = current->usrpgm_load_addr;
+    unsigned long target_sp = current->ustack_start + MIN_PAGE_SIZE;
+
+    load_userprogram("vfs1.img", (char *)target_addr);
+
+    set_switch_timer();
+    core_timer_enable();
+    enable_interrupt();
+
+    asm volatile(
+        "mov x0, 0x0\n\t" // EL0t, and open diaf(interrupt)
+        "msr spsr_el1, x0\n\t"
+        "mov x0, %0\n\t"
+        "msr elr_el1, x0\n\t"
+        "mov x0, %1\n\t"
+        "msr sp_el0, x0\n\t"
+        "eret"
+        :
+        : "r"(target_addr), "r"(target_sp)
+        : "x0");
+}

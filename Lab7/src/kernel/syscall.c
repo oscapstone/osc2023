@@ -7,6 +7,7 @@
 #include "peripherals/mbox_call.h"
 #include "peripherals/gpio.h"
 #include "my_signal.h"
+#include "vfs.h"
 
 extern task_struct *get_current();
 extern void set_switch_timer();
@@ -156,4 +157,80 @@ void signal(int SIGNAL, void (*handler)())
         cur->custom_signal = new;
     else
         list_add_tail(&cur->custom_signal->list, &new->list);
+}
+
+int open(char *pathname, int flags)
+{
+    task_struct *cur = get_current();
+    int fd = thread_get_idle_fd(cur);
+    if (fd < 0)
+    {
+        printf("Error, priv_open(), cannot open more file for pid=%d\r\n", cur->thread_info->id);
+        return -1;
+    }
+
+    file_t *target;
+    int ret = vfs_open(pathname, flags, &target);
+
+    if (ret != 0)
+        return ret;
+
+    cur->fd_table[fd] = target;
+
+    return fd;
+}
+
+int close(int fd)
+{
+    task_struct *cur = get_current();
+    int ret = vfs_close(cur->fd_table[fd]);
+    return ret;
+}
+
+long write(int fd, void *buf, unsigned long count)
+{
+    task_struct *cur = get_current();
+    int ret = vfs_write(cur->fd_table[fd], buf, count);
+    return ret;
+}
+
+long read(int fd, void *buf, unsigned long count)
+{
+    task_struct *cur = get_current();
+    int ret = vfs_read(cur->fd_table[fd], buf, count);
+    return ret;
+}
+
+int mkdir(char *pathname, unsigned mode)
+{
+    int ret = vfs_mkdir(pathname);
+    return ret;
+}
+
+int mount(char *src, char *target, char *filesystem, unsigned long flags, void *data)
+{
+    int ret = vfs_mount(target, filesystem);
+    return ret;
+}
+
+int chdir(char *path)
+{
+    char pathname[256];
+    handle_path(path, pathname);
+    int ret = vfs_cd(pathname);
+    return ret;
+}
+
+long lseek(int fd, long offset, int whence)
+{
+    task_struct *cur = get_current();
+    int ret = vfs_lseek(cur->fd_table[fd], offset, whence);
+    return ret;
+}
+
+int ioctl(int fd, unsigned long request, unsigned long arg)
+{
+    task_struct *cur = get_current();
+    int ret = vfs_ioctl(cur->fd_table[fd], request, arg);
+    return ret;
 }

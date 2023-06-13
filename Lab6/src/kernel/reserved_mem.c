@@ -3,6 +3,7 @@
 #include "dynamic_alloc.h"
 #include "reserve_mem.h"
 #include "stdlib.h"
+#include "virtual_mem.h"
 
 reserved_memory_block RMarray[100];
 int RMindex = 0;
@@ -37,12 +38,12 @@ void memory_init()
     init_page_frame();
     init_pool();
 
-    memory_reserve(0x0000, 0x5000, "PGD, PUD");
-    memory_reserve(0x60000, 0x100000, "Kernel Img");
-    memory_reserve(0x1000000, 0x1000fff, "Printf Buffer");
-    memory_reserve(0x8000000, 0x8010000, "Initramfs");
-    memory_reserve(0x15000000, 0x17000000, "User Program");
-    memory_reserve(0x200000, 0x250000, "svc");
+    memory_reserve(KERNEL_PA_TO_VA(0x0000), KERNEL_PA_TO_VA(0x4000), "kernel PGD, PUD");
+    memory_reserve(KERNEL_PA_TO_VA(0x60000), KERNEL_PA_TO_VA(0x100000), "Kernel Img");
+    memory_reserve(KERNEL_PA_TO_VA(0x1000000), KERNEL_PA_TO_VA(0x1000fff), "Printf Buffer");
+    memory_reserve(KERNEL_PA_TO_VA(0x8000000), KERNEL_PA_TO_VA(0x8010000), "Initramfs");
+    memory_reserve(KERNEL_PA_TO_VA(0x15000000), KERNEL_PA_TO_VA(0x17000000), "User Program");
+    memory_reserve(KERNEL_PA_TO_VA(0x200000), KERNEL_PA_TO_VA(0x250000), "svc");
 
     return;
 }

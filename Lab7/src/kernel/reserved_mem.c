@@ -39,8 +39,8 @@ void memory_init()
 
     memory_reserve(0x0000, 0x5000, "PGD, PUD");
     memory_reserve(0x60000, 0x100000, "Kernel Img");
-    memory_reserve(0x1000000, 0x1000fff, "Printf Buffer");
-    memory_reserve(0x8000000, 0x8010000, "Initramfs");
+    memory_reserve(0x1000000, 0x100ffff, "Printf Buffer");
+    memory_reserve(0x8000000, 0x8020000, "Initramfs");
     memory_reserve(0x15000000, 0x17000000, "User Program");
     memory_reserve(0x200000, 0x250000, "svc");
 

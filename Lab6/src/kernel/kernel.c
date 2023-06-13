@@ -4,8 +4,9 @@
 #include "reserve_mem.h"
 #include "device_tree.h"
 #include "thread.h"
-
 #include "virtual_mem.h"
+
+#include "stdlib.h"
 
 extern void *_dtb_ptr;
 
@@ -17,11 +18,9 @@ void kernel_main(void)
 
 	fdt_traverse(initramfs_callback, _dtb_ptr);
 
-	thread_init();
-
 	memory_init();
 
-	// virtual_mem_init();
+	thread_init();
 
 	shell_start();
 }

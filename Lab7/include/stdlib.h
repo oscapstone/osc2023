@@ -13,6 +13,9 @@ int strcmp(const char *str1, const char *str2);
 int strlen(const char *str);
 char *strcpy(char *destination, const char *source);
 int atoi(char *str);
+char *strncpy(char src[], char des[], int n);
+int strnchr(char *pathname, char target);
+void strcat(char *des, char *s);
 
 void *memset(void *dest, register int val, int len);
 int memcmp(void *s1, void *s2, int n);

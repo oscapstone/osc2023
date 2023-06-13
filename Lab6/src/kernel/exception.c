@@ -127,23 +127,23 @@ void exc_handler(unsigned long type, unsigned long esr, unsigned long elr, unsig
 
 void el1_irq_interrupt_handler()
 {
-    unsigned int irq_basic_pending = get32(IRQ_BASIC_PENDING);
+    unsigned int irq_basic_pending = get64(IRQ_BASIC_PENDING);
     irq_basic_pending &= (1 << 19); // clear bits
 
     // GPU IRQ 57 : UART Interrupt
     if (irq_basic_pending)
     {
-        if (get32(AUX_MU_IIR_REG) & 0b100) // Receiver holds valid byte
+        if (get64(AUX_MU_IIR_REG) & 0b100) // Receiver holds valid byte
         {
             uart_rx_handler();
         }
-        else if (get32(AUX_MU_IIR_REG) & 0b010) // Transmit holding register empty
+        else if (get64(AUX_MU_IIR_REG) & 0b010) // Transmit holding register empty
         {
             uart_tx_handler();
         }
     }
     // ARM Core Timer Interrupt
-    else if (get32(CORE0_INTR_SRC) & (1 << 1))
+    else if (get64(CORE0_INTR_SRC) & (1 << 1))
     {
         long cntpct_el0, cntfrq_el0;
         asm volatile(
@@ -156,8 +156,71 @@ void el1_irq_interrupt_handler()
     return;
 }
 
-void el0_to_el1_sync_handler(unsigned long trapframe_addr)
+void el0_to_el1_sync_handler(unsigned long trapframe_addr, unsigned long esr, unsigned long elr, unsigned long spsr, unsigned long far)
 {
+    switch (esr >> 26)
+    {
+    case 0b000000:
+        uart_send_string("Unknown\n");
+        return;
+        break;
+    case 0b000001:
+        uart_send_string("Trapped WFI/WFE\n");
+        return;
+        break;
+    case 0b001110:
+        uart_send_string("Illegal execution\n");
+        return;
+        break;
+    case 0b010101:
+        break;
+    case 0b100000:
+        uart_send_string("Instruction abort, lower EL\n");
+        return;
+        break;
+    case 0b100001:
+        uart_send_string("Instruction abort, same EL\n");
+        return;
+        break;
+    case 0b100010:
+        uart_send_string("Instruction alignment fault\n");
+        return;
+        break;
+    case 0b100100:
+        uart_send_string("Data abort, lower EL\n");
+        uart_send_string("SPSR_EL1 ");
+        uart_hex(spsr >> 32);
+        uart_hex(spsr);
+        uart_send_string(" ; ELR_EL1 ");
+        uart_hex(elr >> 32);
+        uart_hex(elr);
+        uart_send_string(" ; ESR_EL1 ");
+        uart_hex(esr >> 32);
+        uart_hex(esr);
+        uart_send_string(" ; FAR_EL1 ");
+        uart_hex(far >> 32);
+        uart_hex(far);
+        uart_send_string("\n");
+        return;
+        break;
+    case 0b100101:
+        uart_send_string("Data abort, same EL\n");
+        return;
+        break;
+    case 0b100110:
+        uart_send_string("Stack alignment fault\n");
+        return;
+        break;
+    case 0b101100:
+        uart_send_string("Floating point\n");
+        return;
+        break;
+    default:
+        uart_send_string("Unknown\n");
+        return;
+        break;
+    }
+
     int syscall_no;
     trapframe *curr_trapframe = (trapframe *)trapframe_addr;
     asm volatile("mov %0, x8"
@@ -196,8 +259,17 @@ void el0_to_el1_sync_handler(unsigned long trapframe_addr)
         current->status = FORKING;
         current->trapframe = trapframe_addr;
         int ret = fork();
-        curr_trapframe = (trapframe *)get_current()->trapframe;
+        current = get_current();
+        curr_trapframe = (trapframe *)current->trapframe;
         curr_trapframe->x[0] = ret;
+        // printf("\n[DEBUG]\n");
+        // printf("cur task_struct = %p\n", current);
+        // printf("ret = %d\n", ret);
+        // printf("pid = %d\n", current->thread_info->id);
+        // printf("curr_trapframe->elr_el1 = %p\n", curr_trapframe->elr_el1);
+        // printf("ttbr0_el1 = %p\n", current->task_context.ttbr0_el1);
+        // printf("virtual_mem_translate curr_trapframe->elr_el1 = %p\n", virtual_mem_translate(curr_trapframe->elr_el1));
+        // printf("\n");
     }
     else if (syscall_no == 5)
     {
@@ -208,8 +280,20 @@ void el0_to_el1_sync_handler(unsigned long trapframe_addr)
     {
         unsigned char ch = (unsigned char)curr_trapframe->x[0];
         unsigned int *mbox_user = (unsigned int *)curr_trapframe->x[1];
-        int ret = mbox_call_u(ch, mbox_user);
+        unsigned int *mbox_user_kernel_va = (unsigned int *)KERNEL_PA_TO_VA(virtual_mem_translate(mbox_user));
+        printf("Pre mbox_user = %p\n", mbox_user);
+        printf("Pre mbox_user[1] = %lx\n", mbox_user[1]);
+        int ret = mbox_call_u(ch, mbox_user_kernel_va);
         curr_trapframe->x[0] = ret;
+        printf("\n[DEBUG]\n");
+        printf("current ttbr0_el1 = %p\n", get_current()->task_context.ttbr0_el1);
+        printf("mbox_user = %p\n", mbox_user);
+        printf("mbox_user[1] = %lx\n", mbox_user[1]);
+        printf("mbox_user_kernel_va = %p\n", mbox_user_kernel_va);
+        printf("mbox_user_kernel_va[1] = %x\n", mbox_user_kernel_va[1]);
+        printf("yes or no = %d\n", mbox_user_kernel_va[1] == 0x80000000);
+        printf("ret = %d\n", ret);
+        printf("\n");
     }
     else if (syscall_no == 7)
     {

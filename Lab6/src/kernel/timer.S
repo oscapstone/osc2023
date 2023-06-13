@@ -1,4 +1,4 @@
-#define CORE0_TIMER_IRQ_CTRL 0x40000040
+#define CORE0_TIMER_IRQ_CTRL 0xffff000000000000 + 0x40000040
 
 .global core_timer_enable
 core_timer_enable:

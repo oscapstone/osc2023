@@ -8,6 +8,7 @@
 #include "dynamic_alloc.h"
 #include "test.h"
 #include "thread.h"
+#include "vfs.h"
 
 extern void *_dtb_ptr;
 extern char *cpioDestGlobal;
@@ -37,6 +38,7 @@ void shell_main(char *command)
         uart_send_string("alloc\t: [test] malloc and free\n");
         uart_send_string("thread\t: [test]\n");
         uart_send_string("syscall\t: [test]\n");
+        uart_send_string("vfs1\t: [test] load lab7 user program\n");
     }
     else if (!strcmp(command, "hello"))
     {
@@ -49,9 +51,16 @@ void shell_main(char *command)
         while (1)
             ;
     }
-    else if (!strcmp(command, "ls"))
+    else if (!memcmp(command, "ls", 2))
     {
-        read_cpio((char *)cpioDestGlobal);
+        char pathname[256];
+        if (strlen(command) == 2 || strlen(command) == 3)
+            vfs_ls(pathname, 0);
+        else
+        {
+            handle_path(command + 3, pathname);
+            vfs_ls(pathname, 1);
+        }
     }
     else if (!memcmp(command, "cat", 3))
     {
@@ -157,6 +166,21 @@ void shell_main(char *command)
     {
         thread_create(load_usrpgm_in_umode);
         idle_task();
+    }
+    else if (!strcmp(command, "vfs1"))
+    {
+        thread_create(load_vfs1_usrpgm_in_umode);
+        idle_task();
+    }
+    else if (!memcmp(command, "cd", 2))
+    {
+        char pathname[256];
+        handle_path(command + 3, pathname);
+        vfs_cd(pathname);
+    }
+    else if (!strcmp(command, "cwd"))
+    {
+        printf("%s\n", cwdpath);
     }
 
     return;

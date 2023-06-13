@@ -9,6 +9,9 @@ void uart_send_string_of_size(char *str, int size);
 void uart_hex(unsigned int d);
 void uart_send_space(int size);
 
+void uart_send_byte(char c);
+char uart_recv_byte(void);
+
 void asyn_read();
 void asyn_write();
 void uart_rx_handler();

@@ -13,12 +13,16 @@ typedef void (*func_ptr)();
 typedef struct _context
 {
     unsigned long x19, x20, x21, x22, x23, x24, x25, x26, x27, x28, fp, lr, sp;
+    unsigned long spsr_el1;
+    unsigned long elr_el1;
+    unsigned long esr_el1;
+    unsigned long ttbr0_el1;
 } context;
 
 typedef struct _thread_info
 {
-    long id;
-    long child_id;
+    unsigned long id;
+    unsigned long child_id;
     struct _task_struct *task;
 
 } thread_info;
@@ -37,9 +41,11 @@ typedef struct _task_struct
     struct _thread_info *thread_info;
     struct list_head list;
     func_ptr job;
-    unsigned long kstack_start;     // kernel stack base
-    unsigned long ustack_start;     // user stack base
-    unsigned long usrpgm_load_addr; // user program load address
+    unsigned long kstack_start;        // kernel stack base
+    unsigned long ustack_start;        // user stack base
+    unsigned long usrpgm_load_addr;    // user program load address
+    unsigned long ustack_start_pa;     // user stack base
+    unsigned long usrpgm_load_addr_pa; // user program load address
     unsigned long status;
     unsigned long trapframe; // using "unsigned long" to keep trapframe address, instead of claiming a "trapframe_t*" to avoid "Data Abort"
     struct _custom_signal *custom_signal;

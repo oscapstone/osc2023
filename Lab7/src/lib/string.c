@@ -77,3 +77,37 @@ int atoi(char *str)
     // return result.
     return res;
 }
+
+char *strncpy(char src[], char des[], int n)
+{
+    int i = 0;
+    while (src[i] != '\0' && i < n)
+    {
+        des[i] = src[i];
+        i++;
+    }
+    des[i] = '\0';
+
+    return des;
+}
+
+int strnchr(char *pathname, char target)
+{
+    int count = 0;
+    for (int i = 0; i < strlen(pathname); i++)
+        if (pathname[i] == target)
+            count++;
+
+    return count;
+}
+
+void strcat(char *des, char *s)
+{
+    int begin = strlen(des);
+    int cat_len = strlen(s);
+
+    for (int i = 0; i < cat_len; i++)
+        des[begin + i] = s[i];
+
+    des[begin + cat_len] = '\0';
+}

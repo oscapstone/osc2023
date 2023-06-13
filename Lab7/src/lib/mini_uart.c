@@ -40,6 +40,28 @@ char uart_recv(void)
 	return r == '\r' ? '\n' : r;
 }
 
+void uart_send_byte(char c)
+{
+	while (1)
+	{
+		if (get32(AUX_MU_LSR_REG) & 0x20)
+			break;
+	}
+	put32(AUX_MU_IO_REG, c);
+}
+
+char uart_recv_byte(void)
+{
+	char r;
+	while (1)
+	{
+		if (get32(AUX_MU_LSR_REG) & 0x01)
+			break;
+	}
+	r = get32(AUX_MU_IO_REG);
+	return r;
+}
+
 void uart_send_string(char *str)
 {
 	while (*str)

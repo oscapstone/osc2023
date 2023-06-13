@@ -1,6 +1,9 @@
+_kernel_start = 0xffff000000080000;
+_kernel_end = 0xffff000000c00000;
+
 SECTIONS
 {
-    . = 0x80000;
+    . = _kernel_start;
     .text : { KEEP(*(.text.boot)) *(.text .text.* .gnu.linkonce.t*) }
     .rodata : { *(.rodata .rodata.* .gnu.linkonce.r*) }
     PROVIDE(_data = .);
@@ -13,6 +16,8 @@ SECTIONS
         __bss_end = .;
     }
     _end = .;
+
+    . = _kernel_end;
 
    /DISCARD/ : { *(.comment) *(.gnu*) *(.note*) *(.eh_frame*) }
 }

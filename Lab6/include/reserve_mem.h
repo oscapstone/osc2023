@@ -1,7 +1,9 @@
 #ifndef _RESERVE_MEM_H
 #define _RESERVE_MEM_H
 
-#define USRPGM_BASE 0x15000000
+#include "virtual_mem.h"
+
+#define USRPGM_BASE KERNEL_PA_TO_VA(0x15000000)
 #define USRPGM_SIZE 0x100000
 
 typedef struct _reserved_memory_block

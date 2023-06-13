@@ -3,6 +3,7 @@
 
 #include "list.h"
 #include "my_signal.h"
+#include "vfs.h"
 
 #define READY 1
 #define ZOMBIE 2
@@ -44,6 +45,7 @@ typedef struct _task_struct
     unsigned long trapframe; // using "unsigned long" to keep trapframe address, instead of claiming a "trapframe_t*" to avoid "Data Abort"
     struct _custom_signal *custom_signal;
     struct _signal_context *signal_context;
+    struct file *fd_table[VFS_PROCESS_MAX_OPEN_FILE]; // should be zeroed out on thread_create
 } task_struct;
 
 void schedule();
@@ -58,5 +60,6 @@ void do_fork();
 void create_child(task_struct *parent);
 void debug_task_rq();
 void debug_task_zombieq();
+int thread_get_idle_fd(task_struct *thd);
 
 #endif /*_THREAD_H */

@@ -9,6 +9,7 @@ extern task_struct *get_current();
 extern void enable_interrupt();
 extern void disable_interrupt();
 extern signal_handler signal_table[];
+extern void proc_hang();
 
 /**
  * common exception handler
@@ -122,6 +123,7 @@ void exc_handler(unsigned long type, unsigned long esr, unsigned long elr, unsig
     uart_hex(far);
     uart_send_string("\n");
 
+    proc_hang();
     return;
 }
 
@@ -264,10 +266,70 @@ void el0_to_el1_sync_handler(unsigned long trapframe_addr)
     }
     else if (syscall_no == 11)
     {
-        task_struct *current = get_current();
-        if (current->thread_info->child_id == 0)
-            printf("child here, fork() return value : %d\n", current->thread_info->child_id);
-        else
-            printf("parent here, fork() return value : %d\n", current->thread_info->child_id);
+        char *pathname = (char *)curr_trapframe->x[0];
+        int flags = (int)curr_trapframe->x[1];
+        int ret = open(pathname, flags);
+        curr_trapframe->x[0] = ret;
+    }
+    else if (syscall_no == 12)
+    {
+        int fd = (int)curr_trapframe->x[0];
+        int ret = close(fd);
+        curr_trapframe->x[0] = ret;
+    }
+    else if (syscall_no == 13)
+    {
+        int fd = (int)curr_trapframe->x[0];
+        void *buf = (void *)curr_trapframe->x[1];
+        unsigned long count = (unsigned long)curr_trapframe->x[2];
+        int ret = write(fd, buf, count);
+        curr_trapframe->x[0] = ret;
+    }
+    else if (syscall_no == 14)
+    {
+        int fd = (int)curr_trapframe->x[0];
+        void *buf = (void *)curr_trapframe->x[1];
+        unsigned long count = (unsigned long)curr_trapframe->x[2];
+        int ret = read(fd, buf, count);
+        curr_trapframe->x[0] = ret;
+    }
+    else if (syscall_no == 15)
+    {
+        char *pathname = (char *)curr_trapframe->x[0];
+        unsigned mode = (unsigned)curr_trapframe->x[1];
+        int ret = mkdir(pathname, mode);
+        curr_trapframe->x[0] = ret;
+    }
+    else if (syscall_no == 16)
+    {
+        char *src = (char *)curr_trapframe->x[0];
+        char *target = (char *)curr_trapframe->x[1];
+        char *filesystem = (char *)curr_trapframe->x[2];
+        unsigned long flags = (unsigned long)curr_trapframe->x[3];
+        void *data = (void *)curr_trapframe->x[4];
+        int ret = mount(src, target, filesystem, flags, data);
+        curr_trapframe->x[0] = ret;
+    }
+    else if (syscall_no == 17)
+    {
+        char *pathname = (char *)curr_trapframe->x[0];
+        int ret = chdir(pathname);
+        curr_trapframe->x[0] = ret;
+    }
+    else if (syscall_no == 18)
+    {
+        int fd = (int)curr_trapframe->x[0];
+        long offset = (long)curr_trapframe->x[1];
+        int whence = (int)curr_trapframe->x[2];
+        int ret = lseek(fd, offset, whence);
+        curr_trapframe->x[0] = ret;
+    }
+    else if (syscall_no == 19)
+    {
+        int fd = (int)curr_trapframe->x[0];
+        unsigned long request = (unsigned long)curr_trapframe->x[1];
+        unsigned long arg = (unsigned long)curr_trapframe->x[2];
+        int ret = ioctl(fd, request, arg);
+        curr_trapframe->x[0] = ret;
     }
 }

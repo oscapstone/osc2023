@@ -3,6 +3,7 @@
 #include "stdlib.h"
 #include "mini_uart.h"
 #include "device_tree.h"
+#include "virtual_mem.h"
 
 typedef struct fdt_header
 {
@@ -75,7 +76,7 @@ int initramfs_callback(void *dtb)
             {
                 uint64_t addr = (uint64_t)rev32(*((uint32_t *)prop_val));
                 printf("initramfs_addr at %p\n", addr);
-                cpioDestGlobal = (char *)addr;
+                cpioDestGlobal = (char *)KERNEL_PA_TO_VA(addr);
             }
             p += rev32(prop->len);
             p += pad_to_4(p);

@@ -1,5 +1,6 @@
 #include "stdlib.h"
 #include "mini_uart.h"
+#include "virtual_mem.h"
 
 extern char *cpioDestGlobal;
 
@@ -145,7 +146,7 @@ int load_userprogram(const char *filename, char *userDest)
     else
         cpioUserPgmDest += (sizeof(cpio_t) + ns + ((sizeof(cpio_t) + ns) % 4));
 
-    printf("load %p to %p\n", cpioUserPgmDest, userDest);
+    printf("load %p to %p (kernel va)\n", cpioUserPgmDest, userDest);
     printf("size: %d bytes\n", fs);
 
     // load content

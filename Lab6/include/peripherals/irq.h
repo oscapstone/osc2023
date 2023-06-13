@@ -2,6 +2,7 @@
 #define _P_IRQ_H
 
 #include "peripherals/base.h"
+#include "virtual_mem.h"
 
 #define IRQ_BASIC_PENDING (PBASE + 0x0000B200)
 #define IRQ_PENDING_1 (PBASE + 0x0000B204)
@@ -19,9 +20,9 @@
 #define SYSTEM_TIMER_IRQ_2 (1 << 2)
 #define SYSTEM_TIMER_IRQ_3 (1 << 3)
 
-#define CORE0_INTR_SRC 0x40000060
-#define CORE1_INTR_SRC 0x40000064
-#define CORE2_INTR_SRC 0x40000068
-#define CORE3_INTR_SRC 0x4000006C
+#define CORE0_INTR_SRC KERNEL_PA_TO_VA(0x40000060)
+#define CORE1_INTR_SRC KERNEL_PA_TO_VA(0x40000064)
+#define CORE2_INTR_SRC KERNEL_PA_TO_VA(0x40000068)
+#define CORE3_INTR_SRC KERNEL_PA_TO_VA(0x4000006C)
 
 #endif /*_P_IRQ_H */

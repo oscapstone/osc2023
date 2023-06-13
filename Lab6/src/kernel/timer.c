@@ -4,6 +4,7 @@
 
 extern void enable_interrupt();
 extern void disable_interrupt();
+extern task_struct *get_current();
 
 typedef struct timer_queue_node
 {

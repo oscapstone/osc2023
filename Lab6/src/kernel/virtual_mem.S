@@ -52,3 +52,13 @@ identity_init:
     orr x2 , x2, 1
     msr sctlr_el1, x2 // enable MMU, cache remains disabled
     ret
+
+.global setup_identity_mapping
+setup_identity_mapping:
+    mov x0, 0x1000
+    msr ttbr0_el1, x0
+    msr ttbr1_el1, x0 // also load PGD to the upper translation based register.
+    mrs x2, sctlr_el1
+    orr x2 , x2, 1
+    msr sctlr_el1, x2
+    ret
