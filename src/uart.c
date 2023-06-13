@@ -13,6 +13,8 @@
 #define AUX_MU_CNTL     ((volatile unsigned int*)(MMIO_BASE+0x00215060))
 #define AUX_MU_STAT     ((volatile unsigned int*)(MMIO_BASE+0x00215064))
 #define AUX_MU_BAUD     ((volatile unsigned int*)(MMIO_BASE+0x00215068))
+#define ENABLE_IRQS_1   ((volatile unsigned int*)(MMIO_BASE+0x0000B210))
+#define DISABLE_IRQS_1  ((volatile unsigned int*)(MMIO_BASE+0x0000B21C))
 
 void uart_init()
 {
@@ -24,7 +26,7 @@ void uart_init()
     *AUX_MU_LCR = 3;       // 8 bits
     *AUX_MU_MCR = 0;
     *AUX_MU_IER = 0;
-    *AUX_MU_IIR = 0xc6;    // disable interrupts
+    *AUX_MU_IIR = 0x6;    // disable interrupts
     *AUX_MU_BAUD = 270;    // 115200 baud
     /* map UART1 to GPIO pins */
     r=*GPFSEL1;
@@ -123,4 +125,85 @@ void uart_send_int(int number){
     uart_send((char)((number >> 16) & 0xFF));
     uart_send((char)((number >> 8) & 0xFF));
     uart_send((char)(number & 0xFF));
+}
+
+char async_recv_buf[256];
+char async_send_buf[256];
+int write_head, write_end;
+int read_head, read_end;
+
+void enable_uart_irq(){
+    *ENABLE_IRQS_1 = (1 << 29);
+}
+
+void disable_uart_irq(){
+    *DISABLE_IRQS_1 = (1 << 29);
+}
+
+void async_uart_recv(){
+    enable_uart_irq(); 
+}
+void async_uart_handle(){
+    // disable_uart_irq();
+    unsigned long  iir = *AUX_MU_IIR;
+    // has interrupt pending
+    if ((iir & 1) == 0) {
+      //send
+      if (iir & 2) {
+        while (1) {
+            if ((*AUX_MU_LSR)&0x20) break;
+        }
+        char c = async_send_buf[write_head];
+        write_head++;
+        *AUX_MU_IO = c;
+        if(write_head == 256) write_head = 0;
+        (*AUX_MU_IER) &= ~0x02;
+      } 
+      // read 
+      else if (iir & 4) {
+        while (1) {
+            if ((*AUX_MU_LSR)&0x01) break;
+        }
+        char c =  (*AUX_MU_IO)&0xFF;
+        async_recv_buf[read_end] = c;
+        read_end ++;
+        // reset if read till the end of buffer
+        if(read_end == 256) read_end = 0;
+      }
+    }
+    // enable_uart_irq();
+}
+char read_from_async_recv_buf(){
+    // nothing to read 
+    while(read_head == read_end){
+        asm volatile("nop");
+    }
+    char c = async_recv_buf[read_head];
+    read_head ++;
+    if(read_head == 256) read_head = 0;
+    return c;
+}
+
+void copy_to_async_send_buf(char c){
+    async_send_buf[write_end] = c;
+    write_end ++;
+    if(write_end == 256) write_end = 0;
+    // assert transmitter interrupt 
+    (*AUX_MU_IER) |= 0x02;
+}
+
+
+void async_test(){
+    *AUX_MU_IER = 1;
+    enable_uart_irq();
+
+    while(1){
+        char c = read_from_async_recv_buf();
+        copy_to_async_send_buf(c);
+        if(c == '\r') copy_to_async_send_buf('\n');
+    }
+
+    disable_uart_irq();
+    *AUX_MU_IER = 0;
+    uart_puts("END\n\r");
 }

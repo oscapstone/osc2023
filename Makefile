@@ -4,7 +4,8 @@ ARMPATH  = /Users/stafen/Documents/osc/toolchain/arm-gnu-toolchain-12.2.rel1-dar
 ARMGCC ?= $(ARMPATH)/aarch64-none-elf-gcc
 ARMLD ?= $(ARMPATH)/aarch64-none-elf-ld
 ARMOBJCOPY ?= $(ARMPATH)/aarch64-none-elf-objcopy
-CFLAGS = -Wall -O2 -ffreestanding -nostdinc -nostdlib -nostartfiles -Iinclude
+ARMGDB ?= $(ARMPATH)/aarch64-none-elf-gdb
+CFLAGS = -Wall -ffreestanding  -nostdlib -nostartfiles -Iinclude -mgeneral-regs-only
 ASMOPS = -Iinclude
 BUILD_DIR=out
 SRC_DIR=src
@@ -39,3 +40,6 @@ run: all
 deploy:
 	rm /Volumes/NO\ NAME/kernel8.img
 	cp kernel8.img /Volumes/NO\ NAME
+
+debug:
+	qemu-system-aarch64 -M raspi3b -kernel kernel8.img -display none -initrd initramfs.cpio -serial null -serial stdio -dtb bcm2710-rpi-3-b-plus.dtb -S -s
