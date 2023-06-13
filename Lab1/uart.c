@@ -56,7 +56,7 @@ void uart_init()
         asm volatile("nop");
     }
     *GPPUDCLK0 = (1<<14)|(1<<15); // Set clock on line 14, 15
-    r = 150;
+    r = 150;270
     while(r--) { // Wait 150 cycles
         asm volatile("nop");
     }
