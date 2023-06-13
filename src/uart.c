@@ -3,6 +3,12 @@
 #include "utils.h"
 #include "mailbox.h"
 #include "uart.h"
+#include "time_interrupt.h"
+
+char read_buf[BUFFER_MAX_SIZE];
+char write_buf[BUFFER_MAX_SIZE];
+int read_buf_start, read_buf_end;
+int write_buf_start, write_buf_end;
 
 void uart_init(void) 
 {
@@ -37,13 +43,13 @@ void uart_init(void)
     // uart_inited = 1;
 }
 
-char uart_read(void)
+char kuart_read(void)
 {
-    char r = _uart_read();
+    char r = _kuart_read();
     return r == '\r' ? '\n' : r;
 }
 
-char _uart_read(void)
+char _kuart_read(void)
 {
     while (!(*AUX_MU_LSR & 0x01));
     char r = *AUX_MU_IO & 0xff;
@@ -55,7 +61,7 @@ unsigned int uart_readline(char *buffer, unsigned int buffer_size)
     if (buffer_size == 0) return 0;
     char *ptr = buffer, *buffer_tail = buffer + buffer_size - 1;
     do {
-        *ptr = uart_read();
+        *ptr = kuart_read();
     } while (*ptr != '\n' && (ptr++ < buffer_tail));
     *ptr = '\0';
     return (ptr - buffer);
@@ -65,12 +71,12 @@ unsigned long long uart_read_hex_ull() {
     unsigned long long res = 0;
     //receive 8 byte
     for (int i = 60; i >= 0; i -= 4) {
-        res |= ((uart_read() - '0') << i);
+        res |= ((kuart_read() - '0') << i);
     }
     return res;
 }
 
-static void _uart_write(char c)
+void _kuart_write(char c)
 {
     while (!(*AUX_MU_LSR & 0x20));
     *AUX_MU_IO = c;
@@ -78,13 +84,13 @@ static void _uart_write(char c)
 
 void uart_write_retrace()
 {
-    _uart_write('\r');
+    _kuart_write('\r');
 }
 
-void uart_write(char c)
+void kuart_write(char c)
 {
-    if (c == '\n') _uart_write('\r');
-    _uart_write(c);
+    if (c == '\n') _kuart_write('\r');
+    _kuart_write(c);
 }
 
 void uart_flush() {
@@ -97,18 +103,18 @@ void uart_write_string(char* str)
 {
     for (int i = 0; str[i] != '\0'; i++) {
         // if (str[i] == '\r') continue;
-        uart_write((char)str[i]);
+        kuart_write((char)str[i]);
     }
 }
 
 void uart_write_no(unsigned long long n) 
 {
     if (n < 10) {
-        uart_write('0' + n);
+        kuart_write('0' + n);
         return;
     } else {
         uart_write_no(n / 10);
-        uart_write('0' + n % 10);
+        kuart_write('0' + n % 10);
     }
 }
 
@@ -116,10 +122,10 @@ void uart_write_no_hex(unsigned long long n)
 {
     const char *hex_str = "0123456789abcdef";
     if (n < 16) {
-        uart_write(hex_str[n]);
+        kuart_write(hex_str[n]);
     } else {
         uart_write_no_hex(n >> 4);
-        uart_write(hex_str[n & 0xf]);
+        kuart_write(hex_str[n & 0xf]);
     }
 }
 
@@ -147,15 +153,131 @@ unsigned int uart_read_input(char *cmd, unsigned int cmd_size)
 {
     unsigned idx = 0;
     do {
-        cmd[idx] = uart_read();
+        cmd[idx] = kuart_read();
         if (cmd[idx] == '\0' || cmd[idx] == '\n') {
             cmd[idx] = '\0';
             uart_write_string("\n");
             return idx;
         }
-        uart_write(cmd[idx]);
+        kuart_write(cmd[idx]);
         idx++;
     } while (idx < cmd_size);
     cmd[idx] = '\0';
     return idx;
+}
+
+void uart_write_fraction(unsigned numerator, unsigned denominator, unsigned deg)
+{
+    unsigned q = numerator / denominator;
+    numerator = (numerator - q * denominator) * 10;
+    uart_write_no(q);
+    kuart_write('.');
+    while (deg--) {
+        q = numerator / denominator;
+        numerator = (numerator - q * denominator) * 10;
+        kuart_write('0' + q);
+    }
+}
+///////////////////////// async part /////////////////////
+
+void uart_irq_handler(void *arg)
+{
+    //To enable mini UART’s interrupt, you need to set AUX_MU_IER_REG(0x3f215044)
+    // *AUX_MU_IER = 1;
+    //and the second level interrupt controller’s Enable IRQs1(0x3f00b210)’s bit29.
+    //why 29?
+    //https://cs140e.sergio.bz/docs/BCM2837-ARM-Peripherals.pdf p113
+    *ENB_IRQS1 |= (1 << 29);
+    reg_t ier = (reg_t)arg;
+    ier &= ~(0x3);
+
+    if (*AUX_MU_IIR & 0x4) {
+        char c = (char)(*AUX_MU_IO);
+        read_buf[read_buf_end] = c;
+        read_buf_end = (read_buf_end + 1) % BUFFER_MAX_SIZE;
+    }
+    else if (*AUX_MU_IIR & 0x2) {
+        //AUX_MU_LSR&0x20是用來判斷 c 有沒有被寫進AUX_MU_IO
+        while (*AUX_MU_LSR & 0x20) {
+            if (write_buf_start == write_buf_end) {
+                //nothing to write, disable interrupt
+                ier &= ~(0x2);
+                break;
+            }
+            char c = write_buf[write_buf_start];
+            *AUX_MU_IO = c;
+            write_buf_start = (write_buf_start + 1) % BUFFER_MAX_SIZE;
+        }
+    }
+    *AUX_MU_IER = ier;
+    *DISABLE_IRQS1 &= ~(1 << 29);
+}
+
+char _async_uart_read()
+{
+    // Enable R interrupt
+    *AUX_MU_IER |= 0b1;
+    while (read_buf_start == read_buf_end);
+    char c = read_buf[read_buf_start];
+    read_buf_start = (read_buf_start + 1) % BUFFER_MAX_SIZE;
+    return c;
+}
+
+char async_uart_read()
+{
+    char c = _async_uart_read();
+    return c == '\r' ? '\n' : c;
+}
+
+void _async_uart_write(char c)
+{
+    write_buf[write_buf_end] = c;
+    write_buf_end = (write_buf_end + 1) % BUFFER_MAX_SIZE;
+    // Enable W interrupt
+    *AUX_MU_IER |= 0x2;
+}
+
+void async_uart_write(char c)
+{
+    if (c == '\n') _async_uart_write('\r');
+    _async_uart_write(c);
+}
+
+unsigned int async_uart_readline(char *buffer, unsigned int buffer_size)
+{
+    if (buffer_size == 0) return 0;
+    char *ptr = buffer, *buffer_tail = buffer + buffer_size - 1;
+    do {
+        *ptr = async_uart_read();
+    } while (*ptr != '\n' && (ptr++ < buffer_tail));
+    *ptr = '\0';
+    return (ptr - buffer);
+}
+
+void async_uart_write_string(char* str)
+{
+    for (int i = 0; str[i] != '\0'; i++) {
+        async_uart_write((char)str[i]);
+    }
+}
+
+void test_uart_async()
+{
+    *ENB_IRQS1 |= (1 << 29);
+    delay(15000);
+    char buffer[BUFFER_MAX_SIZE];
+    size_t index = 0;
+    while (index < BUFFER_MAX_SIZE-1)
+    {
+        buffer[index] = async_uart_read();
+        // uart_async_send(buffer[index]);
+        if (buffer[index] == '\n')
+        {
+            break;
+        }
+        index++;
+    }
+    buffer[index + 1] = '\0';
+    async_uart_write_string(buffer);
+    *DISABLE_IRQS1 &= ~(1 << 29);
 }

@@ -3,6 +3,7 @@
 #include "stdint.h"
 #include "initramfs.h"
 #include "uart.h"
+#include "mmu.h"
 struct fdt _fdt;
 uint32_t fdt2hou(unsigned char *s) 
 {
@@ -28,6 +29,7 @@ int fdt_init(struct fdt *fdt, void *head_addr)
     fdt->total_size = fdt2hou(&(head->totalsize));
     fdt->fdt_traverse = _fdt_traversal;
     fdt->fdt_print = _fdt_print;
+    fdt->end_addr = (char *)head_addr + fdt2hou(&(head->totalsize));
     return 0;
 }
 
@@ -41,7 +43,12 @@ void initramfs_fdt_cb(struct fdt *self, dtb_node_t *node, dtb_property_t *prop, 
             uart_write_string(prop_name);
             uart_write_string("\n");
             
-            cpio_addr = (char *)fdt2hou(&(prop->data));
+            cpio_addr = (char *)PA2VA(fdt2hou(&(prop->data)));
+        } else if (strcmp(prop_name, "linux,initrd-end") == 0) {
+            uart_write_string(prop_name);
+            uart_write_string("\n");
+            
+            cpio_end = (char *)PA2VA(fdt2hou(&(prop->data)));
         }
     }
 }
@@ -124,7 +131,7 @@ int _fdt_traversal(struct fdt *self, fdt_callback_t cb, void *data)
 static void print_spaces(int n)
 {
     while (n--) {
-        uart_write(' ');
+        kuart_write(' ');
     }
 }
 

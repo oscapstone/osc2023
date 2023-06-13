@@ -24,7 +24,7 @@ def main():
     #         break
     print(f"writing length: {no_hex}")
     for b in no_hex.encode():
-        time.sleep(0.003)
+        time.sleep(0.0001)
         devw.write(b.to_bytes(1, 'big'))
         # time.sleep(0.01)
         # recv = devr.read(1)
@@ -32,7 +32,7 @@ def main():
         #     print(f"recv: {recv.decode()} != .")
             
     for i in tqdm(range(len(content))):
-        time.sleep(0.003)
+        time.sleep(0.0001)
         devw.write(content[i].to_bytes(1, 'big'))
         # time.sleep(0.01)
         # recv = devr.read(1)

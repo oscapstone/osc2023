@@ -88,7 +88,7 @@ void get_hw_info(unsigned int tag_identifier, unsigned int *request_message)
     unsigned int value = mailbox[4 + i];
     uart_write_string("0x");
     uart_write_no_hex(value);
-    uart_write(' ');
+    kuart_write(' ');
   }
   uart_write_string("\n");
 }

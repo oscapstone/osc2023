@@ -2,6 +2,7 @@ ENTRY(_start)
 SECTIONS
 {
   . = 0x60000;
+  _proc_start = .;
   _stext = .;
   .text : { 
     *(.text.relo)
@@ -20,9 +21,19 @@ SECTIONS
 
   
   _sbss = .;
-  .bss : { *(.bss*) } 
+  .bss (NOLOAD): { *(.bss*) } 
   . = ALIGN(0x1000);
-  _ebss = .;  
+  _ebss = .;
+
+  .heap (NOLOAD):
+  {
+    /*__heap_size = 1M;*/
+    __heap_start = .;
+    /*. += __heap_size;*/
+    . += 0x100000;
+    __heap_end = .;
+  }
 
   _blsize = _ebss - _stext;
+  _proc_end = .;
 }
