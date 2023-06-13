@@ -2,12 +2,10 @@
 #include "initrd.h"
 #include "loader.h"
 #include "mailbox.h"
-#include "mem.h"
-#include "str.h"
 #include "thread.h"
 #include "time.h"
 #include "uart.h"
-#include "vm.h"
+#include "vfs.h"
 // FIXME: should disable INT in the critical section.
 
 // k From switch.S
@@ -19,6 +17,9 @@ extern void load_reg_ret(void);
 
 // From thread.c
 extern Thread_q *running, deleted;
+
+// From Vfs.h
+extern struct vnode *fsRoot;
 
 /********************************************************************
  * Systemcall getpid()
@@ -83,15 +84,8 @@ int sys_exec(const char *name, char *const argv[]) {
   int size = initrd_content_getSize(name);
   // Get memory for user program.
   char *dest = (char *)pmalloc(6);
-  Thread *t = get_current();
-  // Put the user program in the vm_list for future map
-  for (int i = 0; i < 64; i++)
-    vm_list_add(phy2vir(&(t->vm_list)), 0 + i * 0x1000, dest + i * 0x1000, /*R*/ 0);
-  // map_vm(phy2vir(t->pgd), 0, dest, 64);	// Map the program to 0x0
-  dest = phy2vir(dest);
   setup_program_loc(dest);
   char *d = dest;
-  // Copy user program to the alloc page
   for (int i = 0; i < size; i++) {
     *d++ = *start++;
   }
@@ -116,23 +110,6 @@ void sys_exit(int status) {
  * system call mbox
  ***********************************************************************/
 int sys_mbox_call(unsigned char ch, unsigned int *mbox) {
-  uint64_t phy_addr = 0x0;
-  // If is the user space addr, need to translate to phyaddr
-  if (((uint64_t)mbox & 0xffff000000000000) == 0) {
-    asm volatile("mov	x1, %[mbox];"
-                 "at	s1e0r, x1;" // Translate vir->phy
-                 "mrs	%[phy], par_el1;"
-                 : [phy] "=r"(phy_addr)
-                 : [mbox] "r"(mbox));
-    if (phy_addr & 1 == 1)
-      uart_puts("Translate Error\n");
-    phy_addr &= 0xFFFFFFFFF000;
-    phy_addr |= ((uint64_t)mbox & 0xFFF); // Get offset
-    phy_addr = phy2vir(phy_addr);
-    // uart_puthl(phy_addr);
-    return sys_mailbox_config(ch, phy_addr);
-  }
-
   return sys_mailbox_config(ch, mbox);
 }
 
@@ -203,53 +180,20 @@ int sys_fork(Trap_frame *trap_frame) {
   trap_frame_child->regs[29] = child->regs.fp;
 
   // Get the displacement of userspace stack
-  // trap_frame_child->sp_el0 =
-  //    (char *)trap_frame->sp_el0 - (char *)cur->sp_el0 + (char
-  //    *)child->sp_el0;
-  trap_frame_child->sp_el0 = trap_frame->sp_el0;
+  trap_frame_child->sp_el0 =
+      (char *)trap_frame->sp_el0 - (char *)cur->sp_el0 + (char *)child->sp_el0;
 
   // Write child's ID in the x0 of parent
   trap_frame->regs[0] = child->id;
   cur->child = child->id;
 
-  // Copy user stack Change for vir
-  // SKIP: COW
-  /*
-  f = (char *)cur->sp_el0_kernel;
-  c = (char *)child->sp_el0_kernel;
-  for (int i = 0; i < 0x4000; i++) {
-    *c++ = *f++;
-  }
-  */
-
-  // Map the page table
-  // child->pgd = cur->pgd;
-  copy_vm(cur->pgd, child->pgd);
-  // For mailBox
-  for (uint64_t va = 0x3c000000; va <= 0x3f000000; va += 0x1000) {
-    map_vm(child->pgd, va, va, 1, 0);
-  }
-  // Copy unmapping page
-  uart_puthl(cur->vm_list);
-  vm_list_copy(phy2vir(cur->vm_list), phy2vir(&(child->vm_list)));
-  // vm_list_dump(phy2vir(child->vm_list));
-  // uart_puthl(child->vm_list);
-  // uart_puthl(child->vm_list->phy);
-  // map_vm(child->pgd, 0xffffffffb000, vir2phy(child->sp_el0_kernel), 4);
-  /*
-  uart_puts("child pgd: ");
-  uart_puth(child->pgd);
-  */
-  // void* addr = getProgramLo();
-  // map_vm(phy2vir(child->pgd), 0, addr, 64);
-  /*
-  c = (char *)trap_frame_child->sp_el0_kernel ;
-  f = (char *)trap_frame->sp_el0_kernel;
+  // Copy user stack
+  c = (char *)trap_frame_child->sp_el0;
+  f = (char *)trap_frame->sp_el0;
   while (f != (char *)cur->sp_el0) {
     *c++ = *f++;
   }
   *c = *f;
-  */
 
   // LOG
   /*
@@ -277,64 +221,6 @@ void sys_signal(int sig, void (*handler)()) {
 }
 
 /*************************************************************************
- * MMAP function
- *
- * @addr: The virtual address want to map to.
- * @len: The length user required
- * @prot: Protecton, R/W/E
- * @flags: Separate different behaviors.
- * @fd:
- * @file_offset:
- ************************************************************************/
-uint64_t sys_mmap(uint64_t addr, size_t len, int prot, int flags, int fd,
-                  int file_offset) {
-  Thread *t = get_current();
-  uint64_t phy_mem;
-  uint32_t l; // Get the pmalloc size
-  
-  // If User not defined the map address assigned one
-  if (addr == NULL) {
-    addr = 0x100000;
-  }
-  // Align to page size
-  if (addr & 0xFFF)
-    addr = (addr & (~0xfff)) + 0x1000;
-  if (len & 0xFFF)
-    len = (len & (~0xfff)) + 0x1000;
-  l = len >> 13; // Size for pmalloc
-
-  // Find the empty slot in memory(virtual mem)
-  while (1) {
-    if (vm_list_delete(phy2vir(&(t->vm_list)), addr) == 0) {
-      uart_puthl(addr);
-      break;
-    }
-    addr += 0x1000;
-  }
-  // Discard fd, file_offset
-  if (flags == MAP_ANONYMOUS) {
-    phy_mem = pmalloc(l);
-    // uart_puthl(phy_mem);
-    // uart_puti(len >> 12);
-    
-
-    //  Anonymous means no backup file -> content = 0
-    memset(phy2vir(phy_mem), 0, len);
-    vm_list_add(phy2vir(&(t->vm_list)), addr, phy_mem, /*R*/ (~prot) & 1);
-    // uart_puthl(vm_list_delete(phy2vir(&(t->vm_list)), addr));
-    map_vm(phy2vir(t->pgd), addr, phy_mem, len >> 12, prot);
-  } else if (flags == MAP_POPULATE) {
-    phy_mem = fd + file_offset;
-    phy_mem = vir2phy(phy_mem);
-    vm_list_add(phy2vir(&(t->vm_list)), addr, phy_mem, prot & 0x1);
-    map_vm(phy2vir(t->pgd), addr, phy_mem, len >> 12, prot);
-  } else {
-    uart_puts("MMAP FLAG ERROR!!\n");
-  }
-  return addr;
-}
-
-/*************************************************************************
  * __handler store the handler pointer
  ************************************************************************/
 static void (*__handler)() = NULL;
@@ -354,9 +240,7 @@ void handler_container() {
   __handler();
   __handler = NULL;
   // The EL0 wapper of the `exit()`
-  asm volatile("mov	x8, 15;"
-               "svc	0;");
-  // uexit();
+  uexit();
 }
 
 /**************************************************************************
@@ -380,12 +264,137 @@ void posix_kill(int pid, int sig) {
     return;
   // Setup the pointer which handler_container will execuate.
   __handler = t->handler;
-  t->signaled = 1;
-  /*
   setup_program_loc(handler_container);
   Thread *h = thread_create(sys_run_program);
-  */
   return;
+}
+
+int sys_open(const char *pathname, int flags) {
+  // uart_puts("sys_open\n");
+  Thread *t = get_current();
+  struct vnode *cur = t->curDir;
+  char *path;
+  cur = vfs_reWritePath(pathname, cur, &path);
+  int i = 0;
+  for (i = 0; i < FDMAX; i++) {
+    if ((t->fdTable)[i] == NULL) {
+      vfs_open(path, flags, &(t->fdTable)[i], cur);
+      break;
+    }
+  }
+  return i;
+}
+
+int sys_close(int fd) {
+  Thread *t = get_current();
+  // uart_puts("sys_close\n");
+  if (fd < 0 || fd >= FDMAX || (t->fdTable)[fd] == NULL) {
+    uart_puts("vfs_close error, fd out of bound\n");
+    return 1;
+  }
+  vfs_close((t->fdTable)[fd]);
+  return 0;
+}
+
+int sys_write(int fd, const void *buf, int count) {
+  disable_int();
+  Thread *t = get_current();
+  struct file *file = (t->fdTable)[fd];
+  // uart_puts("sys_write\n");
+  int ret = vfs_write(file, buf, count);
+  enable_int();
+  return ret;
+}
+
+int sys_read(int fd, void *buf, int count) {
+  Thread *t = get_current();
+  struct file *file = (t->fdTable)[fd];
+  // uart_puts("sys_read\n");
+  int ret = vfs_read(file, buf, count);
+  return ret;
+}
+
+int sys_mkdir(const char *pathname) {
+  // uart_puts("sys_mkdir\n");
+  Thread *t = get_current();
+  struct vnode *cur = t->curDir;
+  char *path;
+  cur = vfs_reWritePath(pathname, cur, &path);
+  uart_puts(pathname);
+  vfs_mkdir(path, cur);
+  return 0;
+}
+
+/*****************************************************************
+ * Mount the fs on the dir
+ ****************************************************************/
+int sys_mount(const char *src, const char *target, const char *filesystemc,
+              unsigned long ll, const void *aa) {
+  // uart_puts("sys_mount\n");
+  Thread *t = get_current();
+  struct vnode *dir = t->curDir;
+  struct filesystem *fs = NULL;
+  if (strcmp(filesystemc, "tmpfs") == 0) {
+    fs = getRamFs();
+  } else {
+    uart_puts(filesystemc);
+    uart_puts("connot found\n");
+    return 1;
+  }
+  struct mount *m = (struct mount *)malloc(sizeof(struct mount));
+  struct vnode *mountPoint;
+  vfs_lookup(target, &mountPoint, dir);
+  mountPoint->mount = m;
+  m->root = mountPoint;
+  fs->setup_mount(fs, m);
+  return 0;
+}
+
+/******************************************************************
+ * Change Dir which store in the cuurent thread.(defalut: root
+ ****************************************************************/
+int sys_chdir(const char *path) {
+  // uart_puts("sys_chdir\n");
+  char *t = path;
+  Thread *thread = get_current();
+  struct vnode *dir = thread->curDir;
+  if (*t == '/' && *(t + 1) == 0) {
+    thread->curDir = fsRoot;
+    return 0;
+  }
+  char *newPath;
+  struct vnode *n = vfs_reWritePath(path, dir, &newPath);
+  vfs_lookup(newPath, &dir, n);
+  thread->curDir = dir;
+  return 0;
+}
+
+/***************************************************************
+ * Set the file position of the desired value
+ **************************************************************/
+long sys_lseek64(int fd, long offset, int whence) {
+  disable_int();
+  static count = 0;
+  Thread *t = get_current();
+  struct file *file = (t->fdTable)[fd];
+  if (whence == SEEK_SET) {
+    file->f_pos = offset;
+  }
+  enable_int();
+  return offset;
+}
+
+/***************************************************************
+ * IO Control of the file
+ *
+ * only support framFS now.
+ *************************************************************/
+int sys_ioctl(int fd, unsigned long request, void *fb_info) {
+  Thread *t = get_current();
+  struct file *file = (t->fdTable)[fd];
+  // uart_puts("ioctl\n");
+  framefs_ioctl(file, fb_info);
+  return 0;
 }
 
 //============================================================

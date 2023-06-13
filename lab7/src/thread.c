@@ -1,14 +1,17 @@
 #include "thread.h"
 #include "mem.h"
-#include "str.h"
 #include "syscall.h"
 #include "terminal.h"
 #include "time.h"
 #include "uart.h"
-#include "vm.h"
 // Functions in switch.S
 extern void switch_to(Thread *, Thread *);
 extern Thread *get_current(void);
+
+// VFS
+extern struct vnode *fsRoot;
+extern struct file *uart_stdin;
+extern struct file *uart_stdout;
 
 //=======================================================
 // thread queues
@@ -34,7 +37,6 @@ void thread_init() {
   return;
 }
 void thread_q_add(Thread_q *Q, Thread *t) {
-  disable_int();
   t->prev = NULL;
   t->next = Q->begin;
   if (Q->begin != NULL)
@@ -43,12 +45,10 @@ void thread_q_add(Thread_q *Q, Thread *t) {
   if (Q->end == NULL) {
     Q->end = t;
   }
-  enable_int();
   return;
 }
 
 Thread *thread_q_pop(Thread_q *Q) {
-  disable_int();
   Thread *ret = Q->end;
   if (ret != NULL) {
     Q->end = ret->prev;
@@ -58,13 +58,11 @@ Thread *thread_q_pop(Thread_q *Q) {
     ret->prev = NULL;
     ret->next = NULL;
   }
-  enable_int();
   return ret;
 }
 
 // FIXME: Use a better algorithm
 Thread *thread_q_delete(Thread_q *Q, Thread *target) {
-  disable_int();
   Thread *t = NULL;
   Thread *s = Q->begin;
   t = thread_q_pop(Q);
@@ -76,12 +74,10 @@ Thread *thread_q_delete(Thread_q *Q, Thread *target) {
       return NULL;
     }
   }
-  enable_int();
   return t;
 }
 
 Thread *thread_q_delete_id(Thread_q *Q, int id) {
-  disable_int();
   Thread *t = NULL;
   Thread *s = Q->begin;
   t = thread_q_pop(Q);
@@ -94,26 +90,7 @@ Thread *thread_q_delete_id(Thread_q *Q, int id) {
       return NULL;
     }
   }
-  enable_int();
   return t;
-}
-
-void vm_base_switch(Thread *next) {
-  // uart_puti(next->id);
-  // uart_puthl(next->pgd);
-  asm volatile(
-      //"mov	x0,  %[pgd];"
-      //"dsb	ish;"
-      //"msr	ttbr0_el1, x0;"
-      "msr	ttbr0_el1, %[pgd];"
-      "msr	ttbr1_el1, %[zero];"
-      "tlbi	vmalle1is;"
-      "dsb	ish;"
-      "isb;"
-      "ret;" ::[pgd] "r"(next->pgd),
-      [zero] "r"(0));
-
-  return;
 }
 
 /************************************************************************
@@ -122,13 +99,8 @@ void vm_base_switch(Thread *next) {
  * @fn: The first function will be execute after thread created.
  ***********************************************************************/
 Thread *thread_create(void (*fn)(void *)) {
-  disable_int();
-  Thread *cur = (Thread *)pmalloc(0); // Get the small size
-  cur = phy2vir(cur);                 // This is also in the kernel
-  cur->pgd = pmalloc(0);              // Get the entry of PGD
-  memset(phy2vir(cur->pgd), 0, 0x1000);
-  // uart_puts("\npgd: ");
-  // uart_puth(cur->pgd);
+  Thread *cur = pmalloc(0); // Get the small size
+  memset(cur, 0, 0x1000);
   cur->child = 0;
   cur->handler = NULL;
   cur->regs.lr = fn;
@@ -136,31 +108,18 @@ Thread *thread_create(void (*fn)(void *)) {
   cur->regs.fp = ((char *)cur) + 0x1000 - 16; // No matter?
   cur->id = thread_count++;                   // Set ID
   cur->status = run;                          // Set the status
-  cur->signaled = 0;
-  cur->vm_list = NULL;
-  cur->mapped = 0;
-
-  // Note: This sp is in user space, don't add 0xffff0000
-  uint64_t tmp_sp = pmalloc(2);
-  // uart_puthl(&(cur->vm_list));
-  for (int i = 0; i < 4; i++)
-    vm_list_add(phy2vir(&(cur->vm_list)), 0xffffffffb000 + 0x1000 * i,
-                tmp_sp + 0x1000 * i, /*RW*/1);
-  // vm_list_add(cur->vm_list, 0xffffffffb000, tmp_sp, 4); // Demand Paging
-  // map_vm(phy2vir(cur->pgd), 0xffffffffb000, tmp_sp, 4); // Map the phyaddr to
-  // vm cur->sp_el0 = pmalloc(2) + 0x1000 - 16;     // Separate kernel stack
-  cur->sp_el0 = 0xffffffffeff0;         // This is virtual address ,
-  cur->sp_el0_kernel = phy2vir(tmp_sp); // For fork
-  thread_q_add(&running, cur);          // Add to thread queue
-  uart_puts("all done");
-  enable_int();
-  // disable_int();
+  cur->sp_el0 = pmalloc(0) + 0x1000 - 16;     // Separate kernel stack
+  cur->curDir = fsRoot;                       // Setup current Dir
+  (cur->fdTable)[0] = uart_stdin;
+  (cur->fdTable)[1] = uart_stdout;
+  (cur->fdTable)[2] = uart_stdout;
+  thread_q_add(&running, cur); // Add to thread queue
   return cur;
 }
 
 void idle(void) {
   while (1) {
-    // uart_puts("idle");
+    // uart_puts("idle()\n");
     kill_zombies();
     schedule();
   }
@@ -177,8 +136,8 @@ void kill_zombies(void) {
     // uart_puti(t->child);
     if (t->child > t->id)
       sys_kill(t->child);
-    // pfree(t->sp_el0);
-    // pfree(t);
+    pfree(t->sp_el0);
+    pfree(t);
     t = thread_q_pop(&deleted);
   }
   return;
@@ -204,49 +163,17 @@ void schedule() {
       terminal_run_thread();
       t = thread_q_pop(&running);
       thread_q_add(&running, t);
-      // vm_base_switch(t);
     }
     // sys_kill(t->id);
     // idle();
   }
   Thread *cur = get_current();
-  // vm_base_switch(get_current);
   if (cur != NULL) {
-    disable_int();
-    vm_base_switch(t);
     switch_to(cur, t);
-    /*
-    uart_puts("switch to: ");
-    Thread *tt = get_current();
-    uart_puti(tt->id);
-    uart_puth(tt->regs.sp);
-    uart_puth(tt);
-    */
-    // uart_puts("switch");
   } else {
-    disable_int();
-    /*
-asm volatile(
-  "mov	x0, %[cur];"
-  "mov	x1, %[nex];"
-  "bl 	switch_to;"
-  :: [cur] "r" (cur), [nex] "r" (t));
-  */
-    // uart_puts("initial switch\n");
-    vm_base_switch(t);
+    uart_puts("initial switch\n");
     switch_to(startup, t);
-    /*
-    Thread *tt = get_current();
-    uart_puts("switch to : ");
-    uart_puti(tt->id);
-    uart_puth(tt->regs.sp);
-    uart_puth(tt);
-    */
-    // uart_puts("switch");
   }
-
-  // print_esr_el1();
-  enable_int();
   return; // This return may never used
 }
 
@@ -257,7 +184,9 @@ void exit() {
   Thread *t = get_current();
   thread_q_delete(&running, t);
   thread_q_add(&deleted, t);
-  uart_puts("exit");
+  uart_puts("[exit] ");
+  uart_puti(t->id);
+  uart_puts("\n");
   schedule();
   return;
 }
@@ -296,9 +225,6 @@ void test_thread_queue(void) {
  * Wrapper function of the thread create fo terminal_run()
  ************************************************************************/
 void terminal_run_thread() {
-  uart_puts("Terminal Thread Create\n");
-  Thread *t = thread_create(terminal_run);
-  pfree(t->pgd);
-  t->pgd = 0x0; // Using the kernel's pgd
+  thread_create(terminal_run);
   return;
 }

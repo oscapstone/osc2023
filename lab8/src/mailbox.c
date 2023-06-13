@@ -19,12 +19,9 @@ int mailbox_config(unsigned char ch) {
     while (*MAILBOX_STATUS & MAILBOX_EMPTY) {
       asm volatile("nop");
     }
-    if (r == *MAILBOX_READ){
-	    uart_puth(mbox[28]);
-	    uart_puts("\n");
-      return mbox[1] == MAILBOX_RES;
-    }
 
+    if (r == *MAILBOX_READ)
+      return mbox[1] == MAILBOX_RES;
   }
   return 0;
 }
@@ -36,6 +33,7 @@ int sys_mailbox_config(unsigned char ch, unsigned int *mailbox) {
 
   // Wait until the Mbox is not full
   while (*MAILBOX_STATUS & MAILBOX_FULL) {
+    asm volatile("nop");
   }
 
   // Write the register
@@ -46,9 +44,7 @@ int sys_mailbox_config(unsigned char ch, unsigned int *mailbox) {
       asm volatile("nop");
     }
 
-    if (r == *MAILBOX_READ){
-	    uart_puth(mailbox[28]);
-	    uart_puts("\n");
+    if (r == *MAILBOX_READ) {
       return mailbox[1] == MAILBOX_RES;
     }
   }

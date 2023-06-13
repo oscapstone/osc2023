@@ -9,7 +9,6 @@
 #include "thread.h"
 #include "timer.h"
 #include "uart.h"
-#include "vm.h"
 // static char buf[256];
 
 struct command commands[] = {
@@ -240,14 +239,7 @@ int exec() {
 
   if (size != 0) {
     setup_program_loc(dest);
-    Thread *user = thread_create(sys_run_program);
-    // map_vm(user->pgd, 0, dest, 10);
-    for (int i = 0; i < 64; i++) {
-      vm_list_add(phy2vir(&(user->vm_list)), 0 + i * 0x1000, dest + i * 0x1000, /*R*/ 0);
-    }
-    uart_puts("map done\n");
-    user->mapped = 1;
-    // map_vm(user->pgd, 0, dest, 64);
+    thread_create(sys_run_program);
     core_timer_enable();
     schedule();
     Thread *t = get_current();
