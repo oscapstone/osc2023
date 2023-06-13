@@ -1,12 +1,8 @@
 #include "uart.h"
 #include "utils.h"
-#include "dtb.h"
-extern char* dtb_ptr;
 
-// 可以用 asm volatile 把x30拿出來, 就不用用傳參的方式
-void main(char* arg) { 
-	dtb_ptr = arg; //get dtb from bootloader
-	traverse_device_tree(dtb_ptr, dtb_callback_initramfs);
+
+int main() {
 	shell_init();
 	char cmd[100];
 	int status=0;

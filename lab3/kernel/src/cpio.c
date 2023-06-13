@@ -78,3 +78,39 @@ void show_cat_file(char *file_name){
 
   return;
 }
+
+void exec_app(char *file_name){
+  cpio_newc_header *blk = CPIO_DEFAULT_PLACE;
+
+  char *name = ((char *)blk + sizeof(cpio_newc_header));
+  while(str_cmp(name, (char *) "TRAILER!!!") != 1){
+    unsigned long mode = hex_to_uint(blk->c_mode, 8);
+    unsigned long filesize = hex_to_uint(blk->c_filesize, 8);
+    unsigned long namesize = hex_to_uint(blk->c_namesize, 8);
+    char *context = (char *) align4((unsigned long)name+namesize);
+    if (str_cmp(name, file_name) == 1){
+      if (mode & (1 << 14)){
+        uart_send_string((char *) "\"");
+        uart_send_string(file_name);
+        uart_send_string((char *) "\" is a directory.\n");
+        return;
+      }
+      else{
+        //load_app((void *)context, filesize); 
+        char* ustack = malloc(0x10000);
+        asm("msr elr_el1, %0\n"
+            "msr spsr_el1, xzr\n" //write 0000000000000000 -> to el0
+            "msr sp_el0, %1\n" //stack pointer for el0
+            "eret\n"
+            :: "r" (context),
+                "r" (ustack+0x10000));
+        break;
+      }
+      }
+    blk = (cpio_newc_header *) align4((unsigned long)context+filesize);
+    name = ((char *)blk + sizeof(cpio_newc_header)); 
+  }
+  uart_send_string((char *) "File \"");
+  uart_send_string(file_name);
+  uart_send_string((char *) "\" not found.\n");
+}
