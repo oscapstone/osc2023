@@ -49,9 +49,6 @@ tty: $(IMAGE).img
 dbg: $(IMAGE).img 
 	$(QEMU) -machine $(MACHINE) -kernel $(IMAGE).img -initrd $(CPIO_FILE) -dtb $(DTB_FILE) -display none -serial null -serial stdio -s -S
 
-ddbg: $(IMAGE).img 
-	$(QEMU) -machine $(MACHINE) -kernel $(IMAGE).img -initrd $(CPIO_FILE) -dtb $(DTB_FILE) -display none -serial null -serial pty -s -S
-
 .PHONY: clean
 clean:
 	rm -rf $(OBJ_DIR) *.img *.elf */*.elf

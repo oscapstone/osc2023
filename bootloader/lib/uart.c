@@ -55,7 +55,7 @@ char uart_getc()
     /* echo back */
     if (r == '\r')
     {
-        uart_printf("\r\r\n");
+        uart_printf("\r\n");
         do
         {
             asm volatile("nop");

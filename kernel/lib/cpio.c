@@ -1,9 +1,13 @@
 #include "cpio.h"
+#include "string.h"
+#include "uart.h"
+#include "utils.h"
+#include "exec.h"
 
-char *cpio_start;
-char *cpio_end;
+char* cpio_start;  // init in main
+char* cpio_end;
 
-/* Parse one file system object */
+
 /* write pathname,data,next header into corresponding parameter */
 /* if no next header, next_header_pointer = 0 */
 /* return -1 if parse error*/
@@ -27,7 +31,9 @@ int cpio_newc_parse_header(struct cpio_newc_header *this_header_pointer, char **
 
     // get next header pointer
     if (*filesize == 0)
+    {
         *next_header_pointer = (struct cpio_newc_header *)*data;
+    }
     else
     {
         offset = *filesize;
@@ -48,26 +54,27 @@ int cat(char *thefilepath)
     unsigned int filesize;
     struct cpio_newc_header *header_pointer = (struct cpio_newc_header *)cpio_start;
 
-    while (header_pointer)
+    while (header_pointer != 0)
     {
         int error = cpio_newc_parse_header(header_pointer, &filepath, &filesize, &filedata, &header_pointer);
         // if parse header error
         if (error)
         {
-            uart_printf("error\n");
+            uart_puts("error");
             break;
         }
 
-        if (!strcmp(thefilepath, filepath))
+        if (strcmp(thefilepath, filepath) == 0)
         {
             for (unsigned int i = 0; i < filesize; i++)
-                uart_printf("%c", filedata[i]);
-            uart_printf("\n");
+            {
+                uart_async_putc(filedata[i]);
+            }
             break;
         }
 
         if (header_pointer == 0)
-            uart_printf("cat: %s: No such file or directory\r\n", thefilepath);
+            uart_printf("cat: %s: No such file or directory\n", thefilepath);
     }
     return 0;
 }
@@ -79,19 +86,52 @@ int ls(char *working_dir)
     unsigned int filesize;
     struct cpio_newc_header *header_pointer = (struct cpio_newc_header *)cpio_start;
 
-    while (header_pointer)
+    while (header_pointer != 0)
     {
         int error = cpio_newc_parse_header(header_pointer, &filepath, &filesize, &filedata, &header_pointer);
         // if parse header error
         if (error)
         {
-            uart_printf("error\n");
+            uart_printf("%s", "error\n");
             break;
         }
 
         // if this is not TRAILER!!! (last of file)
         if (header_pointer != 0)
-            uart_printf("%s\n", filepath);
+            uart_async_printf("%s\n", filepath);
+    }
+    return 0;
+}
+
+int execfile(char *thefilepath)
+{
+    char *filepath;
+    char *filedata;
+    unsigned int filesize;
+    struct cpio_newc_header *header_pointer = (struct cpio_newc_header *)cpio_start;
+
+    while (header_pointer != 0)
+    {
+        int error = cpio_newc_parse_header(header_pointer, &filepath, &filesize, &filedata, &header_pointer);
+        // if parse header error
+        if (error)
+        {
+            uart_printf("error");
+            break;
+        }
+
+        if (!strcmp(thefilepath, filepath))
+        {
+            exec(filedata);
+            break;
+        }
+
+        // if this is TRAILER!!! (last of file)
+        if (header_pointer == 0)
+        {
+            uart_printf("execfile: %s: No such file or directory\n", thefilepath);
+            return -1;
+        }
     }
     return 0;
 }

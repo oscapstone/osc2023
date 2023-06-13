@@ -3,6 +3,7 @@
 
 #include "gpio.h"
 #include "sprintf.h"
+#include "exception.h"
 
 #define MAX_BUF_SIZE 0x400
 
@@ -21,7 +22,26 @@
 #define AUX_MU_BAUD ((volatile unsigned int *)(MMIO_BASE + 0x00215068))
 
 void uart_init();
+void enable_mini_uart_interrupt();
+void enable_mini_uart_rx_interrupt();
+void enable_mini_uart_tx_interrupt();
+void disable_mini_uart_interrupt();
+void disable_mini_uart_rx_interrupt();
+void disable_mini_uart_tx_interrupt();
+
+/* UART interrupt handler */
+void uart_rx_interrupt_handler(); 
+void uart_tx_interrupt_handler();
+
+/* Asynchronous UART */
+void uart_async_putc(char c);
+char uart_async_getc();
+char *uart_async_gets(char *buf);
+int uart_async_printf(char *fmt, ...);
+
+/* Synchronous UART */
 void uart_putc(char c);
+void uart_puts(char *s);
 char uart_getc();
 char *uart_gets(char *buf);
 int uart_printf(char *fmt, ...);
