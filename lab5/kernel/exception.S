@@ -66,7 +66,11 @@ branch_to_address_el0:
 
 exception_handler_system_call:
         save_all
-        bl print_exception_info
+        /*
+         * Save current sp to x12 for context switch
+         */
+        mov x12, sp
+        bl system_call
         load_all
         eret
 
