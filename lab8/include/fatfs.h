@@ -14,7 +14,7 @@ typedef struct {
   int size;
   size_t Eof;
   void *dirs;
-  void *data;
+  uint32_t data;	// The sector of the data
 } FsAttr;
 
 // For the directory
@@ -49,6 +49,7 @@ int fatfs_read(struct file *f, void *buf, size_t len);
 int fatfs_write(struct file *f, const void *buf, size_t len);
 int fatfs_open(struct vnode *, struct file **target);
 int fatfs_close(struct file *f);
+void fatfs_sync();
 
 
 #endif

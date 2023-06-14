@@ -379,6 +379,9 @@ void low_syn_handler(Trap_frame *trap_frame) {
     case 19:
       regs[0] = sys_ioctl(regs[0], regs[1], regs[2]);
       break;
+    case 20:
+      sys_sync();
+      break;
     default:
       uart_puts("***UNKNOWN INT***\n");
     }

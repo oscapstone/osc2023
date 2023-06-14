@@ -20,7 +20,7 @@ all: clean kernel8.img initramfs.cpio
 #initramfs.cpio: initramfs
 #	cd initramfs; find . -print -depth | cpio -H newc -o > $@; mv $@ ..
 
-initramfs.cpio: vfs1.img
+initramfs.cpio: vfs2.img
 	ls $^ | cpio -H newc -o > $@
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.S

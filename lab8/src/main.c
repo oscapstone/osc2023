@@ -75,11 +75,18 @@ int main(void *dtb_location) {
   test->mount = frameM;
   ffs->setup_mount(test, frameM);
 
-  ramfs_dump(fsRoot, 0);
 
   // FAT
-  sd_init();
+  struct filesystem *fatfs = getFatFs();
+  register_filesystem(fatfs);
+  vfs_mkdir("/boot", NULL);
+  vfs_lookup("/boot", &test, NULL);
+  struct mount *fatM = (struct mount *)malloc(sizeof(struct mount));
+  fatM->root = test;
+  test->mount = fatM;
+  fatfs->setup_mount(test, fatM);
 
+  ramfs_dump(fsRoot, 0);
   core_timer_enable();
   terminal_run_thread();
 

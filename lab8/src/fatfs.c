@@ -1,6 +1,5 @@
 #include "fatfs.h"
 #include "heap.h"
-#include "initrd.h"
 #include "mem.h"
 #include "str.h"
 #include "uart.h"
@@ -13,7 +12,12 @@ extern struct vnode *fsRoot;
 static int BPB;
 static uint64_t partition_start;
 static uint64_t reserved_blocks;
-static uint64_t start_dirs;
+static uint64_t root_dir;
+static uint64_t fat_start;
+static uint64_t data_start;
+static uint64_t sector_per_fat;
+static uint64_t free_sector;
+
 
 /**************************************************************
  * This function will initialize the FS from CPIO archive
@@ -21,40 +25,54 @@ static uint64_t start_dirs;
  * @root: The root of this file system.
  *************************************************************/
 int fatfs_initFsCpio(struct vnode *root) {
-  void *f = initrd_getLo(); // get the location of cpio
   struct vnode *target = NULL;
+  char fat_buf[512] = {0};
+  char dir_buf[512] = {0};
   char buf[16] = {0};
+  Entry *e = NULL;
   uint64_t size;
-  while (1) {
-    char *fname = initrd_getName(f);
-    char *fdata = initrd_getData(f);
-    int fsize = initrd_getSize(f);
-    int fmode = initrd_getMode(f);
-    // uart_puts(fname);
-    //  End
-    if (strcmp(fname, "TRAILER!!!") == 0)
-      break;
-    struct vnode *dir_node = root;
-    while (fname != NULL) {
-      memset(buf, 0, 16);
-      fname = getFileName(buf, fname);
-
-      // The Directory must be the directory type
-      ((FsAttr *)(dir_node->internal))->type = DIRTYPE;
-      if (*buf != 0) {
-        // Find if the dir is exist
-        dir_node->v_ops->lookup(dir_node, &target, buf);
-        // If not exist, just create it
-        if (target == NULL)
-          dir_node->v_ops->create(dir_node, &target, buf);
-      }
-      dir_node = target;
-      ((FsAttr *)(target->internal))->data = fdata;
-      ((FsAttr *)(target->internal))->Eof = fsize;
-      target = NULL;
-    }
-    f = initrd_jumpNext(f);
+  readblock(data_start, dir_buf);
+  struct vnode *dir_node = root;
+  for(int i = 0; i < 512; i += sizeof(Entry)){
+	  e = dir_buf + i;
+	  memset(buf, 0, sizeof(buf));
+	  int i, k = 0;
+	  if(e->name[0] == 0)
+		  break;
+	  // Get the file name
+	  for(i = 0; i < 7; i ++){
+		  buf[i] = e->name[i];
+		  if(e->name[i] == ' '){
+			  buf[i] = '.';
+			  break;
+		  }
+	  }
+	  if(buf[i] == '.')
+		  i ++;
+	  else{
+		  buf[i] = '.';
+		  i++;
+	  }
+	  for(int j = i; j < i + 3; j++){
+		  buf[j] = e->ext[k++];
+		  if(buf[j] == ' '){
+			  buf[j] = '\0';
+			  break;
+		  }
+	  }
+	  uart_puts(buf);
+	  dir_node->v_ops->create(dir_node, &target, buf);
+	  uint32_t tmp;
+	  tmp = e->highAddr << 16;
+	  tmp += e->lowAddr;
+	  ((FsAttr *)(target->internal))->data = tmp;;
+	  uart_puth(tmp);
+	  ((FsAttr *)(target->internal))->Eof = e->size;
+	  uart_puth(e->size);
+	  uart_puts("\n");
+	  target = NULL;
   }
+
   return 0;
 }
 
@@ -63,7 +81,7 @@ int fatfs_initFsCpio(struct vnode *root) {
  *************************************************************/
 struct filesystem *getFatFs(void) {
   struct filesystem *fs = malloc(sizeof(struct filesystem));
-  fs->name = "Ramfs";
+  fs->name = "Fatfs";
   fs->setup_mount = fatfs_init;
   return fs;
 }
@@ -192,6 +210,57 @@ int fatfs_init(struct filesystem *fs, struct mount *m) {
   sd_init();
   // Read The MBR
   readblock(0, buf);
+  // Get the first partition LBA (Little Endian on multiple byte)
+  for(int i = 0x1be + 0x0B; i >= 0x1be + 0x08; i--){
+	  partition_start <<= 8;
+	  partition_start += buf[i];
+  }
+  uart_puth(partition_start);
+  uart_puts("\n");
+
+  // Get the fs information of the FAT file system.
+  readblock(partition_start, buf);
+
+  // Get reserved blocks in the FAT
+  for(int i = 0x0E; i < 0x0E + 1; i++){
+	  reserved_blocks <<= 4;
+	  reserved_blocks += buf[i];
+  }
+  int fat_nums = buf[16];
+  for(int i = 36 + 3; i >= 36; i--){
+	  sector_per_fat <<= 8;
+	  sector_per_fat += buf[i];
+  }
+  for(int i = 47 ; i >= 44; i--){
+	  root_dir <<= 8;
+	  root_dir += buf[i];
+  }
+  uart_puts("root block: ");
+  uart_puth(root_dir);
+
+  // Get the next free block in the FAT
+  readblock(partition_start + 1, buf);
+  for(int i = 495; i >= 492; i--){
+	  free_sector <<= 8;
+	  free_sector += buf[i];
+  }
+  uart_puts("Next free FAT: ");
+  uart_puth(free_sector);
+  // Jump to the FAT table
+  fat_start = partition_start + reserved_blocks;
+  readblock(fat_start, buf);
+
+  data_start = partition_start + reserved_blocks + sector_per_fat * fat_nums;
+  // RootDir
+  readblock(data_start, buf);
+  uart_puts("\nRoot location: ");
+  uart_puth(data_start * 512);
+  uart_puts("\n");
+  for(int i = 0; i < 512; i += sizeof(Entry)){
+	  Entry *e = buf + i;
+	  uart_puts(e->name);
+	  uart_puts("\n");
+  }
 
   // Check if the data already exist
   if (root->internal == NULL) {
@@ -212,10 +281,9 @@ int fatfs_init(struct filesystem *fs, struct mount *m) {
   attr->name = name;
   attr->type = DIRTYPE;
   attr->size = 0;
-  // Preserve the created dirs
-  if (attr->dirs == NULL) {
-    attr->dirs = (void *)smalloc(8 * sizeof(void *));
-  }
+  // Use the new dirs
+  attr->dirs = (void *)smalloc(8 * sizeof(void *));
+  fatfs_initFsCpio(root);
   return 0;
 }
 
@@ -236,11 +304,13 @@ int fatfs_open(struct vnode *v, struct file **target) {
   if (*target == NULL) {
     *target = (struct file *)malloc(sizeof(struct file));
   }
+  char *buf = (char*)pmalloc(0);
   (*target)->vnode = v;
   (*target)->f_pos = 0;
   (*target)->f_ops = v->f_ops;
   (*target)->Eof = ((FsAttr *)(v->internal))->Eof;
-  (*target)->data = ((FsAttr *)(v->internal))->data;
+  readblock(((FsAttr *)(v->internal))->data - 2 + data_start, buf);
+  (*target)->data = buf;
   return 0;
 }
 
