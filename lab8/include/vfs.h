@@ -38,6 +38,7 @@ struct file {
   struct file_operations *f_ops;
   int flags;
   void *data;		// The data of this file
+  int dirty;
 };
 
 /* This structure contain the filesystem name such as Ext3
@@ -65,6 +66,12 @@ struct file_operations {
   int (*open)(struct vnode *, struct file **); // open vnode to table
   int (*close)(struct file *);
 };
+
+typedef struct FIle_list{
+	struct FIle_list *prev;
+	struct FIle_list *next;
+	struct file* f;
+}file_list;
 
 // struct mount* rootfs;
 

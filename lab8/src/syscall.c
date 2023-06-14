@@ -6,6 +6,7 @@
 #include "time.h"
 #include "uart.h"
 #include "vfs.h"
+#include "fatfs.h"
 // FIXME: should disable INT in the critical section.
 
 // k From switch.S
@@ -399,6 +400,8 @@ int sys_ioctl(int fd, unsigned long request, void *fb_info) {
 }
 
 void sys_sync(){
+	fatfs_sync();
+	uart_puts("sys_sync\n");
 	return;
 }
 

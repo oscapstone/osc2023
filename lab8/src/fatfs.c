@@ -17,7 +17,32 @@ static uint64_t fat_start;
 static uint64_t data_start;
 static uint64_t sector_per_fat;
 static uint64_t free_sector;
+static file_list *dirty_files = NULL;
 
+static void add_list(file_list* xxx, struct file* f){
+	uart_puts("add list\n");
+	if(dirty_files == NULL){
+		dirty_files = malloc(sizeof(file_list));
+		dirty_files->f = f;
+		dirty_files->prev = NULL;
+		dirty_files->next = NULL;
+		uart_puth(dirty_files);
+		return;
+	}
+	while(dirty_files->next != NULL){
+		dirty_files = dirty_files->next;
+	}
+	uart_puts("new next\n");
+	dirty_files->next = malloc(sizeof(file_list));
+	dirty_files->next->prev = dirty_files;
+
+	dirty_files = dirty_files->next;
+	dirty_files->f = f;
+	dirty_files->next = NULL;
+	while(dirty_files->prev != NULL)
+		dirty_files = dirty_files->prev;
+	return;
+}
 
 /**************************************************************
  * This function will initialize the FS from CPIO archive
@@ -149,6 +174,7 @@ int fatfs_lookup(struct vnode *dir, struct vnode **target, const char *name) {
  * Create implementation. which will create a new Vnode.
  ***************************************************************/
 int fatfs_create(struct vnode *dir, struct vnode **target, const char *name) {
+	uart_puts(name);
   FsAttr *fs = (FsAttr *)dir->internal;
   if (fs->type != DIRTYPE) {
     uart_puts("U  should add file only in DIR\n");
@@ -156,7 +182,7 @@ int fatfs_create(struct vnode *dir, struct vnode **target, const char *name) {
   }
 
   if (fs->dirs == NULL)
-    fs->dirs = (struct vnode **)malloc(sizeof(struct vnode *) * 16);
+    fs->dirs = (struct vnode **)malloc(sizeof(struct vnode *) * 32);
   struct vnode **c = (struct vnode **)fs->dirs;
   *target = (struct vnode *)malloc(sizeof(struct vnode));
   memset(*target, 0, sizeof(struct vnode));
@@ -177,7 +203,8 @@ int fatfs_create(struct vnode *dir, struct vnode **target, const char *name) {
   }
   cfs->type = NORMAL;
   cfs->size = 0;
-  cfs->data = pmalloc(0);
+  cfs->data = free_sector;
+  free_sector ++;
   // Update parent links
   c[(fs->size)++] = (*target);
   return 0;
@@ -282,7 +309,7 @@ int fatfs_init(struct filesystem *fs, struct mount *m) {
   attr->type = DIRTYPE;
   attr->size = 0;
   // Use the new dirs
-  attr->dirs = (void *)smalloc(8 * sizeof(void *));
+  attr->dirs = (void *)smalloc(32 * sizeof(void *));
   fatfs_initFsCpio(root);
   return 0;
 }
@@ -311,6 +338,7 @@ int fatfs_open(struct vnode *v, struct file **target) {
   (*target)->Eof = ((FsAttr *)(v->internal))->Eof;
   readblock(((FsAttr *)(v->internal))->data - 2 + data_start, buf);
   (*target)->data = buf;
+  (*target)->dirty = 0;
   return 0;
 }
 
@@ -320,6 +348,7 @@ int fatfs_open(struct vnode *v, struct file **target) {
 int fatfs_write(struct file *f, const void *buf, size_t len) {
   const char *c = (const char *)buf;
   char *data = (char *)f->data;
+  f->dirty = 1;
   if (f->data == NULL)
     return 1;
   for (size_t i = f->f_pos; i < len; i++) {
@@ -355,5 +384,75 @@ int fatfs_read(struct file *f, void *buf, size_t len) {
  *************************************************************/
 int fatfs_close(struct file *f) {
   ((FsAttr *)(f->vnode->internal))->Eof = f->Eof;
+
+  if(f->dirty != 0)
+	  add_list(dirty_files, f);
+
   return 0;
 }
+
+void fatfs_sync(){
+	
+	// Update the dircetory entry
+  struct vnode *target = NULL;
+  char fat_buf[512] = {0};
+  char dir_buf[512] = {0};
+  Entry *e = NULL;
+  uint64_t size;
+  readblock(data_start, dir_buf);
+  while(dirty_files != NULL){
+	  uart_puts("in");
+	  struct file *f = dirty_files->f;
+	  char *buf = ((FsAttr*)(f->vnode->internal))->name;
+	  // Update DIr
+	  for(int i = 0; i < 512; i += sizeof(Entry)){
+		  e = (Entry*)(dir_buf + i);
+		  int i, k = 0;
+		  uart_puti(i);
+		  if(e->name[0] != 0 && e->name[0] != 'A')
+			  continue;
+
+		  // write the file name
+		  for(i = 0; i < 7; i ++){
+			  e->name[i] = buf[i];
+			  if(e->name[i] == '.'){
+				  e->name[i] = ' ';
+				  break;
+			  }
+		  }
+		  for(int j = i; j < 7; j++)
+			  e->name[j] = ' ';
+		  i += 1;
+		  for(int j = 0; j < 3; j++){
+			  e->ext[j] = buf[i++];
+		  }
+		  e->highAddr = (((FsAttr*)(f->vnode->internal))->data >> 16) & (65535);
+		  e->lowAddr = ((FsAttr*)(f->vnode->internal))->data & 65535;
+		  e->size = f->Eof;
+		  break;
+	  }
+	  
+	  // Write back file content
+	  writeblock(data_start + ((FsAttr*)(f->vnode->internal))->data - 2, f->data);
+	  dirty_files = dirty_files->next;
+  }
+
+  ramfs_dump(fsRoot, 0);
+  // Write back DIR
+  char tmp_buf[512] = {0};
+  readblock(data_start, tmp_buf);
+  writeblock(data_start, dir_buf);
+  for(int i = 0; i < 512; i++){
+	  if(tmp_buf[i] == dir_buf[i])
+		  continue;
+	  uart_puti(i);
+	  uart_puth(tmp_buf[i]);
+	  uart_puts(" ");
+	  if(i%16 == 0)
+		  uart_puts("\n");
+  }
+
+  return 0;
+}
+	
+
