@@ -65,7 +65,7 @@ int fatfs_initFsCpio(struct vnode *root) {
 	  if(e->name[0] == 0)
 		  break;
 	  // Get the file name
-	  for(i = 0; i < 7; i ++){
+	  for(i = 0; i < 8; i ++){
 		  buf[i] = e->name[i];
 		  if(e->name[i] == ' '){
 			  buf[i] = '.';
@@ -287,8 +287,7 @@ int fatfs_init(struct filesystem *fs, struct mount *m) {
 	  Entry *e = buf + i;
 	  uart_puts(e->name);
 	  uart_puts("\n");
-  }
-
+  } 
   // Check if the data already exist
   if (root->internal == NULL) {
     root->internal = (FsAttr *)malloc(sizeof(FsAttr));
@@ -397,50 +396,61 @@ void fatfs_sync(){
   struct vnode *target = NULL;
   char fat_buf[512] = {0};
   char dir_buf[512] = {0};
+  int k = 0;
+  readblock(fat_start, fat_buf);
   Entry *e = NULL;
   uint64_t size;
-  readblock(data_start, dir_buf);
+  int i = 0;
   while(dirty_files != NULL){
+	  readblock(data_start  + k, dir_buf);
 	  uart_puts("in");
 	  struct file *f = dirty_files->f;
 	  char *buf = ((FsAttr*)(f->vnode->internal))->name;
 	  // Update DIr
-	  for(int i = 0; i < 512; i += sizeof(Entry)){
+	  for(i; i < 512; i += sizeof(Entry)){
 		  e = (Entry*)(dir_buf + i);
-		  int i, k = 0;
-		  uart_puti(i);
-		  if(e->name[0] != 0 && e->name[0] != 'A')
+		  int ii, k = 0;
+		  if(dir_buf[i] != 0 && dir_buf[i] != 'A')
 			  continue;
 
+		  uart_puti(i);
 		  // write the file name
-		  for(i = 0; i < 7; i ++){
-			  e->name[i] = buf[i];
-			  if(e->name[i] == '.'){
-				  e->name[i] = ' ';
+		  for(ii = 0;ii < 8; ii ++){
+			  e->name[ii] = buf[ii];
+			  if(e->name[ii] == '.'){
+				  e->name[ii] = ' ';
 				  break;
 			  }
+			  uart_putc(e->name[ii]);
 		  }
-		  for(int j = i; j < 7; j++)
+		  for(int j = ii; j < 8; j++)
 			  e->name[j] = ' ';
-		  i += 1;
+		  ii ++;
 		  for(int j = 0; j < 3; j++){
-			  e->ext[j] = buf[i++];
+			  e->ext[j] = buf[ii++];
 		  }
 		  e->highAddr = (((FsAttr*)(f->vnode->internal))->data >> 16) & (65535);
 		  e->lowAddr = ((FsAttr*)(f->vnode->internal))->data & 65535;
 		  e->size = f->Eof;
+		  dir_buf[i + 11] = 0;
+		  dir_buf[i + 12] = 0;
+		  i += 32;
 		  break;
 	  }
-	  
+	  if(i == 552){
+		  k = fat_buf[2];
+		  continue;
+	  }
 	  // Write back file content
 	  writeblock(data_start + ((FsAttr*)(f->vnode->internal))->data - 2, f->data);
 	  dirty_files = dirty_files->next;
+	  writeblock(data_start + k, dir_buf);
   }
 
   ramfs_dump(fsRoot, 0);
   // Write back DIR
   char tmp_buf[512] = {0};
-  readblock(data_start, tmp_buf);
+  readblock(data_start , tmp_buf);
   writeblock(data_start, dir_buf);
   for(int i = 0; i < 512; i++){
 	  if(tmp_buf[i] == dir_buf[i])
