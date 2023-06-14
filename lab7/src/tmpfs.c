@@ -33,7 +33,8 @@ void tmpfs_init()
 	tmpfs_mkdir(rootfs->root,&tmp,"nothing1");	//bad method
 	tmpfs_mkdir(rootfs->root,&tmp,"nothing2");
 	tmpfs_mkdir(rootfs->root,&tmp,"initramfs");
-	//tmpfs_mkdir(rootfs->root,&tmp,"dev");
+	tmpfs_mkdir(rootfs->root,&tmp,"dev");
+	vfs_mkdir("/dev/uart");
 }
 
 int tmpfs_mount(struct filesystem* fs,struct mount* mount)
