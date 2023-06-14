@@ -61,6 +61,9 @@ void kernel_main(void* dtb)		//x0 is the first argument
 
 	rootfs_init();
 	tmpfs_init();
+	struct vnode* mount_node;
+	vfs_lookup("/initramfs",&mount_node);
+	mount_cpio(mount_node);
 
 	while (1)
     {

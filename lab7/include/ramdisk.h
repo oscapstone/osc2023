@@ -1,5 +1,6 @@
 #ifndef RAMDISK_H
 
+#include "vfs.h"
 #define RAMDISK_H
 
 void init_rd(char *buffer);
@@ -9,5 +10,6 @@ void ls();
 void cat();
 char* find_prog(char* buffer,char* target);
 int find_prog_size(char* buffer,char* target);
+void mount_cpio(struct vnode* mount_node);
 
 #endif

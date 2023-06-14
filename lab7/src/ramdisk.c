@@ -1,4 +1,8 @@
 #include "mini_uart.h"
+#include "vfs.h"
+
+#define O_CREAT 0b100
+#define null 0
 
 typedef struct
 {
@@ -147,4 +151,20 @@ int find_prog_size(char* buffer,char* target)
 		buffer += (sizeof(cpio)+ns+ns_offset+fs+fs_offset);		//jump to next file
 	}
 	return 0;
+}
+
+void mount_cpio(struct vnode* mount_node)
+{
+	for(int i=0;i<index;i++)
+	{
+		struct vnode* target;
+		int op_status = mount_node->v_ops->lookup(mount_node,&target,file_name[i]);
+		if(op_status < 0)
+		{
+			mount_node->v_ops->create(mount_node,&target,file_name[i]);
+		}
+		target->internal = file_content[i];
+		target->file_size = fs_arr[i];
+	}
+	return;
 }
