@@ -41,10 +41,10 @@ int register_filesystem(struct filesystem* fs)
 
 int vfs_lookup(const char* pathname,struct vnode** target)
 {
-
+/*
 	uart_send_string(pathname);
 	uart_send_string(" -> lookup pathname\n");
-
+*/
 	struct thread *thd = get_current();
 	struct vnode *cur_dir = thd->cur_dir;
 
@@ -132,10 +132,10 @@ int vfs_lookup(const char* pathname,struct vnode** target)
 
 int vfs_open(const char* pathname,int flags,struct file** target)
 {
-
+/*
 	uart_send_string(pathname);
 	uart_send_string(" -> pathname\n");
-
+*/
 	struct vnode* file_node;
 	int op_status = vfs_lookup(pathname,&file_node);
 	if(op_status < 0)	//vnode not found
@@ -156,10 +156,10 @@ int vfs_open(const char* pathname,int flags,struct file** target)
 			{
 				file_path[i] = 0;
 			}
-
+/*
 			uart_int(last_dir_pos);
 			uart_send_string(" -> last_dir_pos\n");
-
+*/
 			if(last_dir_pos > 0)
 			{
 				for(int i=0;i<last_dir_pos;i++)	//set pre_file_path
@@ -171,10 +171,10 @@ int vfs_open(const char* pathname,int flags,struct file** target)
 			{
 				file_path[0] = '/';
 			}
-
+/*
 			uart_send_string(file_path);
 			uart_send_string(" -> file path\n");
-
+*/
 			struct vnode* parent;
 			op_status = vfs_lookup(file_path,&parent);
 			if(op_status < 0)
@@ -244,10 +244,10 @@ int vfs_read(struct file* file,void* buf,size_t len)
 
 int vfs_mkdir(const char* pathname)
 {
-
+/*
 	uart_send_string(pathname);
 	uart_send_string(" -> mkdir pathname\n");
-
+*/
 	char* file_path = d_alloc(255);
 	for(int i=0;i<255;i++)
 	{
@@ -347,7 +347,6 @@ int vfs_mount(const char* target,const char* filesystem)
 	mount_node->mount = d_alloc(sizeof(struct mount));
 	mount_node->mount->root = d_alloc(sizeof(struct vnode));
 	mount_node->mount->root->mount = null;
-	//mount_node->mount->root->child_num = mount_node->child_num;
 	mount_node->mount->root->parent = mount_node->parent;
 	return fs->setup_mount(fs,mount_node->mount);
 }

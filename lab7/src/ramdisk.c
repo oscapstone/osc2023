@@ -159,12 +159,14 @@ void mount_cpio(struct vnode* mount_node)
 	{
 		struct vnode* target;
 		int op_status = mount_node->v_ops->lookup(mount_node,&target,file_name[i]);
-		if(op_status < 0)
+		if(target == null)
 		{
 			mount_node->v_ops->create(mount_node,&target,file_name[i]);
 		}
 		target->internal = file_content[i];
 		target->file_size = fs_arr[i];
 	}
+	struct vnode* tmp;
+	int check = vfs_lookup("/initramfs/vfs1.img",&tmp);
 	return;
 }

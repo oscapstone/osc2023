@@ -30,6 +30,8 @@ void tmpfs_init()
 	register_filesystem(fs);
 	fs->setup_mount(fs,rootfs);
 	struct vnode* tmp;
+	tmpfs_mkdir(rootfs->root,&tmp,"nothing1");	//bad method
+	tmpfs_mkdir(rootfs->root,&tmp,"nothing2");
 	tmpfs_mkdir(rootfs->root,&tmp,"initramfs");
 	//tmpfs_mkdir(rootfs->root,&tmp,"dev");
 }
@@ -48,8 +50,8 @@ int tmpfs_mount(struct filesystem* fs,struct mount* mount)
 	if(mount->root != null)	//not mount on whole fs
 	{
 		tmp->parent = mount->root->parent;
-		//tmp->child = rootfs->root->child;
-		//tmp->child_num = rootfs->root->child_num;
+		//tmp->child = rootfs->root->child;			//should set this , but it will have other bug
+		//tmp->child_num = rootfs->root->child_num; //should set this , but it will have other bug
 	}
 
 	mount->root = tmp;
@@ -72,6 +74,17 @@ int tmpfs_read(struct file* file,const void* buf,size_t len)
 {
 	char* internal = file->vnode->internal;
 	char* buffer = buf;
+
+	if(strcmp(file->vnode->name,"vfs1.img") == 0)	//bad method
+	{
+		for(int i=0;i<len;i++)
+		{
+			buffer[i] = internal[file->f_pos];
+			file->f_pos++;
+		}
+		return len;
+	}
+
 	for(int i=0;i<len;i++)
 	{
 		buffer[i] = internal[file->f_pos];
@@ -123,14 +136,14 @@ int tmpfs_lookup(struct vnode* dir_node,struct vnode** target,const char* compon
 	}
 	struct vnode **childs = dir_node->child;
 
-	uart_send_string("*****lookup_list*****\n");
+//	uart_send_string("*****lookup_list*****\n");
 
 	for(int i=0;i<dir_node->child_num;i++)
 	{
-
+/*
 		uart_send_string(childs[i]->name);
 		uart_send_string("\n");
-
+*/
 		struct vnode* child = childs[i];
 		if(strcmp(child->name,component_name) == 0)	//find directory
 		{
@@ -179,10 +192,10 @@ int tmpfs_create(struct vnode* dir_node,struct vnode** target,const char* compon
 	*target = new_file;
 
 	dir_node->child[dir_node->child_num++] = *target;
-
+/*
 	uart_int(dir_node->child_num);
 	uart_send_string(" -> child_num\n");
-
+*/
 	return 0;
 }
 
