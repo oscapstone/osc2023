@@ -2,7 +2,7 @@
 
 | Github Account | Student ID | Name          |
 |----------------|------------|---------------|
-| hellcwang      | 310554049  | Chia-Wei Wang |
+| | 310554049  |  |
 
 ## Requirements
 

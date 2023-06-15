@@ -1,4 +1,5 @@
 #include "syscall.h"
+#include "fatfs.h"
 #include "initrd.h"
 #include "loader.h"
 #include "mailbox.h"
@@ -270,7 +271,6 @@ void posix_kill(int pid, int sig) {
 }
 
 int sys_open(const char *pathname, int flags) {
-  // uart_puts("sys_open\n");
   Thread *t = get_current();
   struct vnode *cur = t->curDir;
   char *path;
@@ -395,6 +395,12 @@ int sys_ioctl(int fd, unsigned long request, void *fb_info) {
   // uart_puts("ioctl\n");
   framefs_ioctl(file, fb_info);
   return 0;
+}
+
+void sys_sync() {
+  fatfs_sync();
+  //uart_puts("sys_sync\n");
+  return;
 }
 
 //============================================================
