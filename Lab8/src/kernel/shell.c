@@ -173,6 +173,11 @@ void shell_main(char *command)
         thread_create(load_vfs1_usrpgm_in_umode);
         idle_task();
     }
+    else if (!strcmp(command, "vfs2"))
+    {
+        thread_create(load_vfs2_usrpgm_in_umode);
+        idle_task();
+    }
     else if (!memcmp(command, "cd", 2))
     {
         char pathname[256];

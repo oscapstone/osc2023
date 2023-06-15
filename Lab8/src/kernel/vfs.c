@@ -1,6 +1,7 @@
 #include "vfs.h"
 #include "tmpfs.h"
 #include "devfs.h"
+#include "fat32.h"
 #include "stdlib.h"
 
 filesystem_t *fs_list[50];
@@ -67,6 +68,22 @@ int vfs_mount(char *target, char *filesystem)
         dir_node->mount->fs->name = my_malloc(strlen(filesystem) + 1);
         strcpy(dir_node->mount->fs->name, filesystem);
         dir_node->mount->fs->setup_mount = devfs_setup_mount;
+        register_filesystem(dir_node->mount->fs);
+        return dir_node->mount->fs->setup_mount(dir_node->mount->fs, dir_node->mount);
+    }
+    else if (!strcmp(target, "/boot"))
+    {
+        vnode_t *dir_node = NULL;
+
+        vfs_mkdir(target);
+        vfs_lookup(target, &dir_node);
+
+        dir_node->mount = my_malloc(sizeof(mount_t));
+        dir_node->mount->root = dir_node;
+        dir_node->mount->fs = my_malloc(sizeof(filesystem_t));
+        dir_node->mount->fs->name = my_malloc(strlen(filesystem) + 1);
+        strcpy(dir_node->mount->fs->name, filesystem);
+        dir_node->mount->fs->setup_mount = fat32fs_mount;
         register_filesystem(dir_node->mount->fs);
         return dir_node->mount->fs->setup_mount(dir_node->mount->fs, dir_node->mount);
     }

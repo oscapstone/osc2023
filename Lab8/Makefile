@@ -10,7 +10,7 @@ SRC_DIR = src
 all : kernel8.img bootloader.img userprogram.img
 
 clean :
-	rm -rf $(BUILD_DIR) *.img 
+	rm -rf $(BUILD_DIR) $(filter-out sfn_nctuos.img, $(wildcard *.img))
 
 $(BUILD_DIR)/%_c.o: $(SRC_DIR)/%.c
 	@mkdir -p $(@D)
@@ -56,7 +56,7 @@ debug_boot:
 	qemu-system-aarch64 -M raspi3 -kernel bootloader.img -serial null -serial pty -display none -initrd initramfs.cpio -dtb bcm2710-rpi-3-b-plus.dtb -s -S
 
 run:
-	qemu-system-aarch64 -M raspi3 -kernel kernel8.img -serial null -serial stdio -display none -initrd initramfs.cpio -dtb bcm2710-rpi-3-b-plus.dtb
+	qemu-system-aarch64 -M raspi3 -kernel kernel8.img -serial null -serial stdio -display none -initrd initramfs.cpio -dtb bcm2710-rpi-3-b-plus.dtb -drive if=sd,file=sfn_nctuos.img,format=raw
 
 display:
-	qemu-system-aarch64 -M raspi3 -kernel kernel8.img -serial null -serial stdio -initrd initramfs.cpio -dtb bcm2710-rpi-3-b-plus.dtb
+	qemu-system-aarch64 -M raspi3 -kernel kernel8.img -serial null -serial stdio -initrd initramfs.cpio -dtb bcm2710-rpi-3-b-plus.dtb -drive if=sd,file=sfn_nctuos.img,format=raw

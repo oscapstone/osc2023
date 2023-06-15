@@ -8,6 +8,7 @@
 #include "vfs.h"
 #include "tmpfs.h"
 #include "stdlib.h"
+#include "sdhost.h"
 
 extern void *_dtb_ptr;
 
@@ -29,6 +30,9 @@ void kernel_main(void)
 	vfs_mount("/initramfs", "initramfs");
 	vfs_mount("/dev", "devfs");
 	strcpy(cwdpath, rootfs->root->internal->name);
+
+	sd_init();
+	vfs_mount("/boot", "fat32fs");
 
 	shell_start();
 }
