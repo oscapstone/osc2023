@@ -31,5 +31,4 @@ int ramfs_write(struct file *f, const void *buf, size_t len);
 int ramfs_open(struct vnode *, struct file **target);
 int ramfs_close(struct file *f);
 
-
 #endif

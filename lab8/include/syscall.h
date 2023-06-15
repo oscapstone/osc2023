@@ -40,7 +40,7 @@ int sys_mount(const char *src, const char *target, const char *filesystem,
               unsigned long, const void *);
 int sys_chdir(const char *path);
 long sys_lseek64(int fd, long offset, int whence);
-int sys_ioctl(int fd, unsigned long request, void* fb_info);
+int sys_ioctl(int fd, unsigned long request, void *fb_info);
 void sys_sync();
 
 #endif // SYSCALL_H

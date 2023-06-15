@@ -19,33 +19,31 @@ static uint64_t sector_per_fat;
 static uint64_t free_sector;
 static file_list *dirty_files = NULL;
 
-static void add_list(file_list* xxx, struct file* f){
-	uart_puts("add list\n");
-	if(dirty_files == NULL){
-		dirty_files = malloc(sizeof(file_list));
-		dirty_files->f = f;
-		dirty_files->prev = NULL;
-		dirty_files->next = NULL;
-		uart_puth(dirty_files);
-		return;
-	}
-	while(dirty_files->next != NULL){
-		dirty_files = dirty_files->next;
-	}
-	uart_puts("new next\n");
-	dirty_files->next = malloc(sizeof(file_list));
-	dirty_files->next->prev = dirty_files;
+static void add_list(file_list *xxx, struct file *f) {
+  if (dirty_files == NULL) {
+    dirty_files = malloc(sizeof(file_list));
+    dirty_files->f = f;
+    dirty_files->prev = NULL;
+    dirty_files->next = NULL;
+    //uart_puth(dirty_files);
+    return;
+  }
+  while (dirty_files->next != NULL) {
+    dirty_files = dirty_files->next;
+  }
+  dirty_files->next = malloc(sizeof(file_list));
+  dirty_files->next->prev = dirty_files;
 
-	dirty_files = dirty_files->next;
-	dirty_files->f = f;
-	dirty_files->next = NULL;
-	while(dirty_files->prev != NULL)
-		dirty_files = dirty_files->prev;
-	return;
+  dirty_files = dirty_files->next;
+  dirty_files->f = f;
+  dirty_files->next = NULL;
+  while (dirty_files->prev != NULL)
+    dirty_files = dirty_files->prev;
+  return;
 }
 
 /**************************************************************
- * This function will initialize the FS from CPIO archive
+ * This function will initialize the FS from Fat (Sd card)
  *
  * @root: The root of this file system.
  *************************************************************/
@@ -58,51 +56,52 @@ int fatfs_initFsCpio(struct vnode *root) {
   uint64_t size;
   readblock(data_start, dir_buf);
   struct vnode *dir_node = root;
-  for(int i = 0; i < 512; i += sizeof(Entry)){
-	  e = dir_buf + i;
-	  memset(buf, 0, sizeof(buf));
-	  int i, k = 0;
-	  if(e->name[0] == 0)
-		  break;
-	  // Get the file name
-	  for(i = 0; i < 8; i ++){
-		  buf[i] = e->name[i];
-		  if(e->name[i] == ' '){
-			  buf[i] = '.';
-			  break;
-		  }
-	  }
-	  if(buf[i] == '.')
-		  i ++;
-	  else{
-		  buf[i] = '.';
-		  i++;
-	  }
-	  for(int j = i; j < i + 3; j++){
-		  buf[j] = e->ext[k++];
-		  if(buf[j] == ' '){
-			  buf[j] = '\0';
-			  break;
-		  }
-	  }
-	  uart_puts(buf);
-	  dir_node->v_ops->create(dir_node, &target, buf);
-	  uint32_t tmp;
-	  tmp = e->highAddr << 16;
-	  tmp += e->lowAddr;
-	  ((FsAttr *)(target->internal))->data = tmp;;
-	  uart_puth(tmp);
-	  ((FsAttr *)(target->internal))->Eof = e->size;
-	  uart_puth(e->size);
-	  uart_puts("\n");
-	  target = NULL;
+  for (int i = 0; i < 512; i += sizeof(Entry)) {
+    e = dir_buf + i;
+    memset(buf, 0, sizeof(buf));
+    int i, k = 0;
+    if (e->name[0] == 0)
+      break;
+    // Get the file name
+    for (i = 0; i < 8; i++) {
+      buf[i] = e->name[i];
+      if (e->name[i] == ' ') {
+        buf[i] = '.';
+        break;
+      }
+    }
+    if (buf[i] == '.')
+      i++;
+    else {
+      buf[i] = '.';
+      i++;
+    }
+    for (int j = i; j < i + 3; j++) {
+      buf[j] = e->ext[k++];
+      if (buf[j] == ' ') {
+        buf[j] = '\0';
+        break;
+      }
+    }
+    //uart_puts(buf);
+    dir_node->v_ops->create(dir_node, &target, buf);
+    uint32_t tmp;
+    tmp = e->highAddr << 16;
+    tmp += e->lowAddr;
+    ((FsAttr *)(target->internal))->data = tmp;
+    ;
+    //uart_puth(tmp);
+    ((FsAttr *)(target->internal))->Eof = e->size;
+    //uart_puth(e->size);
+    //uart_puts("\n");
+    target = NULL;
   }
 
   return 0;
 }
 
 /**************************************************************
- * Get the initialize function of the Ramfs
+ * Get the initialize function of the Fatfs
  *************************************************************/
 struct filesystem *getFatFs(void) {
   struct filesystem *fs = malloc(sizeof(struct filesystem));
@@ -174,7 +173,7 @@ int fatfs_lookup(struct vnode *dir, struct vnode **target, const char *name) {
  * Create implementation. which will create a new Vnode.
  ***************************************************************/
 int fatfs_create(struct vnode *dir, struct vnode **target, const char *name) {
-	uart_puts(name);
+  uart_puts(name);
   FsAttr *fs = (FsAttr *)dir->internal;
   if (fs->type != DIRTYPE) {
     uart_puts("U  should add file only in DIR\n");
@@ -204,7 +203,7 @@ int fatfs_create(struct vnode *dir, struct vnode **target, const char *name) {
   cfs->type = NORMAL;
   cfs->size = 0;
   cfs->data = free_sector;
-  free_sector ++;
+  free_sector++;
   // Update parent links
   c[(fs->size)++] = (*target);
   return 0;
@@ -238,9 +237,9 @@ int fatfs_init(struct filesystem *fs, struct mount *m) {
   // Read The MBR
   readblock(0, buf);
   // Get the first partition LBA (Little Endian on multiple byte)
-  for(int i = 0x1be + 0x0B; i >= 0x1be + 0x08; i--){
-	  partition_start <<= 8;
-	  partition_start += buf[i];
+  for (int i = 0x1be + 0x0B; i >= 0x1be + 0x08; i--) {
+    partition_start <<= 8;
+    partition_start += buf[i];
   }
   uart_puth(partition_start);
   uart_puts("\n");
@@ -249,27 +248,27 @@ int fatfs_init(struct filesystem *fs, struct mount *m) {
   readblock(partition_start, buf);
 
   // Get reserved blocks in the FAT
-  for(int i = 0x0E; i < 0x0E + 1; i++){
-	  reserved_blocks <<= 4;
-	  reserved_blocks += buf[i];
+  for (int i = 0x0E; i < 0x0E + 1; i++) {
+    reserved_blocks <<= 4;
+    reserved_blocks += buf[i];
   }
   int fat_nums = buf[16];
-  for(int i = 36 + 3; i >= 36; i--){
-	  sector_per_fat <<= 8;
-	  sector_per_fat += buf[i];
+  for (int i = 36 + 3; i >= 36; i--) {
+    sector_per_fat <<= 8;
+    sector_per_fat += buf[i];
   }
-  for(int i = 47 ; i >= 44; i--){
-	  root_dir <<= 8;
-	  root_dir += buf[i];
+  for (int i = 47; i >= 44; i--) {
+    root_dir <<= 8;
+    root_dir += buf[i];
   }
   uart_puts("root block: ");
   uart_puth(root_dir);
 
   // Get the next free block in the FAT
   readblock(partition_start + 1, buf);
-  for(int i = 495; i >= 492; i--){
-	  free_sector <<= 8;
-	  free_sector += buf[i];
+  for (int i = 495; i >= 492; i--) {
+    free_sector <<= 8;
+    free_sector += buf[i];
   }
   uart_puts("Next free FAT: ");
   uart_puth(free_sector);
@@ -283,11 +282,11 @@ int fatfs_init(struct filesystem *fs, struct mount *m) {
   uart_puts("\nRoot location: ");
   uart_puth(data_start * 512);
   uart_puts("\n");
-  for(int i = 0; i < 512; i += sizeof(Entry)){
-	  Entry *e = buf + i;
-	  uart_puts(e->name);
-	  uart_puts("\n");
-  } 
+  for (int i = 0; i < 512; i += sizeof(Entry)) {
+    Entry *e = buf + i;
+    uart_puts(e->name);
+    uart_puts("\n");
+  }
   // Check if the data already exist
   if (root->internal == NULL) {
     root->internal = (FsAttr *)malloc(sizeof(FsAttr));
@@ -330,7 +329,7 @@ int fatfs_open(struct vnode *v, struct file **target) {
   if (*target == NULL) {
     *target = (struct file *)malloc(sizeof(struct file));
   }
-  char *buf = (char*)pmalloc(0);
+  char *buf = (char *)pmalloc(0);
   (*target)->vnode = v;
   (*target)->f_pos = 0;
   (*target)->f_ops = v->f_ops;
@@ -354,7 +353,7 @@ int fatfs_write(struct file *f, const void *buf, size_t len) {
     *(data + (f->f_pos)) = *c++;
     (f->f_pos)++;
   }
-  // Update the EOF 
+  // Update the EOF
   if (f->f_pos > f->Eof)
     f->Eof = f->f_pos;
   return f->f_pos;
@@ -384,15 +383,15 @@ int fatfs_read(struct file *f, void *buf, size_t len) {
 int fatfs_close(struct file *f) {
   ((FsAttr *)(f->vnode->internal))->Eof = f->Eof;
 
-  if(f->dirty != 0)
-	  add_list(dirty_files, f);
+  if (f->dirty != 0)
+    add_list(dirty_files, f);
 
   return 0;
 }
 
-void fatfs_sync(){
-	
-	// Update the dircetory entry
+void fatfs_sync() {
+
+  // Update the dircetory entry
   struct vnode *target = NULL;
   char fat_buf[512] = {0};
   char dir_buf[512] = {0};
@@ -401,68 +400,67 @@ void fatfs_sync(){
   Entry *e = NULL;
   uint64_t size;
   int i = 0;
-  while(dirty_files != NULL){
-	  readblock(data_start  + k, dir_buf);
-	  uart_puts("in");
-	  struct file *f = dirty_files->f;
-	  char *buf = ((FsAttr*)(f->vnode->internal))->name;
-	  // Update DIr
-	  for(i; i < 512; i += sizeof(Entry)){
-		  e = (Entry*)(dir_buf + i);
-		  int ii, k = 0;
-		  if(dir_buf[i] != 0 && dir_buf[i] != 'A')
-			  continue;
+  while (dirty_files != NULL) {
+    readblock(data_start + k, dir_buf);
+    struct file *f = dirty_files->f;
+    char *buf = ((FsAttr *)(f->vnode->internal))->name;
+    // Update DIr
+    for (i; i < 512; i += sizeof(Entry)) {
+      e = (Entry *)(dir_buf + i);
+      int ii, k = 0;
+      if (dir_buf[i] != 0 && dir_buf[i] != 'A')
+        continue;
 
-		  uart_puti(i);
-		  // write the file name
-		  for(ii = 0;ii < 8; ii ++){
-			  e->name[ii] = buf[ii];
-			  if(e->name[ii] == '.'){
-				  e->name[ii] = ' ';
-				  break;
-			  }
-			  uart_putc(e->name[ii]);
-		  }
-		  for(int j = ii; j < 8; j++)
-			  e->name[j] = ' ';
-		  ii ++;
-		  for(int j = 0; j < 3; j++){
-			  e->ext[j] = buf[ii++];
-		  }
-		  e->highAddr = (((FsAttr*)(f->vnode->internal))->data >> 16) & (65535);
-		  e->lowAddr = ((FsAttr*)(f->vnode->internal))->data & 65535;
-		  e->size = f->Eof;
-		  dir_buf[i + 11] = 0;
-		  dir_buf[i + 12] = 0;
-		  i += 32;
-		  break;
-	  }
-	  if(i == 552){
-		  k = fat_buf[2];
-		  continue;
-	  }
-	  // Write back file content
-	  writeblock(data_start + ((FsAttr*)(f->vnode->internal))->data - 2, f->data);
-	  dirty_files = dirty_files->next;
-	  writeblock(data_start + k, dir_buf);
+      // write the file name
+      for (ii = 0; ii < 8; ii++) {
+        e->name[ii] = buf[ii];
+        if (e->name[ii] == '.') {
+          e->name[ii] = ' ';
+          break;
+        }
+      }
+      for (int j = ii; j < 8; j++)
+        e->name[j] = ' ';
+      ii++;
+      for (int j = 0; j < 3; j++) {
+        e->ext[j] = buf[ii++];
+      }
+      e->highAddr = (((FsAttr *)(f->vnode->internal))->data >> 16) & (65535);
+      e->lowAddr = ((FsAttr *)(f->vnode->internal))->data & 65535;
+      e->size = f->Eof;
+      dir_buf[i + 11] = 0;
+      dir_buf[i + 12] = 0;
+      i += 32;
+      break;
+    }
+    if (i == 552) {
+      k = fat_buf[2];
+      root_dir = fat_buf[2] / 512;
+      continue;
+    }
+    // Write back file content
+    writeblock(data_start + ((FsAttr *)(f->vnode->internal))->data - 2,
+               f->data);
+    dirty_files = dirty_files->next;
+    writeblock(data_start + k, dir_buf);
   }
 
-  ramfs_dump(fsRoot, 0);
+  //ramfs_dump(fsRoot, 0);
   // Write back DIR
   char tmp_buf[512] = {0};
-  readblock(data_start , tmp_buf);
+  readblock(data_start, tmp_buf);
   writeblock(data_start, dir_buf);
-  for(int i = 0; i < 512; i++){
-	  if(tmp_buf[i] == dir_buf[i])
-		  continue;
-	  uart_puti(i);
-	  uart_puth(tmp_buf[i]);
-	  uart_puts(" ");
-	  if(i%16 == 0)
-		  uart_puts("\n");
+  /*
+  for (int i = 0; i < 512; i++) {
+    if (tmp_buf[i] == dir_buf[i])
+      continue;
+    uart_puti(i);
+    uart_puth(tmp_buf[i]);
+    uart_puts(" ");
+    if (i % 16 == 0)
+      uart_puts("\n");
   }
+  */
 
   return 0;
 }
-	
-

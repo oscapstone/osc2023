@@ -121,7 +121,7 @@ int framefs_write(struct file *f, const void *buf, size_t len) {
   char *d = f->data;
   uart_puts(" \b"); // Delay, if No this line will break.
   for (i = f->f_pos; i < f->f_pos + len; i++) {
-    *(d + i ) = *c ++ ;
+    *(d + i) = *c++;
     count++;
   }
   f->f_pos += len;

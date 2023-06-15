@@ -14,24 +14,24 @@ typedef struct {
   int size;
   size_t Eof;
   void *dirs;
-  uint32_t data;	// The sector of the data
+  uint32_t data; // The sector of the data
 } FsAttr;
 
 // For the directory
 typedef struct {
-  char name[8];	// SFN care tof the first byte
-  char ext[3];	// Extension pad with " "
-  uint8_t attr;	// File attribute Normal -> 0
-  uint8_t attr2; // default: 0 
-  uint8_t createTimeMs;	// ms of the createTime
-  uint16_t createTime;	// 15:13 -> Hours, 10:5 -> Min, 4:0 -> seconds
-  uint16_t createTimeDate;	// 15:13 -> Year, 10:5 -> Mon, 4:0 -> Day
+  char name[8];            // SFN care tof the first byte
+  char ext[3];             // Extension pad with " "
+  uint8_t attr;            // File attribute Normal -> 0
+  uint8_t attr2;           // default: 0
+  uint8_t createTimeMs;    // ms of the createTime
+  uint16_t createTime;     // 15:13 -> Hours, 10:5 -> Min, 4:0 -> seconds
+  uint16_t createTimeDate; // 15:13 -> Year, 10:5 -> Mon, 4:0 -> Day
   uint16_t ownerID;
-  uint16_t highAddr;	// High two bytes of first cluster 
+  uint16_t highAddr; // High two bytes of first cluster
   uint16_t modifiedTime;
   uint16_t modifiedDate;
-  uint16_t lowAddr;	// Low two bytes of first cluster 
-  uint32_t size;	// Total size of file
+  uint16_t lowAddr; // Low two bytes of first cluster
+  uint32_t size;    // Total size of file
 } Entry;
 
 int fatfs_init(struct filesystem *fs, struct mount *m);
@@ -50,6 +50,5 @@ int fatfs_write(struct file *f, const void *buf, size_t len);
 int fatfs_open(struct vnode *, struct file **target);
 int fatfs_close(struct file *f);
 void fatfs_sync();
-
 
 #endif

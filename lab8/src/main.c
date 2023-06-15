@@ -75,7 +75,6 @@ int main(void *dtb_location) {
   test->mount = frameM;
   ffs->setup_mount(test, frameM);
 
-
   // FAT
   struct filesystem *fatfs = getFatFs();
   register_filesystem(fatfs);

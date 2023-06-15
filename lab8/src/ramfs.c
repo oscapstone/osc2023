@@ -245,7 +245,7 @@ int ramfs_write(struct file *f, const void *buf, size_t len) {
     *(data + (f->f_pos)) = *c++;
     (f->f_pos)++;
   }
-  // Update the EOF 
+  // Update the EOF
   if (f->f_pos > f->Eof)
     f->Eof = f->f_pos;
   return f->f_pos;

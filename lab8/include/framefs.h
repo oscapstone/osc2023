@@ -7,11 +7,11 @@
 #include "uart.h"
 #include "vfs.h"
 
-struct framebuffer_info{
-	unsigned int width;
-	unsigned int height;
-	unsigned int pitch;
-	unsigned int isrgb;
+struct framebuffer_info {
+  unsigned int width;
+  unsigned int height;
+  unsigned int pitch;
+  unsigned int isrgb;
 };
 
 int framefs_init(struct filesystem *fs, struct mount *m);

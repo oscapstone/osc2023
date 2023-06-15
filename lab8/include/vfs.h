@@ -12,19 +12,19 @@ typedef enum {
 
 /* THis is the INODE*/
 struct vnode {
-  struct vnode *parent; // Parent DIR
-  struct mount *mount;	// The mount node of the FS
+  struct vnode *parent;           // Parent DIR
+  struct mount *mount;            // The mount node of the FS
   struct vnode_operations *v_ops; // Vnode operations
-  struct file_operations *f_ops; // File operations
-  char name[16];	// Name of the node.
-  FsTy type;		// Type of the vnode
-  void *internal; // The for each file defined
+  struct file_operations *f_ops;  // File operations
+  char name[16];                  // Name of the node.
+  FsTy type;                      // Type of the vnode
+  void *internal;                 // The for each file defined
 };
 
 /* Mount Node of the FS*/
 struct mount {
-  struct vnode *root;		// The root of this fs
-  struct filesysytem *system;	// Point to the file system
+  struct vnode *root;         // The root of this fs
+  struct filesysytem *system; // Point to the file system
 };
 
 /* Opening a file need to do following things.  * 1. Allocat a file strucure.
@@ -32,12 +32,12 @@ struct mount {
  * descriptor table for the process.
  */
 struct file {
-  struct vnode *vnode;	// The original vnode of file
-  size_t f_pos;		// Current position of the file
-  size_t Eof;		// End of the FILE
+  struct vnode *vnode; // The original vnode of file
+  size_t f_pos;        // Current position of the file
+  size_t Eof;          // End of the FILE
   struct file_operations *f_ops;
   int flags;
-  void *data;		// The data of this file
+  void *data; // The data of this file
   int dirty;
 };
 
@@ -67,11 +67,11 @@ struct file_operations {
   int (*close)(struct file *);
 };
 
-typedef struct FIle_list{
-	struct FIle_list *prev;
-	struct FIle_list *next;
-	struct file* f;
-}file_list;
+typedef struct FIle_list {
+  struct FIle_list *prev;
+  struct FIle_list *next;
+  struct file *f;
+} file_list;
 
 // struct mount* rootfs;
 
@@ -93,7 +93,6 @@ int vfs_mount(const char *target, const char *filesystem);
  * inode. We need to get the Dentry -> Inode. then we can do `open()` ...
  */
 int vfs_lookup(const char *pathname, struct vnode **target, struct vnode *root);
-
 
 #define O_CREAT 0b0100
 #define SEEK_SET 0

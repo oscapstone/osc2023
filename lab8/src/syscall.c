@@ -1,4 +1,5 @@
 #include "syscall.h"
+#include "fatfs.h"
 #include "initrd.h"
 #include "loader.h"
 #include "mailbox.h"
@@ -6,7 +7,6 @@
 #include "time.h"
 #include "uart.h"
 #include "vfs.h"
-#include "fatfs.h"
 // FIXME: should disable INT in the critical section.
 
 // k From switch.S
@@ -271,8 +271,6 @@ void posix_kill(int pid, int sig) {
 }
 
 int sys_open(const char *pathname, int flags) {
-	uart_puts(pathname);
-  uart_puts("sys_open\n");
   Thread *t = get_current();
   struct vnode *cur = t->curDir;
   char *path;
@@ -399,10 +397,10 @@ int sys_ioctl(int fd, unsigned long request, void *fb_info) {
   return 0;
 }
 
-void sys_sync(){
-	fatfs_sync();
-	uart_puts("sys_sync\n");
-	return;
+void sys_sync() {
+  fatfs_sync();
+  //uart_puts("sys_sync\n");
+  return;
 }
 
 //============================================================
