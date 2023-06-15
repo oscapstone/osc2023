@@ -166,7 +166,5 @@ void mount_cpio(struct vnode* mount_node)
 		target->internal = file_content[i];
 		target->file_size = fs_arr[i];
 	}
-	struct vnode* tmp;
-	int check = vfs_lookup("/initramfs/vfs1.img",&tmp);
 	return;
 }

@@ -47,20 +47,18 @@ int uartfs_write(struct file* file,const void* buf,size_t len)
 int uartfs_read(struct file* file,void* buf,size_t len)
 {
 	char* buffer = buf;
-	int count = 0;
 	for(int i=0;i<len;i++)
 	{
 		*buffer++ = uart_recv();
-		count++;
 	}
-	return count;
+	return len;
 }
 
 int uartfs_open(struct vnode* file_node,struct file** target)
 {
 	struct file* open_file = d_alloc(sizeof(struct file));
 	open_file->vnode = file_node;
-	open_file->f_ops = file_node->f_ops;
+	open_file->f_ops = uartfs_f_ops;
 	open_file->f_pos = 0;
 	*target = open_file;
 	return 0;

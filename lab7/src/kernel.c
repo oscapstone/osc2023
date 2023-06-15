@@ -70,15 +70,7 @@ void kernel_main(void* dtb)		//x0 is the first argument
 
 	vfs_lookup("/dev/uart",&mount_node);
 	struct mount* mount = d_alloc(sizeof(struct mount));
-	mount_node->mount = mount;
-	mount->root = mount_node;
 	uartfs_init(mount);
-	struct file* uart_stdin = null;
-	struct file* uart_stdout = null;
-	struct file* uart_stderr = null;
-	vfs_open("/dev/uart",0,&uart_stdin);
-	vfs_open("/dev/uart",0,&uart_stdout);
-	vfs_open("/dev/uart",0,&uart_stderr);
 
 	while (1)
     {

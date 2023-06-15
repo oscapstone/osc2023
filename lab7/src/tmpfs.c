@@ -30,7 +30,7 @@ void tmpfs_init()
 	register_filesystem(fs);
 	fs->setup_mount(fs,rootfs);
 	struct vnode* tmp;
-	tmpfs_mkdir(rootfs->root,&tmp,"nothing1");	//bad method
+	tmpfs_mkdir(rootfs->root,&tmp,"nothing1");	//bad method -> to solve child overwrite
 	tmpfs_mkdir(rootfs->root,&tmp,"nothing2");
 	tmpfs_mkdir(rootfs->root,&tmp,"initramfs");
 	tmpfs_mkdir(rootfs->root,&tmp,"dev");
@@ -110,7 +110,7 @@ int tmpfs_open(struct vnode* file_node,struct file** target)
 
 int tmpfs_close(struct file* file)
 {
-	if(file->f_pos > file->vnode->file_size)
+	if(file->f_pos > file->vnode->file_size)	//update if write file
 	{
 		file->vnode->file_size = file->f_pos;
 	}
@@ -168,7 +168,7 @@ int tmpfs_create(struct vnode* dir_node,struct vnode** target,const char* compon
 		return -1;
 	}
 	new_file = d_alloc(sizeof(struct vnode));
-	new_file->mount = dir_node->mount;
+	new_file->mount = null;
 	new_file->v_ops = tmpfs_v_ops;
 	new_file->f_ops = tmpfs_f_ops;
 	char* tmp_internal = d_alloc(0x100);
