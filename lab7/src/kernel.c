@@ -8,6 +8,9 @@
 #include "thread.h"
 #include "tmpfs.h"
 #include "vfs.h"
+#include "uartfs.h"
+
+#define null 0
 
 extern void set_exception_vector_table();
 
@@ -61,6 +64,13 @@ void kernel_main(void* dtb)		//x0 is the first argument
 
 	rootfs_init();
 	tmpfs_init();
+	struct vnode* mount_node;
+	vfs_lookup("/initramfs",&mount_node);
+	mount_cpio(mount_node);
+
+	vfs_lookup("/dev/uart",&mount_node);
+	struct mount* mount = d_alloc(sizeof(struct mount));
+	uartfs_init(mount);
 
 	while (1)
     {

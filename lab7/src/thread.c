@@ -3,8 +3,10 @@
 #include "system_call.h"
 #include "ramdisk.h"
 #include "timer.h"
+#include "uartfs.h"
 
 #define null 0
+#define O_CREAT 0b100
 
 extern void switch_to(struct thread *thd1 , struct thread *thd2);
 extern struct thread* get_current();
@@ -51,7 +53,20 @@ int Thread(void (*func)())
 			{
 				thd->fd[i] = null;
 			}
-			vfs_lookup("/initramfs",&(thd->cur_dir));
+
+			thd->fd[0] = d_alloc(sizeof(struct file));	//create fd[0~3] first
+			thd->fd[1] = d_alloc(sizeof(struct file));
+			thd->fd[2] = d_alloc(sizeof(struct file));
+			struct file_operations* uartfs_f_ops = d_alloc(sizeof(struct file_operations));
+ 			uartfs_f_ops->write = uartfs_write;
+			uartfs_f_ops->read = uartfs_read;
+			uartfs_f_ops->open = uartfs_open;
+			uartfs_f_ops->close = uartfs_close;
+			thd->fd[0]->f_ops = uartfs_f_ops;
+			thd->fd[1]->f_ops = uartfs_f_ops;
+			thd->fd[2]->f_ops = uartfs_f_ops;
+
+			vfs_lookup("/",&(thd->cur_dir));
 			thread_list[i] = thd;
 			break;
 		}

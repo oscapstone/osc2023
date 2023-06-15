@@ -30,8 +30,11 @@ void tmpfs_init()
 	register_filesystem(fs);
 	fs->setup_mount(fs,rootfs);
 	struct vnode* tmp;
+	tmpfs_mkdir(rootfs->root,&tmp,"nothing1");	//bad method -> to solve child overwrite
+	tmpfs_mkdir(rootfs->root,&tmp,"nothing2");
 	tmpfs_mkdir(rootfs->root,&tmp,"initramfs");
-	//tmpfs_mkdir(rootfs->root,&tmp,"dev");
+	tmpfs_mkdir(rootfs->root,&tmp,"dev");
+	vfs_mkdir("/dev/uart");
 }
 
 int tmpfs_mount(struct filesystem* fs,struct mount* mount)
@@ -43,10 +46,13 @@ int tmpfs_mount(struct filesystem* fs,struct mount* mount)
 	tmp->f_ops = tmpfs_f_ops;
 	tmp->node_type = "directory";
 	tmp->file_size = 0;
+	//tmp->child_num = 0;
 
 	if(mount->root != null)	//not mount on whole fs
 	{
 		tmp->parent = mount->root->parent;
+		//tmp->child = rootfs->root->child;			//should set this , but it will have other bug
+		//tmp->child_num = rootfs->root->child_num; //should set this , but it will have other bug
 	}
 
 	mount->root = tmp;
@@ -69,6 +75,17 @@ int tmpfs_read(struct file* file,const void* buf,size_t len)
 {
 	char* internal = file->vnode->internal;
 	char* buffer = buf;
+
+	if(strcmp(file->vnode->name,"vfs1.img") == 0)	//bad method
+	{
+		for(int i=0;i<len;i++)
+		{
+			buffer[i] = internal[file->f_pos];
+			file->f_pos++;
+		}
+		return len;
+	}
+
 	for(int i=0;i<len;i++)
 	{
 		buffer[i] = internal[file->f_pos];
@@ -93,7 +110,7 @@ int tmpfs_open(struct vnode* file_node,struct file** target)
 
 int tmpfs_close(struct file* file)
 {
-	if(file->f_pos > file->vnode->file_size)
+	if(file->f_pos > file->vnode->file_size)	//update if write file
 	{
 		file->vnode->file_size = file->f_pos;
 	}
@@ -107,23 +124,35 @@ long tmpfs_lseek64(struct file* file,long offset,int whence)
 
 int tmpfs_lookup(struct vnode* dir_node,struct vnode** target,const char* component_name)
 {
+	if(strcmp(component_name,".") == 0)
+	{
+		*target = dir_node;
+		return 0;
+	}
+
+	if(strcmp(component_name,"..") == 0)
+	{
+		*target = dir_node->parent;
+		return 0;
+	}
 	struct vnode **childs = dir_node->child;
+
+//	uart_send_string("*****lookup_list*****\n");
+
 	for(int i=0;i<dir_node->child_num;i++)
 	{
+/*
+		uart_send_string(childs[i]->name);
+		uart_send_string("\n");
+*/
 		struct vnode* child = childs[i];
 		if(strcmp(child->name,component_name) == 0)	//find directory
 		{
-			if(strcmp(component_name,"..") == 0)
-			{
-				*target = child->parent;
-			}
-			else
-			{
-				*target = child;
-			}
+			*target = child;
 			return 0;
 		}
 	}
+
 	*target = null;
 	return -1;
 }
@@ -152,7 +181,7 @@ int tmpfs_create(struct vnode* dir_node,struct vnode** target,const char* compon
 	for(int i=0;i<16;i++)	//set name
 	{
 		new_file->name[i] = component_name[i];
-		if(component_name[i] == '\0')
+		if(component_name[i] == 0)
 		{
 			break;
 		}
@@ -164,52 +193,10 @@ int tmpfs_create(struct vnode* dir_node,struct vnode** target,const char* compon
 	*target = new_file;
 
 	dir_node->child[dir_node->child_num++] = *target;
-
-	int have_dot = 0;
-	for(int i=0;i<dir_node->child_num;i++)
-	{
-		if(strcmp(dir_node->child[i]->name,".") == 0)
-		{
-			have_dot = 1;
-		}
-	}
-	if(!have_dot)	//check if had declared /.
-	{
-		struct vnode* child = d_alloc(sizeof(struct vnode));
-		child->mount = dir_node->mount;
-		child->v_ops = dir_node->v_ops;
-		child->f_ops = dir_node->f_ops;
-		child->node_type = dir_node->node_type;
-		child->parent = dir_node->parent;
-		child->name[0] = '.';
-		child->name[1] = 0;
-		dir_node->child[dir_node->child_num++] = child;
-	}
-
-	int have_double_dot = 0;
-	for(int i=0;i<dir_node->child_num;i++)
-	{
-		if(strcmp(dir_node->child[i]->name,"..") == 0)
-		{
-			have_double_dot = 1;
-		}
-	}
-	if(!have_double_dot)	//check if had declared /.
-	{
-		struct vnode* child = d_alloc(sizeof(struct vnode));
-		child->mount = dir_node->mount;
-		child->v_ops = dir_node->v_ops;
-		child->f_ops = dir_node->f_ops;
-		child->node_type = dir_node->node_type;
-		child->parent = dir_node->parent;
-		child->name[0] = '.';
-		child->name[1] = '.';
-		child->name[2] = 0;
-		dir_node->child[dir_node->child_num++] = child;
-	}
-
+/*
 	uart_int(dir_node->child_num);
 	uart_send_string(" -> child_num\n");
+*/
 	return 0;
 }
 
