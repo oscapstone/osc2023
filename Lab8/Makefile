@@ -33,10 +33,10 @@ kernel8.img: $(SRC_DIR)/kernel/link.ld $(OBJ_FILES)
 	$(ARMGNU)-objcopy $(BUILD_DIR)/kernel/kernel8.elf -O binary kernel8.img
 
 int_qemu:
-	qemu-system-aarch64 -M raspi3 -kernel kernel8.img -serial null -serial stdio -display none -initrd initramfs.cpio -dtb bcm2710-rpi-3-b-plus.dtb -d int
+	qemu-system-aarch64 -M raspi3 -kernel kernel8.img -serial null -serial stdio -display none -initrd initfs.cp -dtb bcm2710-rpi-3-b-plus.dtb -d int
 
 debug:
-	qemu-system-aarch64 -M raspi3 -kernel kernel8.img -serial null -serial stdio -display none -s -S -initrd initramfs.cpio -dtb bcm2710-rpi-3-b-plus.dtb -d int
+	qemu-system-aarch64 -M raspi3 -kernel kernel8.img -serial null -serial stdio -display none -s -S -initrd initfs.cp -dtb bcm2710-rpi-3-b-plus.dtb -d int -drive if=sd,file=sfn_nctuos.img,format=raw
 
 bootloader.img: $(SRC_DIR)/bootloader/link.ld $(OBJ_FILES)
 	$(ARMGNU)-ld -T $(SRC_DIR)/bootloader/link.ld -o $(BUILD_DIR)/bootloader/bootloader.elf $(filter $(BUILD_DIR)/bootloader/%_c.o $(BUILD_DIR)/bootloader/%_s.o $(BUILD_DIR)/lib/%_c.o $(BUILD_DIR)/lib/%_s.o, $(OBJ_FILES))
@@ -50,13 +50,13 @@ test:
 	@echo Hello
 
 pseudoTTY:
-	qemu-system-aarch64 -M raspi3 -kernel bootloader.img -serial null -serial pty -display none -initrd initramfs.cpio -dtb bcm2710-rpi-3-b-plus.dtb
+	qemu-system-aarch64 -M raspi3 -kernel bootloader.img -serial null -serial pty -display none -initrd initfs.cp -dtb bcm2710-rpi-3-b-plus.dtb
 
 debug_boot:
-	qemu-system-aarch64 -M raspi3 -kernel bootloader.img -serial null -serial pty -display none -initrd initramfs.cpio -dtb bcm2710-rpi-3-b-plus.dtb -s -S
+	qemu-system-aarch64 -M raspi3 -kernel bootloader.img -serial null -serial pty -display none -initrd initfs.cp -dtb bcm2710-rpi-3-b-plus.dtb -drive if=sd,file=sfn_nctuos.img,format=raw -s -S
 
 run:
-	qemu-system-aarch64 -M raspi3 -kernel kernel8.img -serial null -serial stdio -display none -initrd initramfs.cpio -dtb bcm2710-rpi-3-b-plus.dtb -drive if=sd,file=sfn_nctuos.img,format=raw
+	qemu-system-aarch64 -M raspi3 -kernel kernel8.img -serial null -serial stdio -display none -initrd initfs.cp -dtb bcm2710-rpi-3-b-plus.dtb -drive if=sd,file=sfn_nctuos.img,format=raw
 
 display:
-	qemu-system-aarch64 -M raspi3 -kernel kernel8.img -serial null -serial stdio -initrd initramfs.cpio -dtb bcm2710-rpi-3-b-plus.dtb -drive if=sd,file=sfn_nctuos.img,format=raw
+	qemu-system-aarch64 -M raspi3 -kernel kernel8.img -serial null -serial stdio -initrd initfs.cp -dtb bcm2710-rpi-3-b-plus.dtb -drive if=sd,file=sfn_nctuos.img,format=raw

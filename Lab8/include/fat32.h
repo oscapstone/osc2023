@@ -42,7 +42,10 @@ typedef struct partition_struct
 typedef struct MBR_struct
 {
     uint8_t bootstrap_code[446];
-    partition_t partitiontable[4];
+    partition_t part1;
+    partition_t part2;
+    partition_t part3;
+    partition_t part4;
     uint8_t signature[2];
 } __attribute__((packed)) MBR_t;
 

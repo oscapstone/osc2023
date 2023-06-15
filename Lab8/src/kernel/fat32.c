@@ -28,9 +28,11 @@ int fat32fs_mount(struct filesystem *fs, struct mount *mount)
         return -1;
 
     boot_sector_t boot_sector;
-    readblock(mbr.partitiontable[0].relative_sector, &boot_sector);
+    // readblock(mbr.part1.relative_sector, &boot_sector);
+    readblock(2048, &boot_sector);
 
-    FAT1_LBA = mbr.partitiontable[0].relative_sector + boot_sector.reserved_sector_cnt;
+    // FAT1_LBA = mbr.part1.relative_sector + boot_sector.reserved_sector_cnt;
+    FAT1_LBA = 2048 + boot_sector.reserved_sector_cnt;
     root_dir_LBA = FAT1_LBA + (boot_sector.fat_cnt * boot_sector.sector_per_fat32);
     root_cluster = boot_sector.root_cluster;
     sec_per_fat32 = boot_sector.sector_per_fat32;

@@ -11,6 +11,7 @@
 #include "sdhost.h"
 
 extern void *_dtb_ptr;
+extern char *cpioDestGlobal;
 
 void kernel_main(void)
 {
@@ -18,7 +19,8 @@ void kernel_main(void)
 
 	mbox_main();
 
-	fdt_traverse(initramfs_callback, _dtb_ptr);
+	// fdt_traverse(initramfs_callback, _dtb_ptr);
+	cpioDestGlobal = (char *)0x8000000;
 
 	thread_init();
 

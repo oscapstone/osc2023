@@ -174,7 +174,7 @@ int open(char *pathname, int flags)
     int fd = thread_get_idle_fd(cur);
     if (fd < 0)
     {
-        printf("Error, priv_open(), cannot open more file for pid=%d\r\n", cur->thread_info->id);
+        printf("[ERROR/syscall.c/open()] cannot open more file for pid=%d\r\n", cur->thread_info->id);
         return -1;
     }
 

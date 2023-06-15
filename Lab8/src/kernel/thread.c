@@ -101,6 +101,7 @@ thread_info *thread_create(func_ptr fp)
     new_task->job = fp;
     new_task->custom_signal = NULL;
 
+    memset(new_task->fd_table, 0, sizeof(new_task->fd_table)); // init file table
     // Open stdin, stdout, stderr for the process
     file_t *fh = NULL;
     vfs_open("/dev/uart", 0, &fh);
