@@ -4,7 +4,7 @@ if [ -e rootfs ]; then
     rm -r rootfs
 fi
 
-progs='xcpt_test'
+progs='syscall_test'
 
 mkdir rootfs
 for prog in $progs; do

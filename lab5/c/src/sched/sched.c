@@ -2,59 +2,158 @@
 
 #include "oscos/sched.h"
 
+#include "oscos/libc/string.h"
 #include "oscos/mem/malloc.h"
 #include "oscos/mem/page-alloc.h"
 #include "oscos/mem/vm.h"
 #include "oscos/utils/critical-section.h"
+#include "oscos/utils/math.h"
+#include "oscos/utils/rb.h"
 
 #define THREAD_STACK_ORDER 13 // 8KB.
 #define THREAD_STACK_BLOCK_ORDER (THREAD_STACK_ORDER - PAGE_ORDER)
 
-void _sched_run_thread(thread_t *thread);
-void thread_main();
+#define USER_STACK_ORDER 23 // 8MB.
+#define USER_STACK_BLOCK_ORDER (USER_STACK_ORDER - PAGE_ORDER)
 
-static size_t _sched_next_tid = 1;
-static thread_list_node_t _run_queue, _zombies;
+void _sched_run_thread(thread_t *thread);
+void thread_main(void);
+noreturn void user_program_main(const void *init_pc, const void *init_user_sp,
+                                const void *init_kernel_sp);
+noreturn void fork_child_ret(void);
+
+static size_t _sched_next_tid = 1, _sched_next_pid = 1;
+static thread_list_node_t _run_queue = {.prev = &_run_queue,
+                                        .next = &_run_queue},
+                          _zombies = {.prev = &_zombies, .next = &_zombies};
+static rb_node_t *_processes = NULL;
+
+static int _cmp_processes_by_pid(const process_t *const *const p1,
+                                 const process_t *const *const p2, void *_arg) {
+  (void)_arg;
+
+  const size_t pid1 = (*p1)->id, pid2 = (*p2)->id;
+  return pid1 < pid2 ? -1 : pid1 > pid2 ? 1 : 0;
+}
+
+static int _cmp_pid_and_processes_by_pid(const size_t *const pid,
+                                         const process_t *const *const process,
+                                         void *_arg) {
+  (void)_arg;
+
+  const size_t pid1 = *pid, pid2 = (*process)->id;
+  return pid1 < pid2 ? -1 : pid1 > pid2 ? 1 : 0;
+}
+
+static size_t _calc_text_block_order(const size_t text_len) {
+  const size_t text_n_pages =
+      (text_len + ((1 << PAGE_ORDER) - 1)) >> PAGE_ORDER;
+  const size_t actual_text_block_order = clog2(text_n_pages);
+
+  // We don't know exactly how large the .bss section of a user program is, so
+  // we have to use a heuristic. We speculate that the .bss section is at most
+  // as large as the remaining parts (.text, .rodata, and .data sections) of the
+  // user program.
+  const size_t allocating_text_block_order = actual_text_block_order + 1;
+
+  return allocating_text_block_order;
+}
+
+static size_t _alloc_tid(void) {
+  uint64_t daif_val;
+  CRITICAL_SECTION_ENTER(daif_val);
+
+  const size_t result = _sched_next_tid++;
+
+  CRITICAL_SECTION_LEAVE(daif_val);
+  return result;
+}
+
+static size_t _alloc_pid(void) {
+  uint64_t daif_val;
+  CRITICAL_SECTION_ENTER(daif_val);
+
+  const size_t result = _sched_next_pid++;
+
+  CRITICAL_SECTION_LEAVE(daif_val);
+  return result;
+}
+
+static void _add_thread_to_queue(thread_t *const thread,
+                                 thread_list_node_t *const queue) {
+  thread_list_node_t *const thread_node = &thread->list_node;
+
+  uint64_t daif_val;
+  CRITICAL_SECTION_ENTER(daif_val);
+
+  thread_list_node_t *const last_node = queue->prev;
+  thread_node->prev = last_node;
+  last_node->next = thread_node;
+  thread_node->next = queue;
+  queue->prev = thread_node;
+
+  CRITICAL_SECTION_LEAVE(daif_val);
+}
+
+static void _add_thread_to_run_queue(thread_t *const thread) {
+  _add_thread_to_queue(thread, &_run_queue);
+}
+
+void _remove_thread_from_queue(thread_t *const thread) {
+  thread_list_node_t *const thread_node = &thread->list_node;
+
+  uint64_t daif_val;
+  CRITICAL_SECTION_ENTER(daif_val);
+
+  thread_node->prev->next = thread_node->next;
+  thread_node->next->prev = thread_node->prev;
+
+  CRITICAL_SECTION_LEAVE(daif_val);
+}
+
+thread_t *_remove_first_thread_from_queue(thread_list_node_t *const queue) {
+  thread_t *result;
+
+  uint64_t daif_val;
+  CRITICAL_SECTION_ENTER(daif_val);
+
+  if (queue->next == queue) {
+    result = NULL;
+  } else {
+    thread_list_node_t *const first_node = queue->next;
+    queue->next = first_node->next;
+    first_node->next->prev = queue;
+    result = (thread_t *)((char *)first_node - offsetof(thread_t, list_node));
+  }
+
+  CRITICAL_SECTION_LEAVE(daif_val);
+  return result;
+}
 
 bool sched_init(void) {
-  // Creates the idle thread.
+  // Create the idle thread.
 
   thread_t *const idle_thread = malloc(sizeof(thread_t));
   if (!idle_thread)
     return false;
 
   idle_thread->id = 0;
-
-  // Initializes the run queue. Initially, the run queue consists solely of the
-  // idle thread.
-
-  _run_queue.prev = _run_queue.next = &idle_thread->list_node;
-  idle_thread->list_node.prev = idle_thread->list_node.next = &_run_queue;
+  idle_thread->process = NULL;
+  idle_thread->ctx.fp_simd_ctx = NULL;
 
   // Name the current thread the idle thread.
 
   __asm__ __volatile__("msr tpidr_el1, %0" : : "r"(idle_thread));
 
-  // Initialize the zombie list. Initially, there are no zombies.
-
-  _zombies.prev = _zombies.next = &_zombies;
-
   return true;
 }
 
 bool thread_create(void (*const task)(void *), void *const arg) {
-  // Create the thread structure.
+  // Allocate memory.
 
   thread_t *const thread = malloc(sizeof(thread_t));
   if (!thread)
     return false;
-
-  thread->id = _sched_next_tid++;
-  thread->ctx.x19 = (uint64_t)(uintptr_t)task;
-  thread->ctx.x20 = (uint64_t)(uintptr_t)arg;
-  thread->ctx.pc = (uint64_t)(uintptr_t)thread_main;
-
-  // Allocate the stack for the new thread.
 
   const spage_id_t stack_page_id = alloc_pages(THREAD_STACK_BLOCK_ORDER);
   if (stack_page_id < 0) {
@@ -62,51 +161,39 @@ bool thread_create(void (*const task)(void *), void *const arg) {
     return false;
   }
 
+  // Initialize the thread structure.
+
+  thread->id = _alloc_tid();
+  thread->process = NULL;
+  thread->ctx.r19 = (uint64_t)(uintptr_t)task;
+  thread->ctx.r20 = (uint64_t)(uintptr_t)arg;
+  thread->ctx.pc = (uint64_t)(uintptr_t)thread_main;
+  thread->ctx.fp_simd_ctx = NULL;
+
   thread->stack_page_id = stack_page_id;
   void *const init_sp = (char *)pa_to_kernel_va(page_id_to_pa(stack_page_id)) +
                         (1 << (THREAD_STACK_BLOCK_ORDER + PAGE_ORDER));
-  thread->ctx.sp = (uint64_t)(uintptr_t)init_sp;
+  thread->ctx.kernel_sp = (uint64_t)(uintptr_t)init_sp;
 
   // Put the thread into the end of the run queue.
 
-  uint64_t daif_val;
-  CRITICAL_SECTION_ENTER(daif_val);
-
-  thread_list_node_t *const last_node = _run_queue.prev;
-  thread->list_node.prev = last_node;
-  last_node->next = &thread->list_node;
-  thread->list_node.next = &_run_queue;
-  _run_queue.prev = &thread->list_node;
-
-  CRITICAL_SECTION_LEAVE(daif_val);
+  _add_thread_to_run_queue(thread);
 
   return true;
 }
 
+thread_t *
+_sched_move_thread_to_queue_and_pick_thread(thread_t *const thread,
+                                            thread_list_node_t *const queue) {
+  _add_thread_to_queue(thread, queue);
+  return _remove_first_thread_from_queue(&_run_queue);
+}
+
 void thread_exit(void) {
-  // Move the current thread from the run queue to the zombie list.
+  XCPT_MASK_ALL();
 
-  uint64_t daif_val;
-  CRITICAL_SECTION_ENTER(daif_val);
-
-  thread_list_node_t *const current_thread_node = _run_queue.next,
-                            *const next_node = current_thread_node->next;
-  _run_queue.next = next_node;
-  next_node->prev = &_run_queue;
-
-  thread_list_node_t *const last_zombie = _zombies.prev;
-  current_thread_node->prev = last_zombie;
-  last_zombie->next = current_thread_node;
-  current_thread_node->next = &_zombies;
-  _zombies.prev = current_thread_node;
-
-  CRITICAL_SECTION_LEAVE(daif_val);
-
-  // Pick a new thread to run.
-
-  thread_t *const next_thread =
-      (thread_t *)((char *)next_node - offsetof(thread_t, list_node));
-  _sched_run_thread(next_thread);
+  _sched_run_thread(
+      _sched_move_thread_to_queue_and_pick_thread(current_thread(), &_zombies));
   __builtin_unreachable();
 }
 
@@ -116,55 +203,312 @@ thread_t *current_thread(void) {
   return result;
 }
 
-static void _thread_cleanup(thread_t *const thread) {
-  free_pages(thread->stack_page_id);
-  free(thread);
-}
+bool process_create(void) {
+  // Allocate memory.
 
-void kill_zombies(void) {
-  for (;;) {
-    uint64_t daif_val;
-    CRITICAL_SECTION_ENTER(daif_val);
+  process_t *const process = malloc(sizeof(process_t));
+  if (!process) // Out of memory.
+    return false;
 
-    if (_zombies.next == &_zombies) { // No more zombies.
-      CRITICAL_SECTION_LEAVE(daif_val);
-      break;
-    }
-
-    thread_list_node_t *const first_zombie_node = _zombies.next,
-                              *const next_zombie_node = first_zombie_node->next;
-
-    _zombies.next = next_zombie_node;
-    next_zombie_node->prev = &_zombies;
-
-    CRITICAL_SECTION_LEAVE(daif_val);
-
-    thread_t *const zombie =
-        (thread_t *)((char *)first_zombie_node - offsetof(thread_t, list_node));
-    _thread_cleanup(zombie);
+  const spage_id_t user_stack_page_id = alloc_pages(USER_STACK_BLOCK_ORDER);
+  if (user_stack_page_id < 0) { // Out of memory.
+    free(process);
+    return false;
   }
-}
 
-thread_t *_sched_pick_thread(void) {
-  // Move the current thread to the end of the run queue.
+  shared_page_t *const user_stack_page = shared_page_init(user_stack_page_id);
+  if (!user_stack_page) {
+    free_pages(user_stack_page_id);
+    free(process);
+    return false;
+  }
+
+  thread_fp_simd_ctx_t *const fp_simd_ctx =
+      malloc(sizeof(thread_fp_simd_ctx_t));
+  if (!fp_simd_ctx) {
+    shared_page_drop(user_stack_page);
+    free(process);
+    return false;
+  }
+
+  // Set thread/process data.
+
+  thread_t *const curr_thread = current_thread();
+
+  process->id = _alloc_pid();
+  process->user_stack_page = user_stack_page;
+  process->main_thread = curr_thread;
+  curr_thread->process = process;
+  curr_thread->ctx.fp_simd_ctx = fp_simd_ctx;
+
+  // Zero the stack pages.
+
+  void *user_stack_start = pa_to_kernel_va(page_id_to_pa(user_stack_page_id));
+  memset(user_stack_start, 0, 1 << USER_STACK_ORDER);
+
+  // Add the process to the process BST.
 
   uint64_t daif_val;
   CRITICAL_SECTION_ENTER(daif_val);
 
-  thread_list_node_t *const current_thread_node = _run_queue.next,
-                            *const next_node = current_thread_node->next;
-  _run_queue.next = next_node;
-  next_node->prev = &_run_queue;
-
-  thread_list_node_t *const last_node = _run_queue.prev;
-  current_thread_node->prev = last_node;
-  last_node->next = current_thread_node;
-  current_thread_node->next = &_run_queue;
-  _run_queue.prev = current_thread_node;
-
-  thread_t *const next_thread =
-      (thread_t *)((char *)_run_queue.next - offsetof(thread_t, list_node));
+  rb_insert(&_processes, sizeof(process_t *), &process,
+            (int (*)(const void *, const void *, void *))_cmp_processes_by_pid,
+            NULL);
 
   CRITICAL_SECTION_LEAVE(daif_val);
-  return next_thread;
+
+  return true;
+}
+
+static void _exec_generic(const void *const text_start, const size_t text_len,
+                          const bool free_text_page) {
+  thread_t *const curr_thread = current_thread();
+  process_t *const curr_process = curr_thread->process;
+
+  // Allocate memory.
+
+  const size_t text_block_order = _calc_text_block_order(text_len);
+  const spage_id_t text_page_id = alloc_pages(text_block_order);
+  if (text_page_id < 0) {
+    return;
+  }
+
+  shared_page_t *const text_page = shared_page_init(text_page_id);
+  if (!text_page) {
+    free_pages(text_page_id);
+    return;
+  }
+
+  const spage_id_t user_stack_page_id = alloc_pages(USER_STACK_BLOCK_ORDER);
+  if (user_stack_page_id < 0) {
+    shared_page_drop(text_page);
+    return;
+  }
+
+  shared_page_t *const user_stack_page = shared_page_init(user_stack_page_id);
+  if (!user_stack_page) {
+    free_pages(user_stack_page_id);
+    shared_page_drop(text_page);
+    return;
+  }
+
+  // Free old pages.
+
+  if (free_text_page) {
+    shared_page_drop(curr_process->text_page);
+  }
+
+  shared_page_drop(curr_process->user_stack_page);
+
+  // Set process data.
+
+  curr_process->text_page = text_page;
+  curr_process->user_stack_page = user_stack_page;
+
+  // Copy the user program.
+
+  void *const user_program_start = pa_to_kernel_va(page_id_to_pa(text_page_id));
+  memcpy(user_program_start, text_start, text_len);
+
+  // Zero the remaining spaces of the text pages.
+  memset((char *)user_program_start + text_len, 0,
+         (1 << (text_block_order + PAGE_ORDER)) - text_len);
+
+  // Zero the stack pages.
+
+  void *user_stack_start = pa_to_kernel_va(page_id_to_pa(user_stack_page_id));
+  memset(user_stack_start, 0, 1 << USER_STACK_ORDER);
+
+  // Run the user program.
+
+  void *const user_stack_end =
+                  (char *)user_stack_start + (1 << USER_STACK_ORDER),
+              *const kernel_stack_end = (char *)pa_to_kernel_va(page_id_to_pa(
+                                            curr_thread->stack_page_id)) +
+                                        (1 << THREAD_STACK_ORDER);
+  user_program_main(user_program_start, user_stack_end, kernel_stack_end);
+}
+
+void exec_first(const void *const text_start, const size_t text_len) {
+  _exec_generic(text_start, text_len, false);
+}
+
+void exec(const void *const text_start, const size_t text_len) {
+  _exec_generic(text_start, text_len, true);
+}
+
+static void _thread_cleanup(thread_t *const thread) {
+  if (thread->process) {
+    uint64_t daif_val;
+    CRITICAL_SECTION_ENTER(daif_val);
+
+    rb_delete(&_processes, &thread->process->id,
+              (int (*)(const void *, const void *,
+                       void *))_cmp_pid_and_processes_by_pid,
+              NULL);
+
+    CRITICAL_SECTION_LEAVE(daif_val);
+
+    shared_page_drop(thread->process->text_page);
+    shared_page_drop(thread->process->user_stack_page);
+    free(thread->process);
+  }
+  free_pages(thread->stack_page_id);
+  free(thread);
+}
+
+process_t *fork(const extended_trap_frame_t *const trap_frame) {
+  thread_t *const curr_thread = current_thread();
+  process_t *const curr_process = curr_thread->process;
+
+  // Allocate memory.
+
+  thread_t *const new_thread = malloc(sizeof(thread_t));
+  if (!new_thread)
+    return NULL;
+
+  process_t *const new_process = malloc(sizeof(process_t));
+  if (!new_process) {
+    free(new_thread);
+    return NULL;
+  }
+
+  const spage_id_t kernel_stack_page_id = alloc_pages(THREAD_STACK_BLOCK_ORDER);
+  if (kernel_stack_page_id < 0) {
+    free(new_process);
+    free(new_thread);
+    return NULL;
+  }
+
+  thread_fp_simd_ctx_t *const fp_simd_ctx =
+      malloc(sizeof(thread_fp_simd_ctx_t));
+  if (!fp_simd_ctx) {
+    free_pages(kernel_stack_page_id);
+    free(new_process);
+    free(new_thread);
+    return NULL;
+  }
+
+  // Set data.
+
+  new_thread->id = _alloc_tid();
+  new_thread->stack_page_id = kernel_stack_page_id;
+  new_thread->process = new_process;
+
+  new_process->id = _alloc_pid();
+  new_process->text_page = shared_page_clone(curr_process->text_page);
+  new_process->user_stack_page =
+      shared_page_clone(curr_process->user_stack_page);
+  new_process->main_thread = new_thread;
+
+  // Set execution context.
+
+  void *const kernel_stack_end =
+                  (char *)pa_to_kernel_va(page_id_to_pa(kernel_stack_page_id)) +
+                  (1 << THREAD_STACK_ORDER),
+              *const init_kernel_sp =
+                  (char *)kernel_stack_end - sizeof(extended_trap_frame_t);
+
+  memcpy(&new_thread->ctx, &curr_thread->ctx, sizeof(thread_ctx_t));
+  new_thread->ctx.pc = (uint64_t)(uintptr_t)fork_child_ret;
+  new_thread->ctx.kernel_sp = (uint64_t)(uintptr_t)init_kernel_sp;
+  new_thread->ctx.fp_simd_ctx = fp_simd_ctx;
+  memcpy(fp_simd_ctx, curr_thread->ctx.fp_simd_ctx,
+         sizeof(thread_fp_simd_ctx_t));
+
+  memcpy(init_kernel_sp, trap_frame, sizeof(extended_trap_frame_t));
+
+  // Add the new thread to the end of the run queue and the process to the
+  // process BST. Note that these two steps can be done in either order but must
+  // not be interrupted in between, since:
+  // - If the former is done before the latter and the newly-created thread is
+  //   scheduled between the two steps, then the new thread won't be able to
+  //   find its own process.
+  // - If the latter is done before the former and the newly-created process is
+  //   killed between the two steps, then a freed thread_t instance (i.e.,
+  //   `new_thread`) will be added onto the run queue – a use-after-free bug.
+
+  uint64_t daif_val;
+  CRITICAL_SECTION_ENTER(daif_val);
+
+  _add_thread_to_run_queue(new_thread);
+
+  rb_insert(&_processes, sizeof(process_t *), &new_process,
+            (int (*)(const void *, const void *, void *))_cmp_processes_by_pid,
+            NULL);
+
+  CRITICAL_SECTION_LEAVE(daif_val);
+
+  return new_process;
+}
+
+void kill_zombies(void) {
+  thread_t *zombie;
+  while ((zombie = _remove_first_thread_from_queue(&_zombies))) {
+    _thread_cleanup(zombie);
+  }
+}
+
+void schedule(void) { suspend_to_wait_queue(&_run_queue); }
+
+void add_all_threads_to_run_queue(thread_list_node_t *const wait_queue) {
+  thread_t *thread;
+  while ((thread = _remove_first_thread_from_queue(wait_queue))) {
+    _add_thread_to_run_queue(thread);
+  }
+}
+
+process_t *get_process_by_id(const size_t pid) {
+  uint64_t daif_val;
+  CRITICAL_SECTION_ENTER(daif_val);
+
+  process_t *const result =
+      (process_t *)rb_search(_processes, &pid,
+                             (int (*)(const void *, const void *,
+                                      void *))_cmp_pid_and_processes_by_pid,
+                             NULL);
+
+  CRITICAL_SECTION_LEAVE(daif_val);
+
+  return result;
+}
+
+void kill_process(process_t *const process) {
+  if (process == current_thread()->process) {
+    thread_exit();
+  } else {
+    thread_t *const thread = process->main_thread;
+
+    // Zombify the main thread.
+
+    _remove_thread_from_queue(thread);
+    _add_thread_to_queue(thread, &_zombies);
+  }
+}
+
+void kill_all_processes(void) {
+  // Kill all processes other than the current one.
+  for (;;) {
+    uint64_t daif_val;
+    CRITICAL_SECTION_ENTER(daif_val);
+
+    process_t *process_to_kill = *(process_t **)_processes->payload;
+    if (process_to_kill == current_thread()->process) {
+      if (_processes->children[0]) {
+        process_to_kill = *(process_t **)_processes->children[0]->payload;
+      } else if (_processes->children[1]) {
+        process_to_kill = *(process_t **)_processes->children[1]->payload;
+      } else { // Only the current process left.
+        CRITICAL_SECTION_LEAVE(daif_val);
+        break;
+      }
+    }
+
+    CRITICAL_SECTION_LEAVE(daif_val);
+
+    kill_process(process_to_kill);
+  }
+
+  // Kill the current process.
+  thread_exit();
 }

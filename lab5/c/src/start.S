@@ -30,6 +30,10 @@ _start:
     mov x1, 0x300000
     msr cpacr_el1, x1
 
+    // Allow user programs to access the timer.
+    mov x1, 0x1
+    msr cntkctl_el1, x1
+
     // Clear the .bss section.
 
     ldr x1, =_sbss

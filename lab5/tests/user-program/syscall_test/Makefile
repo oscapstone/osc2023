@@ -7,7 +7,7 @@ CC      = aarch64-linux-gnu-gcc
 CPP     = aarch64-linux-gnu-cpp
 OBJCOPY = aarch64-linux-gnu-objcopy
 
-CPPFLAGS_BASE = -Iinclude
+CPPFLAGS_BASE = -Iinclude -I../libc/include
 
 ASFLAGS_DEBUG = -g
 
@@ -19,9 +19,9 @@ CFLAGS_RELEASE = -O3 -flto
 LDFLAGS_BASE    = -nostdlib -Xlinker --build-id=none
 LDFLAGS_RELEASE = -flto -Xlinker --gc-sections
 
-LDLIBS_BASE = -lgcc
+LDLIBS_BASE = -lgcc -L../libc/build/$(PROFILE) -lc
 
-OBJS      = start
+OBJS      = main
 LD_SCRIPT = $(SRC_DIR)/linker.ld
 
 # ------------------------------------------------------------------------------
@@ -41,13 +41,13 @@ OBJ_PATHS = $(addprefix $(OUT_DIR)/,$(addsuffix .o,$(OBJS)))
 
 .PHONY: all clean-profile clean
 
-all: $(OUT_DIR)/xcpt_test.img
+all: $(OUT_DIR)/syscall_test.img
 
-$(OUT_DIR)/xcpt_test.img: $(OUT_DIR)/xcpt_test.elf
+$(OUT_DIR)/syscall_test.img: $(OUT_DIR)/syscall_test.elf
 	@mkdir -p $(@D)
 	$(OBJCOPY) -O binary $^ $@
 
-$(OUT_DIR)/xcpt_test.elf: $(OBJ_PATHS) $(LD_SCRIPT)
+$(OUT_DIR)/syscall_test.elf: $(OBJ_PATHS) $(LD_SCRIPT)
 	@mkdir -p $(@D)
 	$(CC) -T $(LD_SCRIPT) $(LDFLAGS) $(filter-out $(LD_SCRIPT),$^) $(LDLIBS) \
 		-o $@

@@ -59,7 +59,32 @@ xcpt_irq_curr_el_sp_elx_handler:
     // Exception from a lower EL and at least one lower EL is AArch64.
 
     // Synchronous.
-    default_vt_entry 0x8 xcpt_sync_lower_el_aarch64_handler
+xcpt_sync_lower_el_aarch64_handler:
+    save_aapcs
+
+    // Check if the exception is caused by svc.
+    mrs x9, esr_el1
+    ubfx x10, x9, 26, 6
+    cmp x10, 0x15
+    b.ne .Lxcpt_sync_lower_el_aarch64_handler_not_svc
+
+    // The exception is caused by svc.
+    bl xcpt_svc_handler
+    b .Lxcpt_sync_lower_el_aarch64_handler_end
+
+.Lxcpt_sync_lower_el_aarch64_handler_not_svc:
+    // The exception is not caused by svc.
+    mov x0, 0x8
+    bl xcpt_default_handler
+
+.Lxcpt_sync_lower_el_aarch64_handler_end:
+    load_aapcs
+    eret
+
+.type xcpt_sync_lower_el_aarch64_handler, function
+.size xcpt_sync_lower_el_aarch64_handler, . - xcpt_sync_lower_el_aarch64_handler
+
+.align 7
 
     // IRQ.
 xcpt_irq_lower_el_aarch64_handler:

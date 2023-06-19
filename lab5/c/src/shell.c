@@ -11,8 +11,8 @@
 #include "oscos/libc/string.h"
 #include "oscos/mem/malloc.h"
 #include "oscos/mem/page-alloc.h"
+#include "oscos/sched.h"
 #include "oscos/timer/timeout.h"
-#include "oscos/user-program.h"
 #include "oscos/utils/time.h"
 
 #define MAX_CMD_LEN 78
@@ -159,12 +159,15 @@ static void _shell_do_cmd_exec(void) {
     return;
   }
 
-  if (!load_user_program(user_program_start, user_program_len)) {
-    console_puts("oscsh: exec: user program too long");
+  if (!process_create()) {
+    console_puts("oscsh: exec: out of memory");
     return;
   }
 
-  run_user_program();
+  exec_first(user_program_start, user_program_len);
+
+  // If execution reaches here, then exec failed.
+  console_puts("oscsh: exec: out of memory");
 }
 
 static void _shell_cmd_set_timeout_timer_callback(char *const message) {

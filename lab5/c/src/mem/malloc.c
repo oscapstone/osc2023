@@ -258,8 +258,8 @@ static void _free_to_slab(slab_t *const slab, void *const ptr) {
   uint64_t daif_val;
   CRITICAL_SECTION_ENTER(daif_val);
 
-  const size_t slot_ix =
-      ((uintptr_t)ptr - (uintptr_t)slab) / (slab->metadata.slot_size * 16);
+  const size_t slot_ix = ((uintptr_t)ptr - (uintptr_t)slab->slots) /
+                         (slab->metadata.slot_size * 16);
 
   // Adds the slab to its free list if it wasn't on its free list.
 
