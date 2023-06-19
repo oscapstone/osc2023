@@ -3,6 +3,8 @@
 
 #include <type.h>
 
+#define PA2VA(x) (((uint64)(x)) | 0xffff000000000000)
+#define VA2PA(x) (((uint64)(x)) & 0x0000ffffffffffff)
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof(x[0]))
 
 #define enable_interrupt(){           \
@@ -12,6 +14,19 @@
 #define disable_interrupt(){           \
     asm volatile("msr DAIFSet, 0xf"); \
 }
+
+#define set_page_table(task) do {               \
+    asm volatile(                               \
+        "mov x9, %0\n"                          \
+        "and x9, x9, #0x0000ffffffffffff\n"     \
+        "dsb ish\n"                             \
+        "msr ttbr0_el1, x9\n"                   \
+        "tlbi vmalle1is\n"                      \
+        "dsb ish\n"                             \
+        "isb\n"                                 \
+        :: "r" (task->page_table)               \
+    );                                          \
+} while (0)
 
 #define get_elem_idx(elem, array) \
     (((char *)elem - (char *)array) / sizeof(array[0]))

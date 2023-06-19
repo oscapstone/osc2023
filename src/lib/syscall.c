@@ -11,6 +11,7 @@
 #include <mm.h>
 #include <mbox.h>
 #include <signal.h>
+#include <panic.h>
 
 syscall_funcp syscall_table[] = {
     (syscall_funcp) syscall_getpid,     // 0
@@ -45,10 +46,13 @@ void syscall_handler(trapframe regs, uint32 syn)
 {
     esr_el1 *esr = (esr_el1 *)&syn;
     uint64 syscall_num;
-
+    
+    // uart_sync_printf("In syscall handler!\r\n");
     // SVC instruction execution
-    if(esr->ec != 0x15)
-        return;
+    if(esr->ec != 0x15){
+        show_trapframe(&regs);
+        panic("[X] Panic: esr->ec: %x", esr->ec);
+    }
 
     syscall_num = regs.x8;
 
@@ -87,7 +91,7 @@ void syscall_uart_write(trapframe *_, const char buf[], size_t size){
 void syscall_exec(trapframe *_, const char* name, char *const argv[]){
     void *data;
     char *kernel_sp;
-    char *user_sp;
+    // char *user_sp;
     uint32 datalen;
 
     datalen = cpio_load_prog((char *)_initramfs_addr, name, (char **)&data);
@@ -100,12 +104,23 @@ void syscall_exec(trapframe *_, const char* name, char *const argv[]){
     current->datalen = datalen;
 
     kernel_sp = (char *)current->kernel_stack + STACK_SIZE - 0x10;
-    user_sp = (char *)current->user_stack + STACK_SIZE - 0x10;
+    // user_sp = (char *)current->user_stack + STACK_SIZE - 0x10;
 
     // Reset signal
     signal_head_reset(current->signal);
     sighand_reset(current->sighand);
-    exec_user_prog(current->data, user_sp, kernel_sp);
+    // exec_user_prog(current->data, user_sp, kernel_sp);
+
+    pt_free(current->page_table);
+    current->page_table = pt_create();
+    pt_map(current->page_table, (void *)0, datalen,(void *)VA2PA(data), PT_R | PT_W | PT_X);
+    pt_map(current->page_table, (void *)0xffffffffb000, STACK_SIZE,(void *)VA2PA(current->user_stack), PT_R | PT_W);
+
+    // TODO: Why is this needed for the vm.img to run?
+    pt_map(current->page_table, (void *)0x3c000000, 0x04000000,(void *)0x3c000000, PT_R | PT_W);
+
+    set_page_table(current);
+    exec_user_prog((void *)0, (char *)0xffffffffeff0, kernel_sp);
 }
 
 void syscall_fork(trapframe *frame){
@@ -122,6 +137,12 @@ void syscall_fork(trapframe *frame){
     memncpy(child->kernel_stack, current->kernel_stack, STACK_SIZE);
     memncpy(child->user_stack, current->user_stack, STACK_SIZE);
     memncpy(child->data, current->data, current->datalen);
+
+    pt_map(child->page_table, (void *)0, child->datalen,(void *)VA2PA(child->data), PT_R | PT_W | PT_X);
+    pt_map(child->page_table, (void *)0xffffffffb000, STACK_SIZE,(void *)VA2PA(child->user_stack), PT_R | PT_W);
+
+    // TODO: Why is this needed for the vm.img to run?
+    pt_map(child->page_table, (void *)0x3c000000, 0x04000000,(void *)0x3c000000, PT_R | PT_W);
 
     // Copy the signal handler
     sighand_copy(child->sighand, child->data);
@@ -142,14 +163,15 @@ void syscall_fork(trapframe *frame){
     // Adjust child trapframe
     child_frame = KSTACK_VARIABLE(frame);
 
+    // return value of fork for child process is 0
     child_frame->x0 = 0;
-    child_frame->x30 = (uint64)DATA_VARIABLE(frame->x30);
-    child_frame->sp_el0 = USTACK_VARIABLE(frame->sp_el0);
-    child_frame->elr_el1 = DATA_VARIABLE(frame->elr_el1);
+    // child_frame->x30 = (uint64)DATA_VARIABLE(frame->x30);
+    // child_frame->sp_el0 = USTACK_VARIABLE(frame->sp_el0);
+    // child_frame->elr_el1 = DATA_VARIABLE(frame->elr_el1);
 
     sched_add_task(child);
 
-    // Set return value
+    // Set return value of parent process
     frame->x0 = child->tid;
 
 SYSCALL_FORK_END:
@@ -165,7 +187,15 @@ void syscall_exit(trapframe *_)
 
 void syscall_mbox_call(trapframe *_, unsigned char ch, unsigned int *mbox)
 {
-    mbox_call(ch, mbox);
+    // copy data to kernel since mbox can't access the user space memory
+    int mbox_size = (int)mbox[0];
+    if(mbox_size <= 0)
+        return;
+    char *kmbox = kmalloc(mbox_size);
+    memncpy(kmbox, (char *)mbox, mbox_size);
+    mbox_call(ch, (unsigned int*)kmbox);
+    memncpy((char *)mbox, kmbox, mbox_size);
+    kfree(kmbox);
 }
 
 void syscall_kill_pid(trapframe *_, int pid)

@@ -155,5 +155,5 @@ void irq_handler(){
 }
 
 void enable_irqs1(){
-    put32(ENABLE_IRQS1, 1 << 29);             // Enable UART1 IRQ
+    put32(PA2VA(ENABLE_IRQS1), 1 << 29);             // Enable UART1 IRQ
 }

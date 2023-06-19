@@ -100,6 +100,7 @@ void handle_signal(trapframe *frame){
         frame->sp_el0 = user_sp;
         frame->x0 = signal->signum;
         frame->elr_el1 = sigaction->sighand;
+        // TODO: Map sigreturn to user address space and allow user to execute
         frame->x30 = (uint64)sig_return;
     }
 
@@ -143,6 +144,7 @@ static inline void user_sighand_copy(struct sigaction_t *from, struct sigaction_
     to->sighand = (sighandler_t)((char *)from->sighand - offset);
 }
 
+/* Copy current signal handler to @sighand*/
 void sighand_copy(struct sighand_t *sighand, void *addrbase)
 {
     struct sighand_t *currhand;

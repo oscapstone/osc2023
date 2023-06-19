@@ -5,15 +5,16 @@
 #include <cpio.h>
 #include <mm.h>
 #include <kthread.h>
+#include <dt17.h>
 
 void enter_el0_run_user_prog(void *entry, void *user_sp);
 
 void user_prog_start(void){
-    char *user_sp;
+    // char *user_sp;
 
-    user_sp = (char *)current->user_stack + STACK_SIZE - 0x10;
+    // user_sp = (char *)current->user_stack + STACK_SIZE - 0x10;
 
-    enter_el0_run_user_prog(user_sp, current->data);
+    enter_el0_run_user_prog((void *)0, (char*)0xffffffffeff0);
 
     // User program should call exit() to terminate
 }
@@ -33,12 +34,12 @@ static inline void pt_regs_init(struct pt_regs *regs){
     regs->lr = user_prog_start;
 }
 
-void sched_new_user_prog(char* cpio, char *filename){
+void sched_new_user_prog(char *filename){
     task_struct *task;
     void *data;
     uint32 datalen;
 
-    datalen = cpio_load_prog(cpio, filename, (char **)&data);
+    datalen = cpio_load_prog(_initramfs_addr, filename, (char **)&data);
 
     if(datalen == 0)
         goto EXEC_USER_PROG_END;
@@ -52,6 +53,9 @@ void sched_new_user_prog(char* cpio, char *filename){
 
     task->regs.sp = (char *)task->kernel_stack + STACK_SIZE -0x10;
     pt_regs_init(&task->regs);
+    pt_map(task->page_table, (void *)0, datalen, (void *)VA2PA(task->data), PT_R | PT_W | PT_X);
+    pt_map(task->page_table, (void *)0xffffffffb000, STACK_SIZE,(void *)VA2PA(task->user_stack), PT_R | PT_W);
+    pt_map(task->page_table, (void *)0x3c000000, 0x04000000, (void *)0x3c000000, PT_R | PT_W);
 
     sched_add_task(task);
 

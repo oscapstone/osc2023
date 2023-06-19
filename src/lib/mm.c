@@ -70,17 +70,17 @@ void mm_init(char *fdt_base){
 
     if(!memory_end)
         uart_printf("[x] Cannot find memory end addr in fdt.\r\n");
-    page_allocator_early_init((void *) 0,(void *) memory_end);
+    page_allocator_early_init((void *)PA2VA(0),(void *)PA2VA(memory_end));
     sc_early_init();
 
     // Spin tables for multicore boot
-    mem_reserve((void *)0, (void *)0x1000);
+    mem_reserve((void *)PA2VA(0), (void *)PA2VA(0x4000));
 
     // Kernel image in the physical memory
     mem_reserve(_start, (void *)&_stack_top);
 
     // Initramfs
-    mem_reserve((void *)_initramfs_addr, (void *)_initramfs_end);
+    mem_reserve(_initramfs_addr, _initramfs_end);
 
     // Simple malloc
     mem_reserve(SMEM, EMEM);

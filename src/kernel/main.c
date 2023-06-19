@@ -38,10 +38,10 @@ void shell_interact(void){
         else if (!strcmp("hwinfo", shell_buf))
             _hwinfo();
         else if (!strcmp("ls", shell_buf))
-            _ls(_initramfs_addr);
+            _ls();
         else if (!strncmp("cat", shell_buf, 3)){
             if(cnt >= 5)
-                _cat(_initramfs_addr, &shell_buf[4]);
+                _cat(&shell_buf[4]);
             else
                 uart_printf("usage: cat <filename>\r\n");
         }
@@ -58,7 +58,7 @@ void shell_interact(void){
             _parsedtb(fdt_base);
         else if (!strncmp("exec",shell_buf,4)){
             if(cnt >= 6 && shell_buf[4]==' ')
-                _exec(_initramfs_addr,&shell_buf[5]);
+                _exec(&shell_buf[5]);
             else
                 uart_printf("usage: exec <filename>\r\n");
         }
@@ -98,8 +98,8 @@ void kernel_main(char *fdt){
     uart_printf("[*] Kernel start running!\r\n");
     uart_printf("[*] fdt base: %x\r\n", fdt);
 
-    kthread_create(shell_interact);
-    // sched_new_user_prog(fdt, "syscall.img");
+    // kthread_create(shell_interact);
+    sched_new_user_prog("vm.img");
 
     enable_irqs1();
     enable_interrupt();

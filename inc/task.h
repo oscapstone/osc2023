@@ -4,8 +4,9 @@
 #include <type.h>
 #include <sched.h>
 #include <list.h>
+#include <mmu.h>
 
-#define STACK_SIZE ( 2 * PAGE_SIZE)
+#define STACK_SIZE ( 4 * PAGE_SIZE)
 
 /* Task status */
 

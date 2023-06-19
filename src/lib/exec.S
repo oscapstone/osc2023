@@ -2,14 +2,14 @@
 
 .global enter_el0_run_user_prog
 enter_el0_run_user_prog:
+    // set elr_el1 to the program start address
     // Set sp_el0 to the user program's stack pointer
-    msr sp_el0, x0
-    
+    msr elr_el1, x0
+    msr sp_el0, x1
     // set spsr_el1 to 0 to enable interrupt set to 0x3c0 to disable interrupt
     mov x0, 0x0
     msr spsr_el1, x0
-    // set elr_el1 to the program start address
-    msr elr_el1, x1
+    
 
     // return to EL0
     eret

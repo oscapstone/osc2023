@@ -9,34 +9,31 @@ char *dtp_pass;
 extern char _kernel[];
 
 void _load(void){
-    uart_send_string("[*] Loading kernel...\r\n");
+    uart_printf("[*] Loading kernel...\r\n");
 
     unsigned int len;
     char *p = _kernel;
 
     len = uart_recv_uint();
-    uart_send_string("[*] Receiving kernel with len:");
-    uart_send_hex(len);
-    uart_send_string("\r\n");
+    uart_printf("[*] Receiving kernel with len: 0x%x\r\n", len);
 
-    // uart_send_hex(p);
     while(len--) {
         *p++= uart_recv();
     }
 
-    uart_send_string("[*] Jumping to the kernel\r\n");
+    uart_printf("[*] Jumping to the kernel\r\n");
     delay(5000);
     // Jump to the kernel and execute
     typedef void (*func_ptr)(char*);
     func_ptr ptr = (func_ptr)_kernel;
-    // uart_send_hex(ptr);
+
     ptr(dtp_pass);
 }
 
 void shell_interact(void){
-    uart_send_string("# ");
+    uart_printf("# ");
     unsigned int cnt = uart_recv_line(shell_buf, BUFSIZE);
-    uart_send_string("\r\n");
+    uart_printf("\r\n");
     if (!strcmp("help", shell_buf))
         _help(1);
     else if (!strcmp("hello", shell_buf)) 
@@ -50,13 +47,13 @@ void shell_interact(void){
     else {
         _echo(shell_buf);
         if(cnt)
-            uart_send_string("\r\n");
+            uart_printf("\r\n");
     }
 }
 
 void bootloader_main(char *dtp){
     uart_init();
-    uart_send_string("[*] Running the bootloader...\r\n");
+    uart_printf("[*] Running the bootloader...\r\n");
     dtp_pass = dtp;
 
     while(1)

@@ -4,7 +4,7 @@
 void user_prog_start(void);
 
 // pass the user stack pointer and process memory location (program loaded)
-void sched_new_user_prog(char *cpio, char *file_name);
+void sched_new_user_prog(char *file_name);
 
 void exit_user_prog(void);
 

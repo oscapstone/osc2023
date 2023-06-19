@@ -3,6 +3,7 @@
 
 #include <type.h>
 #include <list.h>
+#include <mmu.h>
 
 struct pt_regs {
     void *x19;
@@ -23,8 +24,9 @@ struct pt_regs {
 struct signal_head_t;
 struct sighand_t;
 typedef struct _task_struct {
-    /* This must be the first element */
     struct pt_regs regs;
+    pd_t *page_table;
+    /* The order of the above elements cannot be changed*/
     void *kernel_stack;
     void *user_stack;
     /* TODO: Update to address_space*/
