@@ -17,22 +17,8 @@
 #include "oscos/timer/timeout.h"
 #include "oscos/xcpt.h"
 
-static void _foo(void *const _arg) {
+static void _run_shell(void *const _arg) {
   (void)_arg;
-
-  for (int i = 0; i < 10; i++) {
-    console_printf("TID %2zu: %d\n", current_thread()->id, i);
-    delay_ns(1000000);
-    schedule();
-  }
-}
-
-static void _delayed_shell(void *const _arg) {
-  (void)_arg;
-
-  for (int i = 0; i < 20; i++) {
-    schedule();
-  }
   run_shell();
 }
 
@@ -76,10 +62,8 @@ void main(const void *const dtb_start) {
 
   // Test the scheduler.
 
-  for (int i = 0; i < 32; i++) {
-    thread_create(_foo, NULL);
-  }
-  thread_create(_delayed_shell, NULL);
+  thread_create(_run_shell, NULL);
 
+  sched_setup_periodic_scheduling();
   idle();
 }

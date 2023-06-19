@@ -190,10 +190,20 @@ _sched_move_thread_to_queue_and_pick_thread(thread_t *const thread,
 }
 
 void thread_exit(void) {
+  thread_t *const curr_thread = current_thread();
+  process_t *const curr_process = curr_thread->process;
+
   XCPT_MASK_ALL();
 
+  if (curr_process) {
+    rb_delete(&_processes, &curr_process->id,
+              (int (*)(const void *, const void *,
+                       void *))_cmp_pid_and_processes_by_pid,
+              NULL);
+  }
+
   _sched_run_thread(
-      _sched_move_thread_to_queue_and_pick_thread(current_thread(), &_zombies));
+      _sched_move_thread_to_queue_and_pick_thread(curr_thread, &_zombies));
   __builtin_unreachable();
 }
 
@@ -216,17 +226,23 @@ bool process_create(void) {
     return false;
   }
 
+#ifdef SCHED_ENABLE_SHARED_USER_STACK
   shared_page_t *const user_stack_page = shared_page_init(user_stack_page_id);
   if (!user_stack_page) {
     free_pages(user_stack_page_id);
     free(process);
     return false;
   }
+#endif
 
   thread_fp_simd_ctx_t *const fp_simd_ctx =
       malloc(sizeof(thread_fp_simd_ctx_t));
   if (!fp_simd_ctx) {
+#ifdef SCHED_ENABLE_SHARED_USER_STACK
     shared_page_drop(user_stack_page);
+#else
+    free_pages(user_stack_page_id);
+#endif
     free(process);
     return false;
   }
@@ -236,7 +252,11 @@ bool process_create(void) {
   thread_t *const curr_thread = current_thread();
 
   process->id = _alloc_pid();
+#ifdef SCHED_ENABLE_SHARED_USER_STACK
   process->user_stack_page = user_stack_page;
+#else
+  process->user_stack_page_id = user_stack_page_id;
+#endif
   process->main_thread = curr_thread;
   curr_thread->process = process;
   curr_thread->ctx.fp_simd_ctx = fp_simd_ctx;
@@ -285,12 +305,14 @@ static void _exec_generic(const void *const text_start, const size_t text_len,
     return;
   }
 
+#ifdef SCHED_ENABLE_SHARED_USER_STACK
   shared_page_t *const user_stack_page = shared_page_init(user_stack_page_id);
   if (!user_stack_page) {
     free_pages(user_stack_page_id);
     shared_page_drop(text_page);
     return;
   }
+#endif
 
   // Free old pages.
 
@@ -298,12 +320,20 @@ static void _exec_generic(const void *const text_start, const size_t text_len,
     shared_page_drop(curr_process->text_page);
   }
 
+#ifdef SCHED_ENABLE_SHARED_USER_STACK
   shared_page_drop(curr_process->user_stack_page);
+#else
+  free_pages(curr_process->user_stack_page_id);
+#endif
 
   // Set process data.
 
   curr_process->text_page = text_page;
+#ifdef SCHED_ENABLE_SHARED_USER_STACK
   curr_process->user_stack_page = user_stack_page;
+#else
+  curr_process->user_stack_page_id = user_stack_page_id;
+#endif
 
   // Copy the user program.
 
@@ -339,18 +369,12 @@ void exec(const void *const text_start, const size_t text_len) {
 
 static void _thread_cleanup(thread_t *const thread) {
   if (thread->process) {
-    uint64_t daif_val;
-    CRITICAL_SECTION_ENTER(daif_val);
-
-    rb_delete(&_processes, &thread->process->id,
-              (int (*)(const void *, const void *,
-                       void *))_cmp_pid_and_processes_by_pid,
-              NULL);
-
-    CRITICAL_SECTION_LEAVE(daif_val);
-
     shared_page_drop(thread->process->text_page);
+#ifdef SCHED_ENABLE_SHARED_USER_STACK
     shared_page_drop(thread->process->user_stack_page);
+#else
+    free_pages(thread->process->user_stack_page_id);
+#endif
     free(thread->process);
   }
   free_pages(thread->stack_page_id);
@@ -389,6 +413,17 @@ process_t *fork(const extended_trap_frame_t *const trap_frame) {
     return NULL;
   }
 
+#ifndef SCHED_ENABLE_SHARED_USER_STACK
+  const spage_id_t user_stack_page_id = alloc_pages(USER_STACK_BLOCK_ORDER);
+  if (user_stack_page_id < 0) {
+    free(fp_simd_ctx);
+    free_pages(kernel_stack_page_id);
+    free(new_process);
+    free(new_thread);
+    return NULL;
+  }
+#endif
+
   // Set data.
 
   new_thread->id = _alloc_tid();
@@ -397,8 +432,12 @@ process_t *fork(const extended_trap_frame_t *const trap_frame) {
 
   new_process->id = _alloc_pid();
   new_process->text_page = shared_page_clone(curr_process->text_page);
+#ifdef SCHED_ENABLE_SHARED_USER_STACK
   new_process->user_stack_page =
       shared_page_clone(curr_process->user_stack_page);
+#else
+  new_process->user_stack_page_id = user_stack_page_id;
+#endif
   new_process->main_thread = new_thread;
 
   // Set execution context.
@@ -417,6 +456,21 @@ process_t *fork(const extended_trap_frame_t *const trap_frame) {
          sizeof(thread_fp_simd_ctx_t));
 
   memcpy(init_kernel_sp, trap_frame, sizeof(extended_trap_frame_t));
+
+#ifndef SCHED_ENABLE_SHARED_USER_STACK
+  // Setup the user stack.
+
+  void *const old_user_stack_start = pa_to_kernel_va(
+                  page_id_to_pa(curr_process->user_stack_page_id)),
+              *const user_stack_start =
+                  pa_to_kernel_va(page_id_to_pa(user_stack_page_id)),
+              *const new_sp =
+                  (char *)user_stack_start + ((char *)curr_thread->ctx.user_sp -
+                                              (char *)old_user_stack_start);
+
+  memcpy(user_stack_start, old_user_stack_start, 1 << USER_STACK_ORDER);
+  new_thread->ctx.user_sp = (uint64_t)new_sp;
+#endif
 
   // Add the new thread to the end of the run queue and the process to the
   // process BST. Note that these two steps can be done in either order but must
@@ -463,10 +517,10 @@ process_t *get_process_by_id(const size_t pid) {
   CRITICAL_SECTION_ENTER(daif_val);
 
   process_t *const result =
-      (process_t *)rb_search(_processes, &pid,
-                             (int (*)(const void *, const void *,
-                                      void *))_cmp_pid_and_processes_by_pid,
-                             NULL);
+      *(process_t **)rb_search(_processes, &pid,
+                               (int (*)(const void *, const void *,
+                                        void *))_cmp_pid_and_processes_by_pid,
+                               NULL);
 
   CRITICAL_SECTION_LEAVE(daif_val);
 
@@ -479,10 +533,29 @@ void kill_process(process_t *const process) {
   } else {
     thread_t *const thread = process->main_thread;
 
-    // Zombify the main thread.
+    // Remove the process from the process BST and the thread from the run/wait
+    // queue. Note that these two steps can be done in either order but must not
+    // be interrupted in between, since:
+    // - If the former is done before the latter and the thread is scheduled
+    //   between the two steps, then the new thread won't be able to find its
+    //   own process.
+    // - If the latter is done before the former and the newly-created process
+    //   is killed once again between the two steps, then a freed thread_t
+    //   instance (i.e., `thread`) will be added onto the zombies list – a
+    //   use-after-free bug.
+
+    uint64_t daif_val;
+    CRITICAL_SECTION_ENTER(daif_val);
+
+    rb_delete(&_processes, &process->id,
+              (int (*)(const void *, const void *,
+                       void *))_cmp_pid_and_processes_by_pid,
+              NULL);
 
     _remove_thread_from_queue(thread);
     _add_thread_to_queue(thread, &_zombies);
+
+    CRITICAL_SECTION_LEAVE(daif_val);
   }
 }
 

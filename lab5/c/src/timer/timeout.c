@@ -37,14 +37,23 @@ void timeout_init(void) {
   l1ic_enable_core_timer_irq(get_core_id());
 }
 
-bool timeout_add_timer(void (*const callback)(void *), void *const arg,
-                       const uint64_t after_ns) {
-  if (_n_timeout_entries == MAX_N_TIMEOUT_ENTRIES)
-    return false;
-
+bool timeout_add_timer_ns(void (*const callback)(void *), void *const arg,
+                          const uint64_t after_ns) {
   uint64_t core_timer_freq_hz;
   __asm__("mrs %0, cntfrq_el0" : "=r"(core_timer_freq_hz));
   core_timer_freq_hz &= 0xffffffff;
+
+  // ceil(after_ns * core_timer_freq_hz / NS_PER_SEC).
+  const uint64_t after_ticks =
+      (after_ns * core_timer_freq_hz + (NS_PER_SEC - 1)) / NS_PER_SEC;
+
+  return timeout_add_timer_ticks(callback, arg, after_ticks);
+}
+
+bool timeout_add_timer_ticks(void (*const callback)(void *), void *const arg,
+                             const uint64_t after_ticks) {
+  if (_n_timeout_entries == MAX_N_TIMEOUT_ENTRIES)
+    return false;
 
   uint64_t daif_val;
   CRITICAL_SECTION_ENTER(daif_val);
@@ -52,10 +61,7 @@ bool timeout_add_timer(void (*const callback)(void *), void *const arg,
   uint64_t curr_timestamp;
   __asm__ __volatile__("mrs %0, cntpct_el0" : "=r"(curr_timestamp));
 
-  // ceil(after_ns * core_timer_freq_hz / NS_PER_SEC).
-  const uint64_t delta_timestamp =
-      (after_ns * core_timer_freq_hz + (NS_PER_SEC - 1)) / NS_PER_SEC;
-  const uint64_t timestamp = curr_timestamp + delta_timestamp;
+  const uint64_t timestamp = curr_timestamp + after_ticks;
 
   // Reprogram the timer.
 
@@ -93,9 +99,6 @@ void xcpt_core_timer_interrupt_handler(void) {
                    void *))_timeout_entry_cmp_by_timestamp,
           NULL);
 
-  // Execute the callback.
-  top_entry.callback(top_entry.arg);
-
   // Reprogram the timer.
   if (_n_timeout_entries == 0) {
     // Disable the core timer interrupt. (ENABLE = 1, IMASK = 1)
@@ -105,4 +108,7 @@ void xcpt_core_timer_interrupt_handler(void) {
                          :
                          : "r"(_timeout_entries[0].timestamp));
   }
+
+  // Execute the callback.
+  top_entry.callback(top_entry.arg);
 }

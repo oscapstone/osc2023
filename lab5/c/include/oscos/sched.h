@@ -48,7 +48,12 @@ typedef struct {
 
 typedef struct process_t {
   size_t id;
-  shared_page_t *text_page, *user_stack_page;
+  shared_page_t *text_page;
+#ifdef SCHED_ENABLE_SHARED_USER_STACK
+  shared_page_t *user_stack_page;
+#else
+  page_id_t user_stack_page_id;
+#endif
   thread_t *main_thread;
 } process_t;
 
@@ -131,6 +136,9 @@ void kill_process(process_t *process);
 
 /// \brief Kills all processes.
 void kill_all_processes(void);
+
+/// \brief Sets up periodic scheduling.
+void sched_setup_periodic_scheduling(void);
 
 /// \brief Do what the idle thread should do.
 noreturn void idle(void);

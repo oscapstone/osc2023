@@ -12,11 +12,18 @@ static bool _is_valid_mbox_ptr(const unsigned int *const mbox) {
 }
 
 int sys_mbox_call(const unsigned char ch, unsigned int *const mbox) {
+  // Note on return values:
+  // The video player treats a return value of 0 as failure and any non-zero
+  // return value as success. This is confirmed by reverse-engineering the video
+  // player. This system call therefore follows the protocol used by the video
+  // player rather than the usual convention since we have to execute the video
+  // player properly.
+
   if (!_is_valid_mbox_ch(ch))
-    return -EINVAL;
+    return /* -EINVAL */ 0;
 
   if (!_is_valid_mbox_ptr(mbox))
-    return -EINVAL;
+    return /* -EINVAL */ 0;
 
   uint64_t daif_val;
   CRITICAL_SECTION_ENTER(daif_val);
@@ -25,5 +32,5 @@ int sys_mbox_call(const unsigned char ch, unsigned int *const mbox) {
 
   CRITICAL_SECTION_LEAVE(daif_val);
 
-  return 0;
+  return /* 0 */ 1;
 }

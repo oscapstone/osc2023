@@ -25,8 +25,8 @@ OBJS      = start main console devicetree initrd panic shell \
             drivers/aux drivers/gpio drivers/l1ic drivers/l2ic drivers/mailbox \
             drivers/mini-uart drivers/pm \
             mem/malloc mem/page-alloc mem/startup-alloc mem/types mem/vm \
-            sched/idle-thread sched/sched sched/schedule sched/thread-main \
-            sched/user-program-main \
+            sched/idle-thread sched/periodic-sched sched/sched sched/schedule \
+            sched/thread-main sched/user-program-main \
             timer/delay timer/timeout \
             xcpt/default-handler xcpt/irq-handler xcpt/svc-handler \
             xcpt/syscall-table xcpt/task-queue xcpt/vector-table xcpt/xcpt \
@@ -79,12 +79,12 @@ $(OUT_DIR)/%.s: $(SRC_DIR)/%.S
 
 qemu: $(OUT_DIR)/kernel8.img
 	qemu-system-aarch64 -M raspi3b -kernel $< -initrd ../tests/initramfs.cpio \
-		-dtb ../tests/bcm2710-rpi-3-b-plus.dtb -display none -serial null \
+		-dtb ../tests/bcm2710-rpi-3-b-plus.dtb -display gtk -serial null \
 		-serial stdio
 
 qemu-debug: $(OUT_DIR)/kernel8.img
 	qemu-system-aarch64 -M raspi3b -kernel $< -initrd ../tests/initramfs.cpio \
-		-dtb ../tests/bcm2710-rpi-3-b-plus.dtb -display none -serial null \
+		-dtb ../tests/bcm2710-rpi-3-b-plus.dtb -display gtk -serial null \
 		-serial stdio -S -s
 
 gdb: $(OUT_DIR)/kernel8.elf

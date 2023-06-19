@@ -229,8 +229,8 @@ static void _shell_do_cmd_set_timeout(const char *const args) {
   message_copy[message_len] = '\0';
 
   // Register the callback.
-  timeout_add_timer((void (*)(void *))_shell_cmd_set_timeout_timer_callback,
-                    message_copy, seconds * NS_PER_SEC);
+  timeout_add_timer_ns((void (*)(void *))_shell_cmd_set_timeout_timer_callback,
+                       message_copy, seconds * NS_PER_SEC);
   return;
 
 invalid:
