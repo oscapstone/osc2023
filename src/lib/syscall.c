@@ -111,13 +111,13 @@ void syscall_exec(trapframe *_, const char* name, char *const argv[]){
     sighand_reset(current->sighand);
     // exec_user_prog(current->data, user_sp, kernel_sp);
 
+    // Reset page table
     pt_free(current->page_table);
     current->page_table = pt_create();
-    pt_map(current->page_table, (void *)0, datalen,(void *)VA2PA(data), PT_R | PT_W | PT_X);
-    pt_map(current->page_table, (void *)0xffffffffb000, STACK_SIZE,(void *)VA2PA(current->user_stack), PT_R | PT_W);
+    task_init_map(current);
 
-    // TODO: Why is this needed for the vm.img to run?
-    pt_map(current->page_table, (void *)0x3c000000, 0x04000000,(void *)0x3c000000, PT_R | PT_W);
+    // 0x000000000000 ~ <datalen>: rwx: Code
+    pt_map(current->page_table, (void *)0, datalen,(void *)VA2PA(data), PT_R | PT_W | PT_X);
 
     set_page_table(current);
     exec_user_prog((void *)0, (char *)0xffffffffeff0, kernel_sp);
@@ -138,11 +138,10 @@ void syscall_fork(trapframe *frame){
     memncpy(child->user_stack, current->user_stack, STACK_SIZE);
     memncpy(child->data, current->data, current->datalen);
 
-    pt_map(child->page_table, (void *)0, child->datalen,(void *)VA2PA(child->data), PT_R | PT_W | PT_X);
-    pt_map(child->page_table, (void *)0xffffffffb000, STACK_SIZE,(void *)VA2PA(child->user_stack), PT_R | PT_W);
+    task_init_map(child);
 
-    // TODO: Why is this needed for the vm.img to run?
-    pt_map(child->page_table, (void *)0x3c000000, 0x04000000,(void *)0x3c000000, PT_R | PT_W);
+    // 0x000000000000 ~ <datalen>: rwx: Code
+    pt_map(child->page_table, (void *)0, child->datalen,(void *)VA2PA(child->data), PT_R | PT_W | PT_X);
 
     // Copy the signal handler
     sighand_copy(child->sighand, child->data);

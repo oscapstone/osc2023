@@ -53,9 +53,10 @@ void sched_new_user_prog(char *filename){
 
     task->regs.sp = (char *)task->kernel_stack + STACK_SIZE -0x10;
     pt_regs_init(&task->regs);
-    pt_map(task->page_table, (void *)0, datalen, (void *)VA2PA(task->data), PT_R | PT_W | PT_X);
-    pt_map(task->page_table, (void *)0xffffffffb000, STACK_SIZE,(void *)VA2PA(task->user_stack), PT_R | PT_W);
-    pt_map(task->page_table, (void *)0x3c000000, 0x04000000, (void *)0x3c000000, PT_R | PT_W);
+    task_init_map(task);
+    
+    // 0x000000000000 ~ <datalen>: rwx: Code
+    pt_map(task->page_table, (void *)0, datalen,(void *)VA2PA(task->data), PT_R | PT_W | PT_X);
 
     sched_add_task(task);
 

@@ -33,4 +33,13 @@ task_struct *task_create(void);
 void task_free(task_struct *task);
 task_struct *task_get_by_tid(uint32 tid);
 
+/*
+ * Create initial mapping for user program
+ *
+ * 0x00003c000000 ~ 0x00003f000000: rw-: Mailbox address
+ * 0x7f0000000000 ~   <shared_len>: r-x: Kernel functions exposed to users
+ * 0xffffffffb000 ~   <STACK_SIZE>: rw-: Stack
+ */
+void task_init_map(task_struct *task);
+
 #endif
