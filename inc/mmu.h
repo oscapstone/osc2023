@@ -18,14 +18,7 @@
 
 #define VMA_PA      0x0008
 #define VMA_KVA     0x0010
-#define VMA_AMON    0x0020
-
-#define PROT_NOTE   0
-#define PROT_READ   1
-#define PROT_WRITE  2
-#define PROT_EXEC   4
-
-#define MAP_ANONYMOUS   0x8000
+#define VMA_ANON    0x0020
 
 typedef uint64 pd_t;
 
@@ -40,6 +33,14 @@ typedef struct _vm_area_t{
 typedef struct{
     struct list_head vma;
 } vm_area_meta_t;
+
+#define PROT_NOTE   0
+#define PROT_READ   1
+#define PROT_WRITE  2
+#define PROT_EXEC   4
+
+#define MAP_ANONYMOUS   0x0020
+#define MAP_POPULATE    0x8000
 
 void mmu_init(void);
 

@@ -2,12 +2,6 @@
 #define _SYSCALL_H
 #include <trapframe.h>
 
-typedef struct {
-    unsigned int iss:25, // Instruction specific syndrome
-                 il:1,   // Instruction length bit
-                 ec:6;   // Exception class
-} esr_el1;
-
 #define KSTACK_VARIABLE(x)                      \
     (void *)((uint64)x -                        \
              (uint64)current->kernel_stack +    \
@@ -25,7 +19,7 @@ typedef struct {
 
 typedef void *(*syscall_funcp)();
 
-void syscall_handler(trapframe regs, uint32 syn);
+void syscall_handler(trapframe *regs);
 
 void syscall_getpid(trapframe *frame);
 void syscall_uart_read(trapframe *_, char buf[], size_t size);

@@ -104,12 +104,8 @@ void _exec(char *filename){
     if(datalen == 0)
         return;
 
-    current->user_stack = kmalloc(STACK_SIZE);
-    current->data = data;
-    current->datalen = datalen;
-    pt_map(current->page_table, (void *)0, datalen, (void *)VA2PA(current->data), PT_R | PT_W | PT_X);
-    pt_map(current->page_table, (void *)0xffffffffb000, STACK_SIZE,(void *)VA2PA(current->user_stack), PT_R | PT_W);
-    pt_map(current->page_table, (void *)0x3c000000, 0x04000000, (void *)0x3c000000, PT_R | PT_W);
+    task_init_map(current);
+    vma_map(current->address_space, (void *)0, datalen, VMA_R | VMA_W | VMA_X | VMA_KVA, data);
     user_prog_start();
 }
 

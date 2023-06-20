@@ -27,11 +27,12 @@ typedef struct _task_struct {
     struct pt_regs regs;
     pd_t *page_table;
     /* The order of the above elements cannot be changed*/
+    vm_area_meta_t *address_space;
     void *kernel_stack;
-    void *user_stack;
+    // void *user_stack;
     /* TODO: Update to address_space*/
-    void *data;
-    uint32 datalen;
+    // void *data;
+    // uint32 datalen;
     struct list_head list;
     struct list_head task_list;
     uint16 status;

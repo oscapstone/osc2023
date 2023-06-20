@@ -47,7 +47,6 @@ endif
 #   @$(ECHO) "lib object file is $(LIB_OBJ_FILE)"
 
 all:$(KERNEL_IMG) $(BOOTLOADER_IMG)
-	cd rootfs && make
 
 $(KERNEL_IMG): $(KERNEL_ELF)
 		$(CROSS_COMPILER)objcopy -O binary $^ $(KERNEL_IMG)
@@ -92,7 +91,7 @@ qemub: all $(INITRAMFS_CPIO) $(RPI3_DTB)
 		qemu-system-aarch64 -M raspi3 -kernel $(BOOTLOADER_IMG) -display none \
 											-dtb $(RPI3_DTB) \
 											-initrd $(INITRAMFS_CPIO) \
-											-serial null -serial pty
+											-serial null -serial stdio
 qemuk: all $(INITRAMFS_CPIO) $(RPI3_DTB)
 		qemu-system-aarch64 -M raspi3 -kernel $(KERNEL_IMG) -display none \
 											-dtb $(RPI3_DTB) \
@@ -103,7 +102,7 @@ qemutest: all $(INITRAMFS_CPIO) $(RPI3_DTB)
 		qemu-system-aarch64 -M raspi3 -kernel $(KERNEL_IMG) -display none \
 											-dtb $(RPI3_DTB) \
 											-initrd $(INITRAMFS_CPIO) \
-											-serial null -serial stdio
+											-serial null -serial stdio -s -S
 
 
 qemutty: $(KERNEL_IMG)
@@ -112,10 +111,8 @@ qemutty: $(KERNEL_IMG)
 
 .PHONY: clean
 clean:
-		cd rootfs && make clean
 		rm -f $(KERNEL_OBJ_FILE) $(KERNEL_ELF) $(BOOTLOADER_OBJ_FILE) $(BOOTLOADER_ELF) $(LIB_OBJ_FILE) $(INITRAMFS_CPIO)
 
 .PHONY: clean-all
 clean-all: clean
-		cd rootfs && make clean-all
 		rm -f $(KERNEL_IMG) $(BOOTLOADER_IMG)

@@ -7,8 +7,6 @@
 #include <mm.h>
 #include <text_user_shared.h>
 
-#define DATA_OFF(x) ((uint64)current->data - (uint64)x)
-
 #define SIG_DFL     (sighandler_t)0
 #define SIG_IGN     (sighandler_t)1
 
@@ -142,7 +140,7 @@ static inline void _sighand_copy(struct sigaction_t *to, struct sigaction_t *fro
 }
 
 /* Copy current signal handler to @sighand*/
-void sighand_copy(struct sighand_t *sighand, void *addrbase)
+void sighand_copy(struct sighand_t *sighand)
 {
     struct sighand_t *currhand;
     currhand = current->sighand;

@@ -69,7 +69,7 @@ void handle_signal(trapframe *_);
 struct sighand_t *sighand_create(void);
 void sighand_free(struct sighand_t *sighand);
 void sighand_reset(struct sighand_t *sighand);
-void sighand_copy(struct sighand_t *sighand, void *addrbase);
+void sighand_copy(struct sighand_t *sighand);
 void syscall_signal(trapframe *_, uint32 signal, void (*handler)(int));
 void syscall_kill(trapframe *_, int pid, int signal);
 void syscall_sigreturn(trapframe *_);

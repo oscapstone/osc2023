@@ -15,7 +15,7 @@
     asm volatile("msr DAIFSet, 0xf"); \
 }
 
-#define set_page_table(task) do {               \
+#define set_page_table(page_table) do {               \
     asm volatile(                               \
         "mov x9, %0\n"                          \
         "and x9, x9, #0x0000ffffffffffff\n"     \
@@ -24,9 +24,15 @@
         "tlbi vmalle1is\n"                      \
         "dsb ish\n"                             \
         "isb\n"                                 \
-        :: "r" (task->page_table)               \
+        :: "r" (page_table)               \
     );                                          \
 } while (0)
+
+#define get_page_table() ({                     \
+    uint64 __val;                               \
+    __val = PA2VA(read_sysreg(TTBR0_EL1));      \
+    __val;                                      \
+})
 
 #define get_elem_idx(elem, array) \
     (((char *)elem - (char *)array) / sizeof(array[0]))

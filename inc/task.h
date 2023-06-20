@@ -42,4 +42,6 @@ task_struct *task_get_by_tid(uint32 tid);
  */
 void task_init_map(task_struct *task);
 
+void task_reset_mm(task_struct *task);
+
 #endif
