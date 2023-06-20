@@ -516,15 +516,15 @@ process_t *get_process_by_id(const size_t pid) {
   uint64_t daif_val;
   CRITICAL_SECTION_ENTER(daif_val);
 
-  process_t *const result =
-      *(process_t **)rb_search(_processes, &pid,
-                               (int (*)(const void *, const void *,
-                                        void *))_cmp_pid_and_processes_by_pid,
-                               NULL);
+  process_t *const *const result =
+      (process_t **)rb_search(_processes, &pid,
+                              (int (*)(const void *, const void *,
+                                       void *))_cmp_pid_and_processes_by_pid,
+                              NULL);
 
   CRITICAL_SECTION_LEAVE(daif_val);
 
-  return result;
+  return result ? *result : NULL;
 }
 
 void kill_process(process_t *const process) {
