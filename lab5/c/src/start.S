@@ -34,6 +34,8 @@ _start:
     mov x1, 0x1
     msr cntkctl_el1, x1
 
+    msr tpidr_el1, xzr
+
     // Clear the .bss section.
 
     ldr x1, =_sbss

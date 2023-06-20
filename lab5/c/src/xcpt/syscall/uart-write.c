@@ -25,9 +25,19 @@ size_t sys_uart_write(const char buf[const], const size_t size) {
       break;
     }
 
+    thread_t *const curr_thread = current_thread();
+
     console_notify_write_ready((void (*)(void *))add_all_threads_to_run_queue,
                                &_wait_queue);
     suspend_to_wait_queue(&_wait_queue);
+    XCPT_MASK_ALL();
+
+    if (curr_thread->status.is_waken_up_by_signal) {
+      curr_thread->status.is_waken_up_by_signal = false;
+      CRITICAL_SECTION_LEAVE(daif_val);
+      return -EINTR;
+    }
+
     CRITICAL_SECTION_LEAVE(daif_val);
   }
 

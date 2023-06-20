@@ -16,16 +16,20 @@
 #define USER_STACK_ORDER 23 // 8MB.
 #define USER_STACK_BLOCK_ORDER (USER_STACK_ORDER - PAGE_ORDER)
 
+void _suspend_to_wait_queue(thread_list_node_t *wait_queue);
 void _sched_run_thread(thread_t *thread);
 void thread_main(void);
 noreturn void user_program_main(const void *init_pc, const void *init_user_sp,
                                 const void *init_kernel_sp);
 noreturn void fork_child_ret(void);
+void run_signal_handler(sighandler_t handler, void *init_user_sp);
 
 static size_t _sched_next_tid = 1, _sched_next_pid = 1;
 static thread_list_node_t _run_queue = {.prev = &_run_queue,
                                         .next = &_run_queue},
-                          _zombies = {.prev = &_zombies, .next = &_zombies};
+                          _zombies = {.prev = &_zombies, .next = &_zombies},
+                          _stopped_threads = {.prev = &_stopped_threads,
+                                              .next = &_stopped_threads};
 static rb_node_t *_processes = NULL;
 
 static int _cmp_processes_by_pid(const process_t *const *const p1,
@@ -164,6 +168,10 @@ bool thread_create(void (*const task)(void *), void *const arg) {
   // Initialize the thread structure.
 
   thread->id = _alloc_tid();
+  thread->status.is_waiting = false;
+  thread->status.is_stopped = false;
+  thread->status.is_waken_up_by_signal = false;
+  thread->status.is_handling_signal = false;
   thread->process = NULL;
   thread->ctx.r19 = (uint64_t)(uintptr_t)task;
   thread->ctx.r20 = (uint64_t)(uintptr_t)arg;
@@ -257,7 +265,13 @@ bool process_create(void) {
 #else
   process->user_stack_page_id = user_stack_page_id;
 #endif
+  process->signal_stack_pages = NULL;
   process->main_thread = curr_thread;
+  process->pending_signals = 0;
+  process->blocked_signals = 0;
+  for (size_t i = 0; i < 32; i++) {
+    process->signal_handlers[i] = SIG_DFL;
+  }
   curr_thread->process = process;
   curr_thread->ctx.fp_simd_ctx = fp_simd_ctx;
 
@@ -375,6 +389,14 @@ static void _thread_cleanup(thread_t *const thread) {
 #else
     free_pages(thread->process->user_stack_page_id);
 #endif
+
+    page_id_list_node_t *curr_node = thread->process->signal_stack_pages;
+    while (curr_node) {
+      page_id_list_node_t *const next_node = curr_node->next;
+      free(curr_node);
+      curr_node = next_node;
+    }
+
     free(thread->process);
   }
   free_pages(thread->stack_page_id);
@@ -427,6 +449,10 @@ process_t *fork(const extended_trap_frame_t *const trap_frame) {
   // Set data.
 
   new_thread->id = _alloc_tid();
+  new_thread->status.is_waiting = false;
+  new_thread->status.is_stopped = false;
+  new_thread->status.is_waken_up_by_signal = false;
+  new_thread->status.is_handling_signal = false;
   new_thread->stack_page_id = kernel_stack_page_id;
   new_thread->process = new_process;
 
@@ -438,7 +464,12 @@ process_t *fork(const extended_trap_frame_t *const trap_frame) {
 #else
   new_process->user_stack_page_id = user_stack_page_id;
 #endif
+  new_process->signal_stack_pages = NULL;
   new_process->main_thread = new_thread;
+  new_process->pending_signals = 0;
+  new_process->blocked_signals = 0;
+  memcpy(new_process->signal_handlers, curr_process->signal_handlers,
+         32 * sizeof(sighandler_t));
 
   // Set execution context.
 
@@ -503,7 +534,13 @@ void kill_zombies(void) {
   }
 }
 
-void schedule(void) { suspend_to_wait_queue(&_run_queue); }
+void schedule(void) { _suspend_to_wait_queue(&_run_queue); }
+
+void suspend_to_wait_queue(thread_list_node_t *const wait_queue) {
+  XCPT_MASK_ALL();
+  current_thread()->status.is_waiting = true;
+  _suspend_to_wait_queue(wait_queue);
+}
 
 void add_all_threads_to_run_queue(thread_list_node_t *const wait_queue) {
   thread_t *thread;
@@ -584,4 +621,208 @@ void kill_all_processes(void) {
 
   // Kill the current process.
   thread_exit();
+}
+
+sighandler_t set_signal_handler(process_t *const process, const int signal,
+                                const sighandler_t handler) {
+  uint64_t daif_val;
+  CRITICAL_SECTION_ENTER(daif_val);
+
+  const sighandler_t old_handler = process->signal_handlers[signal];
+
+  // The video player expects SIGKILL to be catchable. This function thus
+  // follows the protocol used by the video player.
+  if (!(/* signal == SIGKILL || */ signal == SIGSTOP)) {
+    process->signal_handlers[signal] = handler;
+  }
+
+  CRITICAL_SECTION_LEAVE(daif_val);
+  return old_handler;
+}
+
+void deliver_signal(process_t *const process, const int signal) {
+  thread_t *const thread = process->main_thread;
+
+  uint64_t daif_val;
+  CRITICAL_SECTION_ENTER(daif_val);
+
+  process->pending_signals |= 1 << signal;
+
+  if (thread->status.is_waiting &&
+      (!thread->status.is_stopped || signal == SIGCONT)) {
+    // Wake up the thread and notify it that it was waken up by a signal.
+
+    thread->status.is_waiting = false;
+    thread->status.is_stopped = false;
+    thread->status.is_waken_up_by_signal = true;
+
+    _remove_thread_from_queue(thread);
+    _add_thread_to_run_queue(thread);
+  }
+
+  CRITICAL_SECTION_LEAVE(daif_val);
+}
+
+static void _deliver_signal_to_all_processes_rec(const int signal,
+                                                 const rb_node_t *const node) {
+  if (!node)
+    return;
+
+  process_t *const process = *(process_t **)node->payload;
+  deliver_signal(process, signal);
+
+  _deliver_signal_to_all_processes_rec(signal, node->children[0]);
+  _deliver_signal_to_all_processes_rec(signal, node->children[1]);
+}
+
+void deliver_signal_to_all_processes(const int signal) {
+  uint64_t daif_val;
+  CRITICAL_SECTION_ENTER(daif_val);
+
+  _deliver_signal_to_all_processes_rec(signal, _processes);
+
+  CRITICAL_SECTION_LEAVE(daif_val);
+}
+
+static bool _signal_default_is_term_or_core(const int signal) {
+  return signal == SIGABRT || signal == SIGALRM || signal == SIGBUS ||
+         signal == SIGFPE || signal == SIGHUP || signal == SIGILL ||
+         signal == SIGINT || signal == SIGIO || signal == SIGIOT ||
+         signal == SIGKILL || signal == SIGPIPE || signal == SIGPROF ||
+         signal == SIGPWR || signal == SIGQUIT || signal == SIGSEGV ||
+         signal == SIGSTKFLT || signal == SIGSYS || signal == SIGTERM ||
+         signal == SIGTRAP || signal == SIGUNUSED || signal == SIGUSR1 ||
+         signal == SIGUSR2 || signal == SIGVTALRM || signal == SIGXCPU ||
+         signal == SIGXFSZ;
+}
+
+static bool _signal_default_is_stop(const int signal) {
+  return signal == SIGSTOP || signal == SIGTSTP || signal == SIGTTIN ||
+         signal == SIGTTOU;
+}
+
+void handle_signals(void) {
+  thread_t *const curr_thread = current_thread();
+  if (!curr_thread) // The scheduler has not been initialized.
+    return;
+  process_t *const curr_process = curr_thread->process;
+
+  // Save spsr_el1 and elr_el1, since they can be clobbered when running the
+  // signal handlers.
+
+  uint64_t spsr_val, elr_val;
+  __asm__ __volatile__("mrs %0, spsr_el1" : "=r"(spsr_val));
+  __asm__ __volatile__("mrs %0, elr_el1" : "=r"(elr_val));
+
+  // Save the old user SP, since the signal handlers will run in a new user
+  // stack.
+
+  uint64_t old_user_sp;
+  __asm__ __volatile__("mrs %0, sp_el0" : "=r"(old_user_sp));
+
+  // Save the status bit in order to support nested signal handling.
+
+  const bool is_handling_signal = curr_thread->status.is_handling_signal;
+
+  // The user stack is allocated lazily.
+
+  bool user_stack_allocation_attempted = false;
+  spage_id_t user_stack_page_id;
+  page_id_list_node_t *const curr_signal_stack_pages_node =
+                                 curr_process->signal_stack_pages,
+                             *new_signal_stack_pages_node;
+
+  uint32_t deferred_signals = 0;
+  for (uint32_t handleable_signals;
+       (handleable_signals = curr_process->pending_signals &
+                             ~curr_process->blocked_signals &
+                             ~deferred_signals) != 0;) {
+    uint32_t reversed_handleable_signals;
+    __asm__("rbit %w0, %w1"
+            : "=r"(reversed_handleable_signals)
+            : "r"(handleable_signals));
+    int signal;
+    __asm__("clz %w0, %w1" : "=r"(signal) : "r"(reversed_handleable_signals));
+
+    const sighandler_t handler = curr_process->signal_handlers[signal];
+    if (handler == SIG_DFL) {
+      curr_process->pending_signals &= ~(1 << signal);
+
+      if (_signal_default_is_term_or_core(signal)) {
+        thread_exit();
+      } else if (_signal_default_is_stop(signal)) {
+        curr_thread->status.is_stopped = true;
+        suspend_to_wait_queue(&_stopped_threads);
+        curr_thread->status.is_waken_up_by_signal = false;
+      }
+    } else if (handler == SIG_IGN) {
+      curr_process->pending_signals &= ~(1 << signal);
+    } else {
+      // Allocate user stack.
+
+      if (!user_stack_allocation_attempted) {
+        user_stack_allocation_attempted = true;
+        user_stack_page_id = alloc_pages(USER_STACK_BLOCK_ORDER);
+
+        if (user_stack_page_id >= 0) {
+          new_signal_stack_pages_node = malloc(sizeof(page_id_list_node_t));
+          if (new_signal_stack_pages_node) {
+            new_signal_stack_pages_node->page_id = user_stack_page_id;
+            new_signal_stack_pages_node->next = curr_signal_stack_pages_node;
+            curr_process->signal_stack_pages = new_signal_stack_pages_node;
+          } else {
+            free_pages(user_stack_page_id);
+            user_stack_page_id = -1;
+          }
+        }
+      }
+
+      if (user_stack_page_id >= 0) {
+        void *const user_stack_start =
+                        pa_to_kernel_va(page_id_to_pa(user_stack_page_id)),
+                    *const user_stack_end =
+                        (char *)user_stack_start + (1 << USER_STACK_ORDER);
+
+        // Zero the user stack.
+
+        memset(user_stack_start, 0, 1 << USER_STACK_ORDER);
+
+        // Run the signal handler.
+
+        curr_thread->status.is_handling_signal = true;
+        curr_process->blocked_signals |= 1 << signal;
+
+        run_signal_handler(handler, user_stack_end);
+
+        curr_thread->status.is_handling_signal = false;
+        curr_process->pending_signals &= ~(1 << signal);
+        curr_process->blocked_signals &= ~(1 << signal);
+      } else {
+        // Defer the handling of this signal. Hopefully, there will be enough
+        // memory to run the signal handler in the future.
+        deferred_signals |= 1 << signal;
+      }
+    }
+  }
+
+  // Destroy the user stack.
+
+  if (user_stack_allocation_attempted && user_stack_page_id >= 0) {
+    free_pages(user_stack_page_id);
+    curr_process->signal_stack_pages = curr_signal_stack_pages_node;
+    free(new_signal_stack_pages_node);
+  }
+
+  // Restore spsr_el1 and elr_el1.
+
+  __asm__ __volatile__("msr spsr_el1, %0" : : "r"(spsr_val));
+  __asm__ __volatile__("msr elr_el1, %0" : : "r"(elr_val));
+
+  // Restore the user SP.
+
+  __asm__ __volatile__("msr sp_el0, %0" : : "r"(old_user_sp));
+
+  // Restore the status bit.
+
+  curr_thread->status.is_handling_signal = is_handling_signal;
 }

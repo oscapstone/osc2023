@@ -8,6 +8,7 @@
 #include <stdnoreturn.h>
 
 #include "oscos/mem/types.h"
+#include "oscos/uapi/signal.h"
 #include "oscos/xcpt/trap-frame.h"
 
 typedef struct thread_list_node_t {
@@ -42,9 +43,20 @@ typedef struct {
   thread_list_node_t list_node;
   thread_ctx_t ctx;
   size_t id;
+  struct {
+    bool is_waiting : 1;
+    bool is_stopped : 1;
+    bool is_waken_up_by_signal : 1;
+    bool is_handling_signal : 1;
+  } status;
   page_id_t stack_page_id;
   struct process_t *process;
 } thread_t;
+
+typedef struct page_id_list_node_t {
+  page_id_t page_id;
+  struct page_id_list_node_t *next;
+} page_id_list_node_t;
 
 typedef struct process_t {
   size_t id;
@@ -54,7 +66,10 @@ typedef struct process_t {
 #else
   page_id_t user_stack_page_id;
 #endif
+  page_id_list_node_t *signal_stack_pages;
   thread_t *main_thread;
+  uint32_t pending_signals, blocked_signals;
+  sighandler_t signal_handlers[32];
 } process_t;
 
 /// \brief Initializes the scheduler and creates the idle thread.
@@ -142,5 +157,15 @@ void sched_setup_periodic_scheduling(void);
 
 /// \brief Do what the idle thread should do.
 noreturn void idle(void);
+
+/// \brief Sets the signal handler of a process and returns the old one.
+sighandler_t set_signal_handler(process_t *process, int signal,
+                                sighandler_t handler);
+
+/// \brief Delivers the given signal to the given process.
+void deliver_signal(process_t *process, int signal);
+
+/// \brief Delivers the given signal to all processes.
+void deliver_signal_to_all_processes(int signal);
 
 #endif

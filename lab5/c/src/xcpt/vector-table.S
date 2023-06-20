@@ -78,6 +78,7 @@ xcpt_sync_lower_el_aarch64_handler:
     bl xcpt_default_handler
 
 .Lxcpt_sync_lower_el_aarch64_handler_end:
+    bl handle_signals
     load_aapcs
     eret
 
@@ -91,6 +92,7 @@ xcpt_irq_lower_el_aarch64_handler:
     save_aapcs
     bl xcpt_irq_handler
     bl task_queue_sched
+    bl handle_signals
     load_aapcs
     eret
 

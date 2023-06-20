@@ -9,5 +9,8 @@
 #define SYS_exit 5
 #define SYS_mbox_call 6
 #define SYS_kill 7
+#define SYS_signal 8
+#define SYS_signal_kill 9
+#define SYS_sigreturn 10
 
 #endif

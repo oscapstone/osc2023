@@ -1,6 +1,6 @@
 .section ".text"
 
-suspend_to_wait_queue:
+_suspend_to_wait_queue:
     // Enter critical section.
 
     msr daifset, 0xf
@@ -54,9 +54,9 @@ suspend_to_wait_queue:
 
     // Fallthrough.
 
-.size suspend_to_wait_queue, . - suspend_to_wait_queue
-.type suspend_to_wait_queue, function
-.global suspend_to_wait_queue
+.size _suspend_to_wait_queue, . - _suspend_to_wait_queue
+.type _suspend_to_wait_queue, function
+.global _suspend_to_wait_queue
 
 _sched_run_thread:
     // Restore integer context.
