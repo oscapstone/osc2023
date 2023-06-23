@@ -12,6 +12,7 @@
 #include <mbox.h>
 #include <signal.h>
 #include <mmu.h>
+#include <vfs.h>
 
 syscall_funcp syscall_table[] = {
     (syscall_funcp) syscall_getpid,     // 0
@@ -25,8 +26,17 @@ syscall_funcp syscall_table[] = {
     (syscall_funcp) syscall_signal,     // 8
     (syscall_funcp) syscall_kill,       // 9
     (syscall_funcp) syscall_mmap,       // 10
-    (syscall_funcp) syscall_sigreturn,  // 11
-    (syscall_funcp) syscall_test,       // 12
+    (syscall_funcp) syscall_open,       // 11
+    (syscall_funcp) syscall_close,      // 12
+    (syscall_funcp) syscall_write,      // 13
+    (syscall_funcp) syscall_read,       // 14
+    (syscall_funcp) syscall_mkdir,      // 15
+    (syscall_funcp) syscall_mount,      // 16
+    (syscall_funcp) syscall_chdir,      // 17
+    (syscall_funcp) syscall_lseek64,    // 18
+    (syscall_funcp) syscall_ioctl,      // 19
+    (syscall_funcp) syscall_sigreturn,  // 20
+    (syscall_funcp) syscall_test,       // 21
 };
 
 static inline void copy_regs(struct pt_regs *regs)
@@ -49,8 +59,8 @@ void syscall_handler(trapframe *regs)
 
     syscall_num = regs->x8;
 
-    if(syscall_num == 10)
-    uart_sync_printf("addr: 0x%x, len: 0x%x, prot: 0x%x, flags: 0x%x, fd: 0x%x, file_offset: 0x%x\r\n", regs->x0, regs->x1, regs->x2, regs->x3, regs->x4, regs->x5);
+    if(syscall_num > 2)
+        // uart_sync_printf("syscall number:%d\n", syscall_num);
 
     if (syscall_num >= ARRAY_SIZE(syscall_table)) {
         // Invalid syscall
@@ -85,18 +95,27 @@ void syscall_uart_write(trapframe *_, const char buf[], size_t size){
 }
 
 void syscall_exec(trapframe *_, const char* name, char *const argv[]){
+    struct file f;
     void *data;
     char *kernel_sp;
-    // char *user_sp;
-    uint32 datalen;
+    int datalen, adj_datalen, ret;
 
-    datalen = cpio_load_prog((char *)_initramfs_addr, name, (char **)&data);
-
-    if(datalen == 0)
+    ret = vfs_open(name, 0, &f);
+    if(ret < 0)
         return;
-
+    datalen = f.vnode->v_ops->getsize(f.vnode);
+    if(datalen < 0)
+        return;
+    adj_datalen = ALIGN(datalen, PAGE_SIZE);
+    data = kmalloc(adj_datalen);
+    memzero(data, adj_datalen);
+    ret = vfs_read(&f, data, datalen);
+    if(ret < 0){
+        kfree(data);
+        return;
+    }
+    vfs_close(&f);    
     kernel_sp = (char *)current->kernel_stack + STACK_SIZE - 0x10;
-    // user_sp = (char *)current->user_stack + STACK_SIZE - 0x10;
 
     // Reset signal
     signal_head_reset(current->signal);
@@ -106,7 +125,7 @@ void syscall_exec(trapframe *_, const char* name, char *const argv[]){
     task_init_map(current);
 
     // 0x000000000000 ~ <datalen>: rwx: Code
-    vma_map(current->address_space, (void *)0, datalen, VMA_R | VMA_W | VMA_X | VMA_KVA, data);
+    vma_map(current->address_space, (void *)0, adj_datalen, VMA_R | VMA_W | VMA_X | VMA_KVA, data);
 
     set_page_table(current->page_table);
     exec_user_prog((void *)0, (char *)0xffffffffeff0, kernel_sp);

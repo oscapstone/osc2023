@@ -132,6 +132,8 @@ void irq_init(){
 
 void default_exception_handler(uint32 n){
     uart_printf("[exception] %d\r\n", n);
+    // never reach
+    while(1){}
 }
 
 void irq_handler(){

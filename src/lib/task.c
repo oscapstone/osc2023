@@ -47,6 +47,9 @@ task_struct *task_create(void){
     task->signal = signal;
     task->sighand = sighand;
 
+    task->maxfd = -1;
+    task->work_dir = rootmount->root;
+
     return task;
 }
 
@@ -62,6 +65,12 @@ void task_free(task_struct *task){
     vma_meta_free(task->address_space, task->page_table);
     pt_free(task->page_table);
 
+    for(int i = 0 ; i <= task->maxfd ;++i){
+        if(task->fds[i].vnode != NULL){
+            task->fds[i].f_ops->close(&task->fds[i]);
+        }
+    }
+    
     kfree(task);
 }
 

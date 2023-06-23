@@ -6,6 +6,7 @@
 #include <mm.h>
 #include <kthread.h>
 #include <dt17.h>
+#include <vfs.h>
 
 void enter_el0_run_user_prog(void *entry, void *user_sp);
 
@@ -34,34 +35,38 @@ static inline void pt_regs_init(struct pt_regs *regs){
     regs->lr = user_prog_start;
 }
 
-void sched_new_user_prog(char *filename){
+void sched_new_user_prog(char *pathname){
     task_struct *task;
+    struct file f;
     void *data;
-    uint32 datalen;
+    int datalen, adj_datalen, ret;
 
-    datalen = cpio_load_prog(_initramfs_addr, filename, (char **)&data);
-
-    if(datalen == 0)
-        goto EXEC_USER_PROG_END;
-
+    ret = vfs_open(pathname, 0, &f);
+    if(ret < 0)
+        return;
+    
+    datalen = f.vnode->v_ops->getsize(f.vnode);
+    if(datalen<0)
+        return;
+    adj_datalen = ALIGN(datalen, PAGE_SIZE);
+    data = kmalloc(adj_datalen);
+    memzero(data, adj_datalen);
+    ret = vfs_read(&f, data, datalen);
+    if(ret < 0){
+        kfree(data);
+        return;
+    }
+    vfs_close(&f);
     task = task_create();
-
     task->kernel_stack = kmalloc(STACK_SIZE);
-    // task->user_stack = kmalloc(STACK_SIZE);
-    // task->data = data;
-    // task->datalen = datalen;
-
     task->regs.sp = (char *)task->kernel_stack + STACK_SIZE -0x10;
     pt_regs_init(&task->regs);
     task_init_map(task);
     
     // 0x000000000000 ~ <datalen>: rwx: Code
-    vma_map(task->address_space, (void *)0, datalen, VMA_R | VMA_W | VMA_X | VMA_KVA, data);
+    vma_map(task->address_space, (void *)0, adj_datalen, VMA_R | VMA_W | VMA_X | VMA_KVA, data);
 
     sched_add_task(task);
-
-EXEC_USER_PROG_END:
-    return;
 }
 
 

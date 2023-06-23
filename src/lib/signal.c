@@ -23,7 +23,7 @@ static void sig_ignore(int _){
 void sig_return(void) SECTION_TUS;
 void sig_return(void){
     asm volatile(
-        "mov x8, 11\n"
+        "mov x8, 20\n"
         "svc 0\n"
     );
 }

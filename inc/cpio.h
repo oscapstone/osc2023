@@ -28,5 +28,6 @@ void cpio_cat(char *cpio, char *filename);
  * Return the size of the file, return 0 if no such file.
  */
 uint32 cpio_load_prog(char *cpio, const char *filename, char **output_data);
+uint32 cpio_read_hex(char *p);
 
 #endif

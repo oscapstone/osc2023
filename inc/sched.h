@@ -4,6 +4,9 @@
 #include <type.h>
 #include <list.h>
 #include <mmu.h>
+#include <vfs.h>
+
+#define TASK_MAX_FD     0x10
 
 struct pt_regs {
     void *x19;
@@ -42,6 +45,10 @@ typedef struct _task_struct {
     /* Signal */
     struct signal_head_t *signal;
     struct sighand_t *sighand;
+    /*files*/
+    int maxfd;
+    struct file fds[TASK_MAX_FD];
+    struct vnode *work_dir;
 } task_struct;
 
 void switch_to(task_struct *from, task_struct *to);

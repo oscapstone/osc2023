@@ -11,6 +11,7 @@
 #include <kthread.h>
 #include <task.h>
 #include <exec.h>
+#include <fsinit.h>
 
 #define BUFSIZE 0x100
 char shell_buf[BUFSIZE];
@@ -92,14 +93,16 @@ void kernel_main(char *fdt){
     mm_init(fdt);
     timer_init();
     task_init();
+    fs_early_init();
     scheduler_init();
+    fs_init();
     kthread_init();
 
     uart_printf("[*] Kernel start running!\r\n");
     uart_printf("[*] fdt base: %x\r\n", fdt);
 
     // kthread_create(shell_interact);
-    sched_new_user_prog("vm.img");
+    sched_new_user_prog("/initramfs/vfs1.img");
 
     enable_irqs1();
     enable_interrupt();
