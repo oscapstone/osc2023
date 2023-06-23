@@ -26,7 +26,8 @@ static struct file_operations fbfs_f_ops = {
     .read = fbfs_read,
     .open = fbfs_open,
     .close = fbfs_close,
-    .lseek64 = fbfs_lseek64
+    .lseek64 = fbfs_lseek64,
+    .ioctl = fbfs_ioctl
 };
 
 
@@ -85,6 +86,11 @@ int fbfs_write(struct file *file, const void *buf, size_t len){
     
     if(file->f_pos + len > internal->lfbsize)
         return -1;
+    
+    memncpy((void *)(internal->lfb + file->f_pos), buf, len);
+    file->f_pos += len;
+
+    return len;
 }
 int fbfs_read(struct file *file, void *buf, size_t len){
     return -1;
