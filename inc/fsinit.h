@@ -5,6 +5,5 @@
 #include <cpiofs.h>
 
 void fs_early_init(void);
-void fs_init(void);
 
 #endif
