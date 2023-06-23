@@ -20,6 +20,7 @@ int uartfs_read(struct file *file, void *buf, size_t len);
 int uartfs_open(struct vnode *file_node, struct file *target);
 int uartfs_close(struct file *file);
 long uartfs_lseek64(struct file *file, long offset, int whence);
+int uartfs_ioctl(struct file *file, uint64 request, va_list args);
 
 struct filesystem *uartfs_init(void);
 

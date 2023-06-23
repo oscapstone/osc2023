@@ -220,6 +220,13 @@ int vfs_lookup(const char *pathname, struct vnode **target){
     return 0;
 }
 
+long vfs_lseek64(struct file *file, long offset, int whence){
+    return file->f_ops->lseek64(file, offset, whence);
+}
+int vfs_ioctl(struct file *file, uint64 request, va_list args){
+    return file->f_ops->ioctl(file, request, args);
+}
+
 static int do_open(const char *pathname, int flags){
     int i, ret;
     for(i = 0 ; i <= current->maxfd ;++i){
@@ -234,8 +241,10 @@ static int do_open(const char *pathname, int flags){
         i = current->maxfd;
     }
     ret = vfs_open(pathname, flags, &current->fds[i]);
-    if(ret < 0)
+    if(ret < 0){
+        current->fds[i].vnode = NULL;
         return ret;
+    }
     return i;
 }
 
@@ -296,6 +305,26 @@ static int do_chdir(const char *path){
     return 0;
 }
 
+static long do_lseek64(int fd, int64 offset, int whence){
+    long ret;
+    if(fd < 0 || current->maxfd < fd)
+        return -1;
+    if(current->fds[fd].vnode == NULL)
+        return -1;
+    ret = vfs_lseek64(&current->fds[fd], offset, whence);
+    return ret;
+}
+
+static int do_ioctl(int fd, uint64 request, va_list args){
+    int ret;
+    if(fd < 0 || current->maxfd < fd)
+        return -1;
+    if(current->fds[fd].vnode == NULL)
+        return -1;
+    ret = vfs_ioctl(&current->fds[fd], request, args);
+    return ret;
+}
+
 void syscall_open(trapframe *frame, const char *pathname, int flags){
     int fd = do_open(pathname, flags);
     frame->x0 = fd;
@@ -326,12 +355,14 @@ void syscall_chdir(trapframe *frame, const char *path){
     frame->x0 = ret;
 }
 void syscall_lseek64(trapframe *frame, int fd, int64 offset, int whence){
-    // TODO
-    int ret = -1;
+    long ret = do_lseek64(fd, offset, whence);
     frame->x0 = ret;
 }
 void syscall_ioctl(trapframe *frame, int fd, uint64 request, ...){
-    // TODO
-    int ret = -1;
+    int ret ;
+    va_list args;
+    va_start(args, request);
+    ret = do_ioctl(fd, request, args);
+    va_end(args);
     frame->x0 = ret;
 }

@@ -44,6 +44,7 @@ int tmpfs_read(struct file *file, void *buf, size_t len);
 int tmpfs_open(struct vnode *file_node, struct file *target);
 int tmpfs_close(struct file *file);
 long tmpfs_lseek64(struct file *file, long offset, int whence);
+int tmpfs_ioctl(struct file *file, uint64 request, va_list args);
 
 struct filesystem *tmpfs_init(void);
 

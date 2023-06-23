@@ -4,6 +4,7 @@
 #include <mm.h>
 #include <dt17.h>
 #include <panic.h>
+#include <preempt.h>
 
 static struct vnode cpio_root_node;
 static struct vnode mount_old_node;
@@ -28,7 +29,8 @@ static struct file_operations cpiofs_f_ops = {
     .read = cpiofs_read,
     .open = cpiofs_open,
     .close = cpiofs_close,
-    .lseek64 = cpiofs_lseek64
+    .lseek64 = cpiofs_lseek64,
+    .ioctl = cpiofs_ioctl
 };
 
 static struct vnode *get_dir_vnode(struct vnode *dir_node, const char **pathname){
@@ -205,8 +207,15 @@ int cpiofs_mount(struct filesystem *fs, struct mount *mount){
     struct vnode *oldnode;
     struct cpiofs_internal *internal;
     const char *name;
-    if(cpio_mounted)
+    preempt_disable();
+
+    if(cpio_mounted){
+        preempt_enable();
         return -1;
+    }
+
+    cpio_mounted = 1;
+    preempt_enable();
 
     oldnode = mount->root;
     oldnode->v_ops->getname(oldnode, &name);
@@ -334,4 +343,8 @@ long cpiofs_lseek64(struct file *file, long offset, int whence){
     
     file->f_pos = base + offset;
     return 0;
+}
+
+int cpiofs_ioctl(struct file *file, uint64 request, va_list args){
+    return -1;
 }

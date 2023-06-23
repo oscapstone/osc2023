@@ -21,7 +21,8 @@ static struct file_operations uartfs_f_ops = {
     .read = uartfs_read,
     .open = uartfs_open,
     .close = uartfs_close,
-    .lseek64 = uartfs_lseek64
+    .lseek64 = uartfs_lseek64,
+    .ioctl = uartfs_ioctl
 };
 
 /* filesystem methods */
@@ -115,6 +116,10 @@ int uartfs_close(struct file *file){
 }
 
 long uartfs_lseek64(struct file *file, long offset, int whence){
+    return -1;
+}
+
+int uartfs_ioctl(struct file *file, uint64 request, va_list args){
     return -1;
 }
 

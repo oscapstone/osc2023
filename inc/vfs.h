@@ -4,6 +4,7 @@
 #include <type.h>
 #include <trapframe.h>
 #include <list.h>
+#include <stdarg.h>
 
 #define O_CREATE        00000100
 
@@ -57,6 +58,7 @@ struct file_operations {
     int (*open)(struct vnode *file_node, struct file *target);
     int (*close)(struct file *file);
     long (*lseek64)(struct file *file, long offset, int whence);
+    int (*ioctl)(struct file *file, uint64 request, va_list args);
 };
 
 extern struct mount *rootmount;
@@ -72,14 +74,15 @@ int vfs_read(struct file *file, void *buf, size_t len);
 int vfs_mkdir(const char *pathname);
 int vfs_mount(const char *mountpath, const char *filesystem);
 int vfs_lookup(const char *pathname, struct vnode **target);
+long vfs_lseek64(struct file *file, long offset, int whence);
+int vfs_ioctl(struct file *file, uint64 request, va_list args);
 
 void syscall_open(trapframe *frame, const char *pathname, int flags);
 void syscall_close(trapframe *frame, int fd);
 void syscall_write(trapframe *frame, int fd, const void *buf, uint64 count);
 void syscall_read(trapframe *frame, int fd, void *buf, uint64 count);
 void syscall_mkdir(trapframe *frame, const char *pathname, uint32 mode);
-void syscall_mount(trapframe *frame, const char *src, const char *target,
-                   const char *filesystem, uint64 flags, const void *data);
+void syscall_mount(trapframe *frame, const char *src, const char *target, const char *filesystem, uint64 flags, const void *data);
 void syscall_chdir(trapframe *frame, const char *path);
 void syscall_lseek64(trapframe *frame, int fd, int64 offset, int whence);
 void syscall_ioctl(trapframe *frame, int fd, uint64 request, ...);

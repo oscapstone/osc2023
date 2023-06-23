@@ -48,6 +48,7 @@ int cpiofs_read(struct file *file, void *buf, size_t len);
 int cpiofs_open(struct vnode *file_node, struct file *target);
 int cpiofs_close(struct file *file);
 long cpiofs_lseek64(struct file *file, long offset, int whence);
+int cpiofs_ioctl(struct file *file, uint64 request, va_list args);
 
 struct filesystem *cpiofs_init(void);
 

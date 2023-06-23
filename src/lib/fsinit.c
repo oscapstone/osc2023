@@ -3,17 +3,20 @@
 #include <mm.h>
 #include <panic.h>
 #include <uartfs.h>
+#include <framebufferfs.h>
 
 void fs_early_init(void){
-    struct filesystem *tmpfs, *cpiofs, *uartfs;
+    struct filesystem *tmpfs, *cpiofs, *uartfs, *fbfs;
 
     vfs_init();
     tmpfs = tmpfs_init();
     cpiofs = cpiofs_init();
     uartfs = uartfs_init();
+    fbfs = framebufferfs_init();
     register_filesystem(tmpfs);
     register_filesystem(cpiofs);
     register_filesystem(uartfs);
+    register_filesystem(fbfs);
 
     vfs_init_rootmount(tmpfs);
 
@@ -24,4 +27,7 @@ void fs_early_init(void){
 
     vfs_mkdir("/dev/uart");
     vfs_mount("/dev/uart", "uartfs");
+
+    vfs_mkdir("/dev/framebuffer");
+    vfs_mount("/dev/framebuffer", "framebufferfs");
 }
