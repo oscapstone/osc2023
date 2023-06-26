@@ -11,7 +11,11 @@ struct k_lock* k_lock_new() {
 
 void k_lock_get(struct k_lock *lock) {
     uint64_t flag = interrupt_disable_save();
-    while(lock->lock){asm volatile("nop");}
+    while(lock->lock){
+        enable_interrupt();
+        // asm volatile("nop");
+    }
+    disable_interrupt();
     lock->lock = 1;
     interrupt_enable_restore(flag);
 }

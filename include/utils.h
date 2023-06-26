@@ -1,7 +1,7 @@
-#include "type.h"
 #ifndef _UTILS_H
 #define _UTILS_H
 
+#include "type.h"
 #include <stddef.h>
 
 #define container_of(ptr, type, mem) ({\

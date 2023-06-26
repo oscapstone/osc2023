@@ -1,7 +1,7 @@
-#include "type.h"
 #ifndef __DTB_H
 #define __DTB_H
 
+#include "type.h"
 struct fdt_header {
     uint32_t magic;
     uint32_t totalsize;

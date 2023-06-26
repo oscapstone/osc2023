@@ -7,11 +7,14 @@
 #include "time.h"
 #include "type.h"
 #include "event.h"
+#include "thread.h"
+#include "process.h"
+#include "syscall.h"
 
 #define IRQ_BASIC_PENDING (PBASE + 0xB200)
 #define IRQ_GPU_PENDING1 (PBASE + 0xB204)
 #define IRQ_GPU_PENDING2 (PBASE + 0xB208)
-#define CORE_IRQ_SOURCE (0x40000060)
+#define CORE_IRQ_SOURCE (0xffff000040000060)
 #define GPU_INTERRUPT (0x100)
 #define AUX_INT (1 << 29)
 
@@ -21,7 +24,6 @@ extern struct k_event demo_timer_event;
 int demo_state = 0;
 
 void irqhandler_inc() {
-    // asm volatile ("msr DAIFSet, 0xf\n");
     int flag = interrupt_disable_save();
     interrupt_handler_counter += 1;
     interrupt_enable_restore(flag);
@@ -37,15 +39,10 @@ int irqhandler_cnt_get() {
 }
 
 void enable_interrupt() {
-    interrupt_counter -= 1;
-    if(interrupt_counter < 0) interrupt_counter = 0;
-    if(interrupt_counter == 0) {
-        asm volatile ("msr DAIFClr, 0xf\n");
-    }
+    asm volatile ("msr DAIFClr, 0xf\n");
 }
 void disable_interrupt() {
     asm volatile ("msr DAIFSet, 0xf\n");
-    interrupt_counter += 1;
 }
 
 void exception_entry(unsigned long esr, unsigned long elr, unsigned long spsr) {
@@ -60,18 +57,19 @@ void exception_entry(unsigned long esr, unsigned long elr, unsigned long spsr) {
     uart_send_u64(spsr);
     uart_send_string("\r\n");
     uart_switch_func(UART_ASYNC);
+    while(1) {
+        asm volatile("nop\n");
+    }
     return;
 }
 
-void time_interrupt_handler() {
+void time_interrupt_handler(struct Trapframe_t *frame) {
     struct k_timeout *t;
     uint64_t tick;
     while(1) {
-        // uart_send_string("xxxx\r\n");
         asm volatile("mrs %0, cntpct_el0\n":"=r"(tick));
         t = k_timeout_queue_front();
         if(t == NULL) {
-            uint64_t x = 0x3f3f3f3fLL;
             asm volatile(
                 "ldr x0, =0xffffffffff\n"
                 "msr cntp_cval_el0, x0\n"
@@ -90,6 +88,7 @@ void time_interrupt_handler() {
             break;
         }
     }
+    handle_time_schedule(frame);
 }
 
 void uart_handler() {
@@ -97,8 +96,8 @@ void uart_handler() {
     if(pending & AUX_INT) {
         unsigned int IER_REG = *(volatile unsigned int*)(AUX_MU_IER_REG);
         if(IER_REG & 1) {
+            // only recv can delay the work
             irqhandler_inc();
-            // uart_send_dec(irqhandler_cnt_get());
             uart_int_recv_handler();
         }
         if(IER_REG & 2) {
@@ -106,26 +105,32 @@ void uart_handler() {
         }
     }
 }
-void spx_irq_handler(unsigned long esr, unsigned long elr, unsigned long spsr) {
+void spx_irq_handler(struct Trapframe_t *frame, uint64_t esr) {
     unsigned int pending = read_reg_32(CORE_IRQ_SOURCE);
-    if(pending & 0x2) {
-        time_interrupt_handler();
-    }
     if(pending & GPU_INTERRUPT) {
+
         uart_handler();
     }
+    else if(pending & 0x2) {
+        time_interrupt_handler(frame);
+    }
+    else {
+            // uint64_t dfsr_value;
+            // asm volatile ("mrs %0, dfsr_el1" : "=r" (dfsr_value));
+
+        }
+
     return;
 }
 
-void lower_irq_handler(unsigned long esr, unsigned long elr, unsigned long spsr) {
+void lower_irq_handler(struct Trapframe_t *frame) {
     unsigned int pending = read_reg_32(CORE_IRQ_SOURCE);
     if(pending & GPU_INTERRUPT) {
         uart_handler();
     }
-    if(pending & 0x2) {
-        irqhandler_inc();
-        demo_state = 1;
-        k_event_submit(&demo_timer_event, NULL, 0, 100);
+    else if(pending & 0x2) {
+
+        time_interrupt_handler(frame);
     }
     return;
 }
@@ -145,4 +150,60 @@ uint64_t interrupt_disable_save() {
         "msr DAIFSet, 0xf\n"
     );
     return flag;
+}
+
+
+struct Trapframe_t anoFrame;
+void svc_handler(struct Trapframe_t *frame) {
+    if(frame->esr_el1 >> 26 == 0b010101) {
+        // memcpy(&anoFrame, frame, sizeof(struct Trapframe_t));
+        uint16_t svcnum = frame->esr_el1 & 0xffff;
+        if(svcnum == 0) {
+            syscall_handler(frame);
+        }
+        // for(int i = 0; i < sizeof(struct Trapframe_t) >> 3; i ++) {
+        //     if(*((uint64_t*)(&anoFrame) + i) != *((uint64_t*)(frame) + i)) {
+        //         uart_switch_func(UART_DEFAULT);
+        //         // uart_send_string("fucked\r\n");
+        //         uart_send_string("In i = ");
+        //         uart_send_dec(i);
+        //         uart_send_string("\r\n");
+        //         uart_switch_func(UART_ASYNC);
+        //     }
+        // }
+    } else {
+        // uart_switch_func(UART_DEFAULT);
+        // uart_send_string("\r\nOther interrupt\r\n");
+        // // uart_send_u64(frame->esr_el1);
+        // // uart_send_string("\r\n");
+        // // uart_send_u64(frame->elr_el1);
+        // uart_send_u64(thread_get_current_instance()->tid);
+        // uart_send_string("\r\n");
+        // // }
+        // uart_switch_func(UART_ASYNC);
+    }
+}
+
+uint64_t check_exception_depth() {
+    struct Thread_t *th = thread_get_current_instance();
+    uint64_t sp;
+    uint64_t lr;
+    asm volatile(
+        "mov x0, sp\n"
+        "mov %[sp], x0\n"
+        "mrs %[lr], elr_el1\n":[sp]"=r"(sp), [lr]"=r"(lr)
+    );
+    uint64_t val = ((uint64_t)th->sp - sp) / (32 * 9);
+    // if(th->sp < sp) {
+    //     uart_switch_func(UART_DEFAULT);
+    //     uart_send_string("Except Fucked\r\n");
+    //     uart_send_u64(th->sp);
+    //     uart_send_string("\r\n");
+    //     uart_send_u64(sp);
+    //     uart_send_string("\r\n");
+    //     uart_send_u64(lr);
+    //     uart_send_string("\r\n");
+    //     uart_switch_func(UART_ASYNC);
+    // }
+    return val;
 }

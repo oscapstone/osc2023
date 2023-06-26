@@ -8,6 +8,9 @@
 #define SMALL_CHUNK_MAX_ORDER (PAGE_SIZE_ORDER)
 #define SMEM_CHUNK_MAX 31
 #define ALLOC_MIN_ORD 5
+#define MIN_FREE_PAGE_CNT 20
+
+// #define MEM_DEMO
 
 extern uint32_t _heap_begin;
 void* cur_mem_offset = &_heap_begin;
@@ -49,9 +52,7 @@ void smem_init() {
 
 void *simple_malloc(uint32_t size) {
     // pad to align 8 bytes
-    // uint32_t offset = ((((size & 0x7) ^ 0x7) + 1) & 0x7) + size;
-    // cur_mem_offset += offset;
-    // return (cur_mem_offset - offset);
+
     uint32_t flag = interrupt_disable_save();
     uint8_t ord = size2ord(size);
     if(ord < 5) {
@@ -87,7 +88,6 @@ void simple_free(void *ptr) {
 
 
 void kmalloc_init() {
-    // frame_init();
     for(int i = 0; i < SMALL_CHUNK_MAX_ORDER + 1; i ++) {
         ds_list_head_init(&(kmem_pool[i]));
     }
@@ -112,8 +112,9 @@ void *kmalloc(uint32_t size) {
     if(size == 0){
         goto _r;
     }
+
     void *ret;
-    if(size > (PAGE_SIZE >> 1)) {
+    if(size >= (PAGE_SIZE >> 1)) {
         ret = page_alloc(size);
         goto _r;
     }
@@ -128,8 +129,7 @@ void *kmalloc(uint32_t size) {
         front = ds_list_front(&(ent->chunk_head));
         struct kmem_node *node = container_of(front, struct kmem_node, head);
         ret = node->addr;
-        // uart_send_u64(ret);
-        // uart_send_string("\r\n");
+
         // remove from page pool
         ds_list_remove(&(node->head));
         ent->dyn_count -= 1;
@@ -154,7 +154,7 @@ void *kmalloc(uint32_t size) {
         init_page_chunk(ptr, ent, ord);
 #ifdef MEM_DEMO
         uart_send_string("\r\n");
-        uart_send_string("Small Chunk new Base");
+        uart_send_string("Small Chunk new Base\r\n");
         uart_send_u64(ptr);
         uart_send_string("\r\n");
         uart_send_u64(ent);
@@ -169,6 +169,14 @@ void *kmalloc(uint32_t size) {
     }
 _r:
     interrupt_enable_restore(flag);
+    #ifdef MEM_DEMO
+        uart_send_string("size = ");
+        uart_send_dec(size);
+        uart_send_string("\r\n");
+        uart_send_string("ret = ");
+        uart_send_u64(ret);
+        uart_send_string("\r\n");
+    #endif
     return ret;
 }
 
@@ -184,6 +192,12 @@ void free_chunk(struct frame_entry *ent) {
 }
 
 void kfree(void *ptr) {
+    #ifdef MEM_DEMO
+        uart_send_string("kfree ptr = ");
+        uart_send_u64(ptr);
+        uart_send_string("\r\n");
+    #endif
+    if(ptr == NULL) return;
     uint32_t flag = interrupt_disable_save();
     struct frame_entry *ent = get_entry_from_addr(ptr);
     // We does not handle the address freed is not valid
@@ -195,10 +209,14 @@ void kfree(void *ptr) {
         }
         ent->dyn_count += 1;
         if(ent->dyn_count == (1 << (PAGE_SIZE_ORDER - ord))) {
-            ds_list_remove(&(ent->head));
-            free_chunk(ent);
-            page_free((uint64_t)ptr & (~((1LL << PAGE_SIZE_ORDER) - 1)));
-            goto _r;
+            if(ent->used_cnt < MIN_FREE_PAGE_CNT) {
+                ent->used_cnt += 1;
+            } else {
+                ds_list_remove(&(ent->head));
+                free_chunk(ent);
+                page_free((uint64_t)ptr & (~((1LL << PAGE_SIZE_ORDER) - 1)));
+                goto _r;
+            }
         }
         // need to add back the frame entry to kmem_pool
         struct kmem_node *node = simple_malloc(sizeof(struct kmem_node));
@@ -224,4 +242,15 @@ void set_init_mem_region(char *name, char *prop_name, char *data) {
             frame_init(sz);
         }
     }
+}
+void *cmalloc(uint32_t size) {
+    void *ret = kmalloc(size);
+    for(uint32_t k = 0; k < (size >> 3); k ++) {
+        *((uint64_t*)(ret) + k) = 0;
+    }
+    uint32_t tmp = ((size >> 3) << 3);
+    for(int i = tmp; i < size; i ++) {
+        *(char *)(ret + i) = 0;
+    }
+    return ret;
 }
