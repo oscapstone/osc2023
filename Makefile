@@ -17,7 +17,7 @@ INITRAMFS_SRC_DIR = $(SRC_DIR)/initramfs
 
 MAKE = make
 
-COPS = -Wall -nostdlib -nostartfiles -ffreestanding -Iinclude -mgeneral-regs-only -ggdb
+COPS = -Wall -nostdlib -nostartfiles -ffreestanding -Iinclude -mgeneral-regs-only -ggdb -std=gnu11
 ASMOPS = -Iinclude -ggdb -mtune=cortex-a53
 
 
@@ -37,7 +37,7 @@ DEP_FILES += $(BOOTLOADER_OBJ_FILES:%.o=%.d)
 
 
 .DEFAULT_GOAL=all
-.PHONY: default all clean kernel bootloader debug send $(INITRAMFS_BUILD_DIR)
+.PHONY: default all clean kernel bootloader debug send $(INITRAMFS_BUILD_DIR) lab5 lab6
 default: all
 
 all : kernel8.img bootloader.img $(INITRAMFS_BUILD_DIR)
@@ -56,7 +56,22 @@ run: kernel8.img bootloader.img $(INITRAMFS_BUILD_DIR)
 
 boot: kernel8.img bootloader.img $(INITRAMFS_BUILD_DIR)
 	cd build/initramfs && find . | cpio -o -H newc > ../../initramfs.cpio
-	qemu-system-aarch64 -M raspi3b -cpu cortex-a72  -serial null -serial pty -kernel bootloader.img -display none -initrd initramfs.cpio -dtb bcm2710-rpi-3-b-plus.dtb -d int
+	qemu-system-aarch64 -M raspi3b -cpu cortex-a72  -serial null -serial pty -kernel bootloader.img -initrd initramfs.cpio -dtb bcm2710-rpi-3-b-plus.dtb -d int -display none
+	# qemu-system-aarch64 -M raspi3b -kernel bootloader.img -initrd ./initramfs.cpio -dtb bcm2710-rpi-3-b-plus.dtb -serial null -serial pty -d int
+
+lab5: 
+	qemu-system-aarch64 -M raspi3b -cpu cortex-a72  -serial null -serial pty -kernel bootloader.img -display vnc=0.0.0.0:0 -initrd lab5.cpio -dtb bcm2710-rpi-3-b-plus.dtb -d int -vga std -drive if=sd,file=sfn_nctuos.img,format=raw
+
+lab6: 
+	qemu-system-aarch64 -M raspi3b -cpu cortex-a72  -serial null -serial pty -kernel bootloader.img -display vnc=0.0.0.0:0 -initrd lab6.cpio -dtb bcm2710-rpi-3-b-plus.dtb -d int -vga std -drive if=sd,file=sfn_nctuos.img,format=raw
+	# qemu-system-aarch64 -M raspi3b -cpu cortex-a72  -serial null -serial pty -kernel bootloader.img -display gtk -initrd lab6.cpio -dtb bcm2710-rpi-3-b-plus.dtb -d int -vga std
+
+lab7:
+	qemu-system-aarch64 -M raspi3b -cpu cortex-a72  -serial null -serial pty -kernel bootloader.img -display vnc=0.0.0.0:0 -initrd lab7.cpio -dtb bcm2710-rpi-3-b-plus.dtb -d int -vga std -drive if=sd,file=sfn_nctuos.img,format=raw
+
+
+lab8:
+	qemu-system-aarch64 -M raspi3b -cpu cortex-a72  -serial null -serial pty -kernel bootloader.img -display vnc=0.0.0.0:0 -initrd lab8.cpio -dtb bcm2710-rpi-3-b-plus.dtb -d int -vga std -drive if=sd,file=sfn_nctuos.img,format=raw
 
 copy:
 	make && sudo ./copy_kernel.sh ./bootloader.img && sudo ./copy_ramdisk.sh build/initramfs

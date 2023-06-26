@@ -4,7 +4,7 @@
 
 // #define MBOX_GET_FIRMWARE_REVISION (0x00000001)
 
-extern volatile unsigned int mbox_buf[16];
+extern volatile unsigned int mbox_buf[256];
 
 #define MBOX_CH_PROPERTY_TAG (8)
 
@@ -31,4 +31,5 @@ extern volatile unsigned int mbox_buf[16];
 #define MAIL_WRITE (MAIL_BASE + 0x20)
 
 int mbox_call_func(unsigned char prop_tag);
+int mbox_call(unsigned char prop_tag, unsigned int *buf);
 #endif

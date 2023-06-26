@@ -1,9 +1,17 @@
-#include "type.h"
-
 #ifndef __CPIO_H
-
 #define __CPIO_H
+#include "type.h"
+#include "fs/vfs.h"
 
+
+#define C_FMASK 0170000
+#define C_SOCK 0140000  // File type	value for sockets.
+#define C_SYMBOL 0120000 // File type	value for symbolic links.
+#define C_REG 0100000  // File type	value for regular files.
+#define C_BLKDEV 0060000  // File type	value for block	special	devices.
+#define C_DIR 0040000  // File type	value for directories.
+#define C_CHDEV 0020000  // File type	value for character special devices.
+#define C_FIFO 0010000  // File type	value for named	pipes or FIFOs.
 
 // char *_cpio_buf = (char *)INITRAMFS_ADDR;
 
@@ -29,5 +37,8 @@ void list_files();
 unsigned int cat_file(const char *file);
 void set_initramfs_addr(uint32_t addr);
 unsigned int load_program(const char *file);
+uint8_t get_file(const char *filename, char **content, unsigned int *c_filesize);
+void mount_initramfs();
+int init_cpio_fs(struct filesystem *fs);
 
 #endif

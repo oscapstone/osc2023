@@ -1,7 +1,13 @@
-#define CORE0_TIMER_IRQ_CTRL 0x40000040
-#define CORE1_TIMER_IRQ_CTRL 0x40000044
-#define CORE2_TIMER_IRQ_CTRL 0x40000048
-#define CORE3_TIMER_IRQ_CTRL 0x4000004C
+// #define CORE0_TIMER_IRQ_CTRL 0x40000040
+// #define CORE1_TIMER_IRQ_CTRL 0x40000044
+// #define CORE2_TIMER_IRQ_CTRL 0x40000048
+// #define CORE3_TIMER_IRQ_CTRL 0x4000004C
+#define CORE0_TIMER_IRQ_CTRL 0xffff000040000040
+#define CORE1_TIMER_IRQ_CTRL 0xffff000040000044
+#define CORE2_TIMER_IRQ_CTRL 0xffff000040000048
+#define CORE3_TIMER_IRQ_CTRL 0xffff00004000004C
+
+
 
 .extern exception_entry
 .extern spx_irq_handler
@@ -9,6 +15,10 @@
 .extern enable_interrupt
 .extern disable_interrupt
 .extern event_queue_handle
+.extern svc_handler
+.extern check_exception_depth
+.extern enable_kernel_mmu
+.extern load_all_eret_log
 
 .section ".text.boot"
 .globl _start
@@ -17,7 +27,14 @@ _start:
     mov x11, x1
     mov x12, x2
     mov x13, x3
+
     bl from_el2_to_el1
+    ldr x0, =boot_rest
+    b enable_kernel_mmu
+    br x0
+
+
+boot_rest:
     mrs x0, mpidr_el1
     and x0, x0, #0xFF
     cbz x0, master
@@ -25,9 +42,12 @@ _start:
 
 // switch to el1
 from_el2_to_el1:
-    mov x0, (1 << 31)
+    ldr x0, =(1 << 31 | 1 << 34)
     // make execution state for el1 is aarch64
     msr hcr_el2, x0
+    mrs x0, SCTLR_EL1
+    orr x0, x0, #512
+    msr sctlr_el1, x0
     mov x0, 0x3c5
     msr spsr_el2, x0
     msr elr_el2, lr
@@ -86,17 +106,16 @@ master:
     stp x28, x29, [sp ,16 * 14]
     mrs x0, elr_el1
     stp x30, x0, [sp, 16 * 15]
-    mrs x0, spsr_el1
-    str x0, [sp, 16 * 16]
+    // mov x0, sp
+    mrs x0, sp_el0
+    mrs x1, spsr_el1
+    stp x0, x1, [sp, 16 * 16]
+    mrs x1, esr_el1
+    str x1, [sp, 16 * 17]
 .endm
 
 // load general registers from stack
 .macro load_all
-    ldr x0, [sp, 16 * 16]
-    msr spsr_el1, x0
-    ldp x30, x0, [sp, 16 * 15]
-    msr elr_el1, x0
-    ldp x0, x1, [sp ,16 * 0]
     ldp x2, x3, [sp ,16 * 1]
     ldp x4, x5, [sp ,16 * 2]
     ldp x6, x7, [sp ,16 * 3]
@@ -111,6 +130,13 @@ master:
     ldp x24, x25, [sp ,16 * 12]
     ldp x26, x27, [sp ,16 * 13]
     ldp x28, x29, [sp ,16 * 14]
+    ldp x0, x1, [sp, 16 * 16]
+    // mov sp, x0
+    msr sp_el0, x0
+    msr spsr_el1, x1
+    ldp x30, x0, [sp, 16 * 15]
+    msr elr_el1, x0
+    ldp x0, x1, [sp ,16 * 0]
     // ldr x30, [sp, 16 * 15]
     add sp, sp, 32 * 9
 .endm
@@ -137,7 +163,7 @@ exception_vector_table:
     .balign 0x80
     b exception_handler
     .balign 0x80
-    b exception_handler
+    b _sync_handler
     .balign 0x80
     b el_aarch64_irq_epx
     .balign 0x80
@@ -145,9 +171,10 @@ exception_vector_table:
     .balign 0x80
     b exception_handler
     .balign 0x80
-    b exception_handler
+    b _sync_handler
     .balign 0x80
-    b _lower_el_aarch64_irq
+    b el_aarch64_irq_epx
+    //b _lower_el_aarch64_irq
     .balign 0x80
     b exception_handler
     .balign 0x80
@@ -192,30 +219,79 @@ core_timer_handler:
     msr cntp_tval_el0, x0
     ret
 el_aarch64_irq_epx:
-    msr DAIFSet, 0xf
     save_all
-    mrs x0, esr_el1
-    mrs x1, elr_el1
-    mrs x2, spsr_el1
+    msr DAIFSet, 0xf
+    mov x0, sp
+    mrs x1, esr_el1
     bl spx_irq_handler
-    msr DAIFClr, 0xf
+    // msr DAIFClr, 0xf
     bl event_queue_handle
 
-    msr DAIFSet, 0xf
-    load_all
+    // msr DAIFSet, 0xf
+    bl check_exception_depth
     msr DAIFClr, 0xf
+    load_all
     eret
 _lower_el_aarch64_irq:
-    msr DAIFSet, 0xf
     save_all
-    mrs x0, esr_el1
-    mrs x1, elr_el1
-    mrs x2, spsr_el1
+    msr DAIFSet, 0xf
+    mov x0, sp
+    // msr DAIFClr, 0xf
     bl lower_irq_handler
-    msr DAIFClr, 0xf
     
     bl event_queue_handle
-    msr DAIFSet, 0xf
-    load_all
+    // msr DAIFSet, 0xf
     msr DAIFClr, 0xf
+    load_all
     eret
+
+_sync_handler:
+    save_all
+    msr DAIFSet, 0xf
+    // bl check_exception_depth
+    mov x0, sp
+    bl svc_handler
+    // msr DAIFClr, 0xf
+    
+    // bl event_queue_handle
+    // msr DAIFSet, 0xf
+    // bl check_exception_depth
+    msr DAIFClr, 0xf
+    load_all
+    eret
+
+.global load_all_eret
+load_all_eret:
+    // bl load_all_eret_log
+    ldp x2, x3, [sp ,16 * 1]
+    ldp x4, x5, [sp ,16 * 2]
+    ldp x6, x7, [sp ,16 * 3]
+    ldp x8, x9, [sp ,16 * 4]
+    ldp x10, x11, [sp ,16 * 5]
+    ldp x12, x13, [sp ,16 * 6]
+    ldp x14, x15, [sp ,16 * 7]
+    ldp x16, x17, [sp ,16 * 8]
+    ldp x18, x19, [sp ,16 * 9]
+    ldp x20, x21, [sp ,16 * 10]
+    ldp x22, x23, [sp ,16 * 11]
+    ldp x24, x25, [sp ,16 * 12]
+    ldp x26, x27, [sp ,16 * 13]
+    ldp x28, x29, [sp ,16 * 14]
+    ldp x0, x1, [sp, 16 * 16]
+    // mov sp, x0
+    msr sp_el0, x0
+    msr spsr_el1, x1
+    ldp x30, x0, [sp, 16 * 15]
+    msr elr_el1, x0
+    ldp x0, x1, [sp ,16 * 0]
+    add sp, sp, 32 * 9
+    // ldr x30, [sp, 16 * 15]
+    eret
+
+.global back_el1
+back_el1:
+    msr elr_el1, lr
+    mov x0, 0x345
+    msr spsr_el1, x0
+    eret
+

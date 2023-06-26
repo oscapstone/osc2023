@@ -1,11 +1,18 @@
 #include "type.h"
 #include "utils.h"
+#include "peripherals/mini_uart.h"
 void memcpy(void* dest, void *src, unsigned long long size) {
+    // if(dest <=  0x3bffa000 && dest + size >= 0x3bffa000) {
+    //     uart_send_string("copying\r\n");
+    // }
     for(int i = 0; i < size; i ++) {
         *(char*)(dest + i) = *(char*)(src + i);
     }
 }
 void memset(void *dest, char val, unsigned int size) {
+    // if(dest <=  0x3bffa000 && dest + size >= 0x3bffa000) {
+    //     uart_send_string("setting\r\n");
+    // }
     for(int i = 0; i < size; i ++) {
         *(char*)(dest + i) = val;
     }

@@ -5,11 +5,12 @@
 #include "utils.h"
 #include "peripherals/mini_uart.h"
 #include "dtb/dtb.h"
+#include "mmu/mmu.h"
 
-#define MEM_DEMO
 
 // #define ENTRY_NUM (PAGE_END - PAGE_BEGIN) / PAGE_SIZE
 
+// #define MEM_DEMO 1
 // struct frame_entry entry[ENTRY_NUM];
 
 struct ds_list_head frame_list[PAGE_MAX_ORDER + 1];
@@ -36,7 +37,7 @@ uint64_t order_to_size(uint8_t order) {
 }
 
 static uint32_t addr2idx(uint64_t addr, uint64_t base) {
-    return (addr - base) >> PAGE_SIZE_ORDER;
+    return ((addr - base) >> PAGE_SIZE_ORDER);
 }
 
 static uint64_t idx2addr(uint32_t idx, uint64_t base) {
@@ -45,8 +46,11 @@ static uint64_t idx2addr(uint32_t idx, uint64_t base) {
 
 struct frame_entry* get_entry_from_addr(void *ptr) {
     uint64_t addr = (uint64_t)ptr;
+
+
     for(struct ds_list_head *head = mem_list.next; head != &mem_list; head = head->next) {
         struct mem_region *region = container_of(head, struct mem_region, head);
+
         if(addr >= region->begin_addr && addr <= region->begin_addr + region->size) {
             uint64_t idx = addr2idx(addr, region->begin_addr);
             return &(region->entries[idx]);
@@ -59,17 +63,21 @@ void init_mem_region(struct mem_region* ptr, uint64_t begin, uint64_t end) {
     uint8_t ord = 0;
     while(ptr->size >> ord) {
         ord += 1;
-        if(ord > PAGE_MAX_ORDER + PAGE_SIZE_ORDER)break;
+        if(ord > (PAGE_MAX_ORDER + PAGE_SIZE_ORDER))break;
     }
     ord -= 1;
+    if((begin & ((1 << ord) - 1)) || (end & ((1 << ord) - 1))) {
+        ord -= 1;
+    }
+
     ptr->max_ord = ord - PAGE_SIZE_ORDER;
 }
 
 void frame_init(uint64_t full_sz) {
     struct mem_region *new_region = simple_malloc(sizeof(struct mem_region));
-    init_mem_region(new_region, 0x0, full_sz);
+    init_mem_region(new_region, 0x0 + KERNEL_SPACE_OFFSET, full_sz + KERNEL_SPACE_OFFSET);
     ds_list_head_init(&(new_region->head));
-    ds_list_addnext(&mem_list, &(new_region->head));
+    ds_list_addprev(&mem_list, &(new_region->head));
     for(struct ds_list_head *tmp = reserve_list.next; tmp != &reserve_list; tmp = tmp->next) {
         struct reserve_node *node = container_of(tmp, struct reserve_node, head);
         for(struct ds_list_head *region = mem_list.next; region != &mem_list; region = region->next) {
@@ -89,7 +97,8 @@ void frame_init(uint64_t full_sz) {
                     struct mem_region *new_reg = simple_malloc(sizeof(struct mem_region));
                     init_mem_region(new_reg, node->e, end);
                     ds_list_head_init(&(new_reg->head));
-                    ds_list_addnext(region, &(new_reg->head));
+                    ds_list_addprev(region, &(new_reg->head));
+                    // ds_list_addnext(region, &(new_reg->head));
                 }
                 init_mem_region(old_region, start, node->s);
                 if(node->s - start < PAGE_SIZE) {
@@ -135,6 +144,8 @@ void frame_init(uint64_t full_sz) {
             ds_list_head_init(&(region->entries[i].head));
             region->entries[i].flag = region->max_ord;
             region->entries[i].order = region->max_ord;
+            region->entries[i].used_cnt = 0;
+            // ds_list_addprev(&frame_list[region->max_ord], &(region->entries[i].head));
             ds_list_addnext(&frame_list[region->max_ord], &(region->entries[i].head));
         }
     }
@@ -149,9 +160,9 @@ uint8_t page_size_to_order(uint64_t sz) {
         }
     }
     if((sz & ((1 << i) - 1)) == 0) {
-        return (i >> PAGE_SIZE_ORDER);
+        return (i - PAGE_SIZE_ORDER);
     }
-    return (i + 1) >> PAGE_SIZE_ORDER;
+    return (i + 1) - PAGE_SIZE_ORDER;
 }
 
 void *_split_page(uint8_t cur_order, uint8_t target_order) {
@@ -200,8 +211,8 @@ void *_split_page(uint8_t cur_order, uint8_t target_order) {
 // push entries into list
     ds_list_head_init(&(region->entries[right_idx].head));
     ds_list_head_init(&(region->entries[ent->idx].head));
-    ds_list_addnext(&frame_list[cur_order - 1], &(region->entries[ent->idx].head));
-    ds_list_addnext(&frame_list[cur_order - 1], &(region->entries[right_idx].head));
+    ds_list_addprev(&frame_list[cur_order - 1], &(region->entries[ent->idx].head));
+    ds_list_addprev(&frame_list[cur_order - 1], &(region->entries[right_idx].head));
     return _split_page(cur_order - 1, target_order);
 }
 
@@ -213,7 +224,8 @@ void *_find_page(uint8_t order) {
         struct frame_entry *ent = container_of(head, struct frame_entry, head);
         ent->flag = PAGE_ALLOCATED;
         ds_list_remove(frame_list[order].next);
-        uart_send_string("Successfully find page\r\n");
+        // uart_send_u64(ent->idx);
+        // uart_send_u64(ent->mem_region->begin_addr);
         return (void*)idx2addr(ent->idx, ent->mem_region->begin_addr);
     }
     
@@ -234,27 +246,21 @@ void *_find_page(uint8_t order) {
 
 void *page_alloc(uint64_t size) {
     int order = page_size_to_order(size);
-    uart_send_dec(order);
-    uart_send_string("\r\n");
     if(order > PAGE_MAX_ORDER) {
         return NULL;
     }
     void *ptr = _find_page(order);
-    uart_send_string("Allocated page: ");
-    uart_send_u64((uint64_t)ptr);
-    uart_send_string("\r\n");
     return ptr;
 }
 void _merge_page(void *addr, uint8_t cur_order, struct mem_region *region) {
-    // if(cur_order >= PAGE_MAX_ORDER) {
-    //     return;
-    // }
 
     uint32_t idx = addr2idx((uint64_t)addr, region->begin_addr);
     uint64_t ano_addr = (uint64_t)addr ^ (1LL << (cur_order + PAGE_SIZE_ORDER));
     uint32_t ano_idx = addr2idx((uint64_t)ano_addr, region->begin_addr);
+
     if(cur_order < region->max_ord && region->entries[ano_idx].flag == cur_order) {
         #ifdef MEM_DEMO
+        uart_switch_func(UART_DEFAULT);
         uart_send_string("Merge Page addr, addr, size ");
         uart_send_u64((uint64_t)addr);
         uart_send_string(", ");
@@ -262,6 +268,7 @@ void _merge_page(void *addr, uint8_t cur_order, struct mem_region *region) {
         uart_send_string(", ");
         uart_send_u64((1LL << (cur_order + PAGE_SIZE_ORDER)));
         uart_send_string("\r\n");
+        uart_switch_func(UART_ASYNC);
         #endif
         ds_list_remove(&(region->entries[ano_idx].head));
         // happen when addr is left
@@ -276,11 +283,12 @@ void _merge_page(void *addr, uint8_t cur_order, struct mem_region *region) {
         region->entries[idx].flag = cur_order;
         region->entries[idx].order = cur_order;
         ds_list_head_init(&(region->entries[idx].head));
-        ds_list_addnext(&frame_list[cur_order], &(region->entries[idx].head));
+        ds_list_addprev(&frame_list[cur_order], &(region->entries[idx].head));
     }
 }
 
 void page_free(void *addr) {
+
     struct mem_region *region;
     for(struct ds_list_head *head = mem_list.next; head != &(mem_list); head = head->next) {
         region = container_of(head, struct mem_region, head);
@@ -289,6 +297,7 @@ void page_free(void *addr) {
         }
     }
     uint32_t idx = addr2idx((uint64_t)addr, region->begin_addr);
+
     _merge_page(addr, region->entries[idx].order, region);
 }
 void memory_reserve(uint64_t start, uint64_t end) {

@@ -44,7 +44,7 @@ struct k_event* k_event_front() {
     int flag = interrupt_disable_save();
     struct k_event *ke;
     if(event_queue.heap.size == 0) {
-        ke == NULL;
+        ke = NULL;
         goto ret;
     }
     ke = ds_heap_front(&(event_queue.heap));
@@ -75,7 +75,6 @@ void event_queue_handle() {
             return;
         }
         if(event->preempt == 3) return;
-        // uart_send_dec(event->pri);
 
         event->preempt = 3;
         event->cb(event->ptr, event->ptr_len);
@@ -84,5 +83,7 @@ void event_queue_handle() {
         if(irqhandler_cnt_get() == 0) {
             event_queue.cur_max_event_pri = -0x7fffffffffffffff;
         }
+        counter += 1;
+
     }
 }

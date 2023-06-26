@@ -9,7 +9,7 @@
 
 #define PAGE_SIZE_ORDER (12)
 #define PAGE_SIZE  (1 << PAGE_SIZE_ORDER)
-#define PAGE_MAX_ORDER (10)
+#define PAGE_MAX_ORDER (20)
 
 #define PAGE_CONTAINED (255)
 #define PAGE_ALLOCATED (254)
@@ -19,8 +19,9 @@ struct frame_entry {
     uint32_t idx;
     uint8_t order;
     int8_t flag;
+    uint8_t used_cnt;
+    uint8_t dyn_ord;
     uint32_t dyn_count;
-    uint64_t dyn_ord;
     struct mem_region *mem_region;
     struct ds_list_head head;
     struct ds_list_head chunk_head;
