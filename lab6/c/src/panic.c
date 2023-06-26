@@ -15,6 +15,8 @@ void panic_begin(const char *const restrict file, const int line,
 
   va_end(ap);
 
+  console_flush_write_buffer();
+
   // Park the core.
   for (;;) {
     __asm__ __volatile__("wfe");

@@ -135,6 +135,9 @@ bool console_notify_read_ready(void (*callback)(void *), void *arg);
 ///         been called.
 bool console_notify_write_ready(void (*callback)(void *), void *arg);
 
+/// \brief Waits until all buffered characters are sent to the serial console.
+void console_flush_write_buffer(void);
+
 /// \brief Interrupt handler. Not meant to be called directly.
 void mini_uart_interrupt_handler(void);
 

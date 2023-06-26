@@ -366,6 +366,22 @@ bool console_notify_write_ready(void (*const callback)(void *),
   return true;
 }
 
+void console_flush_write_buffer(void) {
+  bool suspend_cond_val = true;
+  uint64_t daif_val;
+
+  while (suspend_cond_val) {
+    CRITICAL_SECTION_ENTER(daif_val);
+
+    if ((suspend_cond_val = _console_write_buf_len > 0)) {
+      __asm__ __volatile__("wfi");
+      _console_send_from_buf();
+    }
+
+    CRITICAL_SECTION_LEAVE(daif_val);
+  }
+}
+
 void mini_uart_interrupt_handler(void) {
   _console_recv_to_buf();
   _console_send_from_buf();
