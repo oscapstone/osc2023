@@ -7,8 +7,9 @@ Memory map: (End addresses are exclusive)
 0x3b400000 (948M) - 0x3c000000 (960M): (QEMU only) Kernel heap
 */
 
-_skernel = 0x80000;
-_max_ekernel = 0x3ac00000;
+_kernel_vm_base = 0xffff000000000000;
+_skernel = _kernel_vm_base + 0x80000;
+_max_ekernel = _kernel_vm_base + 0x3ac00000;
 
 MEMORY
 {
@@ -18,7 +19,7 @@ MEMORY
 /* Must be 16-byte aligned.
    The highest address the ARM core can use. Total system SDRAM is 1G. Top 76M
    (or 64M if on QEMU) are reserved for VideoCore. */
-_estack = 1024M - 76M;
+_estack = _kernel_vm_base + (1024M - 76M);
 _sstack = _estack - 8M;
 
 ENTRY(_start)

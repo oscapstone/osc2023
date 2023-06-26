@@ -10,6 +10,7 @@
 #include "oscos/mem/malloc.h"
 #include "oscos/mem/page-alloc.h"
 #include "oscos/mem/startup-alloc.h"
+#include "oscos/mem/vm/kernel-page-tables.h"
 #include "oscos/panic.h"
 #include "oscos/sched.h"
 #include "oscos/shell.h"
@@ -49,6 +50,7 @@ void main(const void *const dtb_start) {
   // Initialize the memory allocators.
   page_alloc_init();
   malloc_init();
+  vm_setup_finer_granularity_linear_mapping();
 
   // Initialize miscellaneous subsystems.
   mailbox_init();

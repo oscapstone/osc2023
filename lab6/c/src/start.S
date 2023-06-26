@@ -1,3 +1,17 @@
+#define TCR_T0SZ_POSN 0
+#define TCR_T0SZ_REGION_48BIT ((64 - 48) << TCR_T0SZ_POSN)
+#define TCR_TG0_POSN 14
+#define TCR_TG0_4KB (0b00 << TCR_TG0_POSN)
+#define TCR_T1SZ_POSN 16
+#define TCR_T1SZ_REGION_48BIT ((64 - 48) << TCR_T1SZ_POSN)
+#define TCR_TG1_POSN 30
+#define TCR_TG1_4KB (0b10 << TCR_TG1_POSN)
+
+#define MAIR_DEVICE_nGnRnE 0b00000000
+#define MAIR_NORMAL_NOCACHE 0b01000100
+#define MAIR_IX_DEVICE_nGnRnE 0
+#define MAIR_IX_NORMAL_NOCACHE 1
+
 .section ".text._start"
 
 _start:
@@ -25,6 +39,41 @@ _start:
     eret
 
 .Lin_el1:
+    // Setup virtual memory.
+
+    ldr x1, \
+        =(TCR_T0SZ_REGION_48BIT | TCR_TG0_4KB | TCR_T1SZ_REGION_48BIT \
+            | TCR_TG1_4KB)
+    msr tcr_el1, x1
+
+    ldr x1, \
+        =((MAIR_DEVICE_nGnRnE << (MAIR_IX_DEVICE_nGnRnE * 8)) \
+            | (MAIR_NORMAL_NOCACHE << (MAIR_IX_NORMAL_NOCACHE * 8)))
+    msr mair_el1, x1
+
+    ldr x1, =kernel_pgd
+    ldr x2, =_kernel_vm_base
+    sub x1, x1, x2
+
+    ldr x3, [x1]
+    ldr x4, =kernel_pud
+    sub x4, x4, x2
+    orr x3, x3, x4
+    str x3, [x1]
+
+    msr ttbr0_el1, x1
+    msr ttbr1_el1, x1
+
+    mrs x1, sctlr_el1
+    orr x1, x1, 1
+    msr sctlr_el1, x1
+
+    ldr x1, =.Lstart_after_mmu
+    br x1
+
+.Lstart_after_mmu:
+    // Make the devicetree address virtual.
+    add x0, x0, x2
 
     // Enable FP/SIMD.
     mov x1, 0x300000

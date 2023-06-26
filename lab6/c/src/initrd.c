@@ -1,6 +1,7 @@
 #include "oscos/initrd.h"
 
 #include "oscos/devicetree.h"
+#include "oscos/mem/vm.h"
 
 static const void *_initrd_start, *_initrd_end;
 
@@ -57,12 +58,12 @@ static control_flow_t _initrd_init_dtb_traverse_callback(
       if (FDT_TOKEN(item) == FDT_PROP) {
         const fdt_prop_t *const prop = (const fdt_prop_t *)item->payload;
         if (strcmp(FDT_PROP_NAME(prop), "linux,initrd-start") == 0) {
-          const uint32_t adr = rev_u32(*(const uint32_t *)FDT_PROP_VALUE(prop));
-          _initrd_start = (const void *)(uintptr_t)adr;
+          const uint32_t pa = rev_u32(*(const uint32_t *)FDT_PROP_VALUE(prop));
+          _initrd_start = pa_to_kernel_va(pa);
           arg->start_done = true;
         } else if (strcmp(FDT_PROP_NAME(prop), "linux,initrd-end") == 0) {
-          const uint32_t adr = rev_u32(*(const uint32_t *)FDT_PROP_VALUE(prop));
-          _initrd_end = (const void *)(uintptr_t)adr;
+          const uint32_t pa = rev_u32(*(const uint32_t *)FDT_PROP_VALUE(prop));
+          _initrd_end = pa_to_kernel_va(pa);
           arg->end_done = true;
         }
 

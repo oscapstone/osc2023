@@ -25,6 +25,7 @@ OBJS      = start main console devicetree initrd panic shell \
             drivers/aux drivers/gpio drivers/l1ic drivers/l2ic drivers/mailbox \
             drivers/mini-uart drivers/pm \
             mem/malloc mem/page-alloc mem/startup-alloc mem/types mem/vm \
+            mem/vm/kernel-page-tables \
             sched/idle-thread sched/periodic-sched sched/run-signal-handler \
             sched/sched sched/schedule sched/sig-handler-main \
             sched/thread-main sched/user-program-main \
