@@ -13,7 +13,9 @@ void el0_sync_handler(trapframe *regs, uint32 syn){
         case EC_SVC_64:
             syscall_handler(regs);
             break;
+        // instruction abort
         case EC_IA_LE:
+        // data abort
         case EC_DA_LE:
             mem_abort(esr);
             break;

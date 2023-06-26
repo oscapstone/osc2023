@@ -15,6 +15,11 @@
     asm volatile("msr DAIFSet, 0xf"); \
 }
 
+
+// ttbr0_el1 only uses the lower 48 bits of register
+// dsb: data synchronization barrier
+// ttbr0_el1: holds the base address of the translation table for stage 1 memory management for exception level1
+// tlbi vmalle1is: This invalidates all entries in the TLB corresponding to the current value of TTBR0_EL1.
 #define set_page_table(page_table) do {               \
     asm volatile(                               \
         "mov x9, %0\n"                          \

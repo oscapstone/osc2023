@@ -9,6 +9,7 @@
 #include <current.h>
 #include <mm.h>
 
+// translation control register
 #define TCR_CONFIG_REGION_48bit (((64 - 48) << 0) | ((64 - 48) << 16))
 #define TCR_CONFIG_4KB          ((0b00 << 14) |  (0b10 << 30))
 #define TCR_CONFIG_DEFAULT      (TCR_CONFIG_REGION_48bit | TCR_CONFIG_4KB)
@@ -22,7 +23,10 @@
 #define PD_BLOCK    0b01
 #define PD_ACCESS       (1 << 10)
 #define PD_PXN          ((uint64)1 << 53)
+// none secure
 #define PD_NSTABLE      ((uint64)1 << 63)
+
+// unprivileged access will never execute the code
 #define PD_UXNTABLE     ((uint64)1 << 60)
 #define PD_MAIR_DEVICE_IDX (MAIR_IDX_DEVICE_nGnRnE << 2)
 #define PD_MAIR_NORMAL_IDX (MAIR_IDX_NORMAL_NOCACHE << 2)
@@ -135,7 +139,7 @@ static void free_uva_region(uint64 uva_begin, uint64 uva_end)
     for (uint64 addr = uva_begin; addr < uva_end; addr += PAGE_SIZE) {
         uint64 par;
 
-        // try to get the PA of UVA
+        // try to get the PA of UVA, address translation, stage1, el0 read translation of a virtual address
         asm volatile (
             "at s1e0r, %0"
             :: "r" (addr)
@@ -208,6 +212,7 @@ void mmu_init(void)
         BOOT_PMD[i] = (i * (1 << 21)) | PD_MAIR_NORMAL_IDX | PD_BE;
     }
 
+    // 0x3F000000 to 0x3FFFFFFF for peripherals
     for (int i = 504; i < 512; ++i) {
         BOOT_PMD[i] = (i * (1 << 21)) | PD_MAIR_DEVICE_IDX | PD_BE;
     }
@@ -215,7 +220,7 @@ void mmu_init(void)
     write_sysreg(TTBR0_EL1, BOOT_PGD);
     write_sysreg(TTBR1_EL1, BOOT_PGD);
 
-    // Enable MMU
+    // Enable MMU, sctlr: system control register
     sctlr_el1 = read_sysreg(SCTLR_EL1);
     write_sysreg(SCTLR_EL1, sctlr_el1 | 1);
 }
@@ -398,7 +403,7 @@ static void do_page_fault(esr_el1_t *esr)
     uint64 va;
     uint64 fault_perm;
     vm_area_t *vma;
-
+    // fault address register
     far = read_sysreg(FAR_EL1);
 
     vma = vma_find(current->address_space, far);

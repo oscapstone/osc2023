@@ -34,7 +34,8 @@ typedef struct{
     struct list_head vma;
 } vm_area_meta_t;
 
-#define PROT_NOTE   0
+// the file is not accessible
+#define PROT_NONE   0
 #define PROT_READ   1
 #define PROT_WRITE  2
 #define PROT_EXEC   4

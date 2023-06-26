@@ -59,8 +59,8 @@ void syscall_handler(trapframe *regs)
 
     syscall_num = regs->x8;
 
-    // if(syscall_num > 2)
-    //     uart_sync_printf("syscall number:%d\n", syscall_num);
+    if(syscall_num != 2)
+        uart_sync_printf("syscall number:%d\n", syscall_num);
 
     if (syscall_num >= ARRAY_SIZE(syscall_table)) {
         // Invalid syscall

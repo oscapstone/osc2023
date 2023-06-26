@@ -7,16 +7,20 @@
 
 /* ==== ESR_EL1 related ==== */
 #define EC_SVC_64       0x15
+// instruction abort
 #define EC_IA_LE        0x20
+// data abort
 #define EC_DA_LE        0x24
 
 #define ISS_FSC(esr) (esr->iss & 0x3f)
 
+// Translation faults
 #define FSC_TF_L0       0b000100
 #define FSC_TF_L1       0b000101
 #define FSC_TF_L2       0b000110
 #define FSC_TF_L3       0b000111
 
+// write abort
 #define ISS_WnR(esr) (esr->iss & 0x40)
 
 typedef struct{
