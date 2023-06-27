@@ -7,7 +7,7 @@ CC      = aarch64-linux-gnu-gcc
 CPP     = aarch64-linux-gnu-cpp
 OBJCOPY = aarch64-linux-gnu-objcopy
 
-CPPFLAGS_BASE = -Iinclude
+CPPFLAGS_BASE = -Iinclude -DVM_ENABLE_DEBUG_LOG
 
 ASFLAGS_DEBUG = -g
 
@@ -24,13 +24,15 @@ LDLIBS_BASE = -lgcc
 OBJS      = start main console devicetree initrd panic shell \
             drivers/aux drivers/gpio drivers/l1ic drivers/l2ic drivers/mailbox \
             drivers/mini-uart drivers/pm \
-            mem/malloc mem/page-alloc mem/startup-alloc mem/types mem/vm \
+            mem/malloc mem/page-alloc mem/shared-page mem/startup-alloc mem/vm \
             mem/vm/kernel-page-tables \
             sched/idle-thread sched/periodic-sched sched/run-signal-handler \
             sched/sched sched/schedule sched/sig-handler-main \
             sched/thread-main sched/user-program-main \
             timer/delay timer/timeout \
-            xcpt/default-handler xcpt/irq-handler xcpt/svc-handler \
+            xcpt/data-abort-handler xcpt/default-handler \
+            xcpt/insn-abort-handler xcpt/irq-handler xcpt/load-aapcs-and-eret \
+            xcpt/svc-handler \
             xcpt/syscall-table xcpt/task-queue xcpt/vector-table xcpt/xcpt \
             xcpt/syscall/enosys xcpt/syscall/getpid xcpt/syscall/uart-read \
             xcpt/syscall/uart-write xcpt/syscall/exec xcpt/syscall/fork \

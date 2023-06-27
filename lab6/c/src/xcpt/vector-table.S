@@ -35,7 +35,40 @@ xcpt_vector_table:
     // Exception from the current EL while using SP_ELx.
 
     // Synchronous.
-    default_vt_entry 0x4 xcpt_sync_curr_el_sp_elx_handler
+xcpt_sync_curr_el_sp_elx_handler:
+    save_aapcs
+
+    // Check if the exception is caused by an instruction abort without a change
+    // in exception level.
+    mrs x0, esr_el1
+    ubfx x1, x0, 26, 6
+    cmp x1, 0x21
+    b.ne .Lxcpt_sync_curr_el_sp_elx_handler_not_insn_abort
+
+    bl xcpt_insn_abort_handler
+    b .Lxcpt_sync_curr_el_sp_elx_handler_end
+
+.Lxcpt_sync_curr_el_sp_elx_handler_not_insn_abort:
+    // Check if the exception is caused by a data abort without a change in
+    // exception level.
+    cmp x1, 0x25
+    b.ne .Lxcpt_sync_curr_el_sp_elx_handler_not_data_abort
+
+    bl xcpt_data_abort_handler
+    b .Lxcpt_sync_curr_el_sp_elx_handler_end
+
+.Lxcpt_sync_curr_el_sp_elx_handler_not_data_abort:
+    mov x0, 0x4
+    bl xcpt_default_handler
+
+.Lxcpt_sync_curr_el_sp_elx_handler_end:
+    // We have to split the handler, since it uses more than 32 instructions.
+    b load_aapcs_and_eret
+
+.type xcpt_sync_curr_el_sp_elx_handler, function
+.size xcpt_sync_curr_el_sp_elx_handler, . - xcpt_sync_curr_el_sp_elx_handler
+
+.align 7
 
     // IRQ.
 xcpt_irq_curr_el_sp_elx_handler:
@@ -74,13 +107,34 @@ xcpt_sync_lower_el_aarch64_handler:
 
 .Lxcpt_sync_lower_el_aarch64_handler_not_svc:
     // The exception is not caused by svc.
+
+    // Check if the exception is caused by an instruction abort from a lower
+    // exception level.
+    cmp x10, 0x20
+    b.ne .Lxcpt_sync_lower_el_aarch64_handler_not_insn_abort
+
+    mov x0, x9
+    bl xcpt_insn_abort_handler
+    b .Lxcpt_sync_lower_el_aarch64_handler_end
+
+.Lxcpt_sync_lower_el_aarch64_handler_not_insn_abort:
+    // Check if the exception is caused by an data abort from a lower exception
+    // level.
+    cmp x10, 0x24
+    b.ne .Lxcpt_sync_lower_el_aarch64_handler_not_data_abort
+
+    mov x0, x9
+    bl xcpt_data_abort_handler
+    b .Lxcpt_sync_lower_el_aarch64_handler_end
+
+.Lxcpt_sync_lower_el_aarch64_handler_not_data_abort:
     mov x0, 0x8
     bl xcpt_default_handler
 
 .Lxcpt_sync_lower_el_aarch64_handler_end:
     bl handle_signals
-    load_aapcs
-    eret
+    // We have to split the handler, since it uses more than 32 instructions.
+    b load_aapcs_and_eret
 
 .type xcpt_sync_lower_el_aarch64_handler, function
 .size xcpt_sync_lower_el_aarch64_handler, . - xcpt_sync_lower_el_aarch64_handler

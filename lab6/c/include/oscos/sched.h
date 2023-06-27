@@ -8,6 +8,7 @@
 #include <stdnoreturn.h>
 
 #include "oscos/mem/types.h"
+#include "oscos/mem/vm.h"
 #include "oscos/uapi/signal.h"
 #include "oscos/xcpt/trap-frame.h"
 
@@ -53,20 +54,9 @@ typedef struct {
   struct process_t *process;
 } thread_t;
 
-typedef struct page_id_list_node_t {
-  page_id_t page_id;
-  struct page_id_list_node_t *next;
-} page_id_list_node_t;
-
 typedef struct process_t {
   size_t id;
-  shared_page_t *text_page;
-#ifdef SCHED_ENABLE_SHARED_USER_STACK
-  shared_page_t *user_stack_page;
-#else
-  page_id_t user_stack_page_id;
-#endif
-  page_id_list_node_t *signal_stack_pages;
+  vm_addr_space_t addr_space;
   thread_t *main_thread;
   uint32_t pending_signals, blocked_signals;
   sighandler_t signal_handlers[32];

@@ -6,6 +6,7 @@
 #include "oscos/mem/malloc.h"
 #include "oscos/mem/page-alloc.h"
 #include "oscos/mem/vm.h"
+#include "oscos/utils/align.h"
 #include "oscos/utils/critical-section.h"
 #include "oscos/utils/math.h"
 #include "oscos/utils/rb.h"
@@ -22,7 +23,7 @@ void thread_main(void);
 noreturn void user_program_main(const void *init_pc, const void *init_user_sp,
                                 const void *init_kernel_sp);
 noreturn void fork_child_ret(void);
-void run_signal_handler(sighandler_t handler, void *init_user_sp);
+void run_signal_handler(sighandler_t handler);
 
 static size_t _sched_next_tid = 1, _sched_next_pid = 1;
 static thread_list_node_t _run_queue = {.prev = &_run_queue,
@@ -47,20 +48,6 @@ static int _cmp_pid_and_processes_by_pid(const size_t *const pid,
 
   const size_t pid1 = *pid, pid2 = (*process)->id;
   return pid1 < pid2 ? -1 : pid1 > pid2 ? 1 : 0;
-}
-
-static size_t _calc_text_block_order(const size_t text_len) {
-  const size_t text_n_pages =
-      (text_len + ((1 << PAGE_ORDER) - 1)) >> PAGE_ORDER;
-  const size_t actual_text_block_order = clog2(text_n_pages);
-
-  // We don't know exactly how large the .bss section of a user program is, so
-  // we have to use a heuristic. We speculate that the .bss section is at most
-  // as large as the remaining parts (.text, .rodata, and .data sections) of the
-  // user program.
-  const size_t allocating_text_block_order = actual_text_block_order + 1;
-
-  return allocating_text_block_order;
 }
 
 static size_t _alloc_tid(void) {
@@ -228,29 +215,16 @@ bool process_create(void) {
   if (!process) // Out of memory.
     return false;
 
-  const spage_id_t user_stack_page_id = alloc_pages(USER_STACK_BLOCK_ORDER);
-  if (user_stack_page_id < 0) { // Out of memory.
-    free(process);
-    return false;
-  }
-
-#ifdef SCHED_ENABLE_SHARED_USER_STACK
-  shared_page_t *const user_stack_page = shared_page_init(user_stack_page_id);
-  if (!user_stack_page) {
-    free_pages(user_stack_page_id);
-    free(process);
-    return false;
-  }
-#endif
-
   thread_fp_simd_ctx_t *const fp_simd_ctx =
       malloc(sizeof(thread_fp_simd_ctx_t));
   if (!fp_simd_ctx) {
-#ifdef SCHED_ENABLE_SHARED_USER_STACK
-    shared_page_drop(user_stack_page);
-#else
-    free_pages(user_stack_page_id);
-#endif
+    free(process);
+    return false;
+  }
+
+  page_table_entry_t *const pgd = vm_new_pgd();
+  if (!pgd) {
+    free(fp_simd_ctx);
     free(process);
     return false;
   }
@@ -260,12 +234,18 @@ bool process_create(void) {
   thread_t *const curr_thread = current_thread();
 
   process->id = _alloc_pid();
-#ifdef SCHED_ENABLE_SHARED_USER_STACK
-  process->user_stack_page = user_stack_page;
-#else
-  process->user_stack_page_id = user_stack_page_id;
-#endif
-  process->signal_stack_pages = NULL;
+  process->addr_space.stack_region =
+      (mem_region_t){.start = (void *)0xffffffffb000ULL,
+                     .len = 4 << PAGE_ORDER,
+                     .type = MEM_REGION_BACKED,
+                     .backing_storage_start = NULL,
+                     .backing_storage_len = 0};
+  process->addr_space.vc_region =
+      (mem_region_t){.start = (void *)0x3b400000ULL,
+                     .len = 0x3f000000ULL - 0x3b400000ULL,
+                     .type = MEM_REGION_LINEAR,
+                     .backing_storage_start = (void *)0x3b400000ULL};
+  process->addr_space.pgd = pgd;
   process->main_thread = curr_thread;
   process->pending_signals = 0;
   process->blocked_signals = 0;
@@ -274,11 +254,6 @@ bool process_create(void) {
   }
   curr_thread->process = process;
   curr_thread->ctx.fp_simd_ctx = fp_simd_ctx;
-
-  // Zero the stack pages.
-
-  void *user_stack_start = pa_to_kernel_va(page_id_to_pa(user_stack_page_id));
-  memset(user_stack_start, 0, 1 << USER_STACK_ORDER);
 
   // Add the process to the process BST.
 
@@ -294,83 +269,55 @@ bool process_create(void) {
   return true;
 }
 
+void switch_vm(const thread_t *const thread) {
+  if (thread->process) {
+    vm_switch_to_addr_space(&thread->process->addr_space);
+  }
+}
+
 static void _exec_generic(const void *const text_start, const size_t text_len,
-                          const bool free_text_page) {
+                          const bool free_old_pages) {
   thread_t *const curr_thread = current_thread();
   process_t *const curr_process = curr_thread->process;
 
   // Allocate memory.
 
-  const size_t text_block_order = _calc_text_block_order(text_len);
-  const spage_id_t text_page_id = alloc_pages(text_block_order);
-  if (text_page_id < 0) {
-    return;
+  page_table_entry_t *pgd = NULL;
+  if (free_old_pages) {
+    pgd = vm_new_pgd();
+    if (!pgd)
+      return;
   }
-
-  shared_page_t *const text_page = shared_page_init(text_page_id);
-  if (!text_page) {
-    free_pages(text_page_id);
-    return;
-  }
-
-  const spage_id_t user_stack_page_id = alloc_pages(USER_STACK_BLOCK_ORDER);
-  if (user_stack_page_id < 0) {
-    shared_page_drop(text_page);
-    return;
-  }
-
-#ifdef SCHED_ENABLE_SHARED_USER_STACK
-  shared_page_t *const user_stack_page = shared_page_init(user_stack_page_id);
-  if (!user_stack_page) {
-    free_pages(user_stack_page_id);
-    shared_page_drop(text_page);
-    return;
-  }
-#endif
 
   // Free old pages.
 
-  if (free_text_page) {
-    shared_page_drop(curr_process->text_page);
+  if (free_old_pages) {
+    vm_drop_pgd(curr_process->addr_space.pgd);
   }
-
-#ifdef SCHED_ENABLE_SHARED_USER_STACK
-  shared_page_drop(curr_process->user_stack_page);
-#else
-  free_pages(curr_process->user_stack_page_id);
-#endif
 
   // Set process data.
 
-  curr_process->text_page = text_page;
-#ifdef SCHED_ENABLE_SHARED_USER_STACK
-  curr_process->user_stack_page = user_stack_page;
-#else
-  curr_process->user_stack_page_id = user_stack_page_id;
-#endif
-
-  // Copy the user program.
-
-  void *const user_program_start = pa_to_kernel_va(page_id_to_pa(text_page_id));
-  memcpy(user_program_start, text_start, text_len);
-
-  // Zero the remaining spaces of the text pages.
-  memset((char *)user_program_start + text_len, 0,
-         (1 << (text_block_order + PAGE_ORDER)) - text_len);
-
-  // Zero the stack pages.
-
-  void *user_stack_start = pa_to_kernel_va(page_id_to_pa(user_stack_page_id));
-  memset(user_stack_start, 0, 1 << USER_STACK_ORDER);
+  if (free_old_pages) {
+    curr_process->addr_space.pgd = pgd;
+  }
+  // We don't know exactly how large the .bss section of a user program is, so
+  // we have to use a heuristic. We speculate that the .bss section is at most
+  // as large as the remaining parts (.text, .rodata, and .data sections) of the
+  // user program.
+  curr_process->addr_space.text_region =
+      (mem_region_t){.start = (void *)0x0,
+                     .len = ALIGN(text_len * 2, 4096),
+                     .type = MEM_REGION_BACKED,
+                     .backing_storage_start = text_start,
+                     .backing_storage_len = text_len};
 
   // Run the user program.
 
-  void *const user_stack_end =
-                  (char *)user_stack_start + (1 << USER_STACK_ORDER),
-              *const kernel_stack_end = (char *)pa_to_kernel_va(page_id_to_pa(
-                                            curr_thread->stack_page_id)) +
-                                        (1 << THREAD_STACK_ORDER);
-  user_program_main(user_program_start, user_stack_end, kernel_stack_end);
+  void *const kernel_stack_end =
+      (char *)pa_to_kernel_va(page_id_to_pa(curr_thread->stack_page_id)) +
+      (1 << THREAD_STACK_ORDER);
+  switch_vm(curr_thread);
+  user_program_main((void *)0x0, (void *)0xfffffffff000ULL, kernel_stack_end);
 }
 
 void exec_first(const void *const text_start, const size_t text_len) {
@@ -383,20 +330,7 @@ void exec(const void *const text_start, const size_t text_len) {
 
 static void _thread_cleanup(thread_t *const thread) {
   if (thread->process) {
-    shared_page_drop(thread->process->text_page);
-#ifdef SCHED_ENABLE_SHARED_USER_STACK
-    shared_page_drop(thread->process->user_stack_page);
-#else
-    free_pages(thread->process->user_stack_page_id);
-#endif
-
-    page_id_list_node_t *curr_node = thread->process->signal_stack_pages;
-    while (curr_node) {
-      page_id_list_node_t *const next_node = curr_node->next;
-      free(curr_node);
-      curr_node = next_node;
-    }
-
+    vm_drop_pgd(thread->process->addr_space.pgd);
     free(thread->process);
   }
   free_pages(thread->stack_page_id);
@@ -435,17 +369,6 @@ process_t *fork(const extended_trap_frame_t *const trap_frame) {
     return NULL;
   }
 
-#ifndef SCHED_ENABLE_SHARED_USER_STACK
-  const spage_id_t user_stack_page_id = alloc_pages(USER_STACK_BLOCK_ORDER);
-  if (user_stack_page_id < 0) {
-    free(fp_simd_ctx);
-    free_pages(kernel_stack_page_id);
-    free(new_process);
-    free(new_thread);
-    return NULL;
-  }
-#endif
-
   // Set data.
 
   new_thread->id = _alloc_tid();
@@ -457,14 +380,9 @@ process_t *fork(const extended_trap_frame_t *const trap_frame) {
   new_thread->process = new_process;
 
   new_process->id = _alloc_pid();
-  new_process->text_page = shared_page_clone(curr_process->text_page);
-#ifdef SCHED_ENABLE_SHARED_USER_STACK
-  new_process->user_stack_page =
-      shared_page_clone(curr_process->user_stack_page);
-#else
-  new_process->user_stack_page_id = user_stack_page_id;
-#endif
-  new_process->signal_stack_pages = NULL;
+  vm_clone_pgd(curr_process->addr_space.pgd);
+  vm_switch_to_addr_space(&curr_process->addr_space);
+  new_process->addr_space = curr_process->addr_space;
   new_process->main_thread = new_thread;
   new_process->pending_signals = 0;
   new_process->blocked_signals = 0;
@@ -487,21 +405,6 @@ process_t *fork(const extended_trap_frame_t *const trap_frame) {
          sizeof(thread_fp_simd_ctx_t));
 
   memcpy(init_kernel_sp, trap_frame, sizeof(extended_trap_frame_t));
-
-#ifndef SCHED_ENABLE_SHARED_USER_STACK
-  // Setup the user stack.
-
-  void *const old_user_stack_start = pa_to_kernel_va(
-                  page_id_to_pa(curr_process->user_stack_page_id)),
-              *const user_stack_start =
-                  pa_to_kernel_va(page_id_to_pa(user_stack_page_id)),
-              *const new_sp =
-                  (char *)user_stack_start + ((char *)curr_thread->ctx.user_sp -
-                                              (char *)old_user_stack_start);
-
-  memcpy(user_stack_start, old_user_stack_start, 1 << USER_STACK_ORDER);
-  new_thread->ctx.user_sp = (uint64_t)new_sp;
-#endif
 
   // Add the new thread to the end of the run queue and the process to the
   // process BST. Note that these two steps can be done in either order but must
@@ -714,23 +617,9 @@ void handle_signals(void) {
   __asm__ __volatile__("mrs %0, spsr_el1" : "=r"(spsr_val));
   __asm__ __volatile__("mrs %0, elr_el1" : "=r"(elr_val));
 
-  // Save the old user SP, since the signal handlers will run in a new user
-  // stack.
-
-  uint64_t old_user_sp;
-  __asm__ __volatile__("mrs %0, sp_el0" : "=r"(old_user_sp));
-
   // Save the status bit in order to support nested signal handling.
 
   const bool is_handling_signal = curr_thread->status.is_handling_signal;
-
-  // The user stack is allocated lazily.
-
-  bool user_stack_allocation_attempted = false;
-  spage_id_t user_stack_page_id;
-  page_id_list_node_t *const curr_signal_stack_pages_node =
-                                 curr_process->signal_stack_pages,
-                             *new_signal_stack_pages_node;
 
   uint32_t deferred_signals = 0;
   for (uint32_t handleable_signals;
@@ -758,69 +647,23 @@ void handle_signals(void) {
     } else if (handler == SIG_IGN) {
       curr_process->pending_signals &= ~(1 << signal);
     } else {
-      // Allocate user stack.
+      // Run the signal handler.
 
-      if (!user_stack_allocation_attempted) {
-        user_stack_allocation_attempted = true;
-        user_stack_page_id = alloc_pages(USER_STACK_BLOCK_ORDER);
+      curr_thread->status.is_handling_signal = true;
+      curr_process->blocked_signals |= 1 << signal;
 
-        if (user_stack_page_id >= 0) {
-          new_signal_stack_pages_node = malloc(sizeof(page_id_list_node_t));
-          if (new_signal_stack_pages_node) {
-            new_signal_stack_pages_node->page_id = user_stack_page_id;
-            new_signal_stack_pages_node->next = curr_signal_stack_pages_node;
-            curr_process->signal_stack_pages = new_signal_stack_pages_node;
-          } else {
-            free_pages(user_stack_page_id);
-            user_stack_page_id = -1;
-          }
-        }
-      }
+      run_signal_handler(handler);
 
-      if (user_stack_page_id >= 0) {
-        void *const user_stack_start =
-                        pa_to_kernel_va(page_id_to_pa(user_stack_page_id)),
-                    *const user_stack_end =
-                        (char *)user_stack_start + (1 << USER_STACK_ORDER);
-
-        // Zero the user stack.
-
-        memset(user_stack_start, 0, 1 << USER_STACK_ORDER);
-
-        // Run the signal handler.
-
-        curr_thread->status.is_handling_signal = true;
-        curr_process->blocked_signals |= 1 << signal;
-
-        run_signal_handler(handler, user_stack_end);
-
-        curr_thread->status.is_handling_signal = false;
-        curr_process->pending_signals &= ~(1 << signal);
-        curr_process->blocked_signals &= ~(1 << signal);
-      } else {
-        // Defer the handling of this signal. Hopefully, there will be enough
-        // memory to run the signal handler in the future.
-        deferred_signals |= 1 << signal;
-      }
+      curr_thread->status.is_handling_signal = false;
+      curr_process->pending_signals &= ~(1 << signal);
+      curr_process->blocked_signals &= ~(1 << signal);
     }
-  }
-
-  // Destroy the user stack.
-
-  if (user_stack_allocation_attempted && user_stack_page_id >= 0) {
-    free_pages(user_stack_page_id);
-    curr_process->signal_stack_pages = curr_signal_stack_pages_node;
-    free(new_signal_stack_pages_node);
   }
 
   // Restore spsr_el1 and elr_el1.
 
   __asm__ __volatile__("msr spsr_el1, %0" : : "r"(spsr_val));
   __asm__ __volatile__("msr elr_el1, %0" : : "r"(elr_val));
-
-  // Restore the user SP.
-
-  __asm__ __volatile__("msr sp_el0, %0" : : "r"(old_user_sp));
 
   // Restore the status bit.
 

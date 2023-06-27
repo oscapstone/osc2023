@@ -59,6 +59,10 @@ _suspend_to_wait_queue:
 .global _suspend_to_wait_queue
 
 _sched_run_thread:
+    mov x19, x0
+    bl switch_vm
+    mov x0, x19
+
     // Restore integer context.
 
     ldp x19, x20, [x0, 16 + 0 * 16]

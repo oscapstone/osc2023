@@ -1,16 +1,10 @@
 #!/bin/sh -e
 
-if [ -e rootfs ]; then
-    rm -r rootfs
-fi
-
-progs='syscall_test'
+rm -rf rootfs
 
 mkdir rootfs
-for prog in $progs; do
-    make -C "user-program/$prog" PROFILE=RELEASE
-    cp "user-program/$prog/build/RELEASE/$prog.img" "rootfs/$prog"
-done
+wget https://oscapstone.github.io/_downloads/4a3ff2431ab7fa74536c184270dbe5c0/vm.img \
+    -O rootfs/vm.img
 
 cd rootfs
 find . -mindepth 1 | cpio -o -H newc > ../initramfs.cpio

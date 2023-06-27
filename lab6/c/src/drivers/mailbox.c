@@ -3,8 +3,13 @@
 #include <stdalign.h>
 
 #include "oscos/drivers/board.h"
+#include "oscos/mem/vm.h"
+#include "oscos/sched.h"
 
 #define MAILBOX_REG_BASE ((void *)((char *)PERIPHERAL_BASE + 0xb880))
+
+// Symbols defined in the linker script.
+extern char _kernel_vm_base[];
 
 typedef struct {
   volatile uint32_t read_write;
@@ -35,7 +40,12 @@ void mailbox_init(void) {
 void mailbox_call(uint32_t message[], const unsigned char channel) {
   PERIPHERAL_WRITE_BARRIER();
 
-  const uint32_t mailbox_write_data = (uint32_t)(uintptr_t)message | channel;
+  const pa_t message_pa =
+      (char *)message >= _kernel_vm_base
+          ? kernel_va_to_pa(message)
+          : vm_translate_addr(current_thread()->process->addr_space.pgd,
+                              message);
+  const uint32_t mailbox_write_data = message_pa | channel;
 
   while (MAILBOX_REGS[1].status & MAILBOX_STATUS_FULL_MASK)
     ;

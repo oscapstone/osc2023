@@ -43,8 +43,6 @@ run_signal_handler:
     adr x2, sig_handler_main
     msr elr_el1, x2
 
-    msr sp_el0, x1
-
     // Zero the integer registers except for x0, which is used to pass an
     // argument to sig_handler_main.
 
