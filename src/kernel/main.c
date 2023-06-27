@@ -105,7 +105,7 @@ void kernel_main(char *fdt){
     uart_printf("[*] fdt base: %x\r\n", fdt);
 
     // kthread_create(shell_interact);
-    sched_new_user_prog("/initramfs/vfs1.img");
+    sched_new_user_prog("/initramfs/vfs2.img");
 
     enable_irqs1();
     enable_interrupt();

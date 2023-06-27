@@ -4,19 +4,25 @@
 #include <panic.h>
 #include <uartfs.h>
 #include <framebufferfs.h>
+#include <sdhost.h>
+#include <fat32fs.h>
 
 void fs_early_init(void){
-    struct filesystem *tmpfs, *cpiofs, *uartfs, *fbfs;
+    struct filesystem *tmpfs, *cpiofs, *uartfs, *fbfs, *fat32fs;
 
     vfs_init();
+    sd_init();
+
     tmpfs = tmpfs_init();
     cpiofs = cpiofs_init();
     uartfs = uartfs_init();
     fbfs = framebufferfs_init();
+    fat32fs = fat32fs_init();
     register_filesystem(tmpfs);
     register_filesystem(cpiofs);
     register_filesystem(uartfs);
     register_filesystem(fbfs);
+    register_filesystem(fat32fs);
 
     vfs_init_rootmount(tmpfs);
 
@@ -30,4 +36,7 @@ void fs_early_init(void){
 
     vfs_mkdir("/dev/framebuffer");
     vfs_mount("/dev/framebuffer", "framebufferfs");
+
+    vfs_mkdir("/boot");
+    vfs_mount("/boot", "fat32fs");
 }
