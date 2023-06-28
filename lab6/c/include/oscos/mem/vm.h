@@ -43,6 +43,5 @@ void vm_drop_pgd(page_table_entry_t *pgd);
 vm_map_page_result_t vm_map_page(vm_addr_space_t *addr_space, void *va);
 vm_map_page_result_t vm_cow(vm_addr_space_t *addr_space, void *va);
 void vm_switch_to_addr_space(const vm_addr_space_t *addr_space);
-pa_t vm_translate_addr(const page_table_entry_t *pgd, void *va);
 
 #endif

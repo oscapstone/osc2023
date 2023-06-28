@@ -435,14 +435,3 @@ void vm_switch_to_addr_space(const vm_addr_space_t *const addr_space) {
       : "r"((uint64_t)pgd_pa)
       : "memory");
 }
-
-pa_t vm_translate_addr(const page_table_entry_t *const pgd, void *const va) {
-  const page_table_entry_t *page_table = pgd;
-  for (size_t level = 3; level > 0; level--) {
-    page_table = pa_to_kernel_va(
-        page_table[((uintptr_t)va >> (12 + 9 * level)) & ((1 << 9) - 1)].addr
-        << PAGE_ORDER);
-  }
-  return page_table[((uintptr_t)va >> 12) & ((1 << 9) - 1)].addr << PAGE_ORDER |
-         ((uintptr_t)va & ((1 << 12) - 1));
-}
