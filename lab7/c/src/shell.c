@@ -5,6 +5,7 @@
 #include "oscos/console.h"
 #include "oscos/drivers/mailbox.h"
 #include "oscos/drivers/pm.h"
+#include "oscos/fs/vfs.h"
 #include "oscos/initrd.h"
 #include "oscos/libc/ctype.h"
 #include "oscos/libc/inttypes.h"
@@ -294,6 +295,75 @@ invalid:
   console_puts("oscsh: free-pages: invalid page number");
 }
 
+static void _shell_do_cmd_vfs_test_1(void) {
+  char buf[11] = {0};
+  struct file *foo, *bar;
+  int result;
+
+  result = vfs_open("/foo", O_CREAT, &foo);
+  console_printf("open(\"/foo\", O_CREAT) = %d\n", result);
+  if (result < 0)
+    return;
+
+  result = vfs_write(foo, "aaaaa", 5);
+  console_printf("write(\"/foo\", \"aaaaa\") = %d\n", result);
+  if (result < 0)
+    return;
+
+  result = vfs_close(foo);
+  console_printf("close(\"/foo\") = %d\n", result);
+  if (result < 0)
+    return;
+
+  result = vfs_open("/bar", O_CREAT, &bar);
+  console_printf("open(\"/bar\", O_CREAT) = %d\n", result);
+  if (result < 0)
+    return;
+
+  result = vfs_write(bar, "bbbbb", 5);
+  console_printf("write(\"/bar\", \"bbbbb\") = %d\n", result);
+  if (result < 0)
+    return;
+
+  result = vfs_close(bar);
+  console_printf("close(\"/bar\") = %d\n", result);
+  if (result < 0)
+    return;
+
+  result = vfs_open("/foo", O_CREAT, &foo);
+  console_printf("open(\"/foo\", O_CREAT) = %d\n", result);
+  if (result < 0)
+    return;
+
+  result = vfs_open("/bar", O_CREAT, &bar);
+  console_printf("open(\"/bar\", O_CREAT) = %d\n", result);
+  if (result < 0)
+    return;
+
+  result = vfs_read(foo, buf, 10);
+  console_printf("read(\"/foo\", ...) = %d\n", result);
+  if (result < 0)
+    return;
+  console_puts(buf);
+
+  memset(buf, 0, 10);
+  result = vfs_read(bar, buf, 10);
+  console_printf("read(\"/bar\", ...) = %d\n", result);
+  if (result < 0)
+    return;
+  console_puts(buf);
+
+  result = vfs_close(foo);
+  console_printf("close(\"/foo\") = %d\n", result);
+  if (result < 0)
+    return;
+
+  result = vfs_close(bar);
+  console_printf("close(\"/bar\") = %d\n", result);
+  if (result < 0)
+    return;
+}
+
 static void _shell_cmd_not_found(const char *const cmd) {
   console_printf("oscsh: %s: command not found\n", cmd);
 }
@@ -328,6 +398,8 @@ void run_shell(void) {
       _shell_do_cmd_alloc_pages();
     } else if (strcmp(cmd_buf, "free-pages") == 0) {
       _shell_do_cmd_free_pages();
+    } else if (strcmp(cmd_buf, "vfs-test-1") == 0) {
+      _shell_do_cmd_vfs_test_1();
     } else {
       _shell_cmd_not_found(cmd_buf);
     }

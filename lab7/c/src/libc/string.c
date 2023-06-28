@@ -1,5 +1,7 @@
 #include "oscos/libc/string.h"
 
+#include "oscos/mem/malloc.h"
+
 __attribute__((used)) int memcmp(const void *const s1, const void *const s2,
                                  const size_t n) {
   const unsigned char *const s1_c = s1, *const s2_c = s2;
@@ -87,6 +89,43 @@ size_t strlen(const char *s) {
     result++;
   }
   return result;
+}
+
+char *strdup(const char *s) {
+  const size_t len = strlen(s);
+
+  char *const result = malloc(len + 1);
+  if (!result)
+    return NULL;
+
+  memcpy(result, s, len);
+  result[len] = '\0';
+
+  return result;
+}
+
+char *strndup(const char *const s, const size_t n) {
+  size_t len = 0;
+  for (const char *c = s; len < n && *c; c++) {
+    len++;
+  }
+
+  char *const result = malloc(len + 1);
+  if (!result)
+    return NULL;
+
+  memcpy(result, s, len);
+  result[len] = '\0';
+
+  return result;
+}
+
+char *strchr(const char *const s, const int c) {
+  for (const char *p = s; *p; p++) {
+    if (*p == c)
+      return (char *)p;
+  }
+  return NULL;
 }
 
 void memswp(void *const restrict xs, void *const restrict ys, const size_t n) {

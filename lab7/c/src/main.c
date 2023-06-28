@@ -6,6 +6,8 @@
 #include "oscos/drivers/l2ic.h"
 #include "oscos/drivers/mailbox.h"
 #include "oscos/drivers/pm.h"
+#include "oscos/fs/tmpfs.h"
+#include "oscos/fs/vfs.h"
 #include "oscos/initrd.h"
 #include "oscos/mem/malloc.h"
 #include "oscos/mem/page-alloc.h"
@@ -62,7 +64,8 @@ void main(const void *const dtb_start) {
     PANIC("Cannot initialize scheduler: out of memory");
   }
 
-  // Test the scheduler.
+  // Initialize VFS.
+  tmpfs.setup_mount(&tmpfs, &rootfs);
 
   thread_create(_run_shell, NULL);
 

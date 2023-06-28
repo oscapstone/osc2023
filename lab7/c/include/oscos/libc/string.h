@@ -13,6 +13,11 @@ int strncmp(const char *s1, const char *s2, size_t n);
 
 size_t strlen(const char *s);
 
+char *strdup(const char *s);
+char *strndup(const char *s, size_t n);
+
+char *strchr(const char *s, int c);
+
 // Extensions.
 
 /// \brief Swap two non-overlapping blocks of memory.
