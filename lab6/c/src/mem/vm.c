@@ -212,7 +212,8 @@ static bool _map_page(const mem_region_t *const mem_region, void *const va,
   const union {
     block_page_descriptor_lower_t s;
     unsigned u;
-  } lower = {.s = (block_page_descriptor_lower_t){.ap = 0x1, .af = 1}};
+  } lower = {.s = (block_page_descriptor_lower_t){
+                 .attr_indx = 0x1, .ap = 0x1, .af = 1}};
   pte_entry->lower = lower.u;
 
   return true;

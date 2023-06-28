@@ -20,12 +20,14 @@ alignas(4096) page_table_t kernel_pud = {{.b0 = 1,
                                           .addr = 0x40000,
                                           .upper = 0}};
 
-alignas(4096) page_table_t kernel_pgd = {
-    {.b0 = 1,
-     .b1 = 1,
-     .lower = 0,
-     .addr = 0, // The concrete value will be filled by `start.S`.
-     .upper = 0}};
+alignas(4096) page_table_t kernel_pgd = {{
+    .b0 = 1,
+    .b1 = 1,
+    .lower = 0,
+    .addr = 0,                // The concrete value will be filled by `start.S`.
+    .upper = 0x1 << (61 - 48) // Unprivileged access not permitted
+                              // (APTable = 0b01).
+}};
 
 static void _map_region_as_rec(const page_id_range_t range,
                                const block_page_descriptor_lower_t lower_attr,
