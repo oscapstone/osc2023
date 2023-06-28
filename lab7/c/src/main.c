@@ -65,6 +65,7 @@ void main(const void *const dtb_start) {
   }
 
   // Initialize VFS.
+  register_filesystem(&tmpfs);
   tmpfs.setup_mount(&tmpfs, &rootfs);
 
   thread_create(_run_shell, NULL);
