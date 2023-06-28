@@ -9,11 +9,13 @@
 #define DIR_PER_BLOCK (BLOCK_SIZE / sizeof(struct dir_t))
 #define FAT_DIR     1
 #define FAT_FILE    2
+#define INVALID_CID 0x0ffffff8
 
 #define ATTR_READ_ONLY  0x01
 #define ATTR_HIDDEN     0x02
 #define ATTR_SYSTEM     0x04
 #define ATTR_VOLUME_ID  0x08
+#define ATTR_LFN        0x0f
 #define ATTR_DIRECTORY  0x10
 #define ATTR_ARCHIVE    0x20
 #define ATTR_FILE_DIR_MASK (ATTR_DIRECTORY | ATTR_ARCHIVE)
@@ -114,6 +116,7 @@ struct fat_file_block_t{
     uint32 cid;
     /* Already read the data into buf*/
     uint32 read;
+    uint32 dirty;
     uint8 buf[BLOCK_SIZE];
 };
 
@@ -147,6 +150,12 @@ struct fat_internal{
     };
 };
 
+struct fat_mount_t {
+    /* Link fat_mount_t */
+    struct list_head list;
+    struct mount *mount;
+};
+
 int fat32fs_mount(struct filesystem *fs, struct mount *mount);
 
 int fat32fs_lookup(struct vnode *dir_node, struct vnode **target, const char *component_name);
@@ -162,6 +171,7 @@ int fat32fs_open(struct vnode *file_node, struct file *target);
 int fat32fs_close(struct file *file);
 long fat32fs_lseek64(struct file *file, long offset, int whence);
 int fat32fs_ioctl(struct file *file, uint64 request, va_list args);
+int fat32fs_sync(struct filesystem *fs);
 struct filesystem *fat32fs_init(void);
 
 #endif

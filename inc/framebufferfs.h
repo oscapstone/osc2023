@@ -33,6 +33,7 @@ int fbfs_open(struct vnode *file_node, struct file *target);
 int fbfs_close(struct file *file);
 long fbfs_lseek64(struct file *file, long offset, int whence);
 int fbfs_ioctl(struct file *file, uint64 request, va_list args);
+int fbfs_sync(struct filesystem *fs);
 
 struct filesystem *framebufferfs_init(void);
 

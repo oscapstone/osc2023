@@ -12,7 +12,8 @@ static int cpio_mounted;
 
 static struct filesystem cpiofs = {
     .name = "cpiofs",
-    .mount = cpiofs_mount
+    .mount = cpiofs_mount,
+    .sync = cpiofs_sync
 };
 
 static struct vnode_operations cpiofs_v_ops = {
@@ -347,4 +348,8 @@ long cpiofs_lseek64(struct file *file, long offset, int whence){
 
 int cpiofs_ioctl(struct file *file, uint64 request, va_list args){
     return -1;
+}
+
+int cpiofs_sync(struct filesystem *fs){
+    return 0;
 }

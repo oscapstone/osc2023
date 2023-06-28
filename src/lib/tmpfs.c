@@ -5,7 +5,8 @@
 static struct filesystem tmpfs = {
     .name = "tmpfs",
     .mount = tmpfs_mount,
-    .alloc_vnode = tmpfs_alloc_vnode
+    .alloc_vnode = tmpfs_alloc_vnode,
+    .sync = tmpfs_sync
 };
 
 static struct vnode_operations tmpfs_v_ops = {
@@ -280,6 +281,10 @@ long tmpfs_lseek64(struct file *file, long offset, int whence){
 
 int tmpfs_ioctl(struct file *file, uint64 request, va_list args){
     return -1;
+}
+
+int tmpfs_sync(struct filesystem *fs){
+    return 0;
 }
 
 struct filesystem *tmpfs_init(void){

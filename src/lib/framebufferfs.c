@@ -9,7 +9,8 @@
 
 static struct filesystem fbfs = {
     .name = "framebufferfs",
-    .mount = fbfs_mount
+    .mount = fbfs_mount,
+    .sync = fbfs_sync,
 };
 
 static struct vnode_operations fbfs_v_ops = {
@@ -227,6 +228,10 @@ int fbfs_ioctl(struct file *file, uint64 request, va_list args)
 
     internal->isinit = 1;
 
+    return 0;
+}
+
+int fbfs_sync(struct filesystem *fs){
     return 0;
 }
 

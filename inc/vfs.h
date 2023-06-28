@@ -31,6 +31,7 @@ struct filesystem {
     struct list_head fs_list;
     int (*mount)(struct filesystem *fs, struct mount *mount);
     int (*alloc_vnode)(struct filesystem *fs, struct vnode **target);
+    int (*sync)(struct filesystem *fs);
 };
 
 struct vnode_operations {
@@ -74,6 +75,7 @@ int vfs_read(struct file *file, void *buf, size_t len);
 int vfs_mkdir(const char *pathname);
 int vfs_mount(const char *mountpath, const char *filesystem);
 int vfs_lookup(const char *pathname, struct vnode **target);
+int vfs_sync(struct filesystem *fs);
 long vfs_lseek64(struct file *file, long offset, int whence);
 int vfs_ioctl(struct file *file, uint64 request, va_list args);
 
@@ -86,5 +88,6 @@ void syscall_mount(trapframe *frame, const char *src, const char *target, const 
 void syscall_chdir(trapframe *frame, const char *path);
 void syscall_lseek64(trapframe *frame, int fd, int64 offset, int whence);
 void syscall_ioctl(trapframe *frame, int fd, uint64 request, ...);
+void syscall_sync(trapframe *frame);
 
 #endif

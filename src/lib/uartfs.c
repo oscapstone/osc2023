@@ -4,7 +4,8 @@
 
 static struct filesystem uartfs = {
     .name = "uartfs",
-    .mount = uartfs_mount
+    .mount = uartfs_mount,
+    .sync = uartfs_sync
 };
 
 static struct vnode_operations uartfs_v_ops = {
@@ -121,6 +122,10 @@ long uartfs_lseek64(struct file *file, long offset, int whence){
 
 int uartfs_ioctl(struct file *file, uint64 request, va_list args){
     return -1;
+}
+
+int uartfs_sync(struct filesystem *fs){
+    return 0;
 }
 
 /* Others */

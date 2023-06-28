@@ -35,8 +35,9 @@ syscall_funcp syscall_table[] = {
     (syscall_funcp) syscall_chdir,      // 17
     (syscall_funcp) syscall_lseek64,    // 18
     (syscall_funcp) syscall_ioctl,      // 19
-    (syscall_funcp) syscall_sigreturn,  // 20
-    (syscall_funcp) syscall_test,       // 21
+    (syscall_funcp) syscall_sync,       // 20
+    (syscall_funcp) syscall_sigreturn,  // 21
+    (syscall_funcp) syscall_test,       // 22
 };
 
 static inline void copy_regs(struct pt_regs *regs)

@@ -45,6 +45,7 @@ int tmpfs_open(struct vnode *file_node, struct file *target);
 int tmpfs_close(struct file *file);
 long tmpfs_lseek64(struct file *file, long offset, int whence);
 int tmpfs_ioctl(struct file *file, uint64 request, va_list args);
+int tmpfs_sync(struct filesystem *fs);
 
 struct filesystem *tmpfs_init(void);
 

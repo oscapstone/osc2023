@@ -34,6 +34,7 @@ struct cpiofs_internal {
 };
 
 int cpiofs_mount(struct filesystem *fs, struct mount *mount);
+int cpiofs_sync(struct filesystem *fs);
 int cpiofs_lookup(struct vnode *dir_node, struct vnode **target,
                         const char *component_name);
 int cpiofs_create(struct vnode *dir_node, struct vnode **target,
