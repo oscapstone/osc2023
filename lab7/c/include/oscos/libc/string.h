@@ -18,6 +18,8 @@ char *strndup(const char *s, size_t n);
 
 char *strchr(const char *s, int c);
 
+char *strcpy(char *restrict dst, const char *restrict src);
+
 // Extensions.
 
 /// \brief Swap two non-overlapping blocks of memory.

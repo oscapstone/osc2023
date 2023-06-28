@@ -24,7 +24,7 @@ LDLIBS_BASE = -lgcc
 OBJS      = start main console devicetree initrd panic shell \
             drivers/aux drivers/gpio drivers/l1ic drivers/l2ic drivers/mailbox \
             drivers/mini-uart drivers/pm \
-            fs/tmpfs fs/vfs \
+            fs/initramfs fs/tmpfs fs/vfs \
             mem/malloc mem/page-alloc mem/shared-page mem/startup-alloc mem/vm \
             mem/vm/kernel-page-tables \
             sched/idle-thread sched/periodic-sched sched/run-signal-handler \

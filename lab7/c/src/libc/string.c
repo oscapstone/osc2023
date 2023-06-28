@@ -128,6 +128,16 @@ char *strchr(const char *const s, const int c) {
   return NULL;
 }
 
+char *strcpy(char *const restrict dst, const char *const restrict src) {
+  char *restrict cd = dst;
+  const char *restrict cs = src;
+  while (*cs) {
+    *cd++ = *cs++;
+  }
+
+  return dst;
+}
+
 void memswp(void *const restrict xs, void *const restrict ys, const size_t n) {
   unsigned char *const restrict xs_c = xs, *const restrict ys_c = ys;
   for (size_t i = 0; i < n; i++) {

@@ -603,6 +603,31 @@ static void _shell_do_cmd_vfs_test_4(void) {
     return;
 }
 
+static void _shell_do_cmd_vfs_test_5(void) {
+  unsigned char buf[8] = {0};
+  struct file *vfs1;
+  int result;
+
+  result = vfs_open("/initramfs/vfs1.img", 0, &vfs1);
+  console_printf("open(\"/initramfs/vfs1.img\", 0) = %d\n", result);
+  if (result < 0)
+    return;
+
+  result = vfs_read(vfs1, buf, 8);
+  console_printf("read(\"/initramfs/vfs1.img\", ...) = %d\n", result);
+  if (result < 0)
+    return;
+  for (size_t i = 0; i < 8; i++) {
+    console_printf("\\x%02hhx", buf[i]);
+  }
+  console_putc('\n');
+
+  result = vfs_close(vfs1);
+  console_printf("close(\"/initramfs/vfs1.img\") = %d\n", result);
+  if (result < 0)
+    return;
+}
+
 static void _shell_cmd_not_found(const char *const cmd) {
   console_printf("oscsh: %s: command not found\n", cmd);
 }
@@ -645,6 +670,8 @@ void run_shell(void) {
       _shell_do_cmd_vfs_test_3();
     } else if (strcmp(cmd_buf, "vfs-test-4") == 0) {
       _shell_do_cmd_vfs_test_4();
+    } else if (strcmp(cmd_buf, "vfs-test-5") == 0) {
+      _shell_do_cmd_vfs_test_5();
     } else {
       _shell_cmd_not_found(cmd_buf);
     }

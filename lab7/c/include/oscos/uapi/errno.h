@@ -12,5 +12,6 @@
 #define EINVAL 22
 #define EMFILE 24
 #define EFBIG 27
+#define EROFS 30
 #define ENOSYS 38
 #define ELOOP 40
