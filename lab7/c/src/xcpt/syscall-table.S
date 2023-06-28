@@ -12,6 +12,13 @@ syscall_table:
     b sys_signal
     b sys_signal_kill
     b sys_sigreturn
+    b sys_open
+    b sys_close
+    b sys_write
+    b sys_read
+    b sys_mkdir
+    b sys_mount
+    b sys_chdir
 
 .size syscall_table, . - syscall_table
 .global syscall_table

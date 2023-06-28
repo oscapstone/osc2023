@@ -17,3 +17,15 @@ int exec(const char *const pathname, char *const argv[const]) {
 }
 
 pid_t fork(void) { return syscall(SYS_fork); }
+
+int close(int fd) { return syscall(SYS_close, fd); }
+
+ssize_t write(const int fd, const void *const buf, const size_t count) {
+  return syscall(SYS_write, fd, buf, count);
+}
+
+ssize_t read(const int fd, void *const buf, const size_t count) {
+  return syscall(SYS_read, fd, buf, count);
+}
+
+int chdir(const char *const path) { return syscall(SYS_chdir, path); }

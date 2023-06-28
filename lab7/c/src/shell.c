@@ -517,6 +517,92 @@ static void _shell_do_cmd_vfs_test_3(void) {
     return;
 }
 
+static void _shell_do_cmd_vfs_test_4(void) {
+  char buf[11] = {0};
+  struct file *foo, *bar;
+  int result;
+
+  result = vfs_mkdir("/dir");
+  console_printf("mkdir(\"/dir\") = %d\n", result);
+  if (result < 0)
+    return;
+
+  result = vfs_mount("/dir", "tmpfs");
+  console_printf("mount(\"/dir\", \"tmpfs\") = %d\n", result);
+  if (result < 0)
+    return;
+
+  result = vfs_mkdir("/dir/dir");
+  console_printf("mkdir(\"/dir/dir\") = %d\n", result);
+  if (result < 0)
+    return;
+
+  result = vfs_open("/dir/foo", O_CREAT, &foo);
+  console_printf("open(\"/dir/foo\", O_CREAT) = %d\n", result);
+  if (result < 0)
+    return;
+
+  result = vfs_write(foo, "aaaaa", 5);
+  console_printf("write(\"/dir/foo\", \"aaaaa\") = %d\n", result);
+  if (result < 0)
+    return;
+
+  result = vfs_close(foo);
+  console_printf("close(\"/dir/foo\") = %d\n", result);
+  if (result < 0)
+    return;
+
+  result = vfs_open("/dir/bar", O_CREAT, &bar);
+  console_printf("open(\"/dir/bar\", O_CREAT) = %d\n", result);
+  if (result < 0)
+    return;
+
+  result = vfs_write(bar, "bbbbb", 5);
+  console_printf("write(\"/dir/bar\", \"bbbbb\") = %d\n", result);
+  if (result < 0)
+    return;
+
+  result = vfs_close(bar);
+  console_printf("close(\"/dir/bar\") = %d\n", result);
+  if (result < 0)
+    return;
+
+  result = vfs_open("/dir/./dir/../../dir/./foo", O_CREAT, &foo);
+  console_printf("open(\"/dir/./dir/../../dir/./foo\", O_CREAT) = %d\n",
+                 result);
+  if (result < 0)
+    return;
+
+  result = vfs_open("/dir/./dir/../../dir/./bar", O_CREAT, &bar);
+  console_printf("open(\"/dir/./dir/../../dir/./bar\", O_CREAT) = %d\n",
+                 result);
+  if (result < 0)
+    return;
+
+  result = vfs_read(foo, buf, 10);
+  console_printf("read(\"/dir/./dir/../../dir/./foo\", ...) = %d\n", result);
+  if (result < 0)
+    return;
+  console_puts(buf);
+
+  memset(buf, 0, 10);
+  result = vfs_read(bar, buf, 10);
+  console_printf("read(\"/dir/./dir/../../dir/./bar\", ...) = %d\n", result);
+  if (result < 0)
+    return;
+  console_puts(buf);
+
+  result = vfs_close(foo);
+  console_printf("close(\"/dir/./dir/../../dir/./foo\") = %d\n", result);
+  if (result < 0)
+    return;
+
+  result = vfs_close(bar);
+  console_printf("close(\"/dir/./dir/../../dir/./bar\") = %d\n", result);
+  if (result < 0)
+    return;
+}
+
 static void _shell_cmd_not_found(const char *const cmd) {
   console_printf("oscsh: %s: command not found\n", cmd);
 }
@@ -557,6 +643,8 @@ void run_shell(void) {
       _shell_do_cmd_vfs_test_2();
     } else if (strcmp(cmd_buf, "vfs-test-3") == 0) {
       _shell_do_cmd_vfs_test_3();
+    } else if (strcmp(cmd_buf, "vfs-test-4") == 0) {
+      _shell_do_cmd_vfs_test_4();
     } else {
       _shell_cmd_not_found(cmd_buf);
     }

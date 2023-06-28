@@ -16,8 +16,8 @@ CFLAGS_BASE    = -std=c17 -pedantic-errors -Wall -Wextra -ffreestanding \
 CFLAGS_DEBUG   = -g
 CFLAGS_RELEASE = -O3 -flto
 
-OBJS      = start ctype errno mbox signal stdio stdlib string unistd \
-            unistd/syscall __detail/utils/fmt
+OBJS      = start ctype errno fcntl mbox signal stdio stdlib string sys/mount \
+            sys/stat unistd unistd/syscall __detail/utils/fmt
 
 # ------------------------------------------------------------------------------
 

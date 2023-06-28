@@ -252,6 +252,10 @@ bool process_create(void) {
   for (size_t i = 0; i < 32; i++) {
     process->signal_handlers[i] = SIG_DFL;
   }
+  process->cwd = rootfs.root;
+  for (size_t i = 0; i < N_FDS; i++) {
+    process->fds[i] = NULL;
+  }
   curr_thread->process = process;
   curr_thread->ctx.fp_simd_ctx = fp_simd_ctx;
 
@@ -331,6 +335,11 @@ void exec(const void *const text_start, const size_t text_len) {
 static void _thread_cleanup(thread_t *const thread) {
   if (thread->process) {
     vm_drop_pgd(thread->process->addr_space.pgd);
+    for (size_t i = 0; i < N_FDS; i++) {
+      if (thread->process->fds[i]) {
+        shared_file_drop(thread->process->fds[i]);
+      }
+    }
     free(thread->process);
   }
   free_pages(thread->stack_page_id);
@@ -388,6 +397,11 @@ process_t *fork(const extended_trap_frame_t *const trap_frame) {
   new_process->blocked_signals = 0;
   memcpy(new_process->signal_handlers, curr_process->signal_handlers,
          32 * sizeof(sighandler_t));
+  new_process->cwd = curr_process->cwd;
+  for (size_t i = 0; i < N_FDS; i++) {
+    new_process->fds[i] =
+        curr_process->fds[i] ? shared_file_clone(curr_process->fds[i]) : NULL;
+  }
 
   // Set execution context.
 

@@ -51,12 +51,28 @@ extern struct mount rootfs;
 
 int register_filesystem(struct filesystem *fs);
 int vfs_open(const char *pathname, int flags, struct file **target);
+int vfs_open_relative(struct vnode *cwd, const char *pathname, int flags,
+                      struct file **target);
 int vfs_close(struct file *file);
 int vfs_write(struct file *file, const void *buf, size_t len);
 int vfs_read(struct file *file, void *buf, size_t len);
 
 int vfs_mkdir(const char *pathname);
+int vfs_mkdir_relative(struct vnode *cwd, const char *pathname);
 int vfs_mount(const char *target, const char *filesystem);
+int vfs_mount_relative(struct vnode *cwd, const char *target,
+                       const char *filesystem);
 int vfs_lookup(const char *pathname, struct vnode **target);
+int vfs_lookup_relative(struct vnode *cwd, const char *pathname,
+                        struct vnode **target);
+
+typedef struct {
+  struct file *file;
+  size_t refcnt;
+} shared_file_t;
+
+shared_file_t *shared_file_new(struct file *file);
+shared_file_t *shared_file_clone(shared_file_t *shared_file);
+void shared_file_drop(shared_file_t *shared_file);
 
 #endif

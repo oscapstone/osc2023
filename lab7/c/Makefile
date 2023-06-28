@@ -7,7 +7,7 @@ CC      = aarch64-linux-gnu-gcc
 CPP     = aarch64-linux-gnu-cpp
 OBJCOPY = aarch64-linux-gnu-objcopy
 
-CPPFLAGS_BASE = -Iinclude -DVM_ENABLE_DEBUG_LOG
+CPPFLAGS_BASE = -Iinclude
 
 ASFLAGS_DEBUG = -g
 
@@ -41,6 +41,9 @@ OBJS      = start main console devicetree initrd panic shell \
             xcpt/syscall/exit xcpt/syscall/mbox-call xcpt/syscall/kill \
             xcpt/syscall/signal xcpt/syscall/signal-kill \
             xcpt/syscall/sigreturn xcpt/syscall/sigreturn-check \
+            xcpt/syscall/open xcpt/syscall/close xcpt/syscall/write \
+            xcpt/syscall/read xcpt/syscall/mkdir xcpt/syscall/mount \
+            xcpt/syscall/chdir \
             libc/ctype libc/stdio libc/stdlib/qsort libc/string \
             utils/core-id utils/fmt utils/heapq utils/rb
 LD_SCRIPT = $(SRC_DIR)/linker.ld

@@ -3,8 +3,8 @@
 rm -rf rootfs
 
 mkdir rootfs
-wget https://oscapstone.github.io/_downloads/4a3ff2431ab7fa74536c184270dbe5c0/vm.img \
-    -O rootfs/vm.img
+wget https://oscapstone.github.io/_downloads/3cb3bdb8f851d1cf29ac6f4f5d585981/vfs1.img \
+    -O rootfs/vfs1.img
 
 cd rootfs
 find . -mindepth 1 | cpio -o -H newc > ../initramfs.cpio

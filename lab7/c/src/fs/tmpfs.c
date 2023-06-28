@@ -14,6 +14,7 @@
 typedef enum { TYPE_DIR, TYPE_FILE } tmpfs_internal_type_t;
 
 typedef struct {
+  struct vnode *parent;
   rb_node_t *contents;
 } tmpfs_internal_dir_data_t;
 
@@ -108,7 +109,8 @@ static struct vnode *_tmpfs_create_file_vnode(struct mount *const mount) {
   return result;
 }
 
-static struct vnode *_tmpfs_create_dir_vnode(struct mount *const mount) {
+static struct vnode *_tmpfs_create_dir_vnode(struct mount *const mount,
+                                             struct vnode *const parent) {
   struct vnode *const result = malloc(sizeof(struct vnode));
   if (!result)
     return NULL;
@@ -119,9 +121,9 @@ static struct vnode *_tmpfs_create_dir_vnode(struct mount *const mount) {
     return NULL;
   }
 
-  *internal = (tmpfs_internal_t){
-      .type = TYPE_DIR,
-      .dir_data = (tmpfs_internal_dir_data_t){.contents = NULL}};
+  *internal = (tmpfs_internal_t){.type = TYPE_DIR,
+                                 .dir_data = (tmpfs_internal_dir_data_t){
+                                     .parent = parent, .contents = NULL}};
   *result = (struct vnode){.mount = mount,
                            .v_ops = &_tmpfs_vnode_operations,
                            .f_ops = &_tmpfs_file_operations,
@@ -131,7 +133,7 @@ static struct vnode *_tmpfs_create_dir_vnode(struct mount *const mount) {
 
 static int _tmpfs_setup_mount(struct filesystem *const fs,
                               struct mount *const mount) {
-  struct vnode *const root_vnode = _tmpfs_create_dir_vnode(mount);
+  struct vnode *const root_vnode = _tmpfs_create_dir_vnode(mount, NULL);
   if (!root_vnode)
     return -ENOMEM;
 
@@ -254,6 +256,14 @@ static int _tmpfs_lookup(struct vnode *const dir_node,
   int result;
   tmpfs_internal_dir_data_t *const dir_data = &internal->dir_data;
 
+  if (strcmp(component_name, ".") == 0) {
+    *target = dir_node;
+    return 0;
+  } else if (strcmp(component_name, "..") == 0) {
+    *target = dir_data->parent;
+    return 0;
+  }
+
   uint64_t daif_val;
   CRITICAL_SECTION_ENTER(daif_val);
 
@@ -353,7 +363,8 @@ static int _tmpfs_mkdir(struct vnode *const dir_node,
     goto end;
   }
 
-  struct vnode *const vnode = _tmpfs_create_dir_vnode(dir_node->mount);
+  struct vnode *const vnode =
+      _tmpfs_create_dir_vnode(dir_node->mount, dir_node);
   if (!vnode) {
     result = -ENOMEM;
     goto end;

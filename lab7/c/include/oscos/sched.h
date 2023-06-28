@@ -7,10 +7,13 @@
 #include <stdint.h>
 #include <stdnoreturn.h>
 
+#include "oscos/fs/vfs.h"
 #include "oscos/mem/types.h"
 #include "oscos/mem/vm.h"
 #include "oscos/uapi/signal.h"
 #include "oscos/xcpt/trap-frame.h"
+
+#define N_FDS 16
 
 typedef struct thread_list_node_t {
   struct thread_list_node_t *prev, *next;
@@ -60,6 +63,8 @@ typedef struct process_t {
   thread_t *main_thread;
   uint32_t pending_signals, blocked_signals;
   sighandler_t signal_handlers[32];
+  struct vnode *cwd;
+  shared_file_t *fds[N_FDS];
 } process_t;
 
 /// \brief Initializes the scheduler and creates the idle thread.

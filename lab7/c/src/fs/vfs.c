@@ -96,9 +96,29 @@ int register_filesystem(struct filesystem *const fs) {
   return 0;
 }
 
-static int _vfs_lookup_step(struct vnode *const curr_vnode,
+static int _vfs_lookup_step(struct vnode *curr_vnode,
                             struct vnode **const target,
                             const char *const component_name) {
+  if (strcmp(component_name, "..") == 0 &&
+      curr_vnode == curr_vnode->mount->root) {
+    if (curr_vnode == rootfs.root) {
+      *target = curr_vnode;
+      return 0;
+    } else {
+      uint64_t daif_val;
+      CRITICAL_SECTION_ENTER(daif_val);
+
+      const mount_entry_t *const entry = rb_search(
+          _mounts_by_root, curr_vnode,
+          (int (*)(const void *, const void *, void *))_vfs_cmp_root_and_mount,
+          NULL);
+
+      CRITICAL_SECTION_LEAVE(daif_val);
+
+      curr_vnode = entry->mountpoint;
+    }
+  }
+
   const int result =
       curr_vnode->v_ops->lookup(curr_vnode, target, component_name);
   if (result < 0)
@@ -125,12 +145,16 @@ static int _vfs_lookup_step(struct vnode *const curr_vnode,
   return 0;
 }
 
-static int
-_vfs_lookup_sans_last_level(const char *const pathname,
-                            struct vnode **const target,
-                            const char **const last_pathname_component) {
-  struct vnode *curr_vnode = rootfs.root;
-  const char *curr_pathname_component = pathname + 1;
+static int _vfs_lookup_sans_last_level_relative(
+    struct vnode *const cwd, const char *const pathname,
+    struct vnode **const target, const char **const last_pathname_component) {
+  struct vnode *curr_vnode = cwd;
+  const char *curr_pathname_component = pathname;
+  if (*curr_pathname_component == '/') {
+    curr_vnode = rootfs.root;
+    curr_pathname_component += 1;
+  }
+
   for (const char *curr_pathname_component_end;
        (curr_pathname_component_end = strchr(curr_pathname_component, '/'));
        curr_pathname_component = curr_pathname_component_end + 1) {
@@ -156,10 +180,15 @@ _vfs_lookup_sans_last_level(const char *const pathname,
 
 int vfs_open(const char *const pathname, const int flags,
              struct file **const target) {
+  return vfs_open_relative(rootfs.root, pathname, flags, target);
+}
+
+int vfs_open_relative(struct vnode *const cwd, const char *const pathname,
+                      const int flags, struct file **const target) {
   const char *last_pathname_component;
   struct vnode *parent_vnode;
-  const int lookup_result = _vfs_lookup_sans_last_level(
-      pathname, &parent_vnode, &last_pathname_component);
+  const int lookup_result = _vfs_lookup_sans_last_level_relative(
+      cwd, pathname, &parent_vnode, &last_pathname_component);
   if (lookup_result < 0)
     return lookup_result;
 
@@ -189,10 +218,14 @@ int vfs_read(struct file *const file, void *const buf, const size_t len) {
 }
 
 int vfs_mkdir(const char *const pathname) {
+  return vfs_mkdir_relative(rootfs.root, pathname);
+}
+
+int vfs_mkdir_relative(struct vnode *const cwd, const char *const pathname) {
   const char *last_pathname_component;
   struct vnode *parent_vnode;
-  const int lookup_result = _vfs_lookup_sans_last_level(
-      pathname, &parent_vnode, &last_pathname_component);
+  const int lookup_result = _vfs_lookup_sans_last_level_relative(
+      cwd, pathname, &parent_vnode, &last_pathname_component);
   if (lookup_result < 0)
     return lookup_result;
 
@@ -202,8 +235,13 @@ int vfs_mkdir(const char *const pathname) {
 }
 
 int vfs_mount(const char *const target, const char *const filesystem) {
+  return vfs_mount_relative(rootfs.root, target, filesystem);
+}
+
+int vfs_mount_relative(struct vnode *const cwd, const char *const target,
+                       const char *const filesystem) {
   struct vnode *mountpoint;
-  const int result = vfs_lookup(target, &mountpoint);
+  const int result = vfs_lookup_relative(cwd, target, &mountpoint);
   if (result < 0)
     return result;
 
@@ -250,12 +288,57 @@ int vfs_mount(const char *const target, const char *const filesystem) {
 }
 
 int vfs_lookup(const char *const pathname, struct vnode **const target) {
+  return vfs_lookup_relative(rootfs.root, pathname, target);
+}
+
+int vfs_lookup_relative(struct vnode *const cwd, const char *const pathname,
+                        struct vnode **const target) {
   const char *last_pathname_component;
   struct vnode *parent_vnode;
-  const int lookup_result = _vfs_lookup_sans_last_level(
-      pathname, &parent_vnode, &last_pathname_component);
+  const int lookup_result = _vfs_lookup_sans_last_level_relative(
+      cwd, pathname, &parent_vnode, &last_pathname_component);
   if (lookup_result < 0)
     return lookup_result;
 
-  return _vfs_lookup_step(parent_vnode, target, last_pathname_component);
+  if (*last_pathname_component == '\0') {
+    *target = parent_vnode;
+    return 0;
+  } else {
+    return _vfs_lookup_step(parent_vnode, target, last_pathname_component);
+  }
+}
+
+shared_file_t *shared_file_new(struct file *const file) {
+  shared_file_t *const shared_file = malloc(sizeof(shared_file_t));
+  if (!shared_file)
+    return NULL;
+
+  *shared_file = (shared_file_t){.file = file, .refcnt = 1};
+  return shared_file;
+}
+
+shared_file_t *shared_file_clone(shared_file_t *const shared_file) {
+  uint64_t daif_val;
+  CRITICAL_SECTION_ENTER(daif_val);
+
+  shared_file->refcnt++;
+
+  CRITICAL_SECTION_LEAVE(daif_val);
+
+  return shared_file;
+}
+
+void shared_file_drop(shared_file_t *const shared_file) {
+  uint64_t daif_val;
+  CRITICAL_SECTION_ENTER(daif_val);
+
+  shared_file->refcnt--;
+  const bool drop = shared_file->refcnt == 0;
+
+  CRITICAL_SECTION_LEAVE(daif_val);
+
+  if (drop) {
+    vfs_close(shared_file->file);
+    free(shared_file);
+  }
 }
