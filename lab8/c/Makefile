@@ -23,8 +23,8 @@ LDLIBS_BASE = -lgcc
 
 OBJS      = start main console devicetree initrd panic shell \
             drivers/aux drivers/gpio drivers/l1ic drivers/l2ic drivers/mailbox \
-            drivers/mini-uart drivers/pm \
-            fs/initramfs fs/tmpfs fs/vfs \
+            drivers/mini-uart drivers/pm drivers/sdhost \
+            fs/initramfs fs/sd-fat32 fs/tmpfs fs/vfs \
             mem/malloc mem/page-alloc mem/shared-page mem/startup-alloc mem/vm \
             mem/vm/kernel-page-tables \
             sched/idle-thread sched/periodic-sched sched/run-signal-handler \
@@ -90,12 +90,12 @@ $(OUT_DIR)/%.s: $(SRC_DIR)/%.S
 qemu: $(OUT_DIR)/kernel8.img
 	qemu-system-aarch64 -M raspi3b -kernel $< -initrd ../tests/initramfs.cpio \
 		-dtb ../tests/bcm2710-rpi-3-b-plus.dtb -display gtk -serial null \
-		-serial stdio
+		-serial stdio -drive if=sd,file=../tests/sd.img,format=raw
 
 qemu-debug: $(OUT_DIR)/kernel8.img
 	qemu-system-aarch64 -M raspi3b -kernel $< -initrd ../tests/initramfs.cpio \
 		-dtb ../tests/bcm2710-rpi-3-b-plus.dtb -display gtk -serial null \
-		-serial stdio -S -s
+		-serial stdio -drive if=sd,file=../tests/sd.img,format=raw -S -s
 
 gdb: $(OUT_DIR)/kernel8.elf
 	gdb -s $< -ex 'target remote :1234'

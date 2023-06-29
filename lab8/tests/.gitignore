@@ -1,2 +1,4 @@
 /initramfs.cpio
 /bcm2710-rpi-3-b-plus.dtb
+/sd.img
+/FAT_R.TXT

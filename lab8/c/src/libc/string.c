@@ -128,6 +128,15 @@ char *strchr(const char *const s, const int c) {
   return NULL;
 }
 
+char *strrchr(const char *const s, const int c) {
+  for (const char *pp1 = s + strlen(s); pp1 != s; pp1--) {
+    const char *const p = pp1 - 1;
+    if (*p == c)
+      return (char *)p;
+  }
+  return NULL;
+}
+
 char *strcpy(char *const restrict dst, const char *const restrict src) {
   char *restrict cd = dst;
   const char *restrict cs = src;

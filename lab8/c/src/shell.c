@@ -603,6 +603,31 @@ static void _shell_do_cmd_vfs_test_4(void) {
     return;
 }
 
+static void _shell_do_cmd_fat_test_1(void) {
+  char buf[8] = {0};
+  struct file *kernel;
+  int result;
+
+  result = vfs_open("/boot/KERNEL8.IMG", 0, &kernel);
+  console_printf("open(\"/boot/KERNEL8.IMG\", 0) = %d\n", result);
+  if (result < 0)
+    return;
+
+  result = vfs_read(kernel, buf, 8);
+  console_printf("read(\"/boot/KERNEL8.IMG\", ..., 8) = %d\n", result);
+  if (result < 0)
+    return;
+  for (size_t i = 0; i < 8; i++) {
+    console_printf("\\x%02hhx", buf[i]);
+  }
+  console_putc('\n');
+
+  result = vfs_close(kernel);
+  console_printf("close(\"/boot/KERNEL8.IMG\") = %d\n", result);
+  if (result < 0)
+    return;
+}
+
 static void _shell_do_cmd_vfs_test_5(void) {
   unsigned char buf[8] = {0};
   struct file *vfs1;
@@ -672,6 +697,8 @@ void run_shell(void) {
       _shell_do_cmd_vfs_test_4();
     } else if (strcmp(cmd_buf, "vfs-test-5") == 0) {
       _shell_do_cmd_vfs_test_5();
+    } else if (strcmp(cmd_buf, "fat-test-1") == 0) {
+      _shell_do_cmd_fat_test_1();
     } else {
       _shell_cmd_not_found(cmd_buf);
     }

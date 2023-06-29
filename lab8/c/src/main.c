@@ -6,7 +6,9 @@
 #include "oscos/drivers/l2ic.h"
 #include "oscos/drivers/mailbox.h"
 #include "oscos/drivers/pm.h"
+#include "oscos/drivers/sdhost.h"
 #include "oscos/fs/initramfs.h"
+#include "oscos/fs/sd-fat32.h"
 #include "oscos/fs/tmpfs.h"
 #include "oscos/fs/vfs.h"
 #include "oscos/initrd.h"
@@ -67,6 +69,8 @@ void main(const void *const dtb_start) {
 
   // Initialize VFS.
 
+  sd_init();
+
   int vfs_op_result;
 
   vfs_op_result = register_filesystem(&tmpfs);
@@ -75,6 +79,9 @@ void main(const void *const dtb_start) {
   vfs_op_result = register_filesystem(&initramfs);
   if (vfs_op_result < 0)
     PANIC("Cannot register initramfs: errno %d", -vfs_op_result);
+  vfs_op_result = register_filesystem(&sd_fat32);
+  if (vfs_op_result < 0)
+    PANIC("Cannot register fat32: errno %d", -vfs_op_result);
 
   vfs_op_result = tmpfs.setup_mount(&tmpfs, &rootfs);
   if (vfs_op_result < 0)
@@ -86,6 +93,13 @@ void main(const void *const dtb_start) {
   vfs_op_result = vfs_mount("/initramfs", "initramfs");
   if (vfs_op_result < 0)
     PANIC("Cannot mount initramfs on /initramfs: errno %d", -vfs_op_result);
+
+  vfs_op_result = vfs_mkdir("/boot");
+  if (vfs_op_result < 0)
+    PANIC("Cannot mkdir /boot: errno %d", -vfs_op_result);
+  vfs_op_result = vfs_mount("/boot", "fat32");
+  if (vfs_op_result < 0)
+    PANIC("Cannot mount fat32 on /boot: errno %d", -vfs_op_result);
 
   thread_create(_run_shell, NULL);
 
