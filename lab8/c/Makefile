@@ -39,11 +39,11 @@ OBJS      = start main console devicetree initrd panic shell \
             xcpt/syscall/uart-write xcpt/syscall/exec xcpt/syscall/fork \
             xcpt/syscall/fork-impl xcpt/syscall/fork-child-ret \
             xcpt/syscall/exit xcpt/syscall/mbox-call xcpt/syscall/kill \
-            xcpt/syscall/signal xcpt/syscall/signal-kill \
-            xcpt/syscall/sigreturn xcpt/syscall/sigreturn-check \
+            xcpt/syscall/signal xcpt/syscall/signal-kill xcpt/syscall/mmap \
             xcpt/syscall/open xcpt/syscall/close xcpt/syscall/write \
             xcpt/syscall/read xcpt/syscall/mkdir xcpt/syscall/mount \
-            xcpt/syscall/chdir \
+            xcpt/syscall/chdir xcpt/syscall/sigreturn \
+            xcpt/syscall/sigreturn-check \
             libc/ctype libc/stdio libc/stdlib/qsort libc/string \
             utils/core-id utils/fmt utils/heapq utils/rb
 LD_SCRIPT = $(SRC_DIR)/linker.ld

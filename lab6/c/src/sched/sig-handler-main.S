@@ -2,7 +2,7 @@
 
 sig_handler_main:
     blr x0
-    mov x8, 10 // SYS_sigreturn
+    mov x8, 11 // SYS_sigreturn
     svc 0
 
 .type sig_handler_main, function

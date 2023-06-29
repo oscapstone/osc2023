@@ -190,6 +190,10 @@ void thread_exit(void) {
 
   XCPT_MASK_ALL();
 
+  // Workaround of a weird bug where the current thread still remains on the run
+  // queue.
+  _remove_thread_from_queue(curr_thread);
+
   if (curr_process) {
     rb_delete(&_processes, &curr_process->id,
               (int (*)(const void *, const void *,
@@ -222,8 +226,8 @@ bool process_create(void) {
     return false;
   }
 
-  page_table_entry_t *const pgd = vm_new_pgd();
-  if (!pgd) {
+  vm_addr_space_t addr_space = vm_new_addr_space();
+  if (!addr_space.pgd) {
     free(fp_simd_ctx);
     free(process);
     return false;
@@ -234,18 +238,24 @@ bool process_create(void) {
   thread_t *const curr_thread = current_thread();
 
   process->id = _alloc_pid();
-  process->addr_space.stack_region =
-      (mem_region_t){.start = (void *)0xffffffffb000ULL,
-                     .len = 4 << PAGE_ORDER,
-                     .type = MEM_REGION_BACKED,
-                     .backing_storage_start = NULL,
-                     .backing_storage_len = 0};
-  process->addr_space.vc_region =
-      (mem_region_t){.start = (void *)0x3b400000ULL,
-                     .len = 0x3f000000ULL - 0x3b400000ULL,
-                     .type = MEM_REGION_LINEAR,
-                     .backing_storage_start = (void *)0x3b400000ULL};
-  process->addr_space.pgd = pgd;
+  process->addr_space = addr_space;
+
+  const mem_region_t stack_region = {.start = (void *)0xffffffffb000ULL,
+                                     .len = 4 << PAGE_ORDER,
+                                     .type = MEM_REGION_BACKED,
+                                     .backing_storage_start = NULL,
+                                     .backing_storage_len = 0,
+                                     .prot = PROT_READ | PROT_WRITE};
+  vm_mem_regions_insert_region(&process->addr_space.mem_regions, &stack_region);
+
+  const mem_region_t vc_region = {.start = (void *)0x3b400000ULL,
+                                  .len = 0x3f000000ULL - 0x3b400000ULL,
+                                  .type = MEM_REGION_LINEAR,
+                                  .backing_storage_start =
+                                      (void *)0x3b400000ULL,
+                                  .prot = PROT_READ | PROT_WRITE};
+  vm_mem_regions_insert_region(&process->addr_space.mem_regions, &vc_region);
+
   process->main_thread = curr_thread;
   process->pending_signals = 0;
   process->blocked_signals = 0;
@@ -282,34 +292,38 @@ static void _exec_generic(const void *const text_start, const size_t text_len,
 
   // Allocate memory.
 
-  page_table_entry_t *pgd = NULL;
+  vm_addr_space_t addr_space = {.pgd = NULL};
   if (free_old_pages) {
-    pgd = vm_new_pgd();
-    if (!pgd)
+    addr_space = vm_new_addr_space();
+    if (!addr_space.pgd)
       return;
   }
 
   // Free old pages.
 
   if (free_old_pages) {
-    vm_drop_pgd(curr_process->addr_space.pgd);
+    vm_drop_addr_space(curr_process->addr_space);
   }
 
   // Set process data.
 
   if (free_old_pages) {
-    curr_process->addr_space.pgd = pgd;
+    curr_process->addr_space = addr_space;
   }
+
   // We don't know exactly how large the .bss section of a user program is, so
   // we have to use a heuristic. We speculate that the .bss section is at most
   // as large as the remaining parts (.text, .rodata, and .data sections) of the
   // user program.
-  curr_process->addr_space.text_region =
-      (mem_region_t){.start = (void *)0x0,
-                     .len = ALIGN(text_len * 2, 4096),
-                     .type = MEM_REGION_BACKED,
-                     .backing_storage_start = text_start,
-                     .backing_storage_len = text_len};
+
+  const mem_region_t text_region = {.start = (void *)0x0,
+                                    .len = ALIGN(text_len * 2, 4096),
+                                    .type = MEM_REGION_BACKED,
+                                    .backing_storage_start = text_start,
+                                    .backing_storage_len = text_len,
+                                    .prot = PROT_READ | PROT_WRITE | PROT_EXEC};
+  vm_mem_regions_insert_region(&curr_process->addr_space.mem_regions,
+                               &text_region);
 
   // Run the user program.
 
@@ -330,7 +344,7 @@ void exec(const void *const text_start, const size_t text_len) {
 
 static void _thread_cleanup(thread_t *const thread) {
   if (thread->process) {
-    vm_drop_pgd(thread->process->addr_space.pgd);
+    vm_drop_addr_space(thread->process->addr_space);
     free(thread->process);
   }
   free_pages(thread->stack_page_id);
@@ -369,6 +383,16 @@ process_t *fork(const extended_trap_frame_t *const trap_frame) {
     return NULL;
   }
 
+  vm_addr_space_t addr_space = vm_clone_addr_space(curr_process->addr_space);
+  if (curr_process->addr_space.mem_regions.root &&
+      !addr_space.mem_regions.root) { // Out of memory.
+    free(fp_simd_ctx);
+    free_pages(kernel_stack_page_id);
+    free(new_process);
+    free(new_thread);
+    return NULL;
+  }
+
   // Set data.
 
   new_thread->id = _alloc_tid();
@@ -380,9 +404,7 @@ process_t *fork(const extended_trap_frame_t *const trap_frame) {
   new_thread->process = new_process;
 
   new_process->id = _alloc_pid();
-  vm_clone_pgd(curr_process->addr_space.pgd);
-  vm_switch_to_addr_space(&curr_process->addr_space);
-  new_process->addr_space = curr_process->addr_space;
+  new_process->addr_space = addr_space;
   new_process->main_thread = new_thread;
   new_process->pending_signals = 0;
   new_process->blocked_signals = 0;

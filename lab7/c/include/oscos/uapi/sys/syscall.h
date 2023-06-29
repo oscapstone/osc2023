@@ -11,7 +11,7 @@
 #define SYS_kill 7
 #define SYS_signal 8
 #define SYS_signal_kill 9
-#define SYS_sigreturn 10
+#define SYS_mmap 10
 #define SYS_open 11
 #define SYS_close 12
 #define SYS_write 13
@@ -19,5 +19,6 @@
 #define SYS_mkdir 15
 #define SYS_mount 16
 #define SYS_chdir 17
+#define SYS_sigreturn 18
 
 #endif
