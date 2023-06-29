@@ -270,7 +270,7 @@ static void _free_to_slab(slab_t *const slab, void *const ptr) {
   // Mark the slot as available.
 
   slab->n_slots_reserved--;
-  slab->slots_reserved_bitset[slot_ix / 64] &= ~(1 << (slot_ix % 64));
+  slab->slots_reserved_bitset[slot_ix / 64] &= ~(1ULL << (slot_ix % 64));
 
   // Return the slab to the page frame allocator if it has no reserved slots.
 
