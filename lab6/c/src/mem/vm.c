@@ -2,10 +2,12 @@
 
 #include <stdint.h>
 
+#include "oscos/console.h"
 #include "oscos/libc/string.h"
 #include "oscos/mem/page-alloc.h"
 #include "oscos/mem/shared-page.h"
 #include "oscos/sched.h"
+#include "oscos/utils/align.h"
 #include "oscos/utils/critical-section.h"
 
 // Symbol defined in the linker script.
@@ -24,7 +26,50 @@ pa_range_t kernel_va_range_to_pa_range(const va_range_t range) {
                       .end = kernel_va_to_pa(range.end)};
 }
 
-page_table_entry_t *vm_new_pgd(void) {
+static int _vm_cmp_mem_regions_by_start(const mem_region_t *const r1,
+                                        const mem_region_t *const r2,
+                                        void *const _arg) {
+  (void)_arg;
+
+  if (r1->start < r2->start)
+    return -1;
+  if (r1->start > r2->start)
+    return 1;
+  return 0;
+}
+
+static int _vm_cmp_va_and_mem_region(const void *const va,
+                                     const mem_region_t *const region,
+                                     void *const _arg) {
+  (void)_arg;
+
+  if (va < region->start)
+    return -1;
+  if (va > region->start)
+    return 1;
+  return 0;
+}
+
+void vm_mem_regions_insert_region(mem_regions_t *const regions,
+                                  const mem_region_t *const region) {
+  rb_insert(
+      &regions->root, sizeof(mem_region_t), region,
+      (int (*)(const void *, const void *, void *))_vm_cmp_mem_regions_by_start,
+      NULL);
+}
+
+const mem_region_t *
+vm_mem_regions_find_region(const mem_regions_t *const regions, void *const va) {
+  const mem_region_t *const region = rb_predecessor(
+      regions->root, va,
+      (int (*)(const void *, const void *, void *))_vm_cmp_va_and_mem_region,
+      NULL);
+
+  return region && va < (void *)((char *)region->start + region->len) ? region
+                                                                      : NULL;
+}
+
+static page_table_entry_t *_vm_new_pgd(void) {
   const spage_id_t new_pgd_page_id = shared_page_alloc();
   if (new_pgd_page_id < 0)
     return NULL;
@@ -37,7 +82,11 @@ page_table_entry_t *vm_new_pgd(void) {
   return result;
 }
 
-void vm_clone_pgd(page_table_entry_t *const pgd) {
+vm_addr_space_t vm_new_addr_space(void) {
+  return (vm_addr_space_t){.mem_regions = {.root = NULL}, .pgd = _vm_new_pgd()};
+}
+
+static void _vm_clone_pgd(page_table_entry_t *const pgd) {
   uint64_t daif_val;
   CRITICAL_SECTION_ENTER(daif_val);
 
@@ -56,6 +105,18 @@ void vm_clone_pgd(page_table_entry_t *const pgd) {
   }
 
   CRITICAL_SECTION_LEAVE(daif_val);
+}
+
+vm_addr_space_t vm_clone_addr_space(const vm_addr_space_t addr_space) {
+  rb_node_t *const new_regions_root =
+      rb_clone(addr_space.mem_regions.root, sizeof(mem_region_t), NULL, NULL);
+  if (!new_regions_root)
+    return (vm_addr_space_t){.mem_regions = (mem_regions_t){.root = NULL}};
+
+  _vm_clone_pgd(addr_space.pgd);
+  return (vm_addr_space_t){.mem_regions =
+                               (mem_regions_t){.root = new_regions_root},
+                           .pgd = addr_space.pgd};
 }
 
 static void _vm_drop_page_table(page_table_entry_t *const page_table,
@@ -81,13 +142,18 @@ static void _vm_drop_page_table(page_table_entry_t *const page_table,
   shared_page_decref(page_table_page_id);
 }
 
-void vm_drop_pgd(page_table_entry_t *const pgd) {
+static void _vm_drop_pgd(page_table_entry_t *const pgd) {
   uint64_t daif_val;
   CRITICAL_SECTION_ENTER(daif_val);
 
   _vm_drop_page_table(pgd, 3);
 
   CRITICAL_SECTION_LEAVE(daif_val);
+}
+
+void vm_drop_addr_space(const vm_addr_space_t addr_space) {
+  _vm_drop_pgd(addr_space.pgd);
+  rb_drop(addr_space.mem_regions.root, NULL);
 }
 
 static page_table_entry_t *
@@ -207,14 +273,29 @@ static bool _map_page(const mem_region_t *const mem_region, void *const va,
     __builtin_unreachable();
   }
 
+  // Set attributes.
+
+  const bool is_accessible =
+      mem_region->prot & (PROT_READ | PROT_WRITE | PROT_EXEC);
+  const bool is_writable = mem_region->prot & PROT_WRITE;
+  const bool is_executable = mem_region->prot & PROT_EXEC;
+
+  const unsigned ap = ((unsigned)!is_writable << 1) | (unsigned)is_accessible;
+
   pte_entry->b0 = 1;
   pte_entry->b1 = 1;
   const union {
     block_page_descriptor_lower_t s;
     unsigned u;
   } lower = {.s = (block_page_descriptor_lower_t){
-                 .attr_indx = 0x1, .ap = 0x1, .af = 1}};
+                 .attr_indx = 0x1, .ap = ap, .af = 1}};
   pte_entry->lower = lower.u;
+  const union {
+    block_page_descriptor_upper_t s;
+    unsigned u;
+  } upper = {.s = (block_page_descriptor_upper_t){.pxn = !is_executable,
+                                                  .uxn = !is_executable}};
+  pte_entry->upper = upper.u;
 
   return true;
 }
@@ -296,15 +377,9 @@ vm_map_page_result_t vm_map_page(vm_addr_space_t *const addr_space,
                                  void *const va) {
   // Check the validity of the VA.
 
-  if (!((addr_space->text_region.start <= va &&
-         va < (void *)((char *)addr_space->text_region.start +
-                       addr_space->text_region.len)) ||
-        (addr_space->stack_region.start <= va &&
-         va < (void *)((char *)addr_space->stack_region.start +
-                       addr_space->stack_region.len)) ||
-        (addr_space->vc_region.start <= va &&
-         va < (void *)((char *)addr_space->vc_region.start +
-                       addr_space->vc_region.len))))
+  const mem_region_t *const region =
+      vm_mem_regions_find_region(&addr_space->mem_regions, va);
+  if (!region)
     return VM_MAP_PAGE_SEGV;
 
   uint64_t daif_val;
@@ -321,20 +396,6 @@ vm_map_page_result_t vm_map_page(vm_addr_space_t *const addr_space,
 
   // Map the page.
 
-  mem_region_t *const region =
-      addr_space->text_region.start <= va &&
-              va < (void *)((char *)addr_space->text_region.start +
-                            addr_space->text_region.len)
-          ? &addr_space->text_region
-      : addr_space->stack_region.start <= va &&
-              va < (void *)((char *)addr_space->stack_region.start +
-                            addr_space->stack_region.len)
-          ? &addr_space->stack_region
-      : addr_space->vc_region.start <= va &&
-              va < (void *)((char *)addr_space->vc_region.start +
-                            addr_space->vc_region.len)
-          ? &addr_space->vc_region
-          : (__builtin_unreachable(), NULL);
   if (!_map_page(region, va, pte_entry)) {
     CRITICAL_SECTION_LEAVE(daif_val);
     return VM_MAP_PAGE_NOMEM;
@@ -372,16 +433,33 @@ static bool _cow_page(const mem_region_t *const mem_region,
     __builtin_unreachable();
   }
 
+  // Set attributes.
+
+  const bool is_accessible =
+      mem_region->prot & (PROT_READ | PROT_WRITE | PROT_EXEC);
+  const bool is_writable = mem_region->prot & PROT_WRITE;
+  const bool is_executable = mem_region->prot & PROT_EXEC;
+
+  const unsigned ap = ((unsigned)!is_writable << 1) | (unsigned)is_accessible;
+
   const union {
     block_page_descriptor_lower_t s;
     unsigned u;
-  } lower = {.s = (block_page_descriptor_lower_t){.ap = 0x1, .af = 1}};
+  } lower = {.s = (block_page_descriptor_lower_t){
+                 .attr_indx = 0x1, .ap = ap, .af = 1}};
   pte_entry->lower = lower.u;
+  const union {
+    block_page_descriptor_upper_t s;
+    unsigned u;
+  } upper = {.s = (block_page_descriptor_upper_t){.pxn = !is_executable,
+                                                  .uxn = !is_executable}};
+  pte_entry->upper = upper.u;
 
   return true;
 }
 
-vm_map_page_result_t vm_cow(vm_addr_space_t *const addr_space, void *const va) {
+static vm_map_page_result_t _vm_cow(vm_addr_space_t *const addr_space,
+                                    void *const va) {
   uint64_t daif_val;
   CRITICAL_SECTION_ENTER(daif_val);
 
@@ -396,20 +474,8 @@ vm_map_page_result_t vm_cow(vm_addr_space_t *const addr_space, void *const va) {
 
   // Map the page.
 
-  mem_region_t *const region =
-      addr_space->text_region.start <= va &&
-              va < (void *)((char *)addr_space->text_region.start +
-                            addr_space->text_region.len)
-          ? &addr_space->text_region
-      : addr_space->stack_region.start <= va &&
-              va < (void *)((char *)addr_space->stack_region.start +
-                            addr_space->stack_region.len)
-          ? &addr_space->stack_region
-      : addr_space->vc_region.start <= va &&
-              va < (void *)((char *)addr_space->vc_region.start +
-                            addr_space->vc_region.len)
-          ? &addr_space->vc_region
-          : (__builtin_unreachable(), NULL);
+  const mem_region_t *const region =
+      vm_mem_regions_find_region(&addr_space->mem_regions, va);
   if (!_cow_page(region, pte_entry)) {
     CRITICAL_SECTION_LEAVE(daif_val);
     return VM_MAP_PAGE_NOMEM;
@@ -423,6 +489,28 @@ vm_map_page_result_t vm_cow(vm_addr_space_t *const addr_space, void *const va) {
   return VM_MAP_PAGE_SUCCESS;
 }
 
+vm_map_page_result_t
+vm_handle_permission_fault(vm_addr_space_t *const addr_space, void *const va,
+                           const int access_mode) {
+  const mem_region_t *const region =
+      vm_mem_regions_find_region(&addr_space->mem_regions, va);
+  if (access_mode & region->prot) {
+    return _vm_cow(addr_space, va);
+  } else { // Illegal access.
+#ifdef VM_ENABLE_DEBUG_LOG
+    if (access_mode & PROT_EXEC) {
+      console_puts(
+          "DEBUG: vm: Attempted to execute from a non-executable page");
+    } else if (access_mode & PROT_WRITE) {
+      console_puts("DEBUG: vm: Attempted to write to a non-writable page");
+    } else {
+      console_puts("DEBUG: vm: Attempted to access a non-accessible page");
+    }
+#endif
+    return VM_MAP_PAGE_SEGV;
+  }
+}
+
 void vm_switch_to_addr_space(const vm_addr_space_t *const addr_space) {
   const pa_t pgd_pa = kernel_va_to_pa(addr_space->pgd);
   __asm__ __volatile__(
@@ -434,4 +522,67 @@ void vm_switch_to_addr_space(const vm_addr_space_t *const addr_space) {
       :
       : "r"((uint64_t)pgd_pa)
       : "memory");
+}
+
+static void *_vm_find_mmap_addr(const vm_addr_space_t addr_space,
+                                const size_t len) {
+  void *addr = (void *)(1 << PAGE_ORDER);
+  const mem_region_t *const first_predecessor = rb_predecessor(
+      addr_space.mem_regions.root, addr,
+      (int (*)(const void *, const void *, void *))_vm_cmp_va_and_mem_region,
+      NULL);
+  if (first_predecessor &&
+      addr < (void *)((char *)first_predecessor->start +
+                      first_predecessor
+                          ->len)) { // The initial address (0x1000) is taken.
+    addr = (char *)first_predecessor->start + first_predecessor->len;
+  }
+
+  while (addr < (void *)(0x1000000000000ULL - len)) {
+    const mem_region_t *const begin_successor = rb_successor(
+        addr_space.mem_regions.root, addr,
+        (int (*)(const void *, const void *, void *))_vm_cmp_va_and_mem_region,
+        NULL);
+    if (!begin_successor ||
+        (void *)((char *)addr + len) <= begin_successor->start) {
+      // Found a large enough space.
+      return addr;
+    }
+    addr = (char *)begin_successor->start + begin_successor->len;
+  }
+
+  return NULL;
+}
+
+void *vm_decide_mmap_addr(const vm_addr_space_t addr_space, void *const va,
+                          const size_t len) {
+  const size_t effective_len = ALIGN(len, 1 << PAGE_ORDER);
+
+  // Check for exact fit.
+
+  const bool va_is_page_aligned =
+      ((uintptr_t)va & ((1 << PAGE_ORDER) - 1)) == 0;
+  if (va && va_is_page_aligned) {
+    const mem_region_t *const begin_predecessor = rb_predecessor(
+        addr_space.mem_regions.root, va,
+        (int (*)(const void *, const void *, void *))_vm_cmp_va_and_mem_region,
+        NULL);
+    if (!begin_predecessor ||
+        (void *)((char *)begin_predecessor->start + begin_predecessor->len) <=
+            va) { // The predecessor doesn't cover the start address.
+      const mem_region_t *const end_predecessor = rb_predecessor(
+          addr_space.mem_regions.root, (char *)va + effective_len - 1,
+          (int (*)(const void *, const void *,
+                   void *))_vm_cmp_va_and_mem_region,
+          NULL);
+      if (end_predecessor ==
+          begin_predecessor) { // There is nothing between the start and end
+                               // addresses.
+        // Exact fit is possible.
+        return va;
+      }
+    }
+  }
+
+  return _vm_find_mmap_addr(addr_space, effective_len);
 }

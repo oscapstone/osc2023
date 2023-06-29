@@ -32,8 +32,9 @@ void xcpt_data_abort_handler(const uint64_t esr_val) {
 #endif
     }
   } else if (dfsc >> 2 == 0x3) { // Permission fault.
-    const vm_map_page_result_t result =
-        vm_cow(&curr_process->addr_space, fault_addr);
+    const bool wnr = esr_val & (1 << 6);
+    const vm_map_page_result_t result = vm_handle_permission_fault(
+        &curr_process->addr_space, fault_addr, wnr ? PROT_WRITE : PROT_READ);
     if (result == VM_MAP_PAGE_SEGV) {
 #ifdef VM_ENABLE_DEBUG_LOG
       console_printf("DEBUG: vm: Segmentation fault, PID %zu, address 0x%p\n",

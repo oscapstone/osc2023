@@ -11,6 +11,7 @@ syscall_table:
     b sys_kill
     b sys_signal
     b sys_signal_kill
+    b sys_mmap
     b sys_sigreturn
 
 .size syscall_table, . - syscall_table
