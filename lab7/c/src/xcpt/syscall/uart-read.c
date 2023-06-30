@@ -28,8 +28,8 @@ ssize_t sys_uart_read(char buf[const], const size_t size) {
 
     thread_t *const curr_thread = current_thread();
 
-    console_notify_read_ready((void (*)(void *))add_all_threads_to_run_queue,
-                              &_wait_queue);
+    console_notify_read_ready(
+        (void (*)(void *))wake_up_all_threads_in_wait_queue, &_wait_queue);
     suspend_to_wait_queue(&_wait_queue);
     XCPT_MASK_ALL();
 
