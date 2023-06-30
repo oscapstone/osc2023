@@ -542,9 +542,10 @@ void suspend_to_wait_queue(thread_list_node_t *const wait_queue) {
   _suspend_to_wait_queue(wait_queue);
 }
 
-void add_all_threads_to_run_queue(thread_list_node_t *const wait_queue) {
+void wake_up_all_threads_in_wait_queue(thread_list_node_t *const wait_queue) {
   thread_t *thread;
   while ((thread = _remove_first_thread_from_queue(wait_queue))) {
+    thread->status.is_waiting = false;
     _add_thread_to_run_queue(thread);
   }
 }
