@@ -55,6 +55,7 @@ void vm_drop_addr_space(vm_addr_space_t pgd);
 vm_map_page_result_t vm_map_page(vm_addr_space_t *addr_space, void *va);
 vm_map_page_result_t vm_handle_permission_fault(vm_addr_space_t *addr_space,
                                                 void *va, int access_mode);
+bool vm_remove_region(vm_addr_space_t *addr_space, void *start_va);
 void vm_switch_to_addr_space(const vm_addr_space_t *addr_space);
 
 void *vm_decide_mmap_addr(vm_addr_space_t addr_space, void *va, size_t len);
