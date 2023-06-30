@@ -130,8 +130,8 @@ void schedule(void);
 ///        scheduler.
 void suspend_to_wait_queue(thread_list_node_t *wait_queue);
 
-/// \brief Adds every thread in the given wait queue to the run queue.
-void add_all_threads_to_run_queue(thread_list_node_t *wait_queue);
+/// \brief Wake up every thread in the given wait queue.
+void wake_up_all_threads_in_wait_queue(thread_list_node_t *wait_queue);
 
 /// \brief Gets a process by its PID.
 process_t *get_process_by_id(size_t pid);
