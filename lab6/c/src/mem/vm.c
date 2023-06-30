@@ -128,7 +128,7 @@ static void _vm_drop_page_table(page_table_entry_t *const page_table,
     for (size_t i = 0; i < 512; i++) {
       if (page_table[i].b0) {
         const pa_t next_level_pa = page_table[i].addr << PAGE_ORDER;
-        if (level == 1) {
+        if (level == 0) {
           shared_page_decref(pa_to_page_id(next_level_pa));
         } else {
           page_table_entry_t *const next_level_page_table =
@@ -509,6 +509,113 @@ vm_handle_permission_fault(vm_addr_space_t *const addr_space, void *const va,
 #endif
     return VM_MAP_PAGE_SEGV;
   }
+}
+
+static page_table_entry_t *
+_vm_remove_region_from_pgd_rec(page_table_entry_t *const page_table,
+                               void *const start_va, void *const end_va,
+                               size_t level, void *const block_start,
+                               page_table_entry_t *const prev_level_entry) {
+  void *const block_end = (char *)block_start + (1 << (9 * level + PAGE_ORDER));
+
+  if (start_va == block_start && end_va == block_end) {
+    _vm_drop_page_table(page_table, level);
+    if (prev_level_entry) {
+      prev_level_entry->b0 = false;
+    }
+    return NULL;
+  } else {
+    page_table_entry_t *const new_page_table =
+        level == 0 ? _vm_clone_unshare_pte(page_table)
+                   : _vm_clone_unshare_page_table(page_table);
+    if (!new_page_table)
+      return NULL;
+
+    if (prev_level_entry) {
+      prev_level_entry->addr = kernel_va_to_pa(new_page_table) >> PAGE_ORDER;
+
+      // Since the page table is not shared, we can remove the read-only bit
+      // now.
+
+      union {
+        table_descriptor_upper_t s;
+        unsigned u;
+      } upper = {.u = prev_level_entry->upper};
+      upper.s.aptable = 0x0;
+      prev_level_entry->upper = upper.u;
+    }
+
+    size_t subblock_stride = 1 << (9 * (level - 1) + PAGE_ORDER);
+
+    for (size_t i = 0; i < 512; i++) {
+      if (new_page_table[i].b0) {
+        void *const subblock_start = (char *)block_start + i * subblock_stride,
+                    *const subblock_end =
+                        (char *)subblock_start + subblock_stride;
+
+        void *const max_start =
+                        start_va > subblock_start ? start_va : subblock_start,
+                    *const min_end =
+                        end_va < subblock_end ? end_va : subblock_end;
+
+        if (max_start < min_end) {
+          if (level == 0) {
+            const page_id_t page_id =
+                pa_to_page_id(new_page_table[i].addr << PAGE_ORDER);
+            shared_page_decref(page_id);
+          } else {
+            page_table_entry_t *const next_level_page_table =
+                pa_to_kernel_va(new_page_table[i].addr << PAGE_ORDER);
+            _vm_remove_region_from_pgd_rec(next_level_page_table, max_start,
+                                           min_end, level - 1, subblock_start,
+                                           &new_page_table[i]);
+          }
+        }
+      }
+    }
+
+    return new_page_table;
+  }
+}
+
+static page_table_entry_t *
+_vm_remove_region_from_pgd(page_table_entry_t *const pgd, void *const start_va,
+                           void *const end_va) {
+  return _vm_remove_region_from_pgd_rec(pgd, start_va, end_va, 3, (void *)0,
+                                        NULL);
+}
+
+bool vm_remove_region(vm_addr_space_t *const addr_space, void *const start_va) {
+  uint64_t daif_val;
+  CRITICAL_SECTION_ENTER(daif_val);
+
+  const mem_region_t *const mem_region = rb_search(
+      addr_space->mem_regions.root, start_va,
+      (int (*)(const void *, const void *, void *))_vm_cmp_va_and_mem_region,
+      NULL);
+  void *const end_va = (char *)start_va + mem_region->len;
+
+  rb_delete(
+      &addr_space->mem_regions.root, start_va,
+      (int (*)(const void *, const void *, void *))_vm_cmp_va_and_mem_region,
+      NULL);
+
+  page_table_entry_t *const new_pgd =
+      _vm_remove_region_from_pgd(addr_space->pgd, start_va, end_va);
+  // Note: `_vm_remove_region_from_pgd` returns NULL when the last region is
+  // removed, i.e., a new page table need not be allocated. However, in all
+  // places where `vm_remove_region` is used, the region to be removed is never
+  // the last one. Therefore, checking for an out-of-memory condition in this
+  // way is fine.
+  if (!new_pgd) {
+    CRITICAL_SECTION_LEAVE(daif_val);
+    return false;
+  }
+
+  addr_space->pgd = new_pgd;
+
+  CRITICAL_SECTION_LEAVE(daif_val);
+  return true;
 }
 
 void vm_switch_to_addr_space(const vm_addr_space_t *const addr_space) {
