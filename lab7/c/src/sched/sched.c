@@ -290,29 +290,18 @@ void switch_vm(const thread_t *const thread) {
 }
 
 static void _exec_generic(const void *const text_start, const size_t text_len,
-                          const bool free_old_pages) {
+                          const bool remove_text_region) {
   thread_t *const curr_thread = current_thread();
   process_t *const curr_process = curr_thread->process;
 
-  // Allocate memory.
+  // Remove old text region.
 
-  vm_addr_space_t addr_space = {.pgd = NULL};
-  if (free_old_pages) {
-    addr_space = vm_new_addr_space();
-    if (!addr_space.pgd)
+  if (remove_text_region) {
+    if (!vm_remove_region(&curr_process->addr_space, (void *)0x0))
       return;
-  }
 
-  // Free old pages.
-
-  if (free_old_pages) {
-    vm_drop_addr_space(curr_process->addr_space);
-  }
-
-  // Set process data.
-
-  if (free_old_pages) {
-    curr_process->addr_space = addr_space;
+    // Set ttbr0_el1 again, as it might have changed.
+    vm_switch_to_addr_space(&curr_process->addr_space);
   }
 
   // We don't know exactly how large the .bss section of a user program is, so
