@@ -109,14 +109,19 @@ void shared_page_decref(const page_id_t page) {
       (int (*)(const void *, const void *,
                void *))_cmp_page_id_and_page_refcnt_entry,
       NULL);
-  entry->refcnt--;
 
-  if (entry->refcnt == 0) {
-    rb_delete(&_page_refcnts, &page,
-              (int (*)(const void *, const void *,
-                       void *))_cmp_page_id_and_page_refcnt_entry,
-              NULL);
-    free_pages(page);
+  // This function is sometimes called on a non-shared page; more specifically,
+  // linearly-mapped pages.
+  if (entry) {
+    entry->refcnt--;
+
+    if (entry->refcnt == 0) {
+      rb_delete(&_page_refcnts, &page,
+                (int (*)(const void *, const void *,
+                         void *))_cmp_page_id_and_page_refcnt_entry,
+                NULL);
+      free_pages(page);
+    }
   }
 
   CRITICAL_SECTION_LEAVE(daif_val);
