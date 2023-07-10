@@ -21,7 +21,8 @@ LDFLAGS_RELEASE = -flto -Xlinker --gc-sections
 
 LDLIBS_BASE = -lgcc
 
-OBJS      = start main console devicetree initrd panic shell \
+OBJS      = start main console console-dev console-suspend devicetree initrd \
+            panic shell \
             drivers/aux drivers/gpio drivers/l1ic drivers/l2ic drivers/mailbox \
             drivers/mini-uart drivers/pm \
             fs/initramfs fs/tmpfs fs/vfs \

@@ -229,6 +229,68 @@ bool process_create(void) {
     return false;
   }
 
+  // Open files.
+
+  struct file *stdin;
+  const int open_stdin_result = vfs_open("/dev/uart", 0, &stdin);
+  if (open_stdin_result < 0) {
+    vm_drop_addr_space(addr_space);
+    free(fp_simd_ctx);
+    free(process);
+    return false;
+  }
+
+  shared_file_t *const shared_stdin = shared_file_new(stdin);
+  if (!shared_stdin) {
+    vfs_close(stdin);
+    vm_drop_addr_space(addr_space);
+    free(fp_simd_ctx);
+    free(process);
+    return false;
+  }
+
+  struct file *stdout;
+  const int open_stdout_result = vfs_open("/dev/uart", 0, &stdout);
+  if (open_stdout_result < 0) {
+    shared_file_drop(shared_stdin);
+    vm_drop_addr_space(addr_space);
+    free(fp_simd_ctx);
+    free(process);
+    return false;
+  }
+
+  shared_file_t *const shared_stdout = shared_file_new(stdout);
+  if (!shared_stdout) {
+    vfs_close(stdout);
+    shared_file_drop(shared_stdin);
+    vm_drop_addr_space(addr_space);
+    free(fp_simd_ctx);
+    free(process);
+    return false;
+  }
+
+  struct file *stderr;
+  const int open_stderr_result = vfs_open("/dev/uart", 0, &stderr);
+  if (open_stderr_result < 0) {
+    shared_file_drop(shared_stdout);
+    shared_file_drop(shared_stdin);
+    vm_drop_addr_space(addr_space);
+    free(fp_simd_ctx);
+    free(process);
+    return false;
+  }
+
+  shared_file_t *const shared_stderr = shared_file_new(stderr);
+  if (!shared_stderr) {
+    vfs_close(stderr);
+    shared_file_drop(shared_stdout);
+    shared_file_drop(shared_stdin);
+    vm_drop_addr_space(addr_space);
+    free(fp_simd_ctx);
+    free(process);
+    return false;
+  }
+
   // Set thread/process data.
 
   thread_t *const curr_thread = current_thread();
@@ -259,7 +321,10 @@ bool process_create(void) {
     process->signal_handlers[i] = SIG_DFL;
   }
   process->cwd = rootfs.root;
-  for (size_t i = 0; i < N_FDS; i++) {
+  process->fds[0] = shared_stdin;
+  process->fds[1] = shared_stdout;
+  process->fds[2] = shared_stderr;
+  for (size_t i = 3; i < N_FDS; i++) {
     process->fds[i] = NULL;
   }
   curr_thread->process = process;
