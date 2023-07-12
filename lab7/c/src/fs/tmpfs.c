@@ -43,6 +43,8 @@ static int _tmpfs_read(struct file *file, void *buf, size_t len);
 static int _tmpfs_open(struct vnode *file_node, struct file **target);
 static int _tmpfs_close(struct file *file);
 static long _tmpfs_lseek64(struct file *file, long offset, int whence);
+static int _tmpfs_ioctl(struct file *file, unsigned long request,
+                        void *payload);
 
 static int _tmpfs_lookup(struct vnode *dir_node, struct vnode **target,
                          const char *component_name);
@@ -60,7 +62,8 @@ static struct file_operations _tmpfs_file_operations = {.write = _tmpfs_write,
                                                         .open = _tmpfs_open,
                                                         .close = _tmpfs_close,
                                                         .lseek64 =
-                                                            _tmpfs_lseek64};
+                                                            _tmpfs_lseek64,
+                                                        .ioctl = _tmpfs_ioctl};
 
 static struct vnode_operations _tmpfs_vnode_operations = {
     .lookup = _tmpfs_lookup,
@@ -249,6 +252,15 @@ static long _tmpfs_lseek64(struct file *const file, const long offset,
     file->f_pos = new_f_pos;
     return 0;
   }
+}
+
+static int _tmpfs_ioctl(struct file *const file, const unsigned long request,
+                        void *const payload) {
+  (void)file;
+  (void)request;
+  (void)payload;
+
+  return -ENOTTY;
 }
 
 static int _tmpfs_lookup(struct vnode *const dir_node,

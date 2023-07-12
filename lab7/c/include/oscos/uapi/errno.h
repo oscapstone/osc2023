@@ -11,6 +11,7 @@
 #define EISDIR 21
 #define EINVAL 22
 #define EMFILE 24
+#define ENOTTY 25
 #define EFBIG 27
 #define ESPIPE 29
 #define EROFS 30

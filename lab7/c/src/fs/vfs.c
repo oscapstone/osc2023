@@ -248,6 +248,15 @@ int vfs_read(struct file *const file, void *const buf, const size_t len) {
   return file->f_ops->read(file, buf, len);
 }
 
+long vfs_lseek64(struct file *const file, const long offset, const int whence) {
+  return file->f_ops->lseek64(file, offset, whence);
+}
+
+int vfs_ioctl(struct file *const file, const unsigned long request,
+              void *const payload) {
+  return file->f_ops->ioctl(file, request, payload);
+}
+
 int vfs_mkdir(const char *const pathname) {
   return vfs_mkdir_relative(rootfs.root, pathname);
 }

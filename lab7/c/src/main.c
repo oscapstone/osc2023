@@ -7,6 +7,7 @@
 #include "oscos/drivers/l2ic.h"
 #include "oscos/drivers/mailbox.h"
 #include "oscos/drivers/pm.h"
+#include "oscos/framebuffer-dev.h"
 #include "oscos/fs/initramfs.h"
 #include "oscos/fs/tmpfs.h"
 #include "oscos/fs/vfs.h"
@@ -79,6 +80,9 @@ void main(const void *const dtb_start) {
   vfs_op_result = register_device(&console_dev);
   if (vfs_op_result < 0)
     PANIC("Cannot register console device: errno %d", -vfs_op_result);
+  vfs_op_result = register_device(&framebuffer_dev);
+  if (vfs_op_result < 0)
+    PANIC("Cannot register framebuffer device: errno %d", -vfs_op_result);
 
   vfs_op_result = tmpfs.setup_mount(&tmpfs, &rootfs);
   if (vfs_op_result < 0)
@@ -97,6 +101,9 @@ void main(const void *const dtb_start) {
   vfs_op_result = vfs_mknod("/dev/uart", "console");
   if (vfs_op_result < 0)
     PANIC("Cannot mknod /dev/uart: errno %d", -vfs_op_result);
+  vfs_op_result = vfs_mknod("/dev/framebuffer", "framebuffer");
+  if (vfs_op_result < 0)
+    PANIC("Cannot mknod /dev/framebuffer: errno %d", -vfs_op_result);
 
   thread_create(_run_shell, NULL);
 

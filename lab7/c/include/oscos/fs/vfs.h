@@ -41,6 +41,7 @@ struct file_operations {
   int (*open)(struct vnode *file_node, struct file **target);
   int (*close)(struct file *file);
   long (*lseek64)(struct file *file, long offset, int whence);
+  int (*ioctl)(struct file *file, unsigned long request, void *payload);
 };
 
 struct vnode_operations {
@@ -65,6 +66,8 @@ int vfs_open_relative(struct vnode *cwd, const char *pathname, int flags,
 int vfs_close(struct file *file);
 int vfs_write(struct file *file, const void *buf, size_t len);
 int vfs_read(struct file *file, void *buf, size_t len);
+long vfs_lseek64(struct file *file, long offset, int whence);
+int vfs_ioctl(struct file *file, unsigned long request, void *payload);
 
 int vfs_mkdir(const char *pathname);
 int vfs_mkdir_relative(struct vnode *cwd, const char *pathname);

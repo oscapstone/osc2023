@@ -3,6 +3,7 @@
 
 #include <stddef.h>
 
+#include "oscos-uapi/stdio.h" // SEEK_*
 #include "oscos-uapi/unistd.h"
 
 typedef int pid_t;
@@ -22,6 +23,8 @@ ssize_t write(int fd, const void *buf, size_t count);
 ssize_t read(int fd, void *buf, size_t count);
 
 int chdir(const char *path);
+
+long lseek64(int fd, long offset, int whence);
 
 long syscall(long number, ...);
 

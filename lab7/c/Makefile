@@ -21,8 +21,8 @@ LDFLAGS_RELEASE = -flto -Xlinker --gc-sections
 
 LDLIBS_BASE = -lgcc
 
-OBJS      = start main console console-dev console-suspend devicetree initrd \
-            panic shell \
+OBJS      = start main console console-dev console-suspend devicetree \
+            framebuffer-dev initrd panic shell \
             drivers/aux drivers/gpio drivers/l1ic drivers/l2ic drivers/mailbox \
             drivers/mini-uart drivers/pm \
             fs/initramfs fs/tmpfs fs/vfs \
@@ -43,8 +43,8 @@ OBJS      = start main console console-dev console-suspend devicetree initrd \
             xcpt/syscall/signal xcpt/syscall/signal-kill xcpt/syscall/mmap \
             xcpt/syscall/open xcpt/syscall/close xcpt/syscall/write \
             xcpt/syscall/read xcpt/syscall/mkdir xcpt/syscall/mount \
-            xcpt/syscall/chdir xcpt/syscall/sigreturn \
-            xcpt/syscall/sigreturn-check \
+            xcpt/syscall/chdir xcpt/syscall/lseek64 xcpt/syscall/ioctl \
+            xcpt/syscall/sigreturn xcpt/syscall/sigreturn-check \
             libc/ctype libc/stdio libc/stdlib/qsort libc/string \
             utils/core-id utils/fmt utils/heapq utils/rb
 LD_SCRIPT = $(SRC_DIR)/linker.ld

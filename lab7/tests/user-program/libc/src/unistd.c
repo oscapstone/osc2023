@@ -29,3 +29,7 @@ ssize_t read(const int fd, void *const buf, const size_t count) {
 }
 
 int chdir(const char *const path) { return syscall(SYS_chdir, path); }
+
+long lseek64(const int fd, const long offset, const int whence) {
+  return syscall(SYS_lseek64, fd, offset, whence);
+}

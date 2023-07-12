@@ -17,6 +17,8 @@ static int _console_dev_read(struct file *file, void *buf, size_t len);
 static int _console_dev_open(struct vnode *file_node, struct file **target);
 static int _console_dev_close(struct file *file);
 static long _console_dev_lseek64(struct file *file, long offset, int whence);
+static int _console_dev_ioctl(struct file *file, unsigned long request,
+                              void *payload);
 
 static int _console_dev_lookup(struct vnode *dir_node, struct vnode **target,
                                const char *component_name);
@@ -35,7 +37,8 @@ static struct file_operations _console_dev_file_operations = {
     .read = _console_dev_read,
     .open = _console_dev_open,
     .close = _console_dev_close,
-    .lseek64 = _console_dev_lseek64};
+    .lseek64 = _console_dev_lseek64,
+    .ioctl = _console_dev_ioctl};
 
 static struct vnode_operations _console_dev_vnode_operations = {
     .lookup = _console_dev_lookup,
@@ -95,6 +98,15 @@ static long _console_dev_lseek64(struct file *const file, const long offset,
   (void)whence;
 
   return -ESPIPE;
+}
+
+static int _console_dev_ioctl(struct file *file, unsigned long request,
+                              void *payload) {
+  (void)file;
+  (void)request;
+  (void)payload;
+
+  return -ENOTTY;
 }
 
 static int _console_dev_lookup(struct vnode *const dir_node,
