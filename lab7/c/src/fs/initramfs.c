@@ -33,6 +33,8 @@ static int _initramfs_create(struct vnode *dir_node, struct vnode **target,
                              const char *component_name);
 static int _initramfs_mkdir(struct vnode *dir_node, struct vnode **target,
                             const char *component_name);
+int _initramfs_mknod(struct vnode *dir_node, struct vnode **target,
+                     const char *component_name, struct device *device);
 
 struct filesystem initramfs = {.name = "initramfs",
                                .setup_mount = _initramfs_setup_mount};
@@ -47,7 +49,8 @@ static struct file_operations _initramfs_file_operations = {
 static struct vnode_operations _initramfs_vnode_operations = {
     .lookup = _initramfs_lookup,
     .create = _initramfs_create,
-    .mkdir = _initramfs_mkdir};
+    .mkdir = _initramfs_mkdir,
+    .mknod = _initramfs_mknod};
 
 static int _initramfs_cmp_child_vnode_entries_by_component_name(
     const initramfs_child_vnode_entry_t *const e1,
@@ -328,6 +331,17 @@ static int _initramfs_mkdir(struct vnode *const dir_node,
   (void)dir_node;
   (void)target;
   (void)component_name;
+
+  return -EROFS;
+}
+
+int _initramfs_mknod(struct vnode *const dir_node, struct vnode **const target,
+                     const char *const component_name,
+                     struct device *const device) {
+  (void)dir_node;
+  (void)target;
+  (void)component_name;
+  (void)device;
 
   return -EROFS;
 }

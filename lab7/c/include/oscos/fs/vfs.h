@@ -50,6 +50,8 @@ struct vnode_operations {
                 const char *component_name);
   int (*mkdir)(struct vnode *dir_node, struct vnode **target,
                const char *component_name);
+  int (*mknod)(struct vnode *dir_node, struct vnode **target,
+               const char *component_name, struct device *device);
 };
 
 extern struct mount rootfs;

@@ -50,6 +50,8 @@ static int _tmpfs_create(struct vnode *dir_node, struct vnode **target,
                          const char *component_name);
 static int _tmpfs_mkdir(struct vnode *dir_node, struct vnode **target,
                         const char *component_name);
+static int _tmpfs_mknod(struct vnode *dir_node, struct vnode **target,
+                        const char *component_name, struct device *device);
 
 struct filesystem tmpfs = {.name = "tmpfs", .setup_mount = _tmpfs_setup_mount};
 
@@ -61,7 +63,10 @@ static struct file_operations _tmpfs_file_operations = {.write = _tmpfs_write,
                                                             _tmpfs_lseek64};
 
 static struct vnode_operations _tmpfs_vnode_operations = {
-    .lookup = _tmpfs_lookup, .create = _tmpfs_create, .mkdir = _tmpfs_mkdir};
+    .lookup = _tmpfs_lookup,
+    .create = _tmpfs_create,
+    .mkdir = _tmpfs_mkdir,
+    .mknod = _tmpfs_mknod};
 
 static int
 _tmpfs_cmp_dir_contents_entries(const tmpfs_dir_contents_entry_t *const e1,
@@ -307,7 +312,7 @@ static int _tmpfs_create(struct vnode *const dir_node,
     goto end;
   }
 
-  const char *const entry_component_name = strdup(component_name);
+  char *const entry_component_name = strdup(component_name);
   if (!entry_component_name) {
     result = -ENOMEM;
     goto end;
@@ -315,6 +320,7 @@ static int _tmpfs_create(struct vnode *const dir_node,
 
   struct vnode *const vnode = _tmpfs_create_file_vnode(dir_node->mount);
   if (!vnode) {
+    free(entry_component_name);
     result = -ENOMEM;
     goto end;
   }
@@ -357,7 +363,7 @@ static int _tmpfs_mkdir(struct vnode *const dir_node,
     goto end;
   }
 
-  const char *const entry_component_name = strdup(component_name);
+  char *const entry_component_name = strdup(component_name);
   if (!entry_component_name) {
     result = -ENOMEM;
     goto end;
@@ -366,7 +372,67 @@ static int _tmpfs_mkdir(struct vnode *const dir_node,
   struct vnode *const vnode =
       _tmpfs_create_dir_vnode(dir_node->mount, dir_node);
   if (!vnode) {
+    free(entry_component_name);
     result = -ENOMEM;
+    goto end;
+  }
+
+  const tmpfs_dir_contents_entry_t new_entry = {
+      .component_name = entry_component_name, .vnode = vnode};
+  rb_insert(&dir_data->contents, sizeof(tmpfs_dir_contents_entry_t), &new_entry,
+            (int (*)(const void *, const void *,
+                     void *))_tmpfs_cmp_dir_contents_entries,
+            NULL);
+
+  *target = vnode;
+  result = 0;
+
+end:
+  CRITICAL_SECTION_LEAVE(daif_val);
+  return result;
+}
+
+static int _tmpfs_mknod(struct vnode *const dir_node,
+                        struct vnode **const target,
+                        const char *const component_name,
+                        struct device *const device) {
+  tmpfs_internal_t *const internal = (tmpfs_internal_t *)dir_node->internal;
+  if (internal->type != TYPE_DIR)
+    return -ENOTDIR;
+
+  int result;
+  tmpfs_internal_dir_data_t *const dir_data = &internal->dir_data;
+
+  uint64_t daif_val;
+  CRITICAL_SECTION_ENTER(daif_val);
+
+  const tmpfs_dir_contents_entry_t *const existing_entry = rb_search(
+      dir_data->contents, component_name,
+      (int (*)(const void *, const void *,
+               void *))_tmpfs_cmp_component_name_and_dir_contents_entry,
+      NULL);
+  if (existing_entry) {
+    result = -EEXIST;
+    goto end;
+  }
+
+  char *const entry_component_name = strdup(component_name);
+  if (!entry_component_name) {
+    result = -ENOMEM;
+    goto end;
+  }
+
+  struct vnode *const vnode = malloc(sizeof(struct vnode));
+  if (!vnode) {
+    free(entry_component_name);
+    result = -ENOMEM;
+    goto end;
+  }
+  vnode->mount = dir_node->mount;
+
+  if ((result = device->setup_mount(device, vnode)) < 0) {
+    free(vnode);
+    free(entry_component_name);
     goto end;
   }
 

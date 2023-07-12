@@ -24,6 +24,8 @@ static int _console_dev_create(struct vnode *dir_node, struct vnode **target,
                                const char *component_name);
 static int _console_dev_mkdir(struct vnode *dir_node, struct vnode **target,
                               const char *component_name);
+int _console_mknod(struct vnode *dir_node, struct vnode **target,
+                   const char *component_name, struct device *device);
 
 struct device console_dev = {.name = "console",
                              .setup_mount = _console_dev_setup_mount};
@@ -38,7 +40,8 @@ static struct file_operations _console_dev_file_operations = {
 static struct vnode_operations _console_dev_vnode_operations = {
     .lookup = _console_dev_lookup,
     .create = _console_dev_create,
-    .mkdir = _console_dev_mkdir};
+    .mkdir = _console_dev_mkdir,
+    .mknod = _console_mknod};
 
 static int _console_dev_setup_mount(struct device *const dev,
                                     struct vnode *const vnode) {
@@ -120,6 +123,17 @@ static int _console_dev_mkdir(struct vnode *const dir_node,
   (void)dir_node;
   (void)target;
   (void)component_name;
+
+  return -ENOTDIR;
+}
+
+int _console_mknod(struct vnode *const dir_node, struct vnode **const target,
+                   const char *const component_name,
+                   struct device *const device) {
+  (void)dir_node;
+  (void)target;
+  (void)component_name;
+  (void)device;
 
   return -ENOTDIR;
 }

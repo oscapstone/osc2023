@@ -13,22 +13,11 @@ typedef struct {
   struct mount *mount;
 } mount_entry_t;
 
-typedef struct {
-  struct vnode *mountpoint;
-  rb_node_t *devices;
-} device_mountpoints_entry_t;
-
-typedef struct {
-  const char *name;
-  struct vnode *vnode;
-} devices_entry_t;
-
 struct mount rootfs;
 
 static rb_node_t *_filesystems = NULL;
 static rb_node_t *_devices = NULL;
 static rb_node_t *_mounts_by_mountpoint = NULL, *_mounts_by_root = NULL;
-static rb_node_t *_device_mountpoints = NULL;
 
 static int _vfs_cmp_filesystems_by_name(const struct filesystem *const fs1,
                                         const struct filesystem *const fs2,
@@ -60,46 +49,6 @@ static int _vfs_cmp_name_and_device(const char *const name,
   (void)_arg;
 
   return strcmp(name, dev->name);
-}
-
-static int _vfs_cmp_device_mountpoints_entries_by_mountpoint(
-    const device_mountpoints_entry_t *const e1,
-    const device_mountpoints_entry_t *const e2, void *const _arg) {
-  (void)_arg;
-
-  if (e1->mountpoint < e2->mountpoint)
-    return -1;
-  if (e1->mountpoint > e2->mountpoint)
-    return 1;
-  return 0;
-}
-
-static int _vfs_cmp_mountpoint_and_device_mountpoints_entry(
-    const struct vnode *const mountpoint,
-    const device_mountpoints_entry_t *const entry, void *const _arg) {
-  (void)_arg;
-
-  if (mountpoint < entry->mountpoint)
-    return -1;
-  if (mountpoint > entry->mountpoint)
-    return 1;
-  return 0;
-}
-
-static int _vfs_cmp_devices_entry_by_name(const devices_entry_t *const e1,
-                                          const devices_entry_t *const e2,
-                                          void *const _arg) {
-  (void)_arg;
-
-  return strcmp(e1->name, e2->name);
-}
-
-static int _vfs_cmp_name_and_devices_entry(const char *const name,
-                                           const devices_entry_t *const entry,
-                                           void *const _arg) {
-  (void)_arg;
-
-  return strcmp(name, entry->name);
 }
 
 static int _vfs_cmp_mounts_by_mountpoint(const mount_entry_t *const m1,
@@ -201,34 +150,6 @@ static int _vfs_lookup_step(struct vnode *curr_vnode,
     }
   }
 
-  uint64_t daif_val;
-  CRITICAL_SECTION_ENTER(daif_val);
-
-  const device_mountpoints_entry_t *const device_mountpoints_entry = rb_search(
-      _device_mountpoints, curr_vnode,
-      (int (*)(const void *, const void *,
-               void *))_vfs_cmp_mountpoint_and_device_mountpoints_entry,
-      NULL);
-
-  CRITICAL_SECTION_LEAVE(daif_val);
-
-  if (device_mountpoints_entry) {
-    CRITICAL_SECTION_ENTER(daif_val);
-
-    const devices_entry_t *const devices_entry =
-        rb_search(device_mountpoints_entry->devices, component_name,
-                  (int (*)(const void *, const void *,
-                           void *))_vfs_cmp_name_and_devices_entry,
-                  NULL);
-
-    CRITICAL_SECTION_LEAVE(daif_val);
-
-    if (devices_entry) {
-      *target = devices_entry->vnode;
-      return 0;
-    }
-  }
-
   const int result =
       curr_vnode->v_ops->lookup(curr_vnode, target, component_name);
   if (result < 0)
@@ -237,6 +158,7 @@ static int _vfs_lookup_step(struct vnode *curr_vnode,
   // If the new node is the mountpoint of a mounted file system, jump to the
   // filesystem root.
 
+  uint64_t daif_val;
   CRITICAL_SECTION_ENTER(daif_val);
 
   const mount_entry_t *const entry =
@@ -302,8 +224,8 @@ int vfs_open_relative(struct vnode *const cwd, const char *const pathname,
     return lookup_result;
 
   struct vnode *curr_vnode;
-  const int result =
-      _vfs_lookup_step(parent_vnode, &curr_vnode, last_pathname_component);
+  const int result = parent_vnode->v_ops->lookup(parent_vnode, &curr_vnode,
+                                                 last_pathname_component);
   if (result == -ENOENT && flags & O_CREAT) {
     const int result = parent_vnode->v_ops->create(parent_vnode, &curr_vnode,
                                                    last_pathname_component);
@@ -427,13 +349,6 @@ int vfs_mknod(const char *target, const char *device) {
   if (result < 0)
     return result;
 
-  // Check if the target exists.
-
-  struct vnode *full_lookup_vnode;
-  const int full_lookup_result = vfs_lookup(target, &full_lookup_vnode);
-  if (full_lookup_result >= 0)
-    return -EEXIST;
-
   // Find the device struct.
 
   uint64_t daif_val;
@@ -449,64 +364,9 @@ int vfs_mknod(const char *target, const char *device) {
   if (!dev)
     return -ENODEV;
 
-  // Allocate the vnode and the entry name.
-
-  struct vnode *const vnode = malloc(sizeof(struct vnode));
-  if (!vnode)
-    return -ENOMEM;
-
-  const char *const entry_name = strdup(last_pathname_component);
-  if (!entry_name) {
-    free(vnode);
-    return -ENOMEM;
-  }
-
-  // Create the mountpoint entry.
-
-  CRITICAL_SECTION_ENTER(daif_val);
-
-  device_mountpoints_entry_t *device_mountpoints_entry =
-      (device_mountpoints_entry_t *)rb_search(
-          _device_mountpoints, mountpoint,
-          (int (*)(const void *, const void *,
-                   void *))_vfs_cmp_mountpoint_and_device_mountpoints_entry,
-          NULL);
-  if (!device_mountpoints_entry) {
-    const device_mountpoints_entry_t new_entry = {.mountpoint = mountpoint,
-                                                  .devices = NULL};
-    rb_insert(
-        &_device_mountpoints, sizeof(device_mountpoints_entry_t), &new_entry,
-        (int (*)(const void *, const void *,
-                 void *))_vfs_cmp_device_mountpoints_entries_by_mountpoint,
-        NULL);
-    device_mountpoints_entry = (device_mountpoints_entry_t *)rb_search(
-        _device_mountpoints, mountpoint,
-        (int (*)(const void *, const void *,
-                 void *))_vfs_cmp_mountpoint_and_device_mountpoints_entry,
-        NULL);
-  }
-
-  CRITICAL_SECTION_LEAVE(daif_val);
-
-  // Initialize the device.
-
-  vnode->mount = mountpoint->mount;
-  dev->setup_mount(dev, vnode);
-
-  // Insert everything.
-
-  CRITICAL_SECTION_ENTER(daif_val);
-
-  const devices_entry_t new_entry = {.name = entry_name, .vnode = vnode};
-  rb_insert(&device_mountpoints_entry->devices, sizeof(devices_entry_t),
-            &new_entry,
-            (int (*)(const void *, const void *,
-                     void *))_vfs_cmp_devices_entry_by_name,
-            NULL);
-
-  CRITICAL_SECTION_LEAVE(daif_val);
-
-  return 0;
+  struct vnode *target_vnode;
+  return mountpoint->v_ops->mknod(mountpoint, &target_vnode,
+                                  last_pathname_component, dev);
 }
 
 shared_file_t *shared_file_new(struct file *const file) {
