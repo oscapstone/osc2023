@@ -4,7 +4,7 @@
 #include "oscos/libc/string.h"
 #include "oscos/mem/malloc.h"
 #include "oscos/uapi/errno.h"
-#include "oscos/uapi/stdio.h"
+#include "oscos/uapi/unistd.h"
 #include "oscos/utils/critical-section.h"
 #include "oscos/utils/rb.h"
 
@@ -35,8 +35,9 @@ static int _initramfs_create(struct vnode *dir_node, struct vnode **target,
                              const char *component_name);
 static int _initramfs_mkdir(struct vnode *dir_node, struct vnode **target,
                             const char *component_name);
-int _initramfs_mknod(struct vnode *dir_node, struct vnode **target,
-                     const char *component_name, struct device *device);
+static int _initramfs_mknod(struct vnode *dir_node, struct vnode **target,
+                            const char *component_name, struct device *device);
+static long _initramfs_get_size(struct vnode *vnode);
 
 struct filesystem initramfs = {.name = "initramfs",
                                .setup_mount = _initramfs_setup_mount};
@@ -53,7 +54,8 @@ static struct vnode_operations _initramfs_vnode_operations = {
     .lookup = _initramfs_lookup,
     .create = _initramfs_create,
     .mkdir = _initramfs_mkdir,
-    .mknod = _initramfs_mknod};
+    .mknod = _initramfs_mknod,
+    .get_size = _initramfs_get_size};
 
 static int _initramfs_cmp_child_vnode_entries_by_component_name(
     const initramfs_child_vnode_entry_t *const e1,
@@ -95,6 +97,9 @@ _initramfs_create_vnode(struct mount *const mount, struct vnode *const parent,
 
 static int _initramfs_setup_mount(struct filesystem *const fs,
                                   struct mount *const mount) {
+  if (!initrd_is_init())
+    return -EIO;
+
   struct vnode *const root_vnode = _initramfs_create_vnode(mount, NULL, NULL);
   if (!root_vnode)
     return -ENOMEM;
@@ -347,13 +352,25 @@ static int _initramfs_mkdir(struct vnode *const dir_node,
   return -EROFS;
 }
 
-int _initramfs_mknod(struct vnode *const dir_node, struct vnode **const target,
-                     const char *const component_name,
-                     struct device *const device) {
+static int _initramfs_mknod(struct vnode *const dir_node,
+                            struct vnode **const target,
+                            const char *const component_name,
+                            struct device *const device) {
   (void)dir_node;
   (void)target;
   (void)component_name;
   (void)device;
 
   return -EROFS;
+}
+
+static long _initramfs_get_size(struct vnode *const vnode) {
+  const initramfs_internal_t *const internal = vnode->internal;
+  const cpio_newc_entry_t *const entry = internal->entry;
+
+  const uint32_t mode = CPIO_NEWC_HEADER_VALUE(entry, mode);
+  const uint32_t file_type = mode & CPIO_NEWC_MODE_FILE_TYPE_MASK;
+  return file_type == CPIO_NEWC_MODE_FILE_TYPE_REG
+             ? (long)CPIO_NEWC_FILESIZE(entry)
+             : -1;
 }

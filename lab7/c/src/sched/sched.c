@@ -300,17 +300,14 @@ bool process_create(void) {
 
   const mem_region_t stack_region = {.start = (void *)0xffffffffb000ULL,
                                      .len = 4 << PAGE_ORDER,
-                                     .type = MEM_REGION_BACKED,
-                                     .backing_storage_start = NULL,
-                                     .backing_storage_len = 0,
+                                     .type = MEM_REGION_ANONYMOUS,
                                      .prot = PROT_READ | PROT_WRITE};
   vm_mem_regions_insert_region(&process->addr_space.mem_regions, &stack_region);
 
   const mem_region_t vc_region = {.start = (void *)0x3b400000ULL,
                                   .len = 0x3f000000ULL - 0x3b400000ULL,
                                   .type = MEM_REGION_LINEAR,
-                                  .backing_storage_start =
-                                      (void *)0x3b400000ULL,
+                                  .pa_base = 0x3b400000,
                                   .prot = PROT_READ | PROT_WRITE};
   vm_mem_regions_insert_region(&process->addr_space.mem_regions, &vc_region);
 
@@ -350,19 +347,34 @@ void switch_vm(const thread_t *const thread) {
   }
 }
 
-static void _exec_generic(const void *const text_start, const size_t text_len,
+static void _exec_generic(struct file *const text_file,
                           const bool remove_text_region) {
   thread_t *const curr_thread = current_thread();
   process_t *const curr_process = curr_thread->process;
 
+  const long text_len = text_file->vnode->v_ops->get_size(text_file->vnode);
+  if (text_len < 0)
+    return;
+
+  shared_file_t *const shared_text_file = shared_file_new(text_file);
+  if (!shared_text_file)
+    return;
+
   // Remove old text region.
 
   if (remove_text_region) {
+    shared_file_t *const old_text_file =
+        vm_mem_regions_find_region(&curr_process->addr_space.mem_regions,
+                                   (void *)0x0)
+            ->backing_file;
+
     if (!vm_remove_region(&curr_process->addr_space, (void *)0x0))
       return;
 
     // Set ttbr0_el1 again, as it might have changed.
     vm_switch_to_addr_space(&curr_process->addr_space);
+
+    shared_file_drop(old_text_file);
   }
 
   // We don't know exactly how large the .bss section of a user program is, so
@@ -373,8 +385,7 @@ static void _exec_generic(const void *const text_start, const size_t text_len,
   const mem_region_t text_region = {.start = (void *)0x0,
                                     .len = ALIGN(text_len * 2, 4096),
                                     .type = MEM_REGION_BACKED,
-                                    .backing_storage_start = text_start,
-                                    .backing_storage_len = text_len,
+                                    .backing_file = shared_text_file,
                                     .prot = PROT_READ | PROT_WRITE | PROT_EXEC};
   vm_mem_regions_insert_region(&curr_process->addr_space.mem_regions,
                                &text_region);
@@ -388,13 +399,11 @@ static void _exec_generic(const void *const text_start, const size_t text_len,
   user_program_main((void *)0x0, (void *)0xfffffffff000ULL, kernel_stack_end);
 }
 
-void exec_first(const void *const text_start, const size_t text_len) {
-  _exec_generic(text_start, text_len, false);
+void exec_first(struct file *const text_file) {
+  _exec_generic(text_file, false);
 }
 
-void exec(const void *const text_start, const size_t text_len) {
-  _exec_generic(text_start, text_len, true);
-}
+void exec(struct file *const text_file) { _exec_generic(text_file, true); }
 
 static void _thread_cleanup(thread_t *const thread) {
   if (thread->process) {

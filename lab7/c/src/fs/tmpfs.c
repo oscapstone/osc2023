@@ -5,7 +5,7 @@
 #include "oscos/mem/page-alloc.h"
 #include "oscos/mem/vm.h"
 #include "oscos/uapi/errno.h"
-#include "oscos/uapi/stdio.h"
+#include "oscos/uapi/unistd.h"
 #include "oscos/utils/critical-section.h"
 #include "oscos/utils/rb.h"
 
@@ -54,6 +54,7 @@ static int _tmpfs_mkdir(struct vnode *dir_node, struct vnode **target,
                         const char *component_name);
 static int _tmpfs_mknod(struct vnode *dir_node, struct vnode **target,
                         const char *component_name, struct device *device);
+static long _tmpfs_get_size(struct vnode *vnode);
 
 struct filesystem tmpfs = {.name = "tmpfs", .setup_mount = _tmpfs_setup_mount};
 
@@ -69,7 +70,8 @@ static struct vnode_operations _tmpfs_vnode_operations = {
     .lookup = _tmpfs_lookup,
     .create = _tmpfs_create,
     .mkdir = _tmpfs_mkdir,
-    .mknod = _tmpfs_mknod};
+    .mknod = _tmpfs_mknod,
+    .get_size = _tmpfs_get_size};
 
 static int
 _tmpfs_cmp_dir_contents_entries(const tmpfs_dir_contents_entry_t *const e1,
@@ -461,4 +463,13 @@ static int _tmpfs_mknod(struct vnode *const dir_node,
 end:
   CRITICAL_SECTION_LEAVE(daif_val);
   return result;
+}
+
+static long _tmpfs_get_size(struct vnode *const vnode) {
+  const tmpfs_internal_t *const internal = vnode->internal;
+  if (internal->type != TYPE_FILE)
+    return -1;
+
+  const tmpfs_internal_file_data_t *const file_data = &internal->file_data;
+  return file_data->size;
 }

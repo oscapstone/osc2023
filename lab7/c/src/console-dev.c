@@ -6,7 +6,7 @@
 #include "oscos/mem/page-alloc.h"
 #include "oscos/mem/vm.h"
 #include "oscos/uapi/errno.h"
-#include "oscos/uapi/stdio.h"
+#include "oscos/uapi/unistd.h"
 #include "oscos/utils/critical-section.h"
 #include "oscos/utils/rb.h"
 
@@ -26,8 +26,9 @@ static int _console_dev_create(struct vnode *dir_node, struct vnode **target,
                                const char *component_name);
 static int _console_dev_mkdir(struct vnode *dir_node, struct vnode **target,
                               const char *component_name);
-int _console_mknod(struct vnode *dir_node, struct vnode **target,
-                   const char *component_name, struct device *device);
+static int _console_mknod(struct vnode *dir_node, struct vnode **target,
+                          const char *component_name, struct device *device);
+static long _console_get_size(struct vnode *vnode);
 
 struct device console_dev = {.name = "console",
                              .setup_mount = _console_dev_setup_mount};
@@ -44,7 +45,8 @@ static struct vnode_operations _console_dev_vnode_operations = {
     .lookup = _console_dev_lookup,
     .create = _console_dev_create,
     .mkdir = _console_dev_mkdir,
-    .mknod = _console_mknod};
+    .mknod = _console_mknod,
+    .get_size = _console_get_size};
 
 static int _console_dev_setup_mount(struct device *const dev,
                                     struct vnode *const vnode) {
@@ -139,13 +141,20 @@ static int _console_dev_mkdir(struct vnode *const dir_node,
   return -ENOTDIR;
 }
 
-int _console_mknod(struct vnode *const dir_node, struct vnode **const target,
-                   const char *const component_name,
-                   struct device *const device) {
+static int _console_mknod(struct vnode *const dir_node,
+                          struct vnode **const target,
+                          const char *const component_name,
+                          struct device *const device) {
   (void)dir_node;
   (void)target;
   (void)component_name;
   (void)device;
 
   return -ENOTDIR;
+}
+
+static long _console_get_size(struct vnode *const vnode) {
+  (void)vnode;
+
+  return -1;
 }

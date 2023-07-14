@@ -3,7 +3,6 @@
 
 #include <stddef.h>
 
-#include "oscos-uapi/stdio.h" // SEEK_*
 #include "oscos-uapi/unistd.h"
 
 typedef int pid_t;

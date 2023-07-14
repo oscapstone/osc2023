@@ -6,7 +6,7 @@
 #include "oscos/mem/page-alloc.h"
 #include "oscos/mem/vm.h"
 #include "oscos/uapi/errno.h"
-#include "oscos/uapi/stdio.h"
+#include "oscos/uapi/unistd.h"
 #include "oscos/utils/critical-section.h"
 #include "oscos/utils/rb.h"
 
@@ -43,6 +43,7 @@ static int _framebuffer_dev_mkdir(struct vnode *dir_node, struct vnode **target,
 static int _framebuffer_dev_mknod(struct vnode *dir_node, struct vnode **target,
                                   const char *component_name,
                                   struct device *device);
+static long _framebuffer_dev_get_size(struct vnode *dir_node);
 
 struct device framebuffer_dev = {.name = "framebuffer",
                                  .setup_mount = _framebuffer_dev_setup_mount};
@@ -59,7 +60,8 @@ static struct vnode_operations _framebuffer_dev_vnode_operations = {
     .lookup = _framebuffer_dev_lookup,
     .create = _framebuffer_dev_create,
     .mkdir = _framebuffer_dev_mkdir,
-    .mknod = _framebuffer_dev_mknod};
+    .mknod = _framebuffer_dev_mknod,
+    .get_size = _framebuffer_dev_get_size};
 
 static int _framebuffer_dev_setup_mount(struct device *const dev,
                                         struct vnode *const vnode) {
@@ -233,4 +235,9 @@ static int _framebuffer_dev_mknod(struct vnode *const dir_node,
   (void)device;
 
   return -ENOTDIR;
+}
+
+static long _framebuffer_dev_get_size(struct vnode *const vnode) {
+  const framebuffer_dev_internal_t *const internal = vnode->internal;
+  return internal->framebuffer_size;
 }

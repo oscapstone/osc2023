@@ -302,7 +302,11 @@ int vfs_mount_relative(struct vnode *const cwd, const char *const target,
   if (!mount)
     return -ENOMEM;
 
-  fs->setup_mount(fs, mount);
+  const int setup_mount_result = fs->setup_mount(fs, mount);
+  if (setup_mount_result < 0) {
+    free(mount);
+    return setup_mount_result;
+  }
 
   const mount_entry_t entry = {.mountpoint = mountpoint, .mount = mount};
 
