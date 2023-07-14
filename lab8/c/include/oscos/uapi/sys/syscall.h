@@ -19,6 +19,8 @@
 #define SYS_mkdir 15
 #define SYS_mount 16
 #define SYS_chdir 17
-#define SYS_sigreturn 18
+#define SYS_lseek64 18
+#define SYS_ioctl 19
+#define SYS_sigreturn 20
 
 #endif

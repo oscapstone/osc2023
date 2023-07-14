@@ -7,6 +7,7 @@
 #include "oscos/mem/page-alloc.h"
 #include "oscos/mem/shared-page.h"
 #include "oscos/sched.h"
+#include "oscos/uapi/unistd.h"
 #include "oscos/utils/align.h"
 #include "oscos/utils/critical-section.h"
 
@@ -107,9 +108,26 @@ static void _vm_clone_pgd(page_table_entry_t *const pgd) {
   CRITICAL_SECTION_LEAVE(daif_val);
 }
 
+static bool _vm_mem_regions_cloner(mem_region_t *const dst,
+                                   const mem_region_t *const src) {
+  *dst = *src;
+  if (src->type == MEM_REGION_BACKED) {
+    dst->backing_file = shared_file_clone(src->backing_file);
+  }
+  return true;
+}
+
+static void _vm_mem_regions_deleter(mem_region_t *const region) {
+  if (region->type == MEM_REGION_BACKED) {
+    shared_file_drop(region->backing_file);
+  }
+}
+
 vm_addr_space_t vm_clone_addr_space(const vm_addr_space_t addr_space) {
   rb_node_t *const new_regions_root =
-      rb_clone(addr_space.mem_regions.root, sizeof(mem_region_t), NULL, NULL);
+      rb_clone(addr_space.mem_regions.root, sizeof(mem_region_t),
+               (bool (*)(void *, const void *))_vm_mem_regions_cloner,
+               (void (*)(void *))_vm_mem_regions_deleter);
   if (!new_regions_root)
     return (vm_addr_space_t){.mem_regions = (mem_regions_t){.root = NULL}};
 
@@ -153,7 +171,8 @@ static void _vm_drop_pgd(page_table_entry_t *const pgd) {
 
 void vm_drop_addr_space(const vm_addr_space_t addr_space) {
   _vm_drop_pgd(addr_space.pgd);
-  rb_drop(addr_space.mem_regions.root, NULL);
+  rb_drop(addr_space.mem_regions.root,
+          (void (*)(void *))_vm_mem_regions_deleter);
 }
 
 static page_table_entry_t *
@@ -235,19 +254,59 @@ static void _init_backed_page(const mem_region_t *const mem_region,
       (void *)((uintptr_t)va & ~((1 << PAGE_ORDER) - 1));
   size_t offset = (char *)va_page_start - (char *)mem_region->start;
 
-  const size_t copy_len =
-      offset > mem_region->backing_storage_len ? 0
-      : mem_region->backing_storage_len - offset > 1 << PAGE_ORDER
-          ? 1 << PAGE_ORDER
-          : mem_region->backing_storage_len - offset;
-  memcpy(kernel_va, (char *)mem_region->backing_storage_start + offset,
-         copy_len);
-  memset((char *)kernel_va + copy_len, 0, (1 << PAGE_ORDER) - copy_len);
+  // We need to ensure that the seek-read sequence is atomic without using
+  // pread, hence the critical section.
+
+  uint64_t daif_val;
+  CRITICAL_SECTION_ENTER(daif_val);
+
+  const int seek_result =
+      vfs_lseek64(mem_region->backing_file->file, offset, SEEK_SET);
+  if (seek_result < 0) {
+    console_printf("ERROR: vm: (PID %zu) Cannot seek backing file: errno %d\n",
+                   current_thread()->process->id, -seek_result);
+    thread_exit();
+  }
+
+  size_t n_bytes_read = 0;
+  while (n_bytes_read < 1 << PAGE_ORDER) {
+    const int n_bytes_just_read = vfs_read(mem_region->backing_file->file,
+                                           (char *)kernel_va + n_bytes_read,
+                                           (1 << PAGE_ORDER) - n_bytes_read);
+    if (n_bytes_just_read < 0) {
+      console_printf(
+          "ERROR: vm: (PID %zu) Cannot read backing file: errno %d\n",
+          current_thread()->process->id, -n_bytes_just_read);
+      thread_exit();
+    }
+    if (n_bytes_just_read == 0)
+      break;
+
+    n_bytes_read += n_bytes_just_read;
+  }
+
+  CRITICAL_SECTION_LEAVE(daif_val);
+
+  memset((char *)kernel_va + n_bytes_read, 0, (1 << PAGE_ORDER) - n_bytes_read);
 }
 
 static bool _map_page(const mem_region_t *const mem_region, void *const va,
                       page_table_entry_t *const pte_entry) {
   switch (mem_region->type) {
+  case MEM_REGION_ANONYMOUS: {
+    const spage_id_t page_id = shared_page_alloc();
+    if (page_id < 0) {
+      return false;
+    }
+
+    const pa_t page_pa = page_id_to_pa(page_id);
+    pte_entry->addr = page_pa >> PAGE_ORDER;
+
+    memset(pa_to_kernel_va(page_pa), 0, 1 << PAGE_ORDER);
+
+    break;
+  }
+
   case MEM_REGION_BACKED: {
     const spage_id_t page_id = shared_page_alloc();
     if (page_id < 0) {
@@ -264,8 +323,7 @@ static bool _map_page(const mem_region_t *const mem_region, void *const va,
 
   case MEM_REGION_LINEAR: {
     const size_t offset = (uintptr_t)va - (uintptr_t)mem_region->start;
-    pte_entry->addr =
-        ((uintptr_t)mem_region->backing_storage_start + offset) >> PAGE_ORDER;
+    pte_entry->addr = (mem_region->pa_base + offset) >> PAGE_ORDER;
     break;
   }
 
@@ -412,6 +470,7 @@ vm_map_page_result_t vm_map_page(vm_addr_space_t *const addr_space,
 static bool _cow_page(const mem_region_t *const mem_region,
                       page_table_entry_t *const pte_entry) {
   switch (mem_region->type) {
+  case MEM_REGION_ANONYMOUS:
   case MEM_REGION_BACKED: {
     const page_id_t src_page_id = pa_to_page_id(pte_entry->addr << PAGE_ORDER);
     const spage_id_t page_id = shared_page_clone_unshare(src_page_id);

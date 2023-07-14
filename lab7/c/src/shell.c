@@ -122,41 +122,16 @@ static void _shell_do_cmd_cat(void) {
 }
 
 static void _shell_do_cmd_exec(void) {
-  if (!initrd_is_init()) {
-    console_puts("oscsh: exec: initrd is invalid");
-    return;
-  }
+  console_fputs("Path: ");
 
-  console_fputs("Filename: ");
+  char path_buf[MAX_CMD_LEN + 1];
+  _shell_read_line(path_buf, MAX_CMD_LEN + 1);
 
-  char filename_buf[MAX_CMD_LEN + 1];
-  _shell_read_line(filename_buf, MAX_CMD_LEN + 1);
-
-  const cpio_newc_entry_t *const entry =
-      initrd_find_entry_by_pathname(filename_buf);
-  if (!entry) {
-    console_puts("oscsh: exec: no such file or directory");
-    return;
-  }
-
-  const void *user_program_start;
-  size_t user_program_len;
-
-  const uint32_t mode = CPIO_NEWC_HEADER_VALUE(entry, mode);
-  const uint32_t file_type = mode & CPIO_NEWC_MODE_FILE_TYPE_MASK;
-  if (file_type == CPIO_NEWC_MODE_FILE_TYPE_REG) {
-    user_program_start = CPIO_NEWC_FILE_DATA(entry);
-    user_program_len = CPIO_NEWC_FILESIZE(entry);
-  } else if (file_type == CPIO_NEWC_MODE_FILE_TYPE_DIR) {
-    console_puts("oscsh: exec: is a directory");
-    return;
-  } else if (file_type == CPIO_NEWC_MODE_FILE_TYPE_LNK) {
-    console_fputs("oscos: exec: is a symbolic link to: ");
-    console_write(CPIO_NEWC_FILE_DATA(entry), CPIO_NEWC_FILESIZE(entry));
-    console_putc('\n');
-    return;
-  } else {
-    console_puts("oscsh: exec: unknown file type");
+  struct file *user_program_file;
+  const int open_result = vfs_open(path_buf, 0, &user_program_file);
+  if (open_result < 0) {
+    console_printf("oscsh: exec: cannot open user program: errno %d\n",
+                   -open_result);
     return;
   }
 
@@ -165,7 +140,7 @@ static void _shell_do_cmd_exec(void) {
     return;
   }
 
-  exec_first(user_program_start, user_program_len);
+  exec_first(user_program_file);
 
   // If execution reaches here, then exec failed.
   console_puts("oscsh: exec: out of memory");

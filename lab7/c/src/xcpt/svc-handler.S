@@ -13,9 +13,9 @@ xcpt_svc_handler:
     msr daifclr, 0xf
 
     // Check the system call number.
-    ubfx x9, x9, 0, 18
+    ubfx x9, x9, 0, 16
     cbnz x9, .Lenosys
-    cmp x8, 17
+    cmp x8, 20
     b.hi .Lenosys
 
     // Table-jump to the system call function.

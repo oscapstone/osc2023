@@ -1,3 +1,4 @@
+#include "oscos/console-dev.h"
 #include "oscos/console.h"
 #include "oscos/devicetree.h"
 #include "oscos/drivers/aux.h"
@@ -7,6 +8,7 @@
 #include "oscos/drivers/mailbox.h"
 #include "oscos/drivers/pm.h"
 #include "oscos/drivers/sdhost.h"
+#include "oscos/framebuffer-dev.h"
 #include "oscos/fs/initramfs.h"
 #include "oscos/fs/sd-fat32.h"
 #include "oscos/fs/tmpfs.h"
@@ -82,6 +84,12 @@ void main(const void *const dtb_start) {
   vfs_op_result = register_filesystem(&sd_fat32);
   if (vfs_op_result < 0)
     PANIC("Cannot register fat32: errno %d", -vfs_op_result);
+  vfs_op_result = register_device(&console_dev);
+  if (vfs_op_result < 0)
+    PANIC("Cannot register console device: errno %d", -vfs_op_result);
+  vfs_op_result = register_device(&framebuffer_dev);
+  if (vfs_op_result < 0)
+    PANIC("Cannot register framebuffer device: errno %d", -vfs_op_result);
 
   vfs_op_result = tmpfs.setup_mount(&tmpfs, &rootfs);
   if (vfs_op_result < 0)
@@ -93,6 +101,16 @@ void main(const void *const dtb_start) {
   vfs_op_result = vfs_mount("/initramfs", "initramfs");
   if (vfs_op_result < 0)
     PANIC("Cannot mount initramfs on /initramfs: errno %d", -vfs_op_result);
+
+  vfs_op_result = vfs_mkdir("/dev");
+  if (vfs_op_result < 0)
+    PANIC("Cannot mkdir /dev: errno %d", -vfs_op_result);
+  vfs_op_result = vfs_mknod("/dev/uart", "console");
+  if (vfs_op_result < 0)
+    PANIC("Cannot mknod /dev/uart: errno %d", -vfs_op_result);
+  vfs_op_result = vfs_mknod("/dev/framebuffer", "framebuffer");
+  if (vfs_op_result < 0)
+    PANIC("Cannot mknod /dev/framebuffer: errno %d", -vfs_op_result);
 
   vfs_op_result = vfs_mkdir("/boot");
   if (vfs_op_result < 0)

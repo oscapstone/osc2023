@@ -16,6 +16,7 @@ typedef struct {
 struct mount rootfs;
 
 static rb_node_t *_filesystems = NULL;
+static rb_node_t *_devices = NULL;
 static rb_node_t *_mounts_by_mountpoint = NULL, *_mounts_by_root = NULL;
 
 static int _vfs_cmp_filesystems_by_name(const struct filesystem *const fs1,
@@ -32,6 +33,22 @@ static int _vfs_cmp_name_and_filesystem(const char *const name,
   (void)_arg;
 
   return strcmp(name, fs->name);
+}
+
+static int _vfs_cmp_devices_by_name(const struct device *const dev1,
+                                    const struct device *const dev2,
+                                    void *const _arg) {
+  (void)_arg;
+
+  return strcmp(dev1->name, dev2->name);
+}
+
+static int _vfs_cmp_name_and_device(const char *const name,
+                                    const struct device *const dev,
+                                    void *const _arg) {
+  (void)_arg;
+
+  return strcmp(name, dev->name);
 }
 
 static int _vfs_cmp_mounts_by_mountpoint(const mount_entry_t *const m1,
@@ -89,6 +106,20 @@ int register_filesystem(struct filesystem *const fs) {
   rb_insert(
       &_filesystems, sizeof(struct filesystem), fs,
       (int (*)(const void *, const void *, void *))_vfs_cmp_filesystems_by_name,
+      NULL);
+
+  CRITICAL_SECTION_LEAVE(daif_val);
+
+  return 0;
+}
+
+int register_device(struct device *const dev) {
+  uint64_t daif_val;
+  CRITICAL_SECTION_ENTER(daif_val);
+
+  rb_insert(
+      &_devices, sizeof(struct device), dev,
+      (int (*)(const void *, const void *, void *))_vfs_cmp_devices_by_name,
       NULL);
 
   CRITICAL_SECTION_LEAVE(daif_val);
@@ -217,6 +248,15 @@ int vfs_read(struct file *const file, void *const buf, const size_t len) {
   return file->f_ops->read(file, buf, len);
 }
 
+long vfs_lseek64(struct file *const file, const long offset, const int whence) {
+  return file->f_ops->lseek64(file, offset, whence);
+}
+
+int vfs_ioctl(struct file *const file, const unsigned long request,
+              void *const payload) {
+  return file->f_ops->ioctl(file, request, payload);
+}
+
 int vfs_mkdir(const char *const pathname) {
   return vfs_mkdir_relative(rootfs.root, pathname);
 }
@@ -262,7 +302,11 @@ int vfs_mount_relative(struct vnode *const cwd, const char *const target,
   if (!mount)
     return -ENOMEM;
 
-  fs->setup_mount(fs, mount);
+  const int setup_mount_result = fs->setup_mount(fs, mount);
+  if (setup_mount_result < 0) {
+    free(mount);
+    return setup_mount_result;
+  }
 
   const mount_entry_t entry = {.mountpoint = mountpoint, .mount = mount};
 
@@ -306,6 +350,36 @@ int vfs_lookup_relative(struct vnode *const cwd, const char *const pathname,
   } else {
     return _vfs_lookup_step(parent_vnode, target, last_pathname_component);
   }
+}
+
+int vfs_mknod(const char *target, const char *device) {
+  // Lookup the pathname.
+
+  struct vnode *mountpoint;
+  const char *last_pathname_component;
+  const int result = _vfs_lookup_sans_last_level_relative(
+      rootfs.root, target, &mountpoint, &last_pathname_component);
+  if (result < 0)
+    return result;
+
+  // Find the device struct.
+
+  uint64_t daif_val;
+  CRITICAL_SECTION_ENTER(daif_val);
+
+  struct device *dev = (struct device *)rb_search(
+      _devices, device,
+      (int (*)(const void *, const void *, void *))_vfs_cmp_name_and_device,
+      NULL);
+
+  CRITICAL_SECTION_LEAVE(daif_val);
+
+  if (!dev)
+    return -ENODEV;
+
+  struct vnode *target_vnode;
+  return mountpoint->v_ops->mknod(mountpoint, &target_vnode,
+                                  last_pathname_component, dev);
 }
 
 shared_file_t *shared_file_new(struct file *const file) {

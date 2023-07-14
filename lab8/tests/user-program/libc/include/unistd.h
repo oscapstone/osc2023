@@ -23,6 +23,8 @@ ssize_t read(int fd, void *buf, size_t count);
 
 int chdir(const char *path);
 
+long lseek64(int fd, long offset, int whence);
+
 long syscall(long number, ...);
 
 #endif

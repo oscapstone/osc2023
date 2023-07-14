@@ -30,5 +30,5 @@ int sys_open(const char *const pathname, const int flags) {
 
   curr_process->fds[fd] = shared_file;
 
-  return 0;
+  return fd;
 }
