@@ -22,9 +22,7 @@ void *sys_mmap(void *const addr, const size_t len, const int prot,
 
   const mem_region_t mem_region = {.start = mmap_addr,
                                    .len = ALIGN(len, 1 << PAGE_ORDER),
-                                   .type = MEM_REGION_BACKED,
-                                   .backing_storage_start = NULL,
-                                   .backing_storage_len = 0,
+                                   .type = MEM_REGION_ANONYMOUS,
                                    .prot = prot};
   vm_mem_regions_insert_region(&curr_process->addr_space.mem_regions,
                                &mem_region);

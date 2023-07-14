@@ -102,11 +102,8 @@ bool process_create(void);
 /// succeeds. If the operation fails due to memory shortage, this function
 /// returns.
 ///
-/// \param text_start The starting address of where the user program is
-///                   currently located. (Do not confuse it with the entry point
-///                   of the user program.)
-/// \param text_len The length of the user program.
-void exec_first(const void *text_start, size_t text_len);
+/// \param text_file The user program.
+void exec_first(struct file *text_file);
 
 /// \brief Executes a user program on the current process.
 ///
@@ -116,11 +113,8 @@ void exec_first(const void *text_start, size_t text_len);
 ///
 /// The text_page_id field of the current process must be valid.
 ///
-/// \param text_start The starting address of where the user program is
-///                   currently located. (Do not confuse it with the entry point
-///                   of the user program.)
-/// \param text_len The length of the user program.
-void exec(const void *text_start, size_t text_len);
+/// \param text_file The user program.
+void exec(struct file *text_file);
 
 /// \brief Forks the current process.
 process_t *fork(const extended_trap_frame_t *trap_frame);

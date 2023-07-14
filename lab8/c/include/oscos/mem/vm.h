@@ -1,6 +1,7 @@
 #ifndef OSCOS_MEM_VM_H
 #define OSCOS_MEM_VM_H
 
+#include "oscos/fs/vfs.h"
 #include "oscos/mem/types.h"
 #include "oscos/mem/vm/page-table.h"
 #include "oscos/uapi/sys/mman.h"
@@ -18,14 +19,20 @@ void *pa_to_kernel_va(pa_t pa) __attribute__((const));
 ///        physical address range.
 pa_range_t kernel_va_range_to_pa_range(va_range_t range) __attribute__((const));
 
-typedef enum { MEM_REGION_BACKED, MEM_REGION_LINEAR } mem_region_type_t;
+typedef enum {
+  MEM_REGION_ANONYMOUS,
+  MEM_REGION_BACKED,
+  MEM_REGION_LINEAR
+} mem_region_type_t;
 
 typedef struct {
   void *start;
   size_t len;
   mem_region_type_t type;
-  const void *backing_storage_start;
-  size_t backing_storage_len;
+  union {
+    shared_file_t *backing_file;
+    pa_t pa_base;
+  };
   int prot;
 } mem_region_t;
 

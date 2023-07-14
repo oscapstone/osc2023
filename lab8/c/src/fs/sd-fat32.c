@@ -6,7 +6,7 @@
 #include "oscos/libc/string.h"
 #include "oscos/mem/malloc.h"
 #include "oscos/uapi/errno.h"
-#include "oscos/uapi/stdio.h"
+#include "oscos/uapi/unistd.h"
 #include "oscos/utils/critical-section.h"
 #include "oscos/utils/rb.h"
 
