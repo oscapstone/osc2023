@@ -5,8 +5,7 @@
 #include <preempt.h>
 #include <syscall.h>
 #include <mm.h>
-
-#define DATA_OFF(x) ((uint64)current->data - (uint64)x)
+#include <text_user_shared.h>
 
 #define SIG_DFL     (sighandler_t)0
 #define SIG_IGN     (sighandler_t)1
@@ -21,9 +20,10 @@ static void sig_ignore(int _){
     return;
 }
 
+void sig_return(void) SECTION_TUS;
 void sig_return(void){
     asm volatile(
-        "mov x8, 11\n"
+        "mov x8, 20\n"
         "svc 0\n"
     );
 }
@@ -100,7 +100,8 @@ void handle_signal(trapframe *frame){
         frame->sp_el0 = user_sp;
         frame->x0 = signal->signum;
         frame->elr_el1 = sigaction->sighand;
-        frame->x30 = (uint64)sig_return;
+        // TODO: Map sigreturn to user address space and allow user to execute
+        frame->x30 = TUS2VA(sig_return);
     }
 
     signal_del(signal);
@@ -133,26 +134,18 @@ void sighand_reset(struct sighand_t *sighand)
     sighand->sigactions[SIGKILL].sighand = sig_terminate;
 }
 
-static inline void kernel_sighand_copy(struct sigaction_t *from, struct sigaction_t *to){
-    to->kernel_hand = 1;
+static inline void _sighand_copy(struct sigaction_t *to, struct sigaction_t *from){
+    to->kernel_hand = from->kernel_hand;
     to->sighand = from->sighand;
 }
 
-static inline void user_sighand_copy(struct sigaction_t *from, struct sigaction_t *to, uint64 offset){
-    to->kernel_hand = 0;
-    to->sighand = (sighandler_t)((char *)from->sighand - offset);
-}
-
-void sighand_copy(struct sighand_t *sighand, void *addrbase)
+/* Copy current signal handler to @sighand*/
+void sighand_copy(struct sighand_t *sighand)
 {
     struct sighand_t *currhand;
     currhand = current->sighand;
     for (int i = 1; i < MAX_SIG_NUM; ++i) {
-        if (currhand->sigactions[i].kernel_hand) {
-            kernel_sighand_copy(&currhand->sigactions[i], &sighand->sigactions[i]);
-        } else {
-            user_sighand_copy(&currhand->sigactions[i], &sighand->sigactions[i], DATA_OFF(addrbase));
-        }
+        _sighand_copy(&sighand->sigactions[i], &currhand->sigactions[i]);
     }
 }
 

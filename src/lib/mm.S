@@ -13,3 +13,10 @@ memncpy:
     subs x2, x2, #1
     b.gt memncpy
     ret
+
+.globl memset
+memset:
+    strb w1, [x0], #1
+    subs x2, x2, #1
+    b.gt memset
+    ret

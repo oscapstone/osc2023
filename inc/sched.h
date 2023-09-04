@@ -3,6 +3,10 @@
 
 #include <type.h>
 #include <list.h>
+#include <mmu.h>
+#include <vfs.h>
+
+#define TASK_MAX_FD     0x10
 
 struct pt_regs {
     void *x19;
@@ -23,13 +27,15 @@ struct pt_regs {
 struct signal_head_t;
 struct sighand_t;
 typedef struct _task_struct {
-    /* This must be the first element */
     struct pt_regs regs;
+    pd_t *page_table;
+    /* The order of the above elements cannot be changed*/
+    vm_area_meta_t *address_space;
     void *kernel_stack;
-    void *user_stack;
+    // void *user_stack;
     /* TODO: Update to address_space*/
-    void *data;
-    uint32 datalen;
+    // void *data;
+    // uint32 datalen;
     struct list_head list;
     struct list_head task_list;
     uint16 status;
@@ -39,6 +45,10 @@ typedef struct _task_struct {
     /* Signal */
     struct signal_head_t *signal;
     struct sighand_t *sighand;
+    /*files*/
+    int maxfd;
+    struct file fds[TASK_MAX_FD];
+    struct vnode *work_dir;
 } task_struct;
 
 void switch_to(task_struct *from, task_struct *to);

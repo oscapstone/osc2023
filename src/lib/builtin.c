@@ -65,7 +65,7 @@ void _hwinfo(void){
 
 void _reboot(void){
     uart_printf("Rebooting...\r\n\r\n");
-    // delay(10000);
+    delay(10000);
     reset(10);
     // while(1);
 }
@@ -74,11 +74,11 @@ void _echo(char *shell_buf){
     uart_printf(shell_buf);
 }
 
-void _ls(uint64 _initramfs_addr){
+void _ls(void){
     cpio_ls((char*)_initramfs_addr);
 }
 
-void _cat(uint64 _initramfs_addr, char *filename){
+void _cat(char *filename){
     cpio_cat((char*)_initramfs_addr, filename);
 }
 
@@ -96,7 +96,7 @@ void *_malloc(char *size){
     return kmalloc(int_size);
 }
 
-void _exec(uint64 _initramfs_addr,char *filename){
+void _exec(char *filename){
     void *data;
     uint32 datalen;
 
@@ -104,18 +104,17 @@ void _exec(uint64 _initramfs_addr,char *filename){
     if(datalen == 0)
         return;
 
-    current->user_stack = kmalloc(STACK_SIZE);
-    current->data = data;
-    current->datalen = datalen;
+    task_init_map(current);
+    vma_map(current->address_space, (void *)0, datalen, VMA_R | VMA_W | VMA_X | VMA_KVA, data);
     user_prog_start();
 }
 
 void _chmod_uart(){
     int mode = uart_switch_mode();
     if(mode==0)
-        uart_printf("[*] Use synchronous uart now!\r\n");
+        uart_sync_printf("[*] Use synchronous uart now!\r\n");
     else
-        uart_printf("[*] Use asynchronous uart now!\r\n");
+        uart_sync_printf("[*] Use asynchronous uart now!\r\n");
 }
 
 int _setTimeout(char *shell_buf){
@@ -152,7 +151,7 @@ int _setTimeout(char *shell_buf){
 
 static void foo(){
     for (int i = 0; i < 10; ++i) {
-        uart_printf("Thread id: %d %d\r\n", current->tid, i);
+        uart_sync_printf("Thread id: %d %d\r\n", current->tid, i);
         delay(1000000);
         schedule();
     }

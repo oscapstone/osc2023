@@ -19,6 +19,7 @@ KERNEL_IMG := $(IMG_DIR)/kernel8.img
 KERNEL_ELF := $(OBJ_DIR)/$(KERNEL_DIR)/kernel8.elf
 BOOTLOADER_IMG := $(IMG_DIR)/bootloader.img
 BOOTLOADER_ELF := $(OBJ_DIR)/$(BOOT_DIR)/bootloader.elf
+IMG_NAME   := sdcard.img
 
 RPI3_DTB  := $(IMG_DIR)/bcm2710-rpi-3-b-plus.dtb
 INITRAMFS_CPIO := $(IMG_DIR)/initramfs.cpio
@@ -47,7 +48,6 @@ endif
 #   @$(ECHO) "lib object file is $(LIB_OBJ_FILE)"
 
 all:$(KERNEL_IMG) $(BOOTLOADER_IMG)
-	cd rootfs && make
 
 $(KERNEL_IMG): $(KERNEL_ELF)
 		$(CROSS_COMPILER)objcopy -O binary $^ $(KERNEL_IMG)
@@ -88,23 +88,21 @@ $(OBJ_DIR)/$(LIB_DIR)/%_c.o: $(SRC_DIR)/$(LIB_DIR)/%.c
 $(INITRAMFS_CPIO): $(INITRAMFS_FILE)
 		cd rootfs; find . | cpio -o -H newc > ../$(INITRAMFS_CPIO)
 
+$(IMG_NAME):
+	./createimg.sh $(IMG_NAME)
+
 qemub: all $(INITRAMFS_CPIO) $(RPI3_DTB)
 		qemu-system-aarch64 -M raspi3 -kernel $(BOOTLOADER_IMG) -display none \
 											-dtb $(RPI3_DTB) \
 											-initrd $(INITRAMFS_CPIO) \
-											-serial null -serial pty
-qemuk: all $(INITRAMFS_CPIO) $(RPI3_DTB)
+											-serial null -serial stdio
+											
+qemuk: all $(INITRAMFS_CPIO) $(RPI3_DTB) $(IMG_NAME)
 		qemu-system-aarch64 -M raspi3 -kernel $(KERNEL_IMG) -display none \
 											-dtb $(RPI3_DTB) \
 											-initrd $(INITRAMFS_CPIO) \
+											-drive if=sd,file=$(IMG_NAME),format=raw \
 											-serial null -serial stdio
-
-qemutest: all $(INITRAMFS_CPIO) $(RPI3_DTB)
-		qemu-system-aarch64 -M raspi3 -kernel $(KERNEL_IMG) -display none \
-											-dtb $(RPI3_DTB) \
-											-initrd test/initramfs.cpio \
-											-serial null -serial stdio
-
 
 qemutty: $(KERNEL_IMG)
 		qemu-system-aarch64 -M raspi3 -kernel $(KERNEL_IMG) -display none \
@@ -112,10 +110,8 @@ qemutty: $(KERNEL_IMG)
 
 .PHONY: clean
 clean:
-		cd rootfs && make clean
 		rm -f $(KERNEL_OBJ_FILE) $(KERNEL_ELF) $(BOOTLOADER_OBJ_FILE) $(BOOTLOADER_ELF) $(LIB_OBJ_FILE) $(INITRAMFS_CPIO)
 
 .PHONY: clean-all
 clean-all: clean
-		cd rootfs && make clean-all
-		rm -f $(KERNEL_IMG) $(BOOTLOADER_IMG)
+		rm -f $(KERNEL_IMG) $(BOOTLOADER_IMG) $(IMG_NAME)

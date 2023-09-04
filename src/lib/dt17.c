@@ -2,6 +2,7 @@
 #include <type.h>
 #include <mini_uart.h>
 #include <string.h>
+#include <utils.h>
 
 uint32 initramfs_check_cnt = 0;
 
@@ -91,12 +92,12 @@ int initramfs_parse_fdt(int level, char *cur, char *dt_strings){
         struct fdt_property *prop =(struct fdt_property *) cur;
         cur += sizeof(struct fdt_property);
         if(!strcmp("linux,initrd-start", dt_strings + fdtp_nameoff(prop))){
-            _initramfs_addr = fdt32_ld((fdt32_t*)cur);
+            _initramfs_addr = (void*)PA2VA(fdt32_ld((fdt32_t*)cur));
             uart_printf("[*] initrd addr: %x\r\n", _initramfs_addr);
             initramfs_check_cnt++;
         }
         else if(!strcmp("linux,initrd-end", dt_strings + fdtp_nameoff(prop))){
-            _initramfs_end = fdt32_ld((fdt32_t*)cur);
+            _initramfs_end = (void*)PA2VA(fdt32_ld((fdt32_t*)cur));
             uart_printf("[*] initrd end: %x\r\n", _initramfs_end);
             initramfs_check_cnt++;
         }
@@ -107,7 +108,7 @@ int initramfs_parse_fdt(int level, char *cur, char *dt_strings){
 }
 
 void initramfs_init(char *fdt_base){
-    _initramfs_addr = 0;
+    _initramfs_addr = NULL;
     parse_dtb(fdt_base, initramfs_parse_fdt);
     if(!_initramfs_addr)
         uart_printf("[x] Cannot find initrd address in dtb!\r\n");

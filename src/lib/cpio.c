@@ -4,7 +4,7 @@
 #include <mem.h>
 #include <mm.h>
 
-static uint32 cpio_read_hex(char *p){
+uint32 cpio_read_hex(char *p){
     uint32 result = 0;
 
     for(int i = 0 ; i < 8 ; i++){
@@ -28,7 +28,7 @@ void cpio_ls(char *cpio){
     while(1){
         struct cpio_newc_header *pheader = (struct cpio_newc_header *)cur;
         cur += sizeof(struct cpio_newc_header);
-        if(!strcmp(pheader->c_magic, "070701")){
+        if(strncmp(pheader->c_magic, "070701", 6)){
             uart_printf("Only support new ASCII format for cpio. \r\n");
             return;
         }
@@ -59,7 +59,7 @@ void cpio_cat(char *cpio, char *filename){
     while(1){
         struct cpio_newc_header *pheader = (struct cpio_newc_header *) cur;
         cur += sizeof(struct cpio_newc_header);
-        if(!strcmp(pheader->c_magic, "070701")){
+        if(strncmp(pheader->c_magic, "070701", 6)){
             uart_printf("Only support new ASCII format for cpio. \r\n");
             return;
         }
@@ -97,7 +97,7 @@ uint32 cpio_load_prog(char *cpio, const char *filename, char **output_data){
     while(1){
         struct cpio_newc_header *pheader = (struct cpio_newc_header *) cur;
         cur += sizeof(struct cpio_newc_header);
-        if(!strcmp(pheader->c_magic, "070701")){
+        if(strncmp(pheader->c_magic, "070701", 6)){
             uart_printf("Only support new ASCII format for cpio. \r\n");
             return 0;
         }

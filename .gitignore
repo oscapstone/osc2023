@@ -3,6 +3,7 @@
 *.img
 obj/
 img/
+core
 
 .vscode
 initramfs.cpio

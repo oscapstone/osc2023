@@ -3,11 +3,11 @@
 
 #include <type.h>
 
-extern char start_mem;
-extern char end_mem;
+extern char _early_mem_base;
+extern char _early_mem_end;
 
-#define SMEM (&start_mem)
-#define EMEM (&end_mem)
+#define SMEM (&_early_mem_base)
+#define EMEM (&_early_mem_end)
 
 void *simple_malloc(uint32 size);
 

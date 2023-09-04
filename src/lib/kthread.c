@@ -73,6 +73,10 @@ void kthread_fini(void)
     schedule();
 }
 
+void kthread_early_init(void){
+    set_current(NULL);
+}
+
 void kthread_add_wait_queue(task_struct *task){
     wq_add_task(task, wait_queue);
 }

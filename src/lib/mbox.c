@@ -1,29 +1,9 @@
 #include <mbox.h>
 #include <mini_uart.h>
-
-#define MMIO_BASE       0x3F000000
+#include <utils.h>
 
 /* mailbox message buffer */
 volatile unsigned int  __attribute__((aligned(16))) mbox[36];
-
-#define VIDEOCORE_MBOX  (MMIO_BASE+0x0000B880)
-#define MBOX_READ       ((volatile unsigned int*)(VIDEOCORE_MBOX+0x0))
-#define MBOX_POLL       ((volatile unsigned int*)(VIDEOCORE_MBOX+0x10))
-#define MBOX_SENDER     ((volatile unsigned int*)(VIDEOCORE_MBOX+0x14))
-#define MBOX_STATUS     ((volatile unsigned int*)(VIDEOCORE_MBOX+0x18))
-#define MBOX_CONFIG     ((volatile unsigned int*)(VIDEOCORE_MBOX+0x1C))
-#define MBOX_WRITE      ((volatile unsigned int*)(VIDEOCORE_MBOX+0x20))
-#define MBOX_RESPONSE   0x80000000
-#define MBOX_FULL       0x80000000
-#define MBOX_EMPTY      0x40000000
-
-/* Mailbox tags */
-#define GET_BOARD_REVISION 0x00010002
-#define GET_ARM_MEMORY     0x00010005
-
-#define REQUEST_CODE       0x00000000
-#define TAG_REQUEST_CODE   0x00000000
-#define END_TAG            0x00000000
 
 /**
  * Make a mailbox call. Returns 0 on failure, non-zero on success
@@ -60,7 +40,7 @@ void get_board_revision(unsigned int *revision){
     if(mbox_call(MBOX_CH_PROP, mbox)!=0)
         *revision = mbox[5];
     else{
-        uart_send_string("Unable to get borad revision!");
+        uart_printf("Unable to get borad revision!");
         *revision = 0;
     }
 }
@@ -80,5 +60,5 @@ void get_arm_memory(arm_info *arm_mem){
         arm_mem->size = mbox[6];
     }
     else
-        uart_send_string("Unable to get arm memory information!");
+        uart_printf("Unable to get arm memory information!");
 }

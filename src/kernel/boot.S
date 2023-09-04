@@ -18,6 +18,17 @@ master:
 	bl from_el2_to_el1
 	// the next instruction runs in EL1
 
+  // Set booting stack
+  ldr x0, =_PA_stack_top
+  mov sp, x0
+  bl mmu_init
+
+  // Use virtual address after mmu_init
+  ldr x0, =_va_trampoline
+  br x0
+
+_va_trampoline:
+
 	bl set_exception_vector_table
 
 	bl core_timer_enable
@@ -185,7 +196,7 @@ l64_syn_eh:
 	  mov x0, sp
   	// Get exception class ({EC[31:26]})
   	mrs x1, esr_el1
-  	bl syscall_handler
+  	bl el0_sync_handler
 
     mov x0, sp
     bl exit_to_user_mode

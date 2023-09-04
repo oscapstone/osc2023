@@ -4,8 +4,9 @@
 #include <type.h>
 #include <sched.h>
 #include <list.h>
+#include <mmu.h>
 
-#define STACK_SIZE ( 2 * PAGE_SIZE)
+#define STACK_SIZE ( 4 * PAGE_SIZE)
 
 /* Task status */
 
@@ -31,5 +32,16 @@ void task_init(void);
 task_struct *task_create(void);
 void task_free(task_struct *task);
 task_struct *task_get_by_tid(uint32 tid);
+
+/*
+ * Create initial mapping for user program
+ *
+ * 0x00003c000000 ~ 0x00003f000000: rw-: Mailbox address
+ * 0x7f0000000000 ~   <shared_len>: r-x: Kernel functions exposed to users
+ * 0xffffffffb000 ~   <STACK_SIZE>: rw-: Stack
+ */
+void task_init_map(task_struct *task);
+
+void task_reset_mm(task_struct *task);
 
 #endif

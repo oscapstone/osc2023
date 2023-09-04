@@ -11,6 +11,8 @@
 #include <mm.h>
 #include <mbox.h>
 #include <signal.h>
+#include <mmu.h>
+#include <vfs.h>
 
 syscall_funcp syscall_table[] = {
     (syscall_funcp) syscall_getpid,     // 0
@@ -23,8 +25,19 @@ syscall_funcp syscall_table[] = {
     (syscall_funcp) syscall_kill_pid,   // 7
     (syscall_funcp) syscall_signal,     // 8
     (syscall_funcp) syscall_kill,       // 9
-    (syscall_funcp) syscall_test,       // 10
-    (syscall_funcp) syscall_sigreturn,  // 11
+    (syscall_funcp) syscall_mmap,       // 10
+    (syscall_funcp) syscall_open,       // 11
+    (syscall_funcp) syscall_close,      // 12
+    (syscall_funcp) syscall_write,      // 13
+    (syscall_funcp) syscall_read,       // 14
+    (syscall_funcp) syscall_mkdir,      // 15
+    (syscall_funcp) syscall_mount,      // 16
+    (syscall_funcp) syscall_chdir,      // 17
+    (syscall_funcp) syscall_lseek64,    // 18
+    (syscall_funcp) syscall_ioctl,      // 19
+    (syscall_funcp) syscall_sync,       // 20
+    (syscall_funcp) syscall_sigreturn,  // 21
+    (syscall_funcp) syscall_test,       // 22
 };
 
 static inline void copy_regs(struct pt_regs *regs)
@@ -41,16 +54,14 @@ static inline void copy_regs(struct pt_regs *regs)
     regs->x28 = current->regs.x28;
 }
 
-void syscall_handler(trapframe regs, uint32 syn)
+void syscall_handler(trapframe *regs)
 {
-    esr_el1 *esr = (esr_el1 *)&syn;
     uint64 syscall_num;
 
-    // SVC instruction execution
-    if(esr->ec != 0x15)
-        return;
+    syscall_num = regs->x8;
 
-    syscall_num = regs.x8;
+    // if(syscall_num > 2)
+    //     uart_sync_printf("syscall number:%d\n", syscall_num);
 
     if (syscall_num >= ARRAY_SIZE(syscall_table)) {
         // Invalid syscall
@@ -60,13 +71,13 @@ void syscall_handler(trapframe regs, uint32 syn)
     enable_interrupt();
     // TODO: bring the arguments to syscall
     (syscall_table[syscall_num])(
-        &regs,
-        regs.x0,
-        regs.x1,
-        regs.x2,
-        regs.x3,
-        regs.x4,
-        regs.x5
+        regs,
+        regs->x0,
+        regs->x1,
+        regs->x2,
+        regs->x3,
+        regs->x4,
+        regs->x5
     );
     disable_interrupt();
 }
@@ -85,27 +96,40 @@ void syscall_uart_write(trapframe *_, const char buf[], size_t size){
 }
 
 void syscall_exec(trapframe *_, const char* name, char *const argv[]){
+    struct file f;
     void *data;
     char *kernel_sp;
-    char *user_sp;
-    uint32 datalen;
+    int datalen, adj_datalen, ret;
 
-    datalen = cpio_load_prog((char *)_initramfs_addr, name, (char **)&data);
-
-    if(datalen == 0)
+    ret = vfs_open(name, 0, &f);
+    if(ret < 0)
         return;
-
-    kfree(current->data);
-    current->data = data;
-    current->datalen = datalen;
-
+    datalen = f.vnode->v_ops->getsize(f.vnode);
+    if(datalen < 0)
+        return;
+    adj_datalen = ALIGN(datalen, PAGE_SIZE);
+    data = kmalloc(adj_datalen);
+    memzero(data, adj_datalen);
+    ret = vfs_read(&f, data, datalen);
+    if(ret < 0){
+        kfree(data);
+        return;
+    }
+    vfs_close(&f);    
     kernel_sp = (char *)current->kernel_stack + STACK_SIZE - 0x10;
-    user_sp = (char *)current->user_stack + STACK_SIZE - 0x10;
 
     // Reset signal
     signal_head_reset(current->signal);
     sighand_reset(current->sighand);
-    exec_user_prog(current->data, user_sp, kernel_sp);
+    //Rest addr space & page table
+    task_reset_mm(current);
+    task_init_map(current);
+
+    // 0x000000000000 ~ <datalen>: rwx: Code
+    vma_map(current->address_space, (void *)0, adj_datalen, VMA_R | VMA_W | VMA_X | VMA_KVA, data);
+
+    set_page_table(current->page_table);
+    exec_user_prog((void *)0, (char *)0xffffffffeff0, kernel_sp);
 }
 
 void syscall_fork(trapframe *frame){
@@ -115,16 +139,15 @@ void syscall_fork(trapframe *frame){
     child = task_create();
 
     child->kernel_stack = kmalloc(STACK_SIZE);
-    child->user_stack = kmalloc(STACK_SIZE);
-    child->data = kmalloc(current->datalen);
-    child->datalen = current->datalen;
 
     memncpy(child->kernel_stack, current->kernel_stack, STACK_SIZE);
-    memncpy(child->user_stack, current->user_stack, STACK_SIZE);
-    memncpy(child->data, current->data, current->datalen);
+
+    // TODO: Implement copy on write
+
+    vma_meta_copy(child->address_space, current->address_space, current->page_table);
 
     // Copy the signal handler
-    sighand_copy(child->sighand, child->data);
+    sighand_copy(child->sighand);
 
     // Save regs
     SAVE_REGS(current);
@@ -142,14 +165,15 @@ void syscall_fork(trapframe *frame){
     // Adjust child trapframe
     child_frame = KSTACK_VARIABLE(frame);
 
+    // return value of fork for child process is 0
     child_frame->x0 = 0;
-    child_frame->x30 = (uint64)DATA_VARIABLE(frame->x30);
-    child_frame->sp_el0 = USTACK_VARIABLE(frame->sp_el0);
-    child_frame->elr_el1 = DATA_VARIABLE(frame->elr_el1);
+    // child_frame->x30 = (uint64)DATA_VARIABLE(frame->x30);
+    // child_frame->sp_el0 = USTACK_VARIABLE(frame->sp_el0);
+    // child_frame->elr_el1 = DATA_VARIABLE(frame->elr_el1);
 
     sched_add_task(child);
 
-    // Set return value
+    // Set return value of parent process
     frame->x0 = child->tid;
 
 SYSCALL_FORK_END:
@@ -165,7 +189,15 @@ void syscall_exit(trapframe *_)
 
 void syscall_mbox_call(trapframe *_, unsigned char ch, unsigned int *mbox)
 {
-    mbox_call(ch, mbox);
+    // copy data to kernel since mbox can't access the user space memory
+    int mbox_size = (int)mbox[0];
+    if(mbox_size <= 0)
+        return;
+    char *kmbox = kmalloc(mbox_size);
+    memncpy(kmbox, (char *)mbox, mbox_size);
+    mbox_call(ch, (unsigned int*)kmbox);
+    memncpy((char *)mbox, kmbox, mbox_size);
+    kfree(kmbox);
 }
 
 void syscall_kill_pid(trapframe *_, int pid)
