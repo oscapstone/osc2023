@@ -1,8 +1,9 @@
-#include "oscos/fs/initramfs.h"
+#include "oscos/fs/sd-fat32.h"
 
 #include "oscos/console.h"
 #include "oscos/drivers/sdhost.h"
 #include "oscos/initrd.h"
+#include "oscos/libc/ctype.h"
 #include "oscos/libc/string.h"
 #include "oscos/mem/malloc.h"
 #include "oscos/uapi/errno.h"
@@ -120,6 +121,54 @@ _sd_fat32_cluster_addr_to_fat_lba(const fat32_fsinfo_t *const fsinfo,
                                   const size_t cluster_addr) {
   // Each block has 2⁹⁻² FAT entries.
   return fsinfo->partition_lba + fsinfo->fat_lba_offset + (cluster_addr >> 7);
+}
+
+static uint32_t _sd_fat32_read_fat(const fat32_fsinfo_t *const fsinfo,
+                                   const size_t cluster_addr,
+                                   unsigned char block_buf[static 512]) {
+  readblock(_sd_fat32_cluster_addr_to_fat_lba(fsinfo, cluster_addr), block_buf);
+  const uint32_t *const fat_entries = (const uint32_t *)block_buf;
+  return fat_entries[cluster_addr & ((1 << 7) - 1)] & 0x0fffffff;
+}
+
+static bool _sd_fat32_is_component_name_char_valid_lax(const char c) {
+  const unsigned char u = c;
+  return isalnum(c) || strchr(" !#$%&'()-@^_`{}~", c) || u >= 128;
+}
+
+static char _sd_fat32_map_component_name_char(const char c) {
+  if (!_sd_fat32_is_component_name_char_valid_lax(c))
+    __builtin_unreachable();
+
+  return islower(c) ? toupper(c) : (unsigned char)c == 0xe5 ? 0x05 : c;
+}
+
+static bool _sd_fat32_check_and_map_filename(const char *const filename,
+                                             char target[static 11]) {
+  const char *const last_dot = strrchr(filename, '.');
+  const size_t noext_len =
+      last_dot ? (size_t)(last_dot - filename) : strlen(filename);
+  if (noext_len > 8)
+    return false;
+  const size_t ext_len = last_dot ? strlen(filename) - noext_len - 1 : 0;
+  if (ext_len > 3)
+    return false;
+
+  for (const char *c = filename; *c; c++) {
+    if (c != last_dot && !_sd_fat32_is_component_name_char_valid_lax(*c))
+      return false;
+  }
+
+  for (size_t i = 0; i < 8; i++) {
+    target[i] =
+        i < noext_len ? _sd_fat32_map_component_name_char(filename[i]) : ' ';
+  }
+  for (size_t i = 0; i < 3; i++) {
+    target[i + 8] =
+        i < ext_len ? _sd_fat32_map_component_name_char(last_dot[1 + i]) : ' ';
+  }
+
+  return true;
 }
 
 static int _sd_fat32_cmp_child_vnode_entries_by_component_name(
@@ -257,6 +306,8 @@ static int _sd_fat32_read(struct file *const file, void *const buf,
     return -EISDIR;
 
   sd_fat32_internal_file_data_t *const file_data = &internal->file_data;
+  const fat32_fsinfo_t *const fsinfo =
+      ((sd_fat32_internal_t *)(file->vnode->mount->root->internal))->fsinfo;
 
   unsigned char *const block_buf = malloc(512);
   if (!block_buf)
@@ -265,51 +316,52 @@ static int _sd_fat32_read(struct file *const file, void *const buf,
   uint64_t daif_val;
   CRITICAL_SECTION_ENTER(daif_val);
 
+  const size_t read_end_offset =
+      file->f_pos + len < file_data->size ? file->f_pos + len : file_data->size;
+
   size_t curr_cluster_addr = file_data->cluster_addr, file_offset = 0,
          n_chars_read = 0;
   for (;;) {
-    // Read the next cluster address.
+    for (size_t sector_of_cluster = 0;
+         sector_of_cluster < fsinfo->cluster_n_sectors; sector_of_cluster++) {
+      const size_t end_offset = file_offset + 512;
+      const size_t max_start =
+                       file_offset > file->f_pos ? file_offset : file->f_pos,
+                   min_end = end_offset < read_end_offset ? end_offset
+                                                          : read_end_offset;
+      if (max_start < min_end) {
+        readblock(
+            _sd_fat32_cluster_addr_to_data_lba(fsinfo, curr_cluster_addr) +
+                sector_of_cluster,
+            block_buf);
+        memcpy((char *)buf + n_chars_read, block_buf + (max_start & 511),
+               min_end - max_start);
+        n_chars_read += min_end - max_start;
+      }
 
-    readblock(_sd_fat32_cluster_addr_to_fat_lba(
-                  ((sd_fat32_internal_t *)(file->vnode->mount->root->internal))
-                      ->fsinfo,
-                  curr_cluster_addr),
-              block_buf);
-    const uint32_t *const fat_entries = (const uint32_t *)block_buf;
-    const size_t next_cluster_addr =
-        fat_entries[curr_cluster_addr >> 7] & 0x0fffffff;
-
-    const size_t end_offset = file_offset + 512 > file_data->size
-                                  ? file_data->size
-                                  : file_offset + 512;
-    const size_t max_start =
-                     file_offset > file->f_pos ? file_offset : file->f_pos,
-                 min_end = end_offset < file->f_pos + len ? end_offset
-                                                          : file->f_pos + len;
-    if (max_start < min_end) {
-      readblock(
-          _sd_fat32_cluster_addr_to_data_lba(
-              ((sd_fat32_internal_t *)(file->vnode->mount->root->internal))
-                  ->fsinfo,
-              curr_cluster_addr),
-          block_buf);
-      memcpy((char *)buf + n_chars_read, block_buf + (max_start & 511),
-             min_end - max_start);
-      n_chars_read += min_end - max_start;
+      file_offset += 512;
+      if (file_offset >= read_end_offset) // Done reading.
+        break;
     }
 
-    if (file_offset + 512 >= file->f_pos + len) // Done reading.
-      break;
-    if (!(1 < next_cluster_addr && next_cluster_addr &&
-          0xfffffff8)) // Nothing more to read.
+    if (file_offset >= read_end_offset) // Done reading.
       break;
 
-    curr_cluster_addr = next_cluster_addr;
-    file_offset += 512;
+    const uint32_t fat_entry =
+        _sd_fat32_read_fat(fsinfo, curr_cluster_addr, block_buf);
+    if (!(0x2 <= fat_entry && fat_entry <= 0x0ffffff7)) { // No more chains.
+      // The file has a hole, which should read zero.
+      memset(block_buf + n_chars_read, 0, read_end_offset - file_offset);
+      n_chars_read += read_end_offset - file_offset;
+      break;
+    }
+
+    curr_cluster_addr = fat_entry;
   }
 
   file->f_pos += n_chars_read;
 
+  free(block_buf);
   CRITICAL_SECTION_LEAVE(daif_val);
   return n_chars_read;
 }
@@ -362,8 +414,6 @@ static long _sd_fat32_lseek64(struct file *const file, const long offset,
     file->f_pos = new_f_pos;
     return 0;
   }
-
-  return -ENOSYS;
 }
 
 static int _sd_fat32_lookup(struct vnode *const dir_node,
@@ -375,6 +425,8 @@ static int _sd_fat32_lookup(struct vnode *const dir_node,
     return -ENOTDIR;
 
   sd_fat32_internal_dir_data_t *const dir_data = &internal->dir_data;
+  const fat32_fsinfo_t *const fsinfo =
+      ((sd_fat32_internal_t *)(dir_node->mount->root->internal))->fsinfo;
 
   if (strcmp(component_name, ".") == 0) {
     *target = dir_node;
@@ -402,53 +454,57 @@ static int _sd_fat32_lookup(struct vnode *const dir_node,
     return 0;
   }
 
-  // A vnode has not been created before. Check if the file/directory exists.
+  // A vnode has not been created before.
+  // Check the filename.
 
-  char filename_buf[11] = "           ";
-
-  const char *const component_name_last_dot_ptr = strrchr(component_name, '.');
-  const size_t component_name_noext_len =
-                   component_name_last_dot_ptr
-                       ? (size_t)(component_name_last_dot_ptr - component_name)
-                       : strlen(component_name),
-               component_name_noext_cpy_len =
-                   component_name_noext_len > 8 ? 8 : component_name_noext_len;
-  memcpy(filename_buf, component_name, component_name_noext_cpy_len);
-
-  const size_t component_name_ext_len =
-                   component_name_last_dot_ptr
-                       ? strlen(component_name_last_dot_ptr + 1)
-                       : 0,
-               component_name_ext_cpy_len =
-                   component_name_ext_len > 3 ? 3 : component_name_ext_len;
-  memcpy(filename_buf + 8, component_name_last_dot_ptr + 1,
-         component_name_ext_cpy_len);
+  char filename_buf[11];
+  if (!_sd_fat32_check_and_map_filename(
+          component_name, filename_buf)) // Invalid component name.
+    return -ENOENT;
 
   unsigned char *const block_buf = malloc(512);
   if (!block_buf)
     return -ENOMEM;
 
-  readblock(
-      _sd_fat32_cluster_addr_to_data_lba(
-          ((sd_fat32_internal_t *)(dir_node->mount->root->internal))->fsinfo,
-          dir_data->cluster_addr),
-      block_buf);
-
+  size_t curr_cluster_addr = dir_data->cluster_addr;
   const fatdir_t *dir_entry = NULL;
-  for (size_t offset = 0; offset < 512; offset += sizeof(fatdir_t)) {
-    const fatdir_t *const curr_dir_entry =
-        (const fatdir_t *)(block_buf + offset);
-    if (curr_dir_entry->name[0] == 0)
-      break;
+  bool done = false;
+  while (!done) {
+    for (size_t sector_of_cluster = 0;
+         sector_of_cluster < fsinfo->cluster_n_sectors; sector_of_cluster++) {
+      readblock(_sd_fat32_cluster_addr_to_data_lba(fsinfo, curr_cluster_addr) +
+                    sector_of_cluster,
+                block_buf);
 
-    if (curr_dir_entry->name[0] == 0xe5 ||
-        curr_dir_entry->attr[0] == 0xf) // Invalid entry.
-      continue;
+      for (size_t offset = 0; offset < 512; offset += sizeof(fatdir_t)) {
+        const fatdir_t *const curr_dir_entry =
+            (const fatdir_t *)(block_buf + offset);
+        if (curr_dir_entry->name[0] == 0) {
+          done = true;
+          break;
+        }
 
-    if (memcmp(curr_dir_entry->name, filename_buf, 11) == 0) {
-      dir_entry = curr_dir_entry;
-      break;
+        if (curr_dir_entry->name[0] == 0xe5 ||
+            curr_dir_entry->attr[0] == 0xf) // Invalid entry.
+          continue;
+
+        if (memcmp(curr_dir_entry->name, filename_buf, 11) == 0) {
+          dir_entry = curr_dir_entry;
+          done = true;
+          break;
+        }
+      }
     }
+
+    if (done)
+      break;
+
+    const uint32_t fat_entry =
+        _sd_fat32_read_fat(fsinfo, curr_cluster_addr, block_buf);
+    if (!(0x2 <= fat_entry && fat_entry <= 0x0ffffff7)) // Nothing more to read.
+      break;
+
+    curr_cluster_addr = fat_entry;
   }
 
   if (!dir_entry) {
@@ -459,7 +515,7 @@ static int _sd_fat32_lookup(struct vnode *const dir_node,
   // Create a new vnode.
 
   const bool is_dir = dir_entry->attr[0] & 0x10;
-  const size_t cluster_addr = (dir_entry->ch << 16) + dir_entry->cl;
+  const size_t cluster_addr = ((size_t)dir_entry->ch << 16) + dir_entry->cl;
   const size_t file_size = dir_entry->size;
   free(block_buf);
   struct vnode *const vnode =
