@@ -86,6 +86,8 @@ static int _sd_fat32_read(struct file *file, void *buf, size_t len);
 static int _sd_fat32_open(struct vnode *file_node, struct file **target);
 static int _sd_fat32_close(struct file *file);
 static long _sd_fat32_lseek64(struct file *file, long offset, int whence);
+static int _sd_fat32_ioctl(struct file *file, unsigned long request,
+                           void *payload);
 
 static int _sd_fat32_lookup(struct vnode *dir_node, struct vnode **target,
                             const char *component_name);
@@ -93,6 +95,9 @@ static int _sd_fat32_create(struct vnode *dir_node, struct vnode **target,
                             const char *component_name);
 static int _sd_fat32_mkdir(struct vnode *dir_node, struct vnode **target,
                            const char *component_name);
+static int _sd_fat32_mknod(struct vnode *dir_node, struct vnode **target,
+                           const char *component_name, struct device *device);
+static long _sd_fat32_get_size(struct vnode *vnode);
 
 struct filesystem sd_fat32 = {.name = "fat32",
                               .setup_mount = _sd_fat32_setup_mount};
@@ -102,12 +107,15 @@ static struct file_operations _sd_fat32_file_operations = {
     .read = _sd_fat32_read,
     .open = _sd_fat32_open,
     .close = _sd_fat32_close,
-    .lseek64 = _sd_fat32_lseek64};
+    .lseek64 = _sd_fat32_lseek64,
+    .ioctl = _sd_fat32_ioctl};
 
 static struct vnode_operations _sd_fat32_vnode_operations = {
     .lookup = _sd_fat32_lookup,
     .create = _sd_fat32_create,
-    .mkdir = _sd_fat32_mkdir};
+    .mkdir = _sd_fat32_mkdir,
+    .mknod = _sd_fat32_mknod,
+    .get_size = _sd_fat32_get_size};
 
 static size_t
 _sd_fat32_cluster_addr_to_data_lba(const fat32_fsinfo_t *const fsinfo,
@@ -548,6 +556,15 @@ static long _sd_fat32_lseek64(struct file *const file, const long offset,
   }
 }
 
+static int _sd_fat32_ioctl(struct file *const file, const unsigned long request,
+                           void *const payload) {
+  (void)file;
+  (void)request;
+  (void)payload;
+
+  return -ENOTTY;
+}
+
 static int _sd_fat32_lookup(struct vnode *const dir_node,
                             struct vnode **const target,
                             const char *const component_name) {
@@ -861,4 +878,26 @@ static int _sd_fat32_mkdir(struct vnode *const dir_node,
                            struct vnode **const target,
                            const char *const component_name) {
   return _sd_fat32_create_impl(dir_node, target, component_name, true);
+}
+
+static int _sd_fat32_mknod(struct vnode *const dir_node,
+                           struct vnode **const target,
+                           const char *const component_name,
+                           struct device *const device) {
+  (void)dir_node;
+  (void)target;
+  (void)component_name;
+  (void)device;
+
+  return -EPERM;
+}
+
+static long _sd_fat32_get_size(struct vnode *const vnode) {
+  sd_fat32_internal_t *const internal = (sd_fat32_internal_t *)vnode->internal;
+  if (internal->type != TYPE_FILE)
+    return -EISDIR;
+
+  sd_fat32_internal_file_data_t *const file_data = &internal->file_data;
+
+  return file_data->size;
 }
