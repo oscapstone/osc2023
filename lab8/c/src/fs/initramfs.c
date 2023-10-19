@@ -39,6 +39,8 @@ static int _initramfs_mknod(struct vnode *dir_node, struct vnode **target,
                             const char *component_name, struct device *device);
 static long _initramfs_get_size(struct vnode *vnode);
 
+static void _initramfs_sync_fs(struct mount *mount);
+
 struct filesystem initramfs = {.name = "initramfs",
                                .setup_mount = _initramfs_setup_mount};
 
@@ -56,6 +58,9 @@ static struct vnode_operations _initramfs_vnode_operations = {
     .mkdir = _initramfs_mkdir,
     .mknod = _initramfs_mknod,
     .get_size = _initramfs_get_size};
+
+static struct super_operations _initramfs_super_operations = {
+    .sync_fs = _initramfs_sync_fs};
 
 static int _initramfs_cmp_child_vnode_entries_by_component_name(
     const initramfs_child_vnode_entry_t *const e1,
@@ -104,7 +109,10 @@ static int _initramfs_setup_mount(struct filesystem *const fs,
   if (!root_vnode)
     return -ENOMEM;
 
-  *mount = (struct mount){.fs = fs, .root = root_vnode};
+  *mount = (struct mount){.fs = fs,
+                          .root = root_vnode,
+                          .s_ops = &_initramfs_super_operations,
+                          .internal = NULL};
 
   return 0;
 }
@@ -373,4 +381,9 @@ static long _initramfs_get_size(struct vnode *const vnode) {
   return file_type == CPIO_NEWC_MODE_FILE_TYPE_REG
              ? (long)CPIO_NEWC_FILESIZE(entry)
              : -1;
+}
+
+static void _initramfs_sync_fs(struct mount *const mount) {
+  // No-op.
+  (void)mount;
 }

@@ -1,8 +1,10 @@
+#include "oscos/uapi/sys/syscall.h"
+
 .section ".text"
 
 sig_handler_main:
     blr x0
-    mov x8, 18 // SYS_sigreturn
+    mov x8, SYS_sigreturn
     svc 0
 
 .type sig_handler_main, function

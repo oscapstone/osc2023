@@ -382,6 +382,30 @@ int vfs_mknod(const char *target, const char *device) {
                                   last_pathname_component, dev);
 }
 
+static void _vfs_sync_all_rec(rb_node_t *const node) {
+  if (!node)
+    return;
+
+  mount_entry_t *const entry = (mount_entry_t *)node->payload;
+  entry->mount->s_ops->sync_fs(entry->mount);
+
+  for (size_t i = 0; i < 2; i++) {
+    _vfs_sync_all_rec(node->children[i]);
+  }
+}
+
+void vfs_sync_all(void) {
+  // Enter critical section,
+  // since we require that the layout of the BST to be stable.
+
+  uint64_t daif_val;
+  CRITICAL_SECTION_ENTER(daif_val);
+
+  _vfs_sync_all_rec(_mounts_by_mountpoint);
+
+  CRITICAL_SECTION_LEAVE(daif_val);
+}
+
 shared_file_t *shared_file_new(struct file *const file) {
   shared_file_t *const shared_file = malloc(sizeof(shared_file_t));
   if (!shared_file)

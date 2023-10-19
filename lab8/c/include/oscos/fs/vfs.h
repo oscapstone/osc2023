@@ -23,6 +23,8 @@ struct file {
 struct mount {
   struct vnode *root;
   struct filesystem *fs;
+  struct super_operations *s_ops;
+  void *internal;
 };
 
 struct filesystem {
@@ -56,6 +58,10 @@ struct vnode_operations {
   long (*get_size)(struct vnode *vnode);
 };
 
+struct super_operations {
+  void (*sync_fs)(struct mount *mount);
+};
+
 extern struct mount rootfs;
 
 int register_filesystem(struct filesystem *fs);
@@ -80,6 +86,8 @@ int vfs_lookup_relative(struct vnode *cwd, const char *pathname,
                         struct vnode **target);
 
 int vfs_mknod(const char *target, const char *device);
+
+void vfs_sync_all(void);
 
 typedef struct {
   struct file *file;

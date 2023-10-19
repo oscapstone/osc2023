@@ -25,6 +25,8 @@ int chdir(const char *path);
 
 long lseek64(int fd, long offset, int whence);
 
+void sync(void);
+
 long syscall(long number, ...);
 
 #endif
