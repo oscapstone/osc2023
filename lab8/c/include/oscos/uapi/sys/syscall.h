@@ -21,6 +21,7 @@
 #define SYS_chdir 17
 #define SYS_lseek64 18
 #define SYS_ioctl 19
-#define SYS_sigreturn 20
+#define SYS_sync 20
+#define SYS_sigreturn 21
 
 #endif

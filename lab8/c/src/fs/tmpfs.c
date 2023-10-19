@@ -56,6 +56,8 @@ static int _tmpfs_mknod(struct vnode *dir_node, struct vnode **target,
                         const char *component_name, struct device *device);
 static long _tmpfs_get_size(struct vnode *vnode);
 
+static void _tmpfs_sync_fs(struct mount *mount);
+
 struct filesystem tmpfs = {.name = "tmpfs", .setup_mount = _tmpfs_setup_mount};
 
 static struct file_operations _tmpfs_file_operations = {.write = _tmpfs_write,
@@ -72,6 +74,9 @@ static struct vnode_operations _tmpfs_vnode_operations = {
     .mkdir = _tmpfs_mkdir,
     .mknod = _tmpfs_mknod,
     .get_size = _tmpfs_get_size};
+
+static struct super_operations _tmpfs_super_operations = {.sync_fs =
+                                                              _tmpfs_sync_fs};
 
 static int
 _tmpfs_cmp_dir_contents_entries(const tmpfs_dir_contents_entry_t *const e1,
@@ -147,7 +152,10 @@ static int _tmpfs_setup_mount(struct filesystem *const fs,
   if (!root_vnode)
     return -ENOMEM;
 
-  *mount = (struct mount){.fs = fs, .root = root_vnode};
+  *mount = (struct mount){.fs = fs,
+                          .root = root_vnode,
+                          .s_ops = &_tmpfs_super_operations,
+                          .internal = NULL};
 
   return 0;
 }
@@ -472,4 +480,9 @@ static long _tmpfs_get_size(struct vnode *const vnode) {
 
   const tmpfs_internal_file_data_t *const file_data = &internal->file_data;
   return file_data->size;
+}
+
+static void _tmpfs_sync_fs(struct mount *const mount) {
+  // No-op.
+  (void)mount;
 }

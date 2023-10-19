@@ -21,6 +21,7 @@ syscall_table:
     b sys_chdir
     b sys_lseek64
     b sys_ioctl
+    b sys_sync
     b sys_sigreturn
 
 .size syscall_table, . - syscall_table

@@ -33,3 +33,5 @@ int chdir(const char *const path) { return syscall(SYS_chdir, path); }
 long lseek64(const int fd, const long offset, const int whence) {
   return syscall(SYS_lseek64, fd, offset, whence);
 }
+
+void sync(void) { syscall(SYS_sync); }
