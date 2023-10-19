@@ -66,6 +66,9 @@ typedef struct {
 } sd_fat32_internal_dir_data_t;
 
 typedef struct {
+  size_t directory_table_cluster_addr;
+  size_t directory_table_sector_of_cluster;
+  size_t directory_entry_ix;
   size_t cluster_addr;
   size_t size;
 } sd_fat32_internal_file_data_t;
@@ -274,9 +277,12 @@ static struct vnode *_sd_fat32_create_dir_vnode(struct mount *const mount,
   return result;
 }
 
-static struct vnode *_sd_fat32_create_file_vnode(struct mount *const mount,
-                                                 const size_t cluster_addr,
-                                                 const size_t size) {
+static struct vnode *
+_sd_fat32_create_file_vnode(struct mount *const mount,
+                            const size_t directory_table_cluster_addr,
+                            const size_t directory_table_sector_of_cluster,
+                            const size_t directory_entry_ix,
+                            const size_t cluster_addr, const size_t size) {
   struct vnode *const result = malloc(sizeof(struct vnode));
   if (!result)
     return NULL;
@@ -287,10 +293,15 @@ static struct vnode *_sd_fat32_create_file_vnode(struct mount *const mount,
     return NULL;
   }
 
-  *internal =
-      (sd_fat32_internal_t){.type = TYPE_FILE,
-                            .file_data = (sd_fat32_internal_file_data_t){
-                                .cluster_addr = cluster_addr, .size = size}};
+  *internal = (sd_fat32_internal_t){
+      .type = TYPE_FILE,
+      .file_data = (sd_fat32_internal_file_data_t){
+          .directory_table_cluster_addr = directory_table_cluster_addr,
+          .directory_table_sector_of_cluster =
+              directory_table_sector_of_cluster,
+          .directory_entry_ix = directory_entry_ix,
+          .cluster_addr = cluster_addr,
+          .size = size}};
   *result = (struct vnode){.mount = mount,
                            .v_ops = &_sd_fat32_vnode_operations,
                            .f_ops = &_sd_fat32_file_operations,
@@ -429,8 +440,23 @@ static int _sd_fat32_write(struct file *const file, const void *const buf,
   }
 
   file->f_pos += n_chars_written;
-  if (file_data->size > file->f_pos) {
+  if (file->f_pos > file_data->size) {
     file_data->size = file->f_pos;
+
+    // Write the new file size back to the directory table
+    // so that it is persisted.
+
+    readblock(_sd_fat32_cluster_addr_to_data_lba(
+                  fsinfo, file_data->directory_table_cluster_addr) +
+                  file_data->directory_table_sector_of_cluster,
+              block_buf);
+    fatdir_t *const dir_entry =
+        (fatdir_t *)block_buf + file_data->directory_entry_ix;
+    dir_entry->size = file_data->size;
+    writeblock(_sd_fat32_cluster_addr_to_data_lba(
+                   fsinfo, file_data->directory_table_cluster_addr) +
+                   file_data->directory_table_sector_of_cluster,
+               block_buf);
   }
 
   free(block_buf);
@@ -615,19 +641,23 @@ static int _sd_fat32_lookup(struct vnode *const dir_node,
   if (!block_buf)
     return -ENOMEM;
 
-  size_t curr_cluster_addr = dir_data->cluster_addr;
+  size_t dir_table_cluster_addr = dir_data->cluster_addr,
+         dir_table_sector_of_cluster, dir_entry_ix;
   const fatdir_t *dir_entry = NULL;
   bool done = false;
   while (!done) {
-    for (size_t sector_of_cluster = 0;
-         sector_of_cluster < fsinfo->cluster_n_sectors; sector_of_cluster++) {
-      readblock(_sd_fat32_cluster_addr_to_data_lba(fsinfo, curr_cluster_addr) +
-                    sector_of_cluster,
-                block_buf);
+    for (dir_table_sector_of_cluster = 0;
+         dir_table_sector_of_cluster < fsinfo->cluster_n_sectors;
+         dir_table_sector_of_cluster++) {
+      readblock(
+          _sd_fat32_cluster_addr_to_data_lba(fsinfo, dir_table_cluster_addr) +
+              dir_table_sector_of_cluster,
+          block_buf);
 
-      for (size_t offset = 0; offset < 512; offset += sizeof(fatdir_t)) {
+      for (dir_entry_ix = 0; dir_entry_ix * sizeof(fatdir_t) < 512;
+           dir_entry_ix++) {
         const fatdir_t *const curr_dir_entry =
-            (const fatdir_t *)(block_buf + offset);
+            (const fatdir_t *)block_buf + dir_entry_ix;
         if (curr_dir_entry->name[0] == 0) {
           done = true;
           break;
@@ -643,17 +673,20 @@ static int _sd_fat32_lookup(struct vnode *const dir_node,
           break;
         }
       }
+
+      if (done)
+        break;
     }
 
     if (done)
       break;
 
     const uint32_t fat_entry =
-        _sd_fat32_read_fat(fsinfo, curr_cluster_addr, block_buf);
+        _sd_fat32_read_fat(fsinfo, dir_table_cluster_addr, block_buf);
     if (!(0x2 <= fat_entry && fat_entry <= 0x0ffffff7)) // Nothing more to read.
       break;
 
-    curr_cluster_addr = fat_entry;
+    dir_table_cluster_addr = fat_entry;
   }
 
   if (!dir_entry) {
@@ -670,8 +703,9 @@ static int _sd_fat32_lookup(struct vnode *const dir_node,
   struct vnode *const vnode =
       is_dir
           ? _sd_fat32_create_dir_vnode(dir_node->mount, dir_node, cluster_addr)
-          : _sd_fat32_create_file_vnode(dir_node->mount, cluster_addr,
-                                        file_size);
+          : _sd_fat32_create_file_vnode(dir_node->mount, dir_table_cluster_addr,
+                                        dir_table_sector_of_cluster,
+                                        dir_entry_ix, cluster_addr, file_size);
   if (!vnode)
     return -ENOMEM;
 
@@ -748,11 +782,14 @@ static int _sd_fat32_create_impl(struct vnode *const dir_node,
 
   // Allocate things early,
   // so that we won't have to unroll a lot of FS state later.
+  // directory_table_cluster_addr, directory_table_sector_of_cluster,
+  // and directory_entry_ix get dummy values for now.
+  // Actual values will be set later.
 
   struct vnode *const vnode =
       is_creating_dir ? _sd_fat32_create_dir_vnode(dir_node->mount, dir_node,
                                                    new_file_cluster_addr)
-                      : _sd_fat32_create_file_vnode(dir_node->mount,
+                      : _sd_fat32_create_file_vnode(dir_node->mount, 0, 0, 0,
                                                     new_file_cluster_addr, 0);
   if (!vnode) {
     _sd_fat32_unhold_cluster();
@@ -772,19 +809,22 @@ static int _sd_fat32_create_impl(struct vnode *const dir_node,
 
   // Find an empty directory entry in the target directory.
 
-  size_t dir_entry_cluster_addr = dir_data->cluster_addr;
+  size_t dir_table_cluster_addr = dir_data->cluster_addr,
+         dir_table_sector_of_cluster, dir_entry_ix;
   fatdir_t *dir_entry = NULL, *dir_entry_to_zero = NULL;
   bool done = false;
   while (!done) {
-    for (size_t sector_of_cluster = 0;
-         sector_of_cluster < fsinfo->cluster_n_sectors; sector_of_cluster++) {
+    for (dir_table_sector_of_cluster = 0;
+         dir_table_sector_of_cluster < fsinfo->cluster_n_sectors;
+         dir_table_sector_of_cluster++) {
       readblock(
-          _sd_fat32_cluster_addr_to_data_lba(fsinfo, dir_entry_cluster_addr) +
-              sector_of_cluster,
+          _sd_fat32_cluster_addr_to_data_lba(fsinfo, dir_table_cluster_addr) +
+              dir_table_sector_of_cluster,
           block_buf);
 
-      for (size_t offset = 0; offset < 512; offset += sizeof(fatdir_t)) {
-        fatdir_t *const curr_dir_entry = (fatdir_t *)(block_buf + offset);
+      for (dir_entry_ix = 0; dir_entry_ix * sizeof(fatdir_t) < 512;
+           dir_entry_ix++) {
+        fatdir_t *const curr_dir_entry = (fatdir_t *)(block_buf) + dir_entry_ix;
         if (curr_dir_entry->name[0] == 0) {
           dir_entry = curr_dir_entry;
           done = true;
@@ -794,30 +834,36 @@ static int _sd_fat32_create_impl(struct vnode *const dir_node,
           break;
         }
 
-        if (curr_dir_entry->name[0] == 0xe5 ||
-            curr_dir_entry->attr[0] == 0xf) { // Invalid entry.
+        if (curr_dir_entry->name[0] == 0xe5) { // Invalid entry.
+          // Note: The entry is also invalid when
+          // curr_dir_entry->attr[0] == 0xf,
+          // but in this case this entry is used for LFN
+          // and we shouldn't overwrite it.
           dir_entry = curr_dir_entry;
           done = true;
           break;
         }
       }
+
+      if (done)
+        break;
     }
 
     if (done)
       break;
 
     const uint32_t fat_entry =
-        _sd_fat32_read_fat(fsinfo, dir_entry_cluster_addr, block_buf);
+        _sd_fat32_read_fat(fsinfo, dir_table_cluster_addr, block_buf);
     if (!(0x2 <= fat_entry && fat_entry <= 0x0ffffff7)) // Nothing more to read.
       break;
 
-    dir_entry_cluster_addr = fat_entry;
+    dir_table_cluster_addr = fat_entry;
   }
 
   if (!dir_entry) {
-    dir_entry_cluster_addr = _sd_fat32_alloc_free_cluster_and_extend_chain(
-        fsinfo, dir_entry_cluster_addr, block_buf);
-    if (dir_entry_cluster_addr == (size_t)-1) {
+    dir_table_cluster_addr = _sd_fat32_alloc_free_cluster_and_extend_chain(
+        fsinfo, dir_table_cluster_addr, block_buf);
+    if (dir_table_cluster_addr == (size_t)-1) {
       free(entry_component_name);
       free(vnode);
       _sd_fat32_unhold_cluster();
@@ -828,6 +874,8 @@ static int _sd_fat32_create_impl(struct vnode *const dir_node,
 
     memset(block_buf, 0, 512);
     dir_entry = (fatdir_t *)block_buf;
+    dir_table_sector_of_cluster = 0;
+    dir_entry_ix = 0;
     done = true;
   }
 
@@ -845,13 +893,24 @@ static int _sd_fat32_create_impl(struct vnode *const dir_node,
     dir_entry_to_zero->name[0] = 0;
   }
 
-  writeblock(dir_entry_cluster_addr, block_buf);
+  writeblock(
+      _sd_fat32_cluster_addr_to_data_lba(fsinfo, dir_table_cluster_addr) +
+          dir_table_sector_of_cluster,
+      block_buf);
 
   _sd_fat32_alloc_held_cluster(fsinfo, block_buf);
 
   free(block_buf);
 
   // Insert the vnode.
+
+  if (!is_creating_dir) {
+    sd_fat32_internal_file_data_t *const file_data =
+        &((sd_fat32_internal_t *)vnode->internal)->file_data;
+    file_data->directory_table_cluster_addr = dir_table_cluster_addr;
+    file_data->directory_table_sector_of_cluster = dir_table_sector_of_cluster;
+    file_data->directory_entry_ix = dir_entry_ix;
+  }
 
   const sd_fat32_child_vnode_entry_t new_child_vnode_entry = {
       .component_name = entry_component_name, .vnode = vnode};
