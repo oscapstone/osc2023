@@ -21,19 +21,27 @@ int mbox_call(mail_t* mbox, uint8_t ch) {
 }
 
 void get_board_revision(uint32_t* board_revision) {
+    // Create a mailbox structure and initialize its fields
     mail_t mbox = {
-        .header.packet_size = MAIL_PACKET_SIZE,
-        .header.code = REQUEST_CODE,
-        .body.id = GET_BOARD_REVISION,
-        .body.buf_size = MAIL_BUF_SIZE,
-        .body.code = TAG_REQUEST_CODE,
-        .body.end = END_TAG,
+        .header.packet_size = MAIL_PACKET_SIZE,   // Set the packet size in the header
+        .header.code = REQUEST_CODE,              // Set the code in the header to indicate a request
+        .body.id = GET_BOARD_REVISION,            // Set the ID of the body to get board revision
+        .body.buf_size = MAIL_BUF_SIZE,           // Set the size of the buffer in the body
+        .body.code = TAG_REQUEST_CODE,            // Set the code in the body to indicate a tag request
+        .body.end = END_TAG,                      // Set the end tag in the body
     };
 
-    for (uint32_t i = 0; i < MAIL_BODY_BUF_LEN; i++) mbox.body.buf[i] = 0;
+    // Initialize the buffer in the body to 0
+    for (uint32_t i = 0; i < MAIL_BODY_BUF_LEN; i++) {
+        mbox.body.buf[i] = 0;
+    }
 
+    // Call the mailbox function to send the request and receive the response
+    // MBOX_CH_PROP means chennel 8
     mbox_call(&mbox, MBOX_CH_PROP);
 
+    // Extract the board revision information from the response buffer and assign it to board_revision
     *board_revision = mbox.body.buf[0];
 }
+
 
