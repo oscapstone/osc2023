@@ -11,9 +11,6 @@ void welcome_msg() {
         " | |  | | \\___ \\ | |        / / | | | |  / / |__   _|" ENDL
         " | |__| | ____) || |____   / /_ | |_| | / /_    | | "ENDL
         "  \\____/ |_____/  \\_____| |____| \\___/ |____|   |_|" ENDL);
-
-
-
 }
 
 void read_cmd() {
@@ -63,10 +60,6 @@ void cmd_help() {
 
 void cmd_hello() {
     uart_write_string("Hello World!" ENDL);
-    uart_write_string(func_list[0].name);
-    uart_write_string(func_list[1].name);
-    uart_write_string(func_list[2].name);
-    uart_write_string(func_list[3].desc);
 }
 
 
@@ -83,6 +76,7 @@ void cmd_sysinfo() {
     uart_puth(*board_revision);
     uart_write_string(ENDL);
 
+    
     // Memory Info
     get_memory_info(mem_base, mem_size);
     uart_write_string("Memroy Base Address : 0x");
@@ -92,6 +86,11 @@ void cmd_sysinfo() {
     uart_write_string("Memory Size         : 0x");
     uart_puth(*mem_size);
     uart_write_string(ENDL);
+}
+
+void cmd_reboot() {
+    uart_write_string("Rebooting...."ENDL);
+    reset(10);
 }
 
 void cmd_unknown() {
