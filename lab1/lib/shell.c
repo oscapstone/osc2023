@@ -63,6 +63,10 @@ void cmd_help() {
 
 void cmd_hello() {
     uart_write_string("Hello World!" ENDL);
+    uart_write_string(func_list[0].name);
+    uart_write_string(func_list[1].name);
+    uart_write_string(func_list[2].name);
+    uart_write_string(func_list[3].desc);
 }
 
 
@@ -79,7 +83,15 @@ void cmd_sysinfo() {
     uart_puth(*board_revision);
     uart_write_string(ENDL);
 
-    
+    // Memory Info
+    get_memory_info(mem_base, mem_size);
+    uart_write_string("Memroy Base Address : 0x");
+    uart_puth(*mem_base);
+    uart_write_string(ENDL);
+
+    uart_write_string("Memory Size         : 0x");
+    uart_puth(*mem_size);
+    uart_write_string(ENDL);
 }
 
 void cmd_unknown() {

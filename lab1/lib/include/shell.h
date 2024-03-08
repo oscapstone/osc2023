@@ -26,6 +26,7 @@ struct func func_list[] = {
     {.name = "help", .ptr = cmd_help, .desc = "print this help menu"},
     {.name = "hello", .ptr = cmd_hello, .desc = "print Hello World!"},
     {.name = "reboot", .ptr = cmd_help, .desc = "reboot the device"},
-    {.name = "sysinfo", .ptr = cmd_sysinfo, .desc = "get system info"}};
+    {.name = "sysinfo", .ptr = cmd_sysinfo, .desc = "get system info"},
+    {.name = "123", .ptr = cmd_hello, .desc = "???"}};
 
 #endif

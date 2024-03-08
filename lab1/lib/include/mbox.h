@@ -104,6 +104,8 @@ typedef struct mail_t {
 
 int mbox_call(mail_t* mbox, uint8_t ch);
 void get_board_revision(uint32_t* board_revision);
+void get_memory_info(uint32_t* mem_base, uint32_t* mem_size);
+void get_board_serial(uint32_t* msb, uint32_t* lsb);
 
 
 #endif
