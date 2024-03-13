@@ -5,3 +5,6 @@
 * Requirements
   + a cross-compiler for aarch64
   + qemu-system-arm
+
+* Build
+```make kernel.img```
