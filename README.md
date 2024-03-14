@@ -2,7 +2,7 @@
 
 | Github Account | Student ID | Name          |
 |----------------|------------|---------------|
-| psychicalcoder | 0816171    | Tsung-Han Liu |
+| Haoze0102      | A122542    | Hao-Ze Wang   |
 
 ## Requirements
 
