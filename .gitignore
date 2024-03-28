@@ -1,5 +1,0 @@
-*.o
-*.elf
-*.img
-target/
-kernel*.img
